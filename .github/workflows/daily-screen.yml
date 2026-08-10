@@ -1,0 +1,84 @@
+name: Daily A-Share Screening
+
+on:
+  # 每个交易日 15:35（北京时间 = UTC 07:35，周一至周五）自动触发
+  schedule:
+    - cron: '35 7 * * 1-5'
+  # 也可在 Actions 页面手动触发，并选择模式
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'offline = 从已提交快照重建报告（GitHub 托管 Runner 即可运行）；live = 实时抓取（需在装有 WorkBuddy 的自托管 Runner 上运行）'
+        required: false
+        default: 'offline'
+        type: choice
+        options:
+          - offline
+          - live
+
+# 允许工作流把生成的报告写回仓库
+permissions:
+  contents: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 离线模式：无需任何外部数据接口，从仓库内提交的快照重建 HTML 报告。
+  # 在任何 GitHub 托管 Runner 上都能跑通，用于保证「克隆即可查看 / 随时复现」。
+  # ---------------------------------------------------------------------------
+  offline:
+    if: ${{ github.event.inputs.mode != 'live' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regenerate report from committed snapshot
+        run: |
+          node gen_candidates.js --offline \
+            --snapshot data/snapshot-2026-07-27.json \
+            --out reports/stock_list_latest.html --quiet
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/stock_list_latest.html
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore: 从快照重建报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 实时模式：调用 westock 接口抓取当日数据并生成报告。
+  # 注意：westock-tool / westock-data 是 WorkBuddy 内置技能，依赖 WorkBuddy 宿主运行时，
+  # 在 GitHub 托管 Runner 上不可用。请在本机（已安装 WorkBuddy）注册一个 self-hosted runner，
+  # 并在仓库 Settings → Secrets 中配置 WESTOCK_NODE / WESTOCK_TOOL / WESTOCK_DATA 三个路径变量。
+  # ---------------------------------------------------------------------------
+  live:
+    if: ${{ github.event.inputs.mode == 'live' }}
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run live screening
+        env:
+          WESTOCK_NODE: ${{ secrets.WESTOCK_NODE }}
+          WESTOCK_TOOL: ${{ secrets.WESTOCK_TOOL }}
+          WESTOCK_DATA: ${{ secrets.WESTOCK_DATA }}
+        run: |
+          node gen_candidates.js --out reports/stock_list_latest.html
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/stock_list_latest.html
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore: 每日实时初筛 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi

@@ -1,0 +1,14 @@
+{
+  "name": "candidate-pool",
+  "version": "1.0.0",
+  "description": "A股次日候选池自动初筛（R01 量能验证突破 + R07 板块内补涨），输出单文件双语 HTML 报告",
+  "private": true,
+  "scripts": {
+    "start": "node gen_candidates.js",
+    "run": "node gen_candidates.js",
+    "offline": "node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json --out reports/stock_list_latest.html"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
