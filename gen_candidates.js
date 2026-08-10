@@ -13,8 +13,15 @@
  *   node gen_candidates.js                 # 在线：锚定日 = 最近一个已收盘交易日
  *   node gen_candidates.js --date 2026-07-27
  *   node gen_candidates.js --limit 12 --out report.html --quiet
- *   node gen_candidates.js --date 2026-07-27 --dump data/snapshot-2026-07-27.json   # 在线抓取后导出快照
+ *   node gen_candidates.js --date 2026-07-27 --dump data/snapshot-2026-07-27.json   # 在线抓取后导出快照到指定路径
  *   node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json        # 离线：从快照重建报告（无需 westock）
+ *
+ * 输出（默认按锚定日留档，覆盖式写入，每天一份）：
+ *   报告:  reports/stock_list_<锚定日>.html
+ *   快照:  data/snapshot-<锚定日>.json      （实时运行自动写出，供日后离线复现）
+ *
+ * 推送: 实时运行结束后自动把结果推送到 notify_config.json 配置的渠道
+ *       （个人微信 Server酱/PushPlus + 163 邮箱）。可用 --no-notify 关闭。
  *
  * 依赖: westock-tool / westock-data（腾讯自选股 CLI，已随 WorkBuddy 内置）
  * 可通过环境变量覆盖路径: WESTOCK_NODE / WESTOCK_TOOL / WESTOCK_DATA
@@ -56,7 +63,7 @@ function ymd(d) {
   return `${y}-${m}-${day}`;
 }
 function parseArgs(argv) {
-  const o = { date: null, limit: 12, out: null, quiet: false, offline: false, snapshot: null, dump: null };
+  const o = { date: null, limit: 12, out: null, quiet: false, offline: false, snapshot: null, dump: null, noNotify: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--date') o.date = argv[++i];
@@ -66,6 +73,7 @@ function parseArgs(argv) {
     else if (a === '--offline') o.offline = true;
     else if (a === '--snapshot') o.snapshot = argv[++i];
     else if (a === '--dump') o.dump = argv[++i];
+    else if (a === '--no-notify') o.noNotify = true;
     else if (a === '-h' || a === '--help') { o.help = true; }
   }
   return o;
@@ -182,6 +190,7 @@ async function main() {
     log('用法: node gen_candidates.js [--date YYYY-MM-DD] [--limit 12] [--out file.html] [--quiet]');
     log('     node gen_candidates.js --offline --snapshot data/snapshot-YYYYMMDD.json [--out file.html]');
     log('     node gen_candidates.js --date YYYY-MM-DD --dump data/snapshot-YYYYMMDD.json   # 在线抓取后导出快照');
+    log('     node gen_candidates.js --no-notify   # 实时运行但跳过微信/邮件推送');
     return;
   }
   if (args.offline) { await runOffline(args); return; }
@@ -383,17 +392,46 @@ async function main() {
   } catch (e) { overview = { error: String(e.message || e) }; }
 
   // ---- 7-8. 分类 + 生成 HTML（抽取为 classifyAndBuild，离线模式复用）----
-  if (args.dump) {
-    const snap = {
-      anchor, target, limit, topN,
-      breadth, breadthIsAnchor, overview,
-      stocks: stocks.map(s => { const c = Object.assign({}, s); delete c.kline; delete c.quote; delete c.minute; return c; }),
-      sectors: validSectors.map(s => { const c = Object.assign({}, s); delete c.members; return c; }),
-    };
-    fs.writeFileSync(args.dump, JSON.stringify(snap));
-    log(`[dump] 快照已写入 ${args.dump}`);
+  // 实时模式：写出「当日日期」命名的快照（覆盖式写入，每天一份），并推送通知
+  const snapshotPath = args.dump || path.join(__dirname, 'data', `snapshot-${anchor}.json`);
+  const snap = {
+    anchor, target, limit, topN,
+    breadth, breadthIsAnchor, overview,
+    stocks: stocks.map(s => { const c = Object.assign({}, s); delete c.kline; delete c.quote; delete c.minute; return c; }),
+    sectors: validSectors.map(s => { const c = Object.assign({}, s); delete c.members; return c; }),
+  };
+  fs.writeFileSync(snapshotPath, JSON.stringify(snap));
+  log(`[snapshot] 已写出 ${snapshotPath}（覆盖式，按锚定日留档）`);
+  const build = classifyAndBuild({ anchor, target, limit, stocks, validSectors, topN, breadth, breadthIsAnchor, overview, outPath, quiet: args.quiet });
+  if (!args.noNotify) {
+    try { await sendNotify({ anchor, target, breadth, build }); }
+    catch (e) { log('[notify] 推送失败（不影响报告生成）: ' + (e && e.message || e)); }
   }
-  classifyAndBuild({ anchor, target, limit, stocks, validSectors, topN, breadth, breadthIsAnchor, overview, outPath, quiet: args.quiet });
+}
+
+// 实时结果推送（微信 + 163 邮箱），结果写入 notify_config.json / 环境变量
+async function sendNotify({ anchor, target, breadth, build }) {
+  let notifyMod;
+  try { notifyMod = require('./notify'); }
+  catch (e) { log('[notify] 未找到 notify.js，跳过推送'); return; }
+  const upPctTxt = (breadth && !breadth.error) ? breadth.upPct : null;
+  const regime = upPctTxt == null ? '市场宽度数据缺失'
+    : upPctTxt >= 70 ? '强势普涨' : upPctTxt >= 50 ? '偏多震荡' : upPctTxt >= 30 ? '分化偏弱' : '弱势普跌';
+  const title = `A股次日候选池 · ${anchor} 收盘后初筛`;
+  const content = [
+    `**锚定日**：${anchor}（面向 ${target} 交易日）`,
+    `**硬触发**：R01 ${build.r01Triggers} 只 / R07 补涨 ${build.r07Triggers} 只 / R05 部分触发 ${build.r05Hard} 只`,
+    `**梯队**：重点关注 ${build.high.length} ｜ 次级 ${build.secondary.length} ｜ 条件 ${build.conditional.length} ｜ 排除 ${build.excluded.length}`,
+    `**市场环境**：${regime}（上涨占比 ${upPctTxt != null ? upPctTxt + '%' : '—'}）`,
+    ``,
+    `报告文件：reports/stock_list_${anchor.replace(/-/g, '')}.html`,
+    `（HTML 报告已作为附件发送，或前往 GitHub 仓库按日期查看。）`,
+  ].join('\n');
+  const htmlPath = path.join(__dirname, 'reports', `stock_list_${anchor.replace(/-/g, '')}.html`);
+  const res = await notifyMod.notify({ title, content, htmlPath });
+  for (const [ch, [ok, info]] of res) {
+    log(`[notify] ${ch}: ${ok ? 'OK' : '失败 ' + JSON.stringify(info)}`);
+  }
 }
 
 // ===========================================================================
@@ -780,6 +818,7 @@ function classifyAndBuild(m) {
   log(`完成。硬触发 R01=${r01Triggers} 只 / R07 补涨=${r07Triggers} 只 / R05 部分触发=${r05Hard} 只`);
   log(`输出: ${outPath}`);
   if (!quiet) process.stdout.write(outPath + '\n');
+  return { high, secondary, conditional, excluded, r01Triggers, r07Triggers, r05Hard, anchor, target, outPath };
 }
 
 // 离线模式：从快照载入，跳过 westock 调用

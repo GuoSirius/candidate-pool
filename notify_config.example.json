@@ -1,0 +1,14 @@
+{
+  "wechat": {
+    "provider": "serverchan",
+    "key": "SCTxxxxxxxx此处替换为你的SendKey",
+    "token": ""
+  },
+  "email": {
+    "smtp_host": "smtp.163.com",
+    "smtp_port": 465,
+    "sender": "you@163.com",
+    "auth_code": "你的163邮箱授权码(非登录密码)",
+    "receiver": "you@163.com"
+  }
+}

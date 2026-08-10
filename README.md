@@ -1,6 +1,6 @@
 # A股次日候选池 · 自动初筛
 
-把 **A股短线交易** 的「标的初筛」流程固化为可定时运行的脚本：以官方综合评分排行（前 12 名）为候选起点，套用 **R01 量能验证突破 + R07 板块内补涨**（并以 **R05 尾盘异动** 核验），输出一份 **单文件、资源全内联、无外链、支持中英切换** 的 HTML 报告。
+把 **A股短线交易** 的「标的初筛」流程固化为可定时运行的脚本：以官方综合评分排行（前 12 名）为候选起点，套用 **R01 量能验证突破 + R07 板块内补涨**（并以 **R05 尾盘异动** 核验），输出一份 **单文件、资源全内联、无外链、支持中英切换** 的 HTML 报告，并把实时结果**推送到个人微信 / 163 邮箱**。
 
 > 报告即「观察评级」，不构成任何投资建议。详见文末免责声明。
 
@@ -11,16 +11,18 @@
 ```
 candidate-pool/
 ├── gen_candidates.js            # 核心脚本（Node >=18，CommonJS）
+├── notify.js                    # 结果推送（微信 Server酱/PushPlus + 163 邮箱，零依赖）
 ├── run_today.cmd                # Windows 一键运行（双击即可）
 ├── run_today.sh                 # bash 一键运行
-├── package.json                 # npm scripts: start / run / offline
+├── package.json                 # npm scripts: start / run / live / offline / notify
+├── notify_config.example.json   # 推送配置模板（复制为 notify_config.json 后填真实凭据）
 ├── data/
-│   └── snapshot-2026-07-27.json # 在线抓取的快照（离线模式数据源，已提交）
+│   └── snapshot-<锚定日>.json    # 实时抓取的快照（离线模式数据源，按日留档、覆盖式）
 ├── reports/
-│   ├── stock_list_20260727.html # 示例报告（2026-07-27 收盘后）
-│   └── stock_list_latest.html   # CI / 本地最新生成的报告（由工作流写回）
+│   ├── stock_list_<锚定日>.html  # 实时生成的报告（按日留档、覆盖式，每天一份）
+│   └── stock_list_20260727.html  # 示例报告（2026-07-27 收盘后，同源快照离线重建）
 └── .github/workflows/
-    └── daily-screen.yml         # GitHub Actions 工作流
+    └── daily-screen.yml         # GitHub Actions 工作流（默认 live，需 self-hosted runner）
 ```
 
 ---
@@ -41,20 +43,26 @@ candidate-pool/
 
 ## 用法
 
-### 1. 在线（实时抓取，需 WorkBuddy + westock）
+### 1. 在线（实时抓取，需 WorkBuddy + westock）—— 默认模式
 
 ```bash
 node gen_candidates.js                  # 锚定日 = 最近一个已收盘交易日
 node gen_candidates.js --date 2026-07-27   # 回填指定日期
-node gen_candidates.js --limit 12 --out reports/foo.html --quiet
+node gen_candidates.js --limit 12 --quiet
+node gen_candidates.js --no-notify      # 实时运行但跳过微信/邮件推送
 ```
 
-Windows 直接双击 `run_today.cmd` 亦可。
+Windows 直接双击 `run_today.cmd` 亦可。**实时运行会**：
+- 写出报告 `reports/stock_list_<锚定日>.html`
+- 写出快照 `data/snapshot-<锚定日>.json`（供日后离线复现）
+- 把结果摘要推送到 `notify_config.json` 配置的微信 / 邮箱渠道
+
+> 同名文件重复运行时为**覆盖式写入**：每天一份，重复执行不产生多份堆积。
 
 ### 2. 离线（从快照重建，无需 westock —— 推荐在 CI / 其他设备查看用）
 
 ```bash
-node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json --out reports/stock_list_latest.html
+node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json --out reports/stock_list_20260727.html
 # 或
 npm run offline
 ```
@@ -66,6 +74,49 @@ node gen_candidates.js --date 2026-07-27 --dump data/snapshot-2026-07-27.json
 ```
 
 > 快照已剥离 `kline/quote/minute` 等大体积原始数据，仅保留判定所需字段（约 19 KB），可安全入库。
+
+---
+
+## 结果推送（微信 / 163 邮箱）
+
+实时运行结束后，脚本自动调用 `notify.js` 把结果摘要推送出去（离线模式不推送）。
+
+### 配置（二选一，凭据不要提交）
+
+**方式 A：本地文件** — 复制模板后填写：
+
+```bash
+cp notify_config.example.json notify_config.json
+```
+
+```jsonc
+{
+  "wechat": {
+    "provider": "serverchan",          // serverchan | pushplus
+    "key": "SCTxxxxxxxx",              // serverchan 的 SendKey
+    "token": ""                        // pushplus 的 token（provider=pushplus 时用）
+  },
+  "email": {
+    "smtp_host": "smtp.163.com",
+    "smtp_port": 465,
+    "sender": "you@163.com",
+    "auth_code": "你的163授权码",       // 不是登录密码，是邮箱设置里生成的授权码
+    "receiver": "you@163.com"          // 可省略，默认同 sender
+  }
+}
+```
+
+**方式 B：环境变量**（适合 CI / self-hosted runner，避免把凭据放到仓库）：
+
+```
+NOTIFY_WX_PROVIDER / NOTIFY_WX_KEY / NOTIFY_WX_TOKEN
+NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST / NOTIFY_MAIL_PORT
+```
+
+- 微信：Server酱 `https://sctapi.ftqq.com/{key}.send` 或 PushPlus `https://www.pushplus.plus/send`（markdown 模板）。
+- 邮箱：163 `SMTP_SSL`（smtp.163.com:465），HTML 报告作为附件发送；`notify.js` 用 Node 内置 `tls` 实现，**无需 nodemailer**。
+- 自检：`npm run notify` 会打印「微信/邮箱是否已配置」。
+- 未配置任何渠道时优雅跳过，不影响报告生成。
 
 ---
 
@@ -93,17 +144,43 @@ node gen_candidates.js --date 2026-07-27 --dump data/snapshot-2026-07-27.json
 
 ---
 
-## GitHub Actions 可行性说明（重要）
+## GitHub Actions 配置与使用流程
 
-**结论：可以自动触发，但分两种模式。**
+**默认 `live`（实时抓取），但 live 必须在装有 WorkBuddy 的 self-hosted runner 上运行。**
 
-- **`offline`（默认，GitHub 托管 Runner 即可运行）**：从仓库内已提交的 `data/snapshot-*.json` 重建 HTML 报告并写回 `reports/stock_list_latest.html`。**不调用任何外部接口**，因此能在 `ubuntu-latest` 上稳定跑通，保证「克隆即可查看 / 定时复现」。
-- **`live`（实时抓取）**：调用 `westock` 接口获取当日数据。但 `westock-tool` / `westock-data` 是 **WorkBuddy 内置技能，依赖 WorkBuddy 宿主运行时**（非独立 npm 包），**GitHub 托管 Runner 上没有、也跑不起来**。要启用实时自动执行，需要：
-  1. 在本机（已安装 WorkBuddy）注册一个 **self-hosted runner**；
-  2. 在仓库 `Settings → Secrets` 配置 `WESTOCK_NODE` / `WESTOCK_TOOL` / `WESTOCK_DATA` 三个路径变量；
-  3. 手动触发工作流并选择 `mode = live`（或在 `daily-screen.yml` 中将调度默认改为 live）。
+### 第 1 步：在本机注册 self-hosted runner
 
-工作流：`.github/workflows/daily-screen.yml`，默认在每个交易日 **15:35（北京时间）** 触发 `offline` 任务；也可在 Actions 页面手动选择模式。
+1. 进入仓库 `Settings → Actions → Runners → New self-hosted runner`。
+2. 选择 Windows，按页面给出的命令下载并配置 runner（会让你 `./config.cmd --url https://github.com/GuoSirius/candidate-pool --token xxx`）。
+3. 以**普通用户**身份启动 runner（不要服务方式，以免拿不到 WorkBuddy 的路径/凭据）：`.\run.cmd`。
+4. 确认 runner 标签为 `self-hosted`（工作流 `runs-on: self-hosted` 即匹配）。
+
+### 第 2 步：配置仓库 Secrets
+
+仓库 `Settings → Secrets and variables → Actions → New repository secret`，至少填：
+
+| Secret | 说明 |
+|--------|------|
+| `WESTOCK_NODE` | 本机 Node 路径，如 `C:/Users/Admin/.workbuddy/binaries/node/versions/22.22.2/node.exe` |
+| `WESTOCK_TOOL` | `westock-tool/index.js` 路径（WorkBuddy 内置技能目录） |
+| `WESTOCK_DATA` | `westock-data/index.js` 路径（WorkBuddy 内置技能目录） |
+| `NOTIFY_WX_PROVIDER` | `serverchan` 或 `pushplus`（可选，缺省 serverchan） |
+| `NOTIFY_WX_KEY` | Server酱 SendKey（用微信推送时必填） |
+| `NOTIFY_WX_TOKEN` | PushPlus token（provider=pushplus 时填） |
+| `NOTIFY_MAIL_SENDER` / `NOTIFY_MAIL_AUTH` | 163 邮箱与授权码（用邮件推送时填） |
+| `NOTIFY_MAIL_RECEIVER` / `NOTIFY_MAIL_HOST` / `NOTIFY_MAIL_PORT` | 收件人 / SMTP 主机 / 端口（可选，有默认值） |
+
+> 也可不走 Secrets，而是直接在 self-hosted runner 机器上放一份 `notify_config.json`（已被 `.gitignore` 忽略，不会入库）。
+
+### 第 3 步：触发
+
+- **手动**：`Actions → Daily A-Share Screening → Run workflow`，`mode` 默认 `live`。
+- **定时**：`cron 35 7 * * 1-5`（北京时间 15:35，周一至周五）。注意 GitHub 托管 Runner 跑不了 live，因此**调度触发走 `offline`**（从已提交快照重建，保证每天有产物写回）；真正实时的 live 需你手动触发（在 self-hosted runner 上）。
+
+### 输出与提交
+
+- 实时运行按锚定日写出 `reports/stock_list_<锚定日>.html` 与 `data/snapshot-<锚定日>.json`，**覆盖式**写回仓库（每天一份）。
+- 工作流用 `GITHUB_TOKEN`（`permissions: contents: write`）提交，无需 PAT。
 
 ---
 

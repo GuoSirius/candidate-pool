@@ -6,3 +6,9 @@ npm-debug.log*
 # 临时产物（CI / 本地测试生成，不入库）
 reports/_*.html
 data/_*.json
+
+# 推送凭据（含 163 授权码 / 微信 key，切勿提交）
+notify_config.json
+
+# 运行时/自动化本地目录
+.workbuddy/

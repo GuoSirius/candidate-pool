@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node gen_candidates.js",
     "run": "node gen_candidates.js",
-    "offline": "node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json --out reports/stock_list_latest.html"
+    "live": "node gen_candidates.js",
+    "offline": "node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json --out reports/stock_list_20260727.html",
+    "notify": "node notify.js"
   },
   "engines": {
     "node": ">=18"
