@@ -5,16 +5,16 @@
  * ---------------------------------------------------------------------------
  * A股短线交易 — 次日候选池初筛（自动生成版）
  * 复刻 A股短线交易 skill 的「标的初筛」流程：
- *   候选起点 = 官方综合评分排行 westock-tool ranking CompScore --limit 12
+ *   候选起点 = 本目录 candidates.json 配置的可编辑观察池（覆盖主要行业，可自由增删）
  *   规则组合 = R01 量能验证突破 + R07 板块内补涨（+ R05 尾盘异动核验）
  * 输出 = 单文件、资源全内联、无外链的双语 HTML（右上角中英切换）
  *
  * 用法:
  *   node gen_candidates.js                 # 在线：锚定日 = 最近一个已收盘交易日
- *   node gen_candidates.js --date 2026-07-27
- *   node gen_candidates.js --limit 12 --out report.html --quiet
- *   node gen_candidates.js --date 2026-07-27 --dump data/snapshot-2026-07-27.json   # 在线抓取后导出快照到指定路径
- *   node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json        # 离线：从快照重建报告（无需 westock）
+ *   node gen_candidates.js --date 2026-08-07
+ *   node gen_candidates.js --limit 20 --out report.html --quiet
+ *   node gen_candidates.js --date 2026-08-07 --dump data/snapshot-2026-08-07.json   # 在线抓取后导出快照到指定路径
+ *   node gen_candidates.js --offline --snapshot data/snapshot-2026-08-07.json        # 离线：从快照重建报告
  *
  * 输出（默认按锚定日留档，覆盖式写入，每天一份）：
  *   报告:  reports/stock_list_<锚定日>.html
@@ -23,23 +23,35 @@
  * 推送: 实时运行结束后自动把结果推送到 notify_config.json 配置的渠道
  *       （个人微信 Server酱/PushPlus + 163 邮箱）。可用 --no-notify 关闭。
  *
- * 依赖: westock-tool / westock-data（腾讯自选股 CLI，已随 WorkBuddy 内置）
- * 可通过环境变量覆盖路径: WESTOCK_NODE / WESTOCK_TOOL / WESTOCK_DATA
- * 离线模式不依赖任何外部 CLI，可在任意装了 Node >=18 的环境运行（GitHub Actions 等）。
+ * 数据源: 腾讯公开行情接口（无需任何第三方 CLI / 内置技能）：
+ *   - 实时报价 / 总市值 / 流通市值 / 52周高 / 换手率： qt.gtimg.cn
+ *   - 日K线(前复权) / 分时：                  web.ifzq.gtimg.cn/appstock/app
+ *   原 westock 内置技能在本机安装目录变更后已不可用，故改为直连上述公开接口；
+ *   R01/R07/R05 判定逻辑、HTML、离线模式均保持不变。
+ * 离线模式不依赖任何外部网络，可在任意装了 Node >=18 的环境运行（GitHub Actions 等）。
  * ---------------------------------------------------------------------------
  */
 
 const fs = require('fs');
 const path = require('path');
-const { execFile } = require('child_process');
-const { promisify } = require('util');
+const https = require('https');
 
-const execFileP = promisify(execFile);
+// ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
+const QT_QUOTE = 'https://qt.gtimg.cn/q=';
+const IFZQ = 'https://web.ifzq.gtimg.cn/appstock/app';
+const CANDIDATES_PATH = path.join(__dirname, 'candidates.json');
 
-// ---------- 路径配置 ----------
-const NODE = process.env.WESTOCK_NODE || 'C:/Users/Admin/.workbuddy/binaries/node/versions/22.22.2/node.exe';
-const TOOL = process.env.WESTOCK_TOOL || 'D:/Program Files/WorkBuddy/resources/app.asar.unpacked/resources/builtin-skills/westock-tool/scripts/index.js';
-const DATA = process.env.WESTOCK_DATA || 'D:/Program Files/WorkBuddy/resources/app.asar.unpacked/resources/builtin-skills/westock-data/scripts/index.js';
+// 日K线故障转移链。腾讯的 WAF 是【按接口路径】限流的：高频拉取会让
+// web.ifzq.gtimg.cn 的 fqkline 路径返回 HTTP 501 拦截页，而同主机的其他路径、
+// 以及镜像域名仍然正常。所以按顺序逐个降级，能显著提升可用性。
+// 实测（2026-08-11 盘中，web.ifzq 已被封时）：后三条均返回 200。
+const KLINE_ENDPOINTS = [
+  { name: 'web.ifzq/fqkline', qfq: true, url: (c) => `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${c},day,,,260,qfq` },
+  { name: 'ifzq/fqkline', qfq: true, url: (c) => `https://ifzq.gtimg.cn/appstock/app/fqkline/get?param=${c},day,,,260,qfq` },
+  { name: 'proxy.finance/fqkline', qfq: true, url: (c) => `https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get?param=${c},day,,,260,qfq` },
+  // 最后兜底：不复权。数据仍可用，但除权日附近的涨幅/均量会失真，报告中会标注。
+  { name: 'web.ifzq/kline(不复权)', qfq: false, url: (c) => `https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param=${c},day,,,260` },
+];
 
 // ---------- R01 门槛常量 ----------
 const G = {
@@ -52,7 +64,14 @@ const G = {
   HIGH52_ZONE: 0.9,     // C6 收盘 < 0.9×52周高 视为未进入高位区
 };
 
-const CONCURRENCY = 12;
+// 并发太高会触发腾讯接口反爬拦截（盘中尤其敏感）。6 并发下 377 只约 10~15s，
+// 兼顾速度与稳定；可用环境变量 CANDIDATE_CONCURRENCY 覆盖。
+const CONCURRENCY = Number(process.env.CANDIDATE_CONCURRENCY) || 6;
+
+// 数据健康度红线：K线获取失败率超过该比例即判定为"数据源不可用"，
+// 直接中止并以非零码退出，绝不生成空报告、更不推送。
+// 若没有这道闸门，一次全量拦截会静默产出"今日 0 触发"，看起来完全正常。
+const MAX_FAIL_RATE = Number(process.env.CANDIDATE_MAX_FAIL_RATE) || 0.2;
 
 // ---------- 小工具 ----------
 function log(...a) { process.stderr.write(a.join(' ') + '\n'); }
@@ -63,7 +82,7 @@ function ymd(d) {
   return `${y}-${m}-${day}`;
 }
 function parseArgs(argv) {
-  const o = { date: null, limit: 12, out: null, quiet: false, offline: false, snapshot: null, dump: null, noNotify: false };
+  const o = { date: null, limit: 0, out: null, quiet: false, offline: false, snapshot: null, dump: null, noNotify: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--date') o.date = argv[++i];
@@ -98,43 +117,181 @@ function lastClosedTradingDay(now) {
   return ymd(d);
 }
 
-// ---------- westock 调用（带重试与空结果校验）----------
+// ---------- HTTP 工具（腾讯公开行情接口，无需任何第三方 CLI）----------
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-async function runData(args, opt = {}) {
-  let lastErr;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const { stdout } = await execFileP(NODE, [DATA, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 180000 });
-      if (opt.needRows !== false) {
-        const rows = parseTables(stdout).reduce((a, t) => a + t.rows.length, 0);
-        if (rows === 0) throw new Error('empty result (header only / no data rows)');
-      }
-      if (stdout.trim().length < 5) throw new Error('empty output');
-      return stdout;
-    } catch (e) {
-      lastErr = e;
-      if (attempt < 2) { await sleep(400 * (attempt + 1)); }
-    }
-  }
-  throw lastErr;
+
+// 腾讯接口在短时间高频请求（尤其盘中）会返回一张 WAF 反爬跳转页而非 JSON：
+//   <!DOCTYPE html><html><head><script>var i=location.href;var v=window.btoa? ...
+// 它是 HTTP 200，靠 JSON.parse 报错才能发现。必须单独识别并用【长退避】重试，
+// 短退避（几百毫秒）拿到的仍是同一张拦截页，等于白重试。
+function looksLikeWaf(txt) {
+  const head = String(txt).slice(0, 300);
+  return /<!DOCTYPE html|<html[\s>]/i.test(head) && /window\.btoa|location\.href/i.test(head);
 }
-async function runTool(args, opt = {}) {
-  let lastErr;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const { stdout } = await execFileP(NODE, [TOOL, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 180000 });
-      if (opt.needRows !== false) {
-        const rows = parseTables(stdout).reduce((a, t) => a + t.rows.length, 0);
-        if (rows === 0) throw new Error('empty result (header only / no data rows)');
+// 完整的浏览器 UA。残缺 UA（如裸 "Mozilla/5.0"）本身就是风控指纹特征。
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const WAF_BACKOFF = [2000, 5000, 12000, 25000]; // 命中拦截时的退避梯度（ms）
+
+function httpGet(url, { json = true, retries = 4, timeout = 15000 } = {}) {
+  return new Promise(async (resolve, reject) => {
+    let lastErr;
+    let wafHits = 0;
+    for (let i = 0; i < retries; i++) {
+      if (i > 0) {
+        // 拦截用长退避，普通网络错误用短退避
+        await sleep(lastErr && lastErr.waf
+          ? WAF_BACKOFF[Math.min(wafHits - 1, WAF_BACKOFF.length - 1)]
+          : 500 * i);
       }
-      if (stdout.trim().length < 5) throw new Error('empty output');
-      return stdout;
+      try {
+        const { status, txt } = await new Promise((res, rej) => {
+          const req = https.get(url, { timeout, headers: { 'User-Agent': UA, 'Referer': 'https://gu.qq.com/', 'Accept': '*/*' } }, (resp) => {
+            let d = ''; resp.on('data', c => d += c); resp.on('end', () => res({ status: resp.statusCode, txt: d.trim() }));
+          });
+          req.on('error', rej);
+          req.on('timeout', () => { req.destroy(); rej(new Error('timeout')); });
+        });
+        // WAF 拦截返回 HTTP 501 + 跳转页；状态码判定比嗅探 body 更可靠，两者都查。
+        if (status === 501 || looksLikeWaf(txt)) {
+          wafHits++;
+          const e = new Error(`被接口反爬拦截（HTTP ${status}）`);
+          e.waf = true;
+          throw e;
+        }
+        if (status && status >= 400) throw new Error(`HTTP ${status}`);
+        if (!json) return resolve(txt);
+        try { return resolve(JSON.parse(txt)); }
+        catch (e) {
+          const m = txt.match(/^[a-zA-Z0-9_]+\(([\s\S]*)\);?\s*$/);
+          if (m) { try { return resolve(JSON.parse(m[1])); } catch (e2) {} }
+          throw new Error('JSON 解析失败: ' + txt.slice(0, 120));
+        }
+      } catch (e) { lastErr = e; }
+    }
+    reject(lastErr || new Error('httpGet 失败'));
+  });
+}
+
+// 候选源：本目录 candidates.json 配置的可编辑观察池（替代 westock ranking CompScore）
+function loadUniverse(limit) {
+  if (!fs.existsSync(CANDIDATES_PATH)) throw new Error(`未找到候选观察池 ${CANDIDATES_PATH}，请创建该文件（见 candidates.example.json）`);
+  const cfg = JSON.parse(fs.readFileSync(CANDIDATES_PATH, 'utf8'));
+  const list = (cfg.stocks || []).map(s => ({ code: String(s.code), name: String(s.name || s.code), sector: String(s.sector || '未分类') }));
+  if (!list.length) throw new Error('candidates.json 的 stocks 为空，请配置候选观察池');
+  return (limit && limit > 0) ? list.slice(0, limit) : list;
+}
+
+// 日K线（前复权 qfq），返回 { rows, today, hist }
+// 注意：腾讯接口按日期【升序】返回（最旧在前），此处统一翻转为【降序】（最新在前），
+//       与下游 hist[0]=前一交易日 / hist.slice(0,5)=最近5日 的口径保持一致。
+// 粘性指针：记住当前可用的 K线端点。某条链路被 WAF 封掉后，指针前移，
+// 后续标的直接走可用端点，不必每只票都去撞一次已知的墙。
+let _klineEp = 0;
+
+async function fetchKline(code, anchor) {
+  let lastErr;
+  for (let step = 0; step < KLINE_ENDPOINTS.length; step++) {
+    const idx = (_klineEp + step) % KLINE_ENDPOINTS.length;
+    const ep = KLINE_ENDPOINTS[idx];
+    let obj;
+    try {
+      obj = await httpGet(ep.url(code), { retries: 2 });
     } catch (e) {
       lastErr = e;
-      if (attempt < 2) { await sleep(400 * (attempt + 1)); }
+      if (e.waf || /timeout|ECONN|socket|HTTP \d/i.test(String(e.message || ''))) continue; // 链路问题 -> 换端点
+      throw e; // 数据层问题 -> 换端点也没用
     }
+    const node = (obj.data && obj.data[code]) || {};
+    const rows = node.qfqday || node.day || [];
+    if (!rows.length) { lastErr = new Error('K线为空'); continue; }
+    if (idx !== _klineEp) {
+      _klineEp = idx;
+      log(`      [降级] K线数据源切换为 ${ep.name}${ep.qfq ? '' : '（不复权，除权日附近数据会失真）'}`);
+    }
+    const norm = rows.map(r => ({ date: r[0], open: +r[1], close: +r[2], high: +r[3], low: +r[4], vol: +r[5] }))
+      .filter(r => r.date && !isNaN(r.close))
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)); // 降序：最新在前
+    const till = norm.filter(r => r.date <= anchor);
+    const today = till.find(r => r.date === anchor) || null;
+    const hist = till.filter(r => r.date < anchor && r.vol > 0);
+    return { rows: till, today, hist, source: ep.name, qfq: ep.qfq };
   }
-  throw lastErr;
+  throw lastErr || new Error('全部 K线端点均不可用');
+}
+
+// 实时报价：市值 / 52周高 / 换手率等（qt.gtimg.cn，字段以 ~ 分隔）
+// 字段核对（2026-08 实测）：idx44=流通市值(亿)、idx45=总市值(亿)，二者不可颠倒。
+//   例：中国石油 idx44=17568亿(A股流通)、idx45=19857亿(总股本1830.21亿股×10.85)。
+async function fetchQuote(code) {
+  const txt = await httpGet(QT_QUOTE + code, { json: false });
+  const inner = (txt.match(new RegExp('v_' + code + '="([^"]*)"')) || [])[1];
+  if (!inner) throw new Error('报价解析失败');
+  const f = inner.split('~');
+  const num = (i) => { const v = parseFloat(f[i]); return isNaN(v) ? null : v; };
+  const yi2unit = (i) => { const v = num(i); return v == null ? null : v * 1e8; }; // 腾讯市值单位为“亿”
+  const q = {
+    code, name: f[1] || code,
+    current: num(3), prevClose: num(4), open: num(5),
+    high: num(33), low: num(34),
+    chg: num(31), chgPct: num(32),
+    turnover: num(38),                       // 换手率 %（仅当日实时口径，盘前为 0）
+    circulating_market_cap: yi2unit(44),     // 流通市值（元）
+    total_market_cap: yi2unit(45),           // 总市值（元）
+    high_52week: num(47), low_52week: num(48),
+  };
+  // 流通股本（股）= 流通市值 / 现价；用于按锚定日成交量反推该日换手率
+  const px = q.current || q.prevClose;
+  q.circulating_shares = (q.circulating_market_cap && px) ? q.circulating_market_cap / px : null;
+  return q;
+}
+
+// K 线成交量单位（2026-08 实测）：
+//   主板/创业板 -> “手”(1手=100股)；科创板 sh688/sh689 -> 直接就是“股”。
+//   例：金山办公 sh688111 于 2026-08-10 vol=9902896，按“手”折算成交额 2600 亿（荒谬），
+//       按“股”折算 26.01 亿、换手 2.13%（合理）。
+function volLotSize(code) {
+  return /^sh68[89]/.test(String(code)) ? 1 : 100;
+}
+
+// 锚定日换手率 %：成交股数 / 流通股本 ×100
+// 报价里的 idx38 只反映“此刻”，盘前恒为 0 且与历史锚定日口径不符，故一律按 K 线量能推算。
+function calcTurnover(vol, circShares, code) {
+  if (!vol || !circShares) return null;
+  let t = (vol * volLotSize(code)) / circShares * 100;
+  // 兜底：若单位判定失误会整整差 100 倍。A 股单日换手率极少超过 100%，此时自动纠偏。
+  if (t > 100) t = t / 100;
+  return t;
+}
+
+// 分时（最新交易日），返回 [{ time, price, vol, amt }]
+async function fetchMinute(code) {
+  const url = `${IFZQ}/minute/query?code=${code}`;
+  const obj = await httpGet(url);
+  const arr = (obj.data && obj.data[code] && obj.data[code].data && obj.data[code].data.data) || [];
+  return arr.map(line => {
+    const p = String(line).split(/\s+/);
+    return { time: p[0], price: +p[1], vol: +p[2], amt: +p[3] };
+  }).filter(r => r.time && !isNaN(r.price));
+}
+
+// R07 行业涨幅：观察池内同行业个股当日涨幅中位数（无需外部板块接口）
+function computeSectors(stocks) {
+  const bySector = {};
+  for (const s of stocks) {
+    const name = (s.sector || '未分类');
+    if (!bySector[name]) bySector[name] = { chgs: [], codes: [] };
+    bySector[name].chgs.push(s.r01 && s.r01.chg != null ? s.r01.chg : 0);
+    bySector[name].codes.push(s.code);
+  }
+  const list = Object.entries(bySector).map(([name, v]) => {
+    const sorted = v.chgs.slice().sort((a, b) => a - b);
+    const mid = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : 0;
+    return { code: name, name, pct: mid };
+  });
+  list.sort((a, b) => b.pct - a.pct);
+  const topN = Math.max(1, Math.round(list.length * 0.1));
+  list.forEach((s, i) => { s.rank = i + 1; s.inTop10 = i < topN; s.total = list.length; s.topN = topN; s.members = null; });
+  return list;
 }
 async function mapLimit(items, limit, fn) {
   const res = new Array(items.length);
@@ -154,32 +311,7 @@ async function mapLimit(items, limit, fn) {
   return res;
 }
 
-// ---------- markdown 表格解析 ----------
-function parseTables(text) {
-  const lines = text.split(/\r?\n/);
-  const out = [];
-  let header = null, rows = [];
-  const isSep = (s) => /^:?-{2,}:?$/.test(s.trim());
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line.startsWith('|')) { if (header) { out.push({ header, rows }); header = null; rows = []; } continue; }
-    const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|').map(s => s.trim());
-    if (cells.every(c => isSep(c))) continue;
-    if (!header) header = cells;
-    else rows.push(cells);
-  }
-  if (header) out.push({ header, rows });
-  return out;
-}
-function findTable(text, headerIncludes) {
-  const ts = parseTables(text);
-  return ts.find(t => headerIncludes.every(k => t.header.some(h => h.includes(k)))) || null;
-}
-function rowsByHeader(text, headerIncludes) {
-  const t = findTable(text, headerIncludes);
-  if (!t) return [];
-  return t.rows.map(r => { const o = {}; t.header.forEach((h, i) => o[h] = r[i]); return o; });
-}
+// ---------- （以下为腾讯 JSON 接口，无需表格解析；原 westock 表格解析已移除）----------
 
 // ===========================================================================
 // 主流程
@@ -187,7 +319,7 @@ function rowsByHeader(text, headerIncludes) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
-    log('用法: node gen_candidates.js [--date YYYY-MM-DD] [--limit 12] [--out file.html] [--quiet]');
+    log('用法: node gen_candidates.js [--date YYYY-MM-DD] [--limit N(0=全部)] [--out file.html] [--quiet]');
     log('     node gen_candidates.js --offline --snapshot data/snapshot-YYYYMMDD.json [--out file.html]');
     log('     node gen_candidates.js --date YYYY-MM-DD --dump data/snapshot-YYYYMMDD.json   # 在线抓取后导出快照');
     log('     node gen_candidates.js --no-notify   # 实时运行但跳过微信/邮件推送');
@@ -197,64 +329,65 @@ async function main() {
   const now = new Date();
   const anchor = args.date || lastClosedTradingDay(now);
   const target = nextTradingDay(anchor);
-  const limit = args.limit;
+  let limit = args.limit || 0; // 0 = 不限制，筛查观察池全部标的
   const outPath = args.out || path.join(__dirname, 'reports', `stock_list_${anchor.replace(/-/g, '')}.html`);
 
   log(`[1/8] 锚定日 ${anchor}（面向 ${target} 交易日），候选上限 ${limit}`);
 
-  // ---- 1. 综合评分排行 ----
-  const rankText = await runTool(['ranking', 'CompScore', '--limit', String(limit), '--date', anchor]);
-  const rankRows = rowsByHeader(rankText, ['代码']);
-  if (!rankRows.length) throw new Error('未解析到排行数据，请检查 westock-tool 是否可用');
-  const universe = rankRows.map(r => ({
-    rank: Number(r['#'] || r['排名'] || 0),
-    code: r['代码'].trim(),
-    name: r['名称'].trim(),
-    comp: parseFloat(r['综合评分']),
-    fund: parseFloat(r['资金评分']),
-    fundamt: parseFloat(r['基本面评分']),
-    risk: parseFloat(r['风险评分']),
-    tech: parseFloat(r['技术评分']),
-  }));
-  log(`      已取候选 ${universe.length} 只: ${universe.map(u => u.name).join('、')}`);
+  // ---- 1. 候选观察池（candidates.json，可编辑；替代 westock ranking CompScore）----
+  log(`[1/8] 载入候选观察池（candidates.json），上限 ${limit > 0 ? limit : '全部'} 只`);
+  const universe = loadUniverse(limit);
+  limit = universe.length;
+  const minuteForAnchor = (anchor === lastClosedTradingDay(now));
+  log(`      已载入候选 ${universe.length} 只: ${universe.map(u => u.name).join('、')}`);
 
-  // ---- 2. 逐只: kline + quote + fund + minute ----
-  log(`[2/8] 拉取 ${universe.length} 只标的历史行情/资金/分时 ...`);
+  // ---- 2. 逐只: kline + quote + minute（腾讯接口）----
+  log(`[2/8] 拉取 ${universe.length} 只标的历史行情/报价/分时 ...`);
   const stocks = await mapLimit(universe, CONCURRENCY, async (u) => {
     const s = { ...u };
+    let quote = null;
+    try { quote = await fetchQuote(u.code); s.quote = quote; }
+    catch (e) { s.quote = { error: String(e.message || e) }; }
     try {
-      const kl = await runData(['kline', u.code, '--period', 'day', '--end', anchor, '--limit', '70', '--fq', 'qfq']);
-      const klRows = rowsByHeader(kl, ['date']).map(r => ({
-        date: r['date'], open: +r['open'], close: +r['last'], high: +r['high'],
-        low: +r['low'], vol: +r['volume'], amt: +r['amount'], turn: +r['exchange'],
-      })).filter(r => r.date && !isNaN(r.close));
-      const till = klRows.filter(r => r.date <= anchor);
-      const t = till.find(r => r.date === anchor);
-      const hist = till.filter(r => r.date < anchor && r.vol > 0);
-      s.kline = { rows: till, today: t || null, hist };
+      const k = await fetchKline(u.code, anchor);
+      // 锚定日换手率：按该日成交量 + 流通股本推算（不用报价 idx38，盘前为 0 且口径是“此刻”）
+      if (k.today && quote && quote.circulating_shares) {
+        k.today.turn = calcTurnover(k.today.vol, quote.circulating_shares, u.code);
+      }
+      s.kline = k;
     } catch (e) { s.kline = { error: String(e.message || e) }; }
-
-    try {
-      const q = await runData(['quote', u.code, '--date', anchor]);
-      const qr = rowsByHeader(q, ['code']);
-      s.quote = qr[0] || null;
-    } catch (e) { s.quote = { error: String(e.message || e) }; }
-
-    try {
-      const f = await runData(['fund', 'flow', u.code, '--start', anchor, '--end', anchor]);
-      const fr = rowsByHeader(f, ['code']);
-      s.fund = fr[0] || null;
-    } catch (e) { s.fund = { error: String(e.message || e) }; }
-
-    try {
-      const m = await runData(['minute', u.code, '--days', '30']);
-      s.minute = rowsByHeader(m, ['date']).map(r => ({
-        date: r['date'], time: r['time'], price: +r['price'], vol: +r['volume'], amt: +r['amount'],
-      })).filter(r => r.date);
-    } catch (e) { s.minute = { error: String(e.message || e) }; }
-
+    if (minuteForAnchor) {
+      try {
+        s.minute = (await fetchMinute(u.code)).map(b => ({ date: anchor, time: b.time, price: b.price, vol: b.vol, amt: b.amt }));
+      } catch (e) { s.minute = { error: String(e.message || e) }; }
+    } else {
+      s.minute = []; // 分时接口仅返回最新交易日，与历史锚定日口径不符 -> R05 判为数据缺口
+    }
     return s;
   });
+
+  // ---- 2.5 数据健康度闸门 ----
+  // 全量拦截/网络故障时，下游会把每只票都算成"不满足条件"，最终输出一份
+  // "0 触发"的报告并照常推送——外观与真实的清淡行情完全一致，极易误导。
+  // 因此这里必须先体检，不合格就带非零码中止。
+  const klineFails = stocks.filter(s => !s.kline || s.kline.error || !s.kline.today);
+  const quoteFails = stocks.filter(s => !s.quote || s.quote.error);
+  const wafFails = stocks.filter(s => s.kline && /反爬拦截/.test(String(s.kline.error || '')));
+  const failRate = klineFails.length / (stocks.length || 1);
+  log(`      K线失败 ${klineFails.length}/${stocks.length}（其中被拦截 ${wafFails.length}）｜报价失败 ${quoteFails.length}/${stocks.length}`);
+  if (failRate > MAX_FAIL_RATE) {
+    const sample = (klineFails[0] && klineFails[0].kline && klineFails[0].kline.error) || '无有效K线';
+    log('');
+    const pct = (v) => (v * 100).toFixed(v < 0.01 ? 2 : v < 0.1 ? 1 : 0);
+    log(`[中止] K线失败率 ${pct(failRate)}% 超过红线 ${pct(MAX_FAIL_RATE)}%，判定数据源不可用。`);
+    log(`       首个错误：${String(sample).slice(0, 160)}`);
+    if (wafFails.length > klineFails.length * 0.5) {
+      log('       多数失败为反爬拦截：请降低并发（CANDIDATE_CONCURRENCY=3）或避开盘中时段，稍后重试。');
+    }
+    log('       本次不生成报告、不覆盖快照、不推送通知。');
+    process.exitCode = 1;
+    return;
+  }
 
   // ---- 3. 计算 R01 ----
   log(`[3/8] 计算 R01 量能验证突破 ...`);
@@ -302,38 +435,18 @@ async function main() {
     s.r01 = r01;
   }
 
-  // ---- 4. SW1 行业涨幅 + 成份映射（R07）----
-  log(`[4/8] 重建申万一级 31 行业涨幅并映射候选所属板块 (R07) ...`);
-  const sw1Text = await runData(['sector', 'list', 'industry_list_sw1']);
-  const sw1List = rowsByHeader(sw1Text, ['code']).map(r => ({ code: r['code'].trim(), name: r['name'].trim() }));
-  const sectors = await mapLimit(sw1List, CONCURRENCY, async (sec) => {
-    const o = { ...sec, pct: null, members: new Set() };
-    try {
-      const kl = await runData(['kline', sec.code, '--period', 'day', '--end', anchor, '--limit', '3']);
-      const rows = rowsByHeader(kl, ['date']).map(r => ({ date: r['date'], close: +r['last'] })).filter(r => r.date && !isNaN(r.close));
-      const till = rows.filter(r => r.date <= anchor);
-      if (till.length >= 2 && till[0].date === anchor) o.pct = (till[0].close / till[1].close - 1) * 100;
-    } catch (e) { o.pctErr = String(e.message || e); }
-    try {
-      const con = await runData(['sector', 'constituent', sec.code, '--limit', '600']);
-      for (const r of rowsByHeader(con, ['StockCode'])) {
-        const c = (r['StockCode'] || r['code'] || '').trim();
-        if (/^(sh|sz)\d{6}$/.test(c)) o.members.add(c);
-      }
-    } catch (e) { o.memErr = String(e.message || e); }
-    return o;
-  });
-  const validSectors = sectors.filter(s => s.pct !== null).sort((a, b) => b.pct - a.pct);
-  const topN = Math.max(1, Math.round(validSectors.length * 0.1));
-  validSectors.forEach((s, i) => { s.rank = i + 1; s.inTop10 = i < topN; });
-  const sectorByCode = {}; sectors.forEach(s => sectorByCode[s.code] = s);
+  // ---- 4. R07 行业涨幅 + 补涨映射（基于观察池内同行业个股涨幅中位数）----
+  log(`[4/8] 计算观察池各行业当日涨幅中位数并映射 R07 补涨 ...`);
+  const validSectors = computeSectors(stocks);
+  const topN = validSectors.length ? validSectors[0].topN : 1;
+  const sectorByName = {}; validSectors.forEach(s => sectorByName[s.name] = s);
   for (const s of stocks) {
-    const sec = sectors.find(x => x.members.has(s.code));
+    const sec = sectorByName[s.sector || '未分类'];
     if (sec) {
       const laggard = sec.inTop10 && (s.r01.chg != null) && (s.r01.chg < 0.5 * sec.pct);
-      s.r07 = { sectorName: sec.name, sectorPct: sec.pct, sectorRank: sec.rank, inTop10: sec.inTop10, laggard: !!laggard, total: validSectors.length, topN };
+      s.r07 = { sectorName: sec.name, sectorPct: sec.pct, sectorRank: sec.rank, inTop10: sec.inTop10, laggard: !!laggard, total: sec.total, topN: sec.topN };
     } else {
-      s.r07 = { sectorName: '—', sectorPct: null, sectorRank: null, inTop10: false, laggard: false, total: validSectors.length, topN, unmatched: true };
+      s.r07 = { sectorName: s.sector || '未分类', sectorPct: null, sectorRank: null, inTop10: false, laggard: false, total: validSectors.length, topN, unmatched: true };
     }
   }
 
@@ -366,30 +479,11 @@ async function main() {
     s.r05 = r05;
   }
 
-  // ---- 6. 市场宽度 + 画像 ----
-  log(`[6/8] 拉取市场涨跌分布与市场画像 ...`);
-  let breadth = null, breadthIsAnchor = false;
-  try {
-    const cd = await runData(['changedist']);
-    const row = rowsByHeader(cd, ['上涨'])[0];
-    if (row) {
-      breadth = {
-        up: +row['上涨'], down: +row['下跌'], flat: +row['平盘'],
-        limitUp: +row['涨停'], limitDown: +row['跌停'], halt: +row['停牌'],
-        upPct: parseFloat(String(row['上涨占比']).replace('%', '')) || 0,
-      };
-      const amtM = (cd.match(/两市成交额：([\d.]+)/) || [])[1];
-      breadth.amountYi = amtM ? (+amtM / 1e8) : null;
-      breadthIsAnchor = (anchor === lastClosedTradingDay(now));
-    }
-  } catch (e) { breadth = { error: String(e.message || e) }; }
-
-  let overview = null;
-  try {
-    const ov = await runData(['market-overview', '--date', anchor]);
-    const rows = rowsByHeader(ov, ['维度']);
-    overview = rows.map(r => ({ dim: r['维度'], score: +r['得分'], state: r['状态'] }));
-  } catch (e) { overview = { error: String(e.message || e) }; }
+  // ---- 6. 市场宽度 + 画像（无全市场公开源，标记为暂不可用）----
+  log(`[6/8] 市场宽度/画像：本环境无全市场涨跌分布公开源，标记为暂不可用 ...`);
+  let breadth = { error: '市场宽度接口暂不可用（需要全市场涨跌分布，本环境无对应公开数据源；可日后接入）' };
+  let breadthIsAnchor = false;
+  let overview = { error: '市场画像接口暂不可用（需要全市场成交额/情绪聚合，本环境无对应公开数据源；可日后接入）' };
 
   // ---- 7-8. 分类 + 生成 HTML（抽取为 classifyAndBuild，离线模式复用）----
   // 实时模式：写出「当日日期」命名的快照（覆盖式写入，每天一份），并推送通知
@@ -456,9 +550,9 @@ function buildHTML(m) {
   const bestStr = best && best.r01.core ? `${best.name}（${best.code.replace(/^[sh|sz]/, '')}），四项中达成 ${best.r01.core} 项${best.r01.capOk ? '，市值达标' : ''}` : '无';
   const conclusion = [
     `<b>${b('R01 ' + (r01Triggers ? `硬触发 ${r01Triggers} 只` : '零硬触发'), 'R01 ' + (r01Triggers ? `${r01Triggers} hard trigger(s)` : 'zero hard triggers'))}。</b>` +
-      (r01Triggers ? '' : `12 只标的无一满足全部门槛。最接近者为 ${bestStr}。`),
+      (r01Triggers ? '' : `${universe.length} 只标的无一满足全部门槛。最接近者为 ${bestStr}。`),
     `<b>${b('R07 ' + (r07Triggers ? `补涨触发 ${r07Triggers} 只` : '零硬触发'), 'R07 ' + (r07Triggers ? `${r07Triggers} laggard trigger(s)` : 'zero hard triggers'))}。</b>` +
-      (r07Triggers ? '' : `12 只标的所属板块均未进入强势板块（前 ${m.topN} 名）行列；逐一核验后全部为板块内领涨股，与 R07 补涨逻辑方向相反。`),
+      (r07Triggers ? '' : `${universe.length} 只标的中，位于强势行业（前 ${m.topN} 名）且个股涨幅落后于行业中位数一半的标的为零——强势行业内成分股均已跟涨，与 R07 补涨逻辑方向相反。`),
     `<b>${b('R05 判定', 'R05 status')}：</b>` +
       (r05Hard ? `${b('部分触发 ' + r05Hard + ' 只（尾盘量价达标，但净流入需 L2 不可得）', r05Hard + ' partial trigger(s) — late-session volume/price met, but net inflow needs L2 and is unavailable')}。` :
         `${b('未出现硬触发', 'no hard trigger')}。${b('若分时接口未回溯至锚定日则属数据缺口而非信号缺失', 'where intraday data is unavailable for the anchor date this is a data gap, not an absence of signal')}——本报告未以任何替代指标补齐该信号。`),
@@ -539,8 +633,8 @@ function buildHTML(m) {
   const r05any = universe.some(s => s.r05 && s.r05.available);
   const r05Gap = universe.some(s => s.r05 && s.r05.verdict === 'gap');
   const r05Note = r05Gap
-    ? b(`R05 属于数据缺口：分时接口（westock-data minute）仅保留最近约 5 个交易日，锚定日 ${anchor} 的分时不可得，因此 14:30–15:00 涨幅与 14:30 后成交量占比两项核心门槛无法验证。本报告未以任何替代指标补齐该信号。`,
-         `R05 is a data gap: the intraday endpoint (westock-data minute) only keeps the most recent ~5 sessions, so ${anchor} intraday data is unavailable. The two core gates (gain between 14:30–15:00, and ≥20% of daily volume after 14:30) cannot be verified. No substitute indicator was used to fill this gap.`)
+    ? b(`R05 属于数据缺口：分时接口（腾讯分时，仅返回最新交易日）与锚定日 ${anchor} 口径可能不符，因此 14:30–15:00 涨幅与 14:30 后成交量占比两项核心门槛无法验证。本报告未以任何替代指标补齐该信号。`,
+         `R05 is a data gap: the intraday endpoint (Tencent minute, returns only the latest session) may not match the anchor date ${anchor}, so the two core gates (gain between 14:30–15:00, and ≥20% of daily volume after 14:30) cannot be verified. No substitute indicator was used to fill this gap.`)
     : (r05any
       ? b('R05 已基于可得分时数据核验：尾盘涨幅与尾盘量能占比两项可算；「尾盘主力净流入」需逐笔 L2 数据，分时接口不含，故不可得。仅当尾盘涨幅 ≥2%、尾盘量能占比 ≥20% 且全天涨幅 <7% 时记为部分触发。',
          'R05 was checked against available intraday data: late-session gain and late-volume share are computable; net late-session main inflow requires L2 tick data not present in the minute feed, so it is unavailable. A partial trigger is recorded only when late gain ≥2%, late-volume share ≥20% and full-day gain <7%.')
@@ -586,8 +680,8 @@ function buildHTML(m) {
 
   // 数据口径
   const provenance = b(
-    `本报告的候选起点命令为 <code>westock-tool ranking CompScore --limit ${limit}</code>。该命令返回的是<b>运行时当日</b>排行；由于全部分析锚定 ${anchor} 收盘，实际执行的是 <code>westock-tool ranking CompScore --date ${anchor} --limit ${limit}</code>，以避免排行与行情的口径错配。日线为前复权（--fq qfq），截断至 ${anchor}，不使用该日之后数据。板块涨幅由申万一级 31 个行业指数日线按 ${anchor} 收盘对前收重建（官方板块榜接口不支持历史日期）。市值对总市值与流通市值同时校验。涨跌分布接口仅提供最新交易日，历史回填时已在市场宽度处标注。`,
-    `The starting command was <code>westock-tool ranking CompScore --limit ${limit}</code>, which returns the <b>runtime's current-day</b> ranking. Because all analysis is anchored to the ${anchor} close, the command actually executed was <code>westock-tool ranking CompScore --date ${anchor} --limit ${limit}</code> to avoid a mismatch between ranking and price data. Daily bars are forward-adjusted (--fq qfq) and truncated at ${anchor}; no later data is used. Sector returns were rebuilt from the daily bars of the 31 SW Level-1 indices using the ${anchor} close vs prior close (the official sector endpoint does not accept a historical date). Market cap is checked against both total and free-float. The breadth endpoint provides only the latest session, flagged in the market section for backfills.`
+    `候选起点为本目录 <code>candidates.json</code> 配置的可编辑观察池（覆盖主要行业，可自由增删），不再依赖已随 WorkBuddy 安装目录变更而失效的 westock 内置技能。行情数据改为直连腾讯公开接口：日线(前复权)与分时来自 <code>web.ifzq.gtimg.cn</code>，实时报价/总市值/流通市值/52周高/换手率来自 <code>qt.gtimg.cn</code>。全部分析锚定 ${anchor} 收盘，日线截断至 ${anchor}，不使用该日之后数据。R07 行业涨幅由观察池内同行业个股当日涨幅中位数推导（申万行业分类口径）。市值对总市值与流通市值同时校验。市场宽度与画像因本环境无全市场公开数据源，暂标记为不可用。`,
+    `The starting universe is the editable watchlist in <code>candidates.json</code> (covers major sectors, freely editable), replacing the westock builtin skill that became unavailable after a WorkBuddy install-path change. Market data now comes directly from Tencent's public endpoints: daily bars (forward-adjusted) and intraday from <code>web.ifzq.gtimg.cn</code>; realtime quote / total cap / free-float cap / 52-week high / turnover from <code>qt.gtimg.cn</code>. All analysis is anchored to the ${anchor} close; daily bars are truncated at ${anchor} and no later data is used. R07 sector return is the median same-day gain of the watchlist's constituents in that sector (SW-sector classification). Market cap is checked against both total and free-float. Market breadth and profile are marked unavailable because no market-wide public source is available in this environment.`
   );
 
   // 组装
@@ -659,7 +753,7 @@ function buildHTML(m) {
   <div class="topbar">
     <div>
       <h1>${b(`A股次日候选池 — ${anchor} 收盘后初筛`, `A-Share Next-Day Candidate Pool — Post-Close Screening, ${anchor}`)}</h1>
-      <div class="sub">${b(`候选起点：官方综合评分排行前 ${limit} 名（锚定 ${anchor}） · 规则：R01 量能验证突破 + R07 板块内补涨 · 面向 ${target} 交易日`, `Starting universe: Official Composite Score ranking, top ${limit} (anchored to ${anchor}) · Rules: R01 Volume-Confirmed Breakout + R07 Intra-Sector Laggard · For the ${target} session`)}</div>
+      <div class="sub">${b(`候选起点：candidates.json 可编辑观察池（${limit} 只上限，锚定 ${anchor}） · 规则：R01 量能验证突破 + R07 板块内补涨 · 面向 ${target} 交易日`, `Starting universe: editable candidates.json watchlist (cap ${limit}, anchored to ${anchor}) · Rules: R01 Volume-Confirmed Breakout + R07 Intra-Sector Laggard · For the ${target} session`)}</div>
     </div>
     <button id="langBtn" type="button">EN</button>
   </div>
@@ -679,7 +773,7 @@ function buildHTML(m) {
   <h2>${b('数据口径与偏差声明', 'Data Provenance and Deviations')}</h2>
   <div class="card">
     <p class="body-text">${provenance}</p>
-    <p class="src">${b('数据来源：腾讯自选股 westock-data / westock-tool，数据时点 ' + anchor + ' 收盘（板块指数、个股日线、历史行情快照、主力资金流、市场画像均为该日；涨跌分布为接口最新可得交易日）。', 'Source: Tencent Stock (westock-data / westock-tool). Data timestamp: ' + anchor + ' close — sector indices, daily bars, historical quote snapshots, main-capital flows and market profile are as of that session; breadth reflects the latest session available from the endpoint.')}</p>
+    <p class="src">${b('数据来源：腾讯公开行情接口（web.ifzq.gtimg.cn 日线/分时、qt.gtimg.cn 报价/市值/52周高/换手），数据时点 ' + anchor + ' 收盘。', 'Source: Tencent public market-data endpoints (web.ifzq.gtimg.cn for daily/minute, qt.gtimg.cn for quote/cap/52w-high/turnover). Data timestamp: ' + anchor + ' close.')}</p>
   </div>
 
   <h2>${b('R01 量能验证突破 — 全量判定明细', 'R01 Volume-Confirmed Breakout — Full Evaluation Matrix')}</h2>
@@ -699,7 +793,7 @@ function buildHTML(m) {
 
   <h2>${b('R07 板块内补涨 — 行业归属与强弱', 'R07 Intra-Sector Laggard — Sector Mapping & Strength')}</h2>
   <div class="card">
-    <p class="body-text" style="margin-bottom:12px">${b(`行业口径为申万一级（共 ${m.sectors ? m.sectors.length : '—'} 个，前 10% = 前 ${m.topN} 名）。补涨判定：所属行业居前 10% 且 个股涨幅 < 行业涨幅的一半。`, `Sector universe is SW Level-1 (${m.sectors ? m.sectors.length : '—'} sectors, top 10% = top ${m.topN}). Laggard test: the stock's sector is in the top 10% and its gain is below half the sector's gain.`)}</p>
+    <p class="body-text" style="margin-bottom:12px">${b(`行业口径为观察池内行业分组（共 ${m.sectors ? m.sectors.length : '—'} 个，前 10% = 前 ${m.topN} 名）。补涨判定：所属行业居前 10% 且 个股涨幅 < 行业涨幅的一半。`, `Sector universe is the watchlist's industry groups (${m.sectors ? m.sectors.length : '—'} sectors, top 10% = top ${m.topN}). Laggard test: the stock's sector is in the top 10% and its gain is below half the sector's gain.`)}</p>
     <div class="table-wrap"><table>
       <thead><tr>
         <th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('所属行业', 'Sector')}</th>
@@ -821,7 +915,7 @@ function classifyAndBuild(m) {
   return { high, secondary, conditional, excluded, r01Triggers, r07Triggers, r05Hard, anchor, target, outPath };
 }
 
-// 离线模式：从快照载入，跳过 westock 调用
+// 离线模式：从快照载入，跳过全部网络请求
 async function runOffline(args) {
   if (!args.snapshot) { log('离线模式需要 --snapshot <快照文件>'); process.exit(1); }
   const snap = JSON.parse(fs.readFileSync(args.snapshot, 'utf8'));

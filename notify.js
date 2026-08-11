@@ -131,26 +131,36 @@ function smtpSend({ host, port, user, pass, from, to, subject, text, htmlPath })
     socket.on('error', reject);
 
     // 组装邮件（multipart/mixed，HTML 报告作附件）
+    //
+    // 【重要】所有正文/附件一律 base64 + 76 字符折行。
+    // 原因：RFC 5321 规定 SMTP 单行不得超过 998 字节，而生成的报告 HTML 里
+    // 含有超长单行（双语数据块可达 10 万+ 字符），直接以 8bit 原文投递会被
+    // 服务端拒收或静默截断。base64 折行后天然满足行长限制，且不需要点填充。
+    const b64 = (buf) => Buffer.from(buf).toString('base64').replace(/.{76}/g, '$&\r\n');
     const boundary = '----=_Part_' + Date.now();
     let msg = '';
     msg += `From: ${from}\r\n`;
     msg += `To: ${to}\r\n`;
     msg += `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=\r\n`;
+    msg += `Date: ${new Date().toUTCString().replace('GMT', '+0000')}\r\n`;
+    msg += `Message-ID: <${Date.now()}.${process.pid}@${String(from).split('@')[1] || 'localhost'}>\r\n`;
     msg += `MIME-Version: 1.0\r\n`;
     msg += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`;
     msg += `--${boundary}\r\n`;
-    msg += `Content-Type: text/plain; charset=UTF-8\r\n\r\n`;
-    msg += (text || 'A股次日候选池报告，详见附件 HTML。') + `\r\n\r\n`;
+    msg += `Content-Type: text/plain; charset=UTF-8\r\n`;
+    msg += `Content-Transfer-Encoding: base64\r\n\r\n`;
+    msg += b64(text || 'A股次日候选池报告，详见附件 HTML。') + `\r\n\r\n`;
     if (htmlPath && fs.existsSync(htmlPath)) {
-      const data = fs.readFileSync(htmlPath, 'utf8');
+      const fname = path.basename(htmlPath);
       msg += `--${boundary}\r\n`;
-      msg += `Content-Type: text/html; charset=UTF-8\r\n`;
-      msg += `Content-Disposition: attachment; filename="${path.basename(htmlPath)}"\r\n\r\n`;
-      msg += data + `\r\n\r\n`;
+      msg += `Content-Type: text/html; charset=UTF-8; name="${fname}"\r\n`;
+      msg += `Content-Transfer-Encoding: base64\r\n`;
+      msg += `Content-Disposition: attachment; filename="${fname}"\r\n\r\n`;
+      msg += b64(fs.readFileSync(htmlPath)) + `\r\n\r\n`;
     }
     msg += `--${boundary}--\r\n`;
 
-    // SMTP 透明化：行首的 "." 改为 ".."
+    // SMTP 透明化：行首的 "." 改为 ".."（base64 不会以 "." 开头，此处仅作兜底）
     msg = msg.replace(/(\r\n)\./g, '$1..');
 
     const queue = [
@@ -199,10 +209,24 @@ async function notify({ title, content, htmlPath, cfg }) {
 
 module.exports = { loadCfg, notify, pushWechat, pushEmail };
 
-// 自检（node notify.js）：打印配置状态
+// CLI：
+//   node notify.js                      -> 自检，打印配置状态
+//   node notify.js --send "标题" "正文"  -> 直接发一条（供 CI 在任务失败时告警用）
 if (require.main === module) {
-  const c = loadCfg();
-  console.log('wechat 配置:', !!(c.wechat && (c.wechat.key || c.wechat.token)));
-  console.log('email  配置:', !!(c.email && c.email.sender && c.email.auth_code));
-  console.log('notify_config.json 路径:', CFG_PATH);
+  const argv = process.argv.slice(2);
+  if (argv[0] === '--send') {
+    const title = argv[1] || 'A股初筛告警';
+    const content = argv[2] || '（无正文）';
+    notify({ title, content }).then(res => {
+      for (const [ch, [ok, info]] of res) {
+        console.log(`[notify] ${ch}: ${ok ? 'OK' : '失败 ' + JSON.stringify(info)}`);
+      }
+      // 告警本身发不出去不应让 CI 再挂一次，恒定 0 退出
+    }).catch(e => console.log('[notify] 异常:', e && e.message || e));
+  } else {
+    const c = loadCfg();
+    console.log('wechat 配置:', !!(c.wechat && (c.wechat.key || c.wechat.token)));
+    console.log('email  配置:', !!(c.email && c.email.sender && c.email.auth_code));
+    console.log('notify_config.json 路径:', CFG_PATH);
+  }
 }

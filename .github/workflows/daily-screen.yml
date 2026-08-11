@@ -1,76 +1,49 @@
 name: Daily A-Share Screening
 
+# 数据源为腾讯公开行情接口（qt.gtimg.cn / web.ifzq.gtimg.cn），不依赖任何本机技能或 CLI，
+# 因此实时模式可直接跑在 GitHub 托管 Runner 上，不再需要 self-hosted runner。
+
 on:
-  # 每个交易日 15:35（北京时间 = UTC 07:35，周一至周五）自动触发
-  # 注意：调度触发的 mode 为空，按下方 if 条件走 offline（GitHub 托管 Runner 唯一可行的模式）
+  # 每个交易日 15:35（北京时间 = UTC 07:35，周一至周五）自动触发，走实时抓取
   schedule:
     - cron: '35 7 * * 1-5'
-  # 也可在 Actions 页面手动触发：默认 live（实时抓取，需装有 WorkBuddy 的 self-hosted runner）
   workflow_dispatch:
     inputs:
       mode:
-        description: 'offline = 从已提交快照重建报告（GitHub 托管 Runner 即可运行）；live = 实时抓取（需在装有 WorkBuddy 的自托管 Runner 上运行）'
+        description: 'live = 实时抓取（默认）；offline = 从仓库内已提交快照重建报告'
         required: false
         default: 'live'
         type: choice
         options:
           - live
           - offline
+      date:
+        description: '锚定日（YYYY-MM-DD，留空 = 最近一个已收盘交易日）'
+        required: false
+        type: string
 
 # 允许工作流把生成的报告与快照写回仓库
 permissions:
   contents: write
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # 离线模式：无需任何外部数据接口，从仓库内已提交的快照重建 HTML 报告。
-  # 在任何 GitHub 托管 Runner 上都能跑通，用于保证「克隆即可查看 / 随时复现」。
-  # ---------------------------------------------------------------------------
-  offline:
-    if: ${{ github.event.inputs.mode != 'live' }}
+  screen:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Regenerate report from committed snapshot
-        run: |
-          node gen_candidates.js --offline \
-            --snapshot data/snapshot-2026-07-27.json \
-            --out reports/stock_list_20260727.html --quiet
-      - name: Commit report
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/stock_list_20260727.html
-          if git diff --cached --quiet; then
-            echo "无变化，跳过提交"
-          else
-            git commit -m "chore: 从快照重建报告 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push
-          fi
 
-  # ---------------------------------------------------------------------------
-  # 实时模式（默认）：调用 westock 接口抓取当日数据并生成报告 + 快照，再推送微信/邮箱。
-  # 注意：westock-tool / westock-data 是 WorkBuddy 内置技能，依赖 WorkBuddy 宿主运行时，
-  # 在 GitHub 托管 Runner 上不可用。请在本机（已安装 WorkBuddy）注册一个 self-hosted runner，
-  # 并在仓库 Settings → Secrets 中配置 WESTOCK_NODE / WESTOCK_TOOL / WESTOCK_DATA 三个路径变量，
-  # 以及通知相关变量（NOTIFY_WX_* / NOTIFY_MAIL_*）。实时输出按锚定日留档、覆盖式写入。
-  # ---------------------------------------------------------------------------
-  live:
-    if: ${{ github.event.inputs.mode == 'live' }}
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+      # -----------------------------------------------------------------------
+      # 实时抓取。若腾讯接口在 Runner 所在网络不可达，则不让整个工作流失败，
+      # 转由下一步用仓库内最新快照重建报告，保证每天都有产物。
+      # -----------------------------------------------------------------------
       - name: Run live screening (实时抓取 + 按日留档 + 推送)
+        id: live
+        if: ${{ github.event.inputs.mode != 'offline' }}
+        continue-on-error: true
         env:
-          WESTOCK_NODE: ${{ secrets.WESTOCK_NODE }}
-          WESTOCK_TOOL: ${{ secrets.WESTOCK_TOOL }}
-          WESTOCK_DATA: ${{ secrets.WESTOCK_DATA }}
           NOTIFY_WX_PROVIDER: ${{ secrets.NOTIFY_WX_PROVIDER }}
           NOTIFY_WX_KEY: ${{ secrets.NOTIFY_WX_KEY }}
           NOTIFY_WX_TOKEN: ${{ secrets.NOTIFY_WX_TOKEN }}
@@ -80,15 +53,56 @@ jobs:
           NOTIFY_MAIL_HOST: ${{ secrets.NOTIFY_MAIL_HOST }}
           NOTIFY_MAIL_PORT: ${{ secrets.NOTIFY_MAIL_PORT }}
         run: |
-          node gen_candidates.js
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            node gen_candidates.js --date "${{ github.event.inputs.date }}"
+          else
+            node gen_candidates.js
+          fi
+
+      # -----------------------------------------------------------------------
+      # 兜底/显式离线：取仓库内日期最新的一份快照重建 HTML
+      # -----------------------------------------------------------------------
+      - name: Rebuild from latest snapshot (离线兜底)
+        if: ${{ github.event.inputs.mode == 'offline' || steps.live.outcome == 'failure' }}
+        run: |
+          SNAP="$(ls -1 data/snapshot-*.json 2>/dev/null | sort | tail -n 1)"
+          if [ -z "$SNAP" ]; then
+            echo "::error::未找到任何快照文件，无法离线重建"
+            exit 1
+          fi
+          DATE="$(basename "$SNAP" .json | sed 's/^snapshot-//')"
+          OUT="reports/stock_list_$(echo "$DATE" | tr -d '-').html"
+          echo "使用快照 $SNAP -> $OUT"
+          node gen_candidates.js --offline --snapshot "$SNAP" --out "$OUT" --quiet
+
       - name: Commit report & snapshot (按日留档，覆盖式)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/stock_list_*.html data/snapshot-*.json
+          git add reports/stock_list_*.html data/snapshot-*.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else
-            git commit -m "chore: 每日实时初筛 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: 每日初筛 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push
           fi
+
+      # -----------------------------------------------------------------------
+      # 实时失败必须【主动告警】。否则用户在 15:35 只是收不到微信，很容易误以为
+      # 「今天没有候选」，而不是「任务挂了」——静默失败比报错危险得多。
+      # -----------------------------------------------------------------------
+      - name: Report live failure (标红 + 微信告警)
+        if: ${{ steps.live.outcome == 'failure' }}
+        env:
+          NOTIFY_WX_PROVIDER: ${{ secrets.NOTIFY_WX_PROVIDER }}
+          NOTIFY_WX_KEY: ${{ secrets.NOTIFY_WX_KEY }}
+          NOTIFY_WX_TOKEN: ${{ secrets.NOTIFY_WX_TOKEN }}
+        run: |
+          echo "::warning::实时抓取失败，本次产物由历史快照重建，数据非当日口径。请检查腾讯行情接口可达性。"
+          node notify.js --send \
+            "⚠️ A股初筛失败（实时抓取中止）" \
+            "今日实时抓取未完成，**本次没有当日数据**。报告已用历史快照重建，仅供占位，请勿据此决策。
+
+          常见原因：腾讯行情接口 WAF 拦截（HTTP 501）或 Runner 网络不可达。
+          排查：查看 Actions 日志中「K线失败 x/y（其中被拦截 z）」一行。
+          运行记录：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
