@@ -2,9 +2,16 @@ import type { Context } from 'hono';
 
 /**
  * 统一 API 响应信封
- * 约定：无论成功失败，body 结构始终为 { code, message, data }；
- * 真实业务数据永远放在 data 中（成功时为业务对象，失败时为 null 或附加上下文）。
- * code 复用 HTTP 语义状态码（成功 200，失败 4xx/5xx），便于 HTTP 层感知，body 仍统一。
+ * 约定：无论成功失败，body 结构始终为 { code, message, data }。
+ *
+ * code 是「业务码」而非 HTTP 状态码：
+ *   - 200 表示成功；
+ *   - 非 200 为业务错误码（如 10001 通用错误、10002 资源不存在、10003 参数错误、10004 服务内部错误）。
+ * 真实业务数据永远放在 data（成功时为业务对象，失败时为 null 或附加上下文）。
+ *
+ * HTTP 状态码默认恒为 200（成功与业务错误均返回 200），由前端统一读 code 判定；
+ * 仅在真正的传输/网关层异常（如未捕获异常）时才显式返回非 200（如 500），便于监控。
+ * 若确有需要，fail/ok 的 status 参数可覆盖 HTTP 状态。
  */
 export interface ApiEnvelope<T = unknown> {
   code: number;
@@ -12,23 +19,36 @@ export interface ApiEnvelope<T = unknown> {
   data: T | null;
 }
 
-/** 成功响应：HTTP 200，业务数据在 data */
-export function ok<T>(c: Context, data: T, message = 'success'): Response {
-  return c.json<ApiEnvelope<T>>({ code: 200, message, data });
+/** 业务码常量，集中管理便于前后端对齐 */
+export const BizCode = {
+  OK: 200,
+  ERR_GENERIC: 10001,
+  ERR_NOT_FOUND: 10002,
+  ERR_INVALID_PARAM: 10003,
+  ERR_INTERNAL: 10004,
+} as const;
+
+/** 成功响应：业务码默认 200，HTTP 默认 200。 */
+export function ok<T>(
+  c: Context,
+  data: T,
+  message = 'success',
+  code: number = BizCode.OK,
+  status = 200,
+): Response {
+  return c.json<ApiEnvelope<T>>({ code, message, data }, status);
 }
 
 /**
- * 失败响应：保留 HTTP 语义状态码，body 仍为统一结构。
- * data 默认 null；如需透出校验细节等可传入。
+ * 失败响应：业务码默认 10001（通用业务错误），HTTP 默认 200（由 code 区分错误）。
+ * 如需让 HTTP 层也感知（如真实 5xx），传 status。
  */
 export function fail(
   c: Context,
-  status: number,
   message: string,
+  code: number = BizCode.ERR_GENERIC,
   data: unknown = null,
+  status = 200,
 ): Response {
-  return c.json<ApiEnvelope>(
-    { code: status, message, data },
-    status as 400 | 404 | 500 | 502,
-  );
+  return c.json<ApiEnvelope>({ code, message, data }, status);
 }

@@ -4,7 +4,7 @@
 //   - 生产：wrangler secret put 注入机密变量，[vars] 放非机密变量
 // 本项目接口只读 D1，无需任何密钥。
 import { Hono } from 'hono';
-import { ok, fail } from './lib/response.js';
+import { ok, fail, BizCode } from './lib/response.js';
 import type { Bindings } from './types.js';
 import {
   listRuns,
@@ -52,7 +52,7 @@ app.get('/api/runs/:anchor', async (c) => {
   const anchor = c.req.param('anchor');
   const tier = c.req.query('tier');
   const run = await getRunByAnchor(c.env.DB, anchor);
-  if (!run) return fail(c, 404, `未找到锚定日 ${anchor} 的运行批次`);
+  if (!run) return fail(c, `未找到锚定日 ${anchor} 的运行批次`, BizCode.ERR_NOT_FOUND);
   const picks = await getPicks(c.env.DB, run.id, tier ?? undefined);
   return ok(c, { run, picks });
 });
@@ -60,7 +60,7 @@ app.get('/api/runs/:anchor', async (c) => {
 app.get('/api/stocks/:code', async (c) => {
   const code = c.req.param('code');
   const data = await getStockHistory(c.env.DB, code);
-  if (!data) return fail(c, 404, `未找到股票 ${code} 的入选记录`);
+  if (!data) return fail(c, `未找到股票 ${code} 的入选记录`, BizCode.ERR_NOT_FOUND);
   return ok(c, data);
 });
 
@@ -78,9 +78,9 @@ app.get('/api/groups', async (c) => {
 
 app.onError((err, c) => {
   console.error('[unhandled error]', err);
-  return fail(c, 500, 'internal error');
+  return fail(c, 'internal error', BizCode.ERR_INTERNAL, null, 500);
 });
 
-app.notFound((c) => fail(c, 404, 'not found'));
+app.notFound((c) => fail(c, 'not found', BizCode.ERR_NOT_FOUND));
 
 export default app;

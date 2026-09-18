@@ -332,7 +332,7 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | GET | `/api/groups` | 自定义分组列表（前端筛选 chips 用） | 无 |
 | GET | `/health` | 健康检查 | 无 |
 
-所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`；失败（如 `404` 锚定日不存在）形如 `{ "code": 404, "message": "未找到锚定日 ...", "data": null }`。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n3 / n5 / n10` 日涨幅（%），缺数据时为 `null`——这是后续复盘统计（M3）的底座。
+所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`。`code` 是**业务码**（非 HTTP 状态码）：200 表示成功，非 200 为业务错误码——如 `10001` 通用错误、`10002` 资源不存在、`10003` 参数错误、`10004` 服务内部错误。`/api/runs/:anchor` 在锚定日不存在时返回 `{ "code": 10002, "message": "未找到锚定日 ...", "data": null }`，**HTTP 状态恒为 200**，前端统一读 `code` 判定即可。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n3 / n5 / n10` 日涨幅（%），缺数据时为 `null`——这是后续复盘统计（M3）的底座。
 
 ### 本地开发
 
