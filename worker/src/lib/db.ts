@@ -6,6 +6,10 @@ import type {
   StockNote,
   Perf,
   StockHistory,
+  HorizonStat,
+  TierStats,
+  TimelinePoint,
+  StatsResult,
 } from '../types.js';
 
 const RUN_COLS =
@@ -141,4 +145,118 @@ export async function searchStockBase(
 
 export async function listGroups(db: D1Database): Promise<WatchGroup[]> {
   return allRows<WatchGroup>(db, 'SELECT * FROM watch_group ORDER BY name');
+}
+
+const TIERS = ['high', 'secondary', 'conditional', 'excluded'] as const;
+
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
+}
+
+function horizonStat(perfs: Array<Perf | null>, key: keyof Perf): HorizonStat {
+  const vals: number[] = [];
+  for (const p of perfs) {
+    const v = p?.[key];
+    if (v != null) vals.push(v);
+  }
+  if (!vals.length) return { win: 0, lose: 0, samples: 0, avg: null };
+  let win = 0;
+  let sum = 0;
+  for (const v of vals) {
+    sum += v;
+    if (v > 0) win += 1;
+  }
+  return { win, lose: vals.length - win, samples: vals.length, avg: round1(sum / vals.length) };
+}
+
+function tierStat(tier: string, perfs: Array<Perf | null>): TierStats {
+  return {
+    tier,
+    picks: perfs.length,
+    n1: horizonStat(perfs, 'n1'),
+    n3: horizonStat(perfs, 'n3'),
+    n5: horizonStat(perfs, 'n5'),
+    n10: horizonStat(perfs, 'n10'),
+  };
+}
+
+/**
+ * 复盘统计：对区间内全部入选记录计算 N1/N3/N5/N10 命中率与均值。
+ * 复用 computePerf 的「按交易日偏移」口径，与个股详情页保持一致。
+ * 为避免一次拉全表，price_daily 按入选代码分块（IN 参数上限 999）取回后在内存分组。
+ */
+export async function getStats(
+  db: D1Database,
+  opts: { from?: string | null; to?: string | null },
+): Promise<StatsResult> {
+  const where: string[] = [];
+  const params: unknown[] = [];
+  if (opts.from) {
+    where.push('anchor_date >= ?');
+    params.push(opts.from);
+  }
+  if (opts.to) {
+    where.push('anchor_date <= ?');
+    params.push(opts.to);
+  }
+  const picks = await allRows<{ code: string; anchor_date: string; tier: string; price: number | null }>(
+    db,
+    'SELECT code, anchor_date, tier, price FROM pick_record' +
+      (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
+      ' ORDER BY anchor_date ASC',
+    params,
+  );
+
+  // 按代码分块取日线，再在内存里按 code 分组。
+  const codes = Array.from(new Set(picks.map((p) => p.code)));
+  const priceMap = new Map<string, Array<{ date: string; close: number }>>();
+  const CHUNK = 400;
+  for (let i = 0; i < codes.length; i += CHUNK) {
+    const chunk = codes.slice(i, i + CHUNK);
+    const placeholders = chunk.map(() => '?').join(',');
+    const rows = await allRows<{ code: string; date: string; close: number }>(
+      db,
+      `SELECT code, date, close FROM price_daily WHERE code IN (${placeholders}) ORDER BY code, date ASC`,
+      chunk,
+    );
+    for (const r of rows) {
+      const arr = priceMap.get(r.code);
+      if (arr) arr.push({ date: r.date, close: r.close });
+      else priceMap.set(r.code, [{ date: r.date, close: r.close }]);
+    }
+  }
+
+  const rows = picks.map((p) => ({
+    tier: p.tier,
+    anchor_date: p.anchor_date,
+    perf: p.price != null ? computePerf(priceMap.get(p.code) ?? [], p.anchor_date, p.price) : null,
+  }));
+
+  const overall = tierStat('all', rows.map((r) => r.perf));
+  const tiers = TIERS.map((t) => tierStat(t, rows.filter((r) => r.tier === t).map((r) => r.perf)));
+
+  const byDate = new Map<string, Array<Perf | null>>();
+  for (const r of rows) {
+    const arr = byDate.get(r.anchor_date);
+    if (arr) arr.push(r.perf);
+    else byDate.set(r.anchor_date, [r.perf]);
+  }
+  const timeline: TimelinePoint[] = Array.from(byDate.entries())
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([anchor_date, perfs]) => ({
+      anchor_date,
+      picks: perfs.length,
+      n1_avg: horizonStat(perfs, 'n1').avg,
+      n5_avg: horizonStat(perfs, 'n5').avg,
+      n10_avg: horizonStat(perfs, 'n10').avg,
+    }));
+
+  return {
+    total_runs: byDate.size,
+    total_picks: rows.length,
+    overall,
+    tiers,
+    timeline,
+    range: { from: opts.from ?? null, to: opts.to ?? null },
+  };
 }

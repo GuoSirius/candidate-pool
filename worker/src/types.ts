@@ -85,3 +85,39 @@ export interface StockHistory {
   notes: StockNote[];
   picks: Array<PickRecord & { perf: Perf | null }>;
 }
+
+/** 单个持有周期的命中统计（胜=收益 > 0）。 */
+export interface HorizonStat {
+  win: number;
+  lose: number;
+  samples: number;
+  avg: number | null;
+}
+
+/** 某档位（或 overall）在 N1/N3/N5/N10 上的表现。 */
+export interface TierStats {
+  tier: string;
+  picks: number;
+  n1: HorizonStat;
+  n3: HorizonStat;
+  n5: HorizonStat;
+  n10: HorizonStat;
+}
+
+/** 时间线：每个锚定日的入选数与平均收益。 */
+export interface TimelinePoint {
+  anchor_date: string;
+  picks: number;
+  n1_avg: number | null;
+  n5_avg: number | null;
+  n10_avg: number | null;
+}
+
+export interface StatsResult {
+  total_runs: number;
+  total_picks: number;
+  overall: TierStats;
+  tiers: TierStats[];
+  timeline: TimelinePoint[];
+  range: { from: string | null; to: string | null };
+}

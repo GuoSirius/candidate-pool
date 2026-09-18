@@ -13,6 +13,7 @@ import {
   getStockHistory,
   searchStockBase,
   listGroups,
+  getStats,
 } from './lib/db.js';
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -37,6 +38,7 @@ app.get('/', (c) =>
       'GET /api/stocks/:code',
       'GET /api/stock-base?q=&group=',
       'GET /api/groups',
+      'GET /api/stats?from=&to=',
     ],
   }),
 );
@@ -73,6 +75,14 @@ app.get('/api/stock-base', async (c) => {
 
 app.get('/api/groups', async (c) => {
   const data = await listGroups(c.env.DB);
+  return ok(c, data);
+});
+
+// 复盘统计：区间内全部入选记录的 N1/N3/N5/N10 命中率与均值（可选 from/to 过滤）。
+app.get('/api/stats', async (c) => {
+  const from = c.req.query('from');
+  const to = c.req.query('to');
+  const data = await getStats(c.env.DB, { from: from ?? null, to: to ?? null });
   return ok(c, data);
 });
 
