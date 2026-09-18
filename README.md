@@ -72,9 +72,10 @@ node db/query_local.js "SELECT code,name,tier,reason FROM pick_record WHERE code
    ```bash
    npx wrangler d1 create candidate-pool
    ```
-2. **建表**：把 `db/schema.sql` 在 D1 上执行一次（D1 兼容 SQLite 语法）：
+2. **建表**：把 `db/schema.sql` 在 D1 上执行一次（D1 兼容 SQLite 语法）。
+   **务必加 `--remote`**：`wrangler d1 execute` 默认跑 local 模式，会去 `wrangler.toml` 找 binding 而报错；加 `--remote` 才作用于真实远程库（按库名命中，无需配置文件）。
    ```bash
-   npx wrangler d1 execute candidate-pool --file=db/schema.sql
+   npx wrangler d1 execute candidate-pool --remote --file=db/schema.sql
    ```
 3. **配置凭据**：复制 `db/.env.example` 为 `db/.env`（已忽略，不入库），填入三个变量；或直接写入系统环境变量：
    | 变量 | 含义 | 获取位置 |
