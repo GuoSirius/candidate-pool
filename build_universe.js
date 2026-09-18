@@ -21,6 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { now } = require('./time');
 
 const OUT = path.join(__dirname, 'candidates.json');
 const BATCH = 60;          // 每批查询只数
@@ -218,7 +219,7 @@ function parseArgs() {
   const payload = {
     name: 'A股短线候选观察池',
     note: '由 build_universe.js 生成；名称/市值来自腾讯行情接口校验，可手工增删 stocks 条目',
-    generatedAt: new Date().toISOString(),
+    generatedAt: now(),
     minCapYi: minCap,
     count: kept.length,
     stocks: kept.map(k => ({ code: k.code, name: k.name, sector: k.sector })),

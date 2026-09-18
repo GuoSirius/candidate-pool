@@ -11,6 +11,7 @@ const path = require('path');
 const https = require('https');
 const d1 = require('./d1client');
 const localSqlite = require('./sqlite_client');
+const { now: fmtNow } = require('../time');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 const REF = 'https://emweb.securities.eastmoney.com/';
@@ -123,7 +124,7 @@ async function enrichOne(code) {
       if (test) { console.log(code, JSON.stringify(r)); continue; }
       await client.query(
         'UPDATE stock_base SET concepts=COALESCE(NULLIF(?,""),concepts), region=COALESCE(NULLIF(?,""),region), main_business=COALESCE(NULLIF(?,""),main_business), top_business=COALESCE(NULLIF(?,""),top_business), updated_at=? WHERE code=?',
-        [r.concepts, r.region, r.mainBusiness, r.topBusiness, new Date().toISOString(), code]
+        [r.concepts, r.region, r.mainBusiness, r.topBusiness, fmtNow(), code]
       );
       ok++;
       console.log(`  ✓ ${code} 概念=${r.concepts || '-'} 地域=${r.region || '-'} 主营=${r.mainBusiness || '-'} 最赚=${r.topBusiness || '-'}`);

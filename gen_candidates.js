@@ -35,6 +35,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { now: nowStr, dayjs } = require('./time');
 
 // ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
 const QT_QUOTE = 'https://qt.gtimg.cn/q=';
@@ -326,7 +327,7 @@ async function main() {
     return;
   }
   if (args.offline) { await runOffline(args); return; }
-  const now = new Date();
+  const now = dayjs.tz().toDate();   // 当前北京时间对应的 Date（供交易日推算，时区安全）
   const anchor = args.date || lastClosedTradingDay(now);
   const target = nextTradingDay(anchor);
   let limit = args.limit || 0; // 0 = 不限制，筛查观察池全部标的
@@ -838,7 +839,7 @@ function buildHTML(m) {
     <b>${b('风险提示与免责声明', 'Risk Disclaimer')}：</b>${b('本报告由程序基于公开市场数据自动生成，仅用于短线交易候选池的量化初筛与观察评级，不构成任何投资建议或买卖邀约。所有判定均基于历史/收盘数据，存在前视偏差与数据缺口（如 R05 分时不可得）。市场有风险，决策需独立判断并自担风险。', 'This report is generated automatically from public market data for quantitative pre-screening and observation-only rating of short-term trading candidates. It is not investment advice or a solicitation to trade. All judgments rely on historical/close data and may contain look-ahead bias and data gaps (e.g. R05 intraday unavailable). Markets carry risk; decisions must be made independently and at your own risk.')}
   </div>
 
-  <div class="footer">${b('生成于 ' + new Date().toLocaleString('zh-CN'), 'Generated ' + new Date().toISOString())} · ${b('A股短线交易 · 次日候选池自动初筛', 'A-Share Short-Term Trading · Automated Next-Day Candidate Screening')}</div>
+  <div class="footer">${b('生成于 ' + nowStr(), 'Generated ' + nowStr())} · ${b('A股短线交易 · 次日候选池自动初筛', 'A-Share Short-Term Trading · Automated Next-Day Candidate Screening')}</div>
 </div>
 
 <script>

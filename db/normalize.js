@@ -2,6 +2,9 @@
 // 将一份初筛快照（data/snapshot-<锚定日>.json）规范化为入库结构。
 // 关键：tier 由 r01/r07/r05 字段重新推导（快照里不含 tier，保证与流水线口径一致），
 //      同票跨 run 自然成多行，满足「不同时期收录、全保留可区分」。
+// 时间统一走 dayjs（北京时间 YYYY-MM-DD HH:mm:ss），见 ../time。
+
+const { now: fmtNow } = require('../time');
 
 function tierOf(s) {
   const r = s.r01 || {};
@@ -45,7 +48,7 @@ function reasonOf(s) {
 // 入参 snap：{ anchor, target, stocks:[...], sectors:[...], ... }
 function normalizeSnap(snap) {
   const { anchor, target, stocks = [] } = snap;
-  const now = new Date().toISOString();
+  const ts = fmtNow();   // 北京时间 YYYY-MM-DD HH:mm:ss
   const picks = [], prices = [], base = [];
   let high = 0, secondary = 0, conditional = 0, excluded = 0;
   let r01 = 0, r07 = 0, r05 = 0, err = 0;
@@ -75,7 +78,7 @@ function normalizeSnap(snap) {
       total_market_cap: r.mktCapYi != null ? r.mktCapYi * 1e8 : null,
       sector_pct: (s.r07 && s.r07.sectorPct) ?? null,
       sector_rank: (s.r07 && s.r07.sectorRank) ?? null,
-      reason: reasonOf(s), picked_at: now,
+      reason: reasonOf(s), picked_at: ts,
     });
 
     prices.push({
@@ -85,11 +88,11 @@ function normalizeSnap(snap) {
       total_market_cap: r.mktCapYi != null ? r.mktCapYi * 1e8 : null,
     });
 
-    base.push({ code: s.code, name: s.name, sector: s.sector || '未分类', updated_at: now });
+    base.push({ code: s.code, name: s.name, sector: s.sector || '未分类', updated_at: ts });
   }
 
   const run = {
-    anchor_date: anchor, target_date: target, run_at: now,
+    anchor_date: anchor, target_date: target, run_at: ts,
     universe_count: stocks.length, r01_count: r01, r07_count: r07, r05_count: r05,
     high_count: high, secondary_count: secondary, conditional_count: conditional,
     excluded_count: excluded,
