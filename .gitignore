@@ -10,5 +10,14 @@ data/_*.json
 # 推送凭据（含 163 授权码 / 微信 key，切勿提交）
 notify_config.json
 
+# Cloudflare D1 凭据（含 account_id / database_id / API token，切勿提交）
+db/.env
+
+# 本地数据库文件（若改成本地 sqlite 调试，勿入库）
+*.sqlite
+*.sqlite3
+*.db
+db/local.db*
+
 # 运行时/自动化本地目录
 .workbuddy/

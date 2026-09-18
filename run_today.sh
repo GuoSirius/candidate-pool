@@ -21,3 +21,8 @@ if [ ! -x "$NODE" ] && [ ! -f "$NODE" ]; then
   fi
 fi
 "$NODE" "$SCRIPT" "$@"
+# 自动同步入库：需配置 CF_API_TOKEN 等环境变量；缺失则跳过（不阻断报告）
+if [ -n "${CF_API_TOKEN:-}" ]; then
+  echo "[db] 同步入库..."
+  "$NODE" "$(cd "$(dirname "$0")" && pwd)/db/write_live.js" || echo "[warn] 入库失败或跳过，详见日志"
+fi
