@@ -918,14 +918,24 @@ function classifyAndBuild(m) {
 
 // 离线模式：从快照载入，跳过全部网络请求
 async function runOffline(args) {
-  if (!args.snapshot) { log('离线模式需要 --snapshot <快照文件>'); process.exit(1); }
-  const snap = JSON.parse(fs.readFileSync(args.snapshot, 'utf8'));
+  let snapPath = args.snapshot;
+  if (!snapPath) {
+    // 未指定 --snapshot 时，自动取 data/ 下日期最新的一份快照（与 daily-screen.yml 离线兜底同口径）
+    const dir = path.join(__dirname, 'data');
+    if (fs.existsSync(dir)) {
+      const files = fs.readdirSync(dir)
+        .filter(f => /^snapshot-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
+      if (files.length) snapPath = path.join(dir, files[files.length - 1]);
+    }
+  }
+  if (!snapPath) { log('离线模式需要 --snapshot <快照文件>，或 data/ 下存在 snapshot-YYYY-MM-DD.json'); process.exit(1); }
+  const snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
   const stocks = snap.stocks;
   const validSectors = snap.sectors || [];
   const { anchor, target, limit } = snap;
   const topN = snap.topN, breadth = snap.breadth, breadthIsAnchor = snap.breadthIsAnchor, overview = snap.overview;
   const outPath = args.out || path.join(__dirname, 'reports', `stock_list_${anchor.replace(/-/g, '')}.html`);
-  log(`[offline] 从快照 ${args.snapshot} 载入 ${stocks.length} 只，锚定 ${anchor}（面向 ${target}）`);
+  log(`[offline] 从快照 ${snapPath} 载入 ${stocks.length} 只，锚定 ${anchor}（面向 ${target}）`);
   classifyAndBuild({ anchor, target, limit, stocks, validSectors, topN, breadth, breadthIsAnchor, overview, outPath, quiet: args.quiet });
 }
 

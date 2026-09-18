@@ -113,9 +113,8 @@ Windows 直接双击 `run_today.cmd` 亦可。**实时运行会**：
 ### 2. 离线（从快照重建，零网络请求 —— 推荐在 CI / 其他设备查看用）
 
 ```bash
-node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json --out reports/stock_list_20260727.html
-# 或
-npm run offline
+npm run offline                                                          # 自动取 data/ 下日期最新的快照重建
+node gen_candidates.js --offline --snapshot data/snapshot-2026-07-27.json   # 显式指定某天快照（可选）
 ```
 
 ### 3. 导出快照（先把某次在线结果存下来，供日后离线复现）
