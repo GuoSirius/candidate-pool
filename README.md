@@ -359,6 +359,45 @@ npm run deploy
 
 ---
 
+## Web 前端（Vue3 + Vite PWA）
+
+只读查询前端，消费上面的 Worker API，提供「候选列表 / 规则释义 / 个股复盘」三页，支持 PWA 安装到手机桌面。
+
+### 目录与依赖
+
+| 文件 | 作用 |
+|------|------|
+| `web/package.json` | `vue` / `vue-router` 运行时；`vite` / `@vitejs/plugin-vue` / `vite-plugin-pwa` / `vue-tsc` 开发依赖 |
+| `web/vite.config.ts` | Vite + Vue 插件 + PWA；`server.proxy` 把 `/api` 代理到 `wrangler dev`（:8787），免跨域 |
+| `web/src/api/client.ts` | 统一 fetch 封装，**读业务码判定**（200=成功，1000x=业务错误，非 200=传输异常） |
+| `web/src/api/types.ts` | 与 Worker `types.ts` 对齐的前端镜像类型 |
+| `web/src/views/` | `RunsView`（候选列表）/ `RulesView`（规则释义）/ `StockView`（个股复盘） |
+
+### 本地开发
+
+```bash
+cd web
+npm install
+npm run dev          # 默认 :5173，/api 自动代理到本地 Worker（需另开终端跑 worker 的 npm run dev）
+```
+
+> 前端 `npm run dev` 与 Worker `npm run dev` 两个终端并行：前端拿 `/api/*`，Vite 代理到 Worker 的 :8787。
+
+### 生产构建 / 部署（Cloudflare Pages）
+
+```bash
+cd web
+VITE_API_BASE=https://<你的-worker子域>.workers.dev npm run build   # 产物在 dist/
+```
+
+| 部署方式 | 关键配置 |
+|----------|----------|
+| 构建命令 | `npm run build` |
+| 输出目录 | `dist` |
+| 环境变量 | `VITE_API_BASE` = 上面 Worker 的基地址（未设则退化为同源 `/api`） |
+
+构建时把 `VITE_API_BASE` 指向已部署的 Worker 即可；Pages 只托管静态资源，数据全部走 Worker API。
+
 ## 免责声明
 
 本报告由程序基于公开市场数据**自动生成**，仅用于短线交易候选池的量化初筛与观察评级，**不构成任何投资建议或买卖邀约**。所有判定均基于历史/收盘数据，存在前视偏差与数据缺口（如 R05 分时不可得）。市场有风险，决策需独立判断并自担风险。
