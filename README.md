@@ -304,6 +304,61 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 
 ---
 
+## API 服务（Cloudflare Workers）
+
+初筛数据入库到 Cloudflare D1 后，需要一个只读查询接口供 Web / PWA 前端调用。本项目用 **Hono + TypeScript** 写一个轻量 Worker（`worker/` 目录），把 D1 暴露成统一 `{ code, message, data }` 结构的 JSON 接口，与另一套服务（`zhiliaowo-proxy`）的响应规范保持一致。
+
+### 目录与依赖
+
+| 文件 | 作用 |
+|------|------|
+| `worker/src/index.ts` | 入口，注册路由、CORS、统一错误处理 |
+| `worker/src/lib/response.ts` | 统一信封 `ok / fail`（`{ code, message, data }`） |
+| `worker/src/lib/db.ts` | D1 查询封装（列表 / 详情 / 选股史 / N 日表现 / 分组） |
+| `worker/src/types.ts` | 接口类型 + `Bindings`（D1 binding） |
+| `worker/wrangler.toml` | Worker 配置 + `[[d1_databases]]` 绑定 |
+| `worker/package.json` | `hono` 运行时依赖；`wrangler` / `typescript` 开发依赖 |
+
+> **环境注入说明**：这里是 Cloudflare Worker，不是 Node，所以**不需要 `dotenv`**。D1 通过 `wrangler.toml` 的 `[[d1_databases]]` binding（`c.env.DB`）注入；本地 `wrangler dev` 自动加载 `.dev.vars`，生产用 `wrangler secret put`（本项目接口只读 D1，无需任何密钥）。
+
+### 接口一览
+
+| 方法 | 路径 | 说明 | 关键参数 |
+|------|------|------|----------|
+| GET | `/api/runs` | 运行批次列表（按锚定日倒序） | `?limit=30`（1–100） |
+| GET | `/api/runs/:anchor` | 某日运行详情：批次汇总 + 当日全部入选票 | `?tier=high\|secondary\|conditional\|excluded` 可只取某梯队 |
+| GET | `/api/stocks/:code` | 某票全量选股史 + 分组 + 备注 + 入选后 N 日表现 | 无 |
+| GET | `/api/stock-base` | 股票档案库（可按名称/代码搜索、按分组过滤） | `?q=关键词`、`?group=分组名` |
+| GET | `/api/groups` | 自定义分组列表（前端筛选 chips 用） | 无 |
+| GET | `/health` | 健康检查 | 无 |
+
+所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`；失败（如 `404` 锚定日不存在）形如 `{ "code": 404, "message": "未找到锚定日 ...", "data": null }`。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n3 / n5 / n10` 日涨幅（%），缺数据时为 `null`——这是后续复盘统计（M3）的底座。
+
+### 本地开发
+
+```bash
+cd worker
+npm install
+npm run dev            # 直连真实 D1（--remote），前提是已按上文建库建表
+# 或本地 D1（首次需先建本地库并灌表）：
+#   npm run dev:local
+#   npx wrangler d1 execute candidate-pool --local --file=../db/schema.sql
+#   node ../db/backfill.js --local
+```
+
+### 部署
+
+```bash
+cd worker
+# 1. 把 wrangler.toml 里的 database_id 换成你的 D1 库 ID（wrangler d1 info candidate-pool）
+# 2. 部署
+npm run deploy
+```
+
+部署后 Worker 会得到一个 `*.workers.dev` 子域，前端配置为该基地址即可。需要自定义域名时，在 `wrangler.toml` 取消 `routes` 注释并填入你的域名。
+
+---
+
 ## 免责声明
 
 本报告由程序基于公开市场数据**自动生成**，仅用于短线交易候选池的量化初筛与观察评级，**不构成任何投资建议或买卖邀约**。所有判定均基于历史/收盘数据，存在前视偏差与数据缺口（如 R05 分时不可得）。市场有风险，决策需独立判断并自担风险。

@@ -1,0 +1,14 @@
+name = "candidate-pool-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# 绑定到 Cloudflare D1（与 db/schema.sql 同一库，库名 candidate-pool）
+# database_id 用 `wrangler d1 info candidate-pool` 查；建库时返回的也是它
+[[d1_databases]]
+binding = "DB"
+database_name = "candidate-pool"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# 可选：自定义域名 / 路由（取消注释并改成你的域名）
+# routes = [{ pattern = "api.your-domain.com", custom_domain = true }]
