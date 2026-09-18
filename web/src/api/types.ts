@@ -93,6 +93,41 @@ export interface StockHistory {
   picks: Array<PickRecord & { perf: Perf | null }>;
 }
 
+/** 单个持有周期的命中统计（胜=收益 > 0）。 */
+export interface HorizonStat {
+  win: number;
+  lose: number;
+  samples: number;
+  avg: number | null;
+}
+
+/** 某档位在 N1/N3/N5/N10 上的表现（stats.tiers 中的 tier 必为四档之一）。 */
+export interface TierStats {
+  tier: Tier;
+  picks: number;
+  n1: HorizonStat;
+  n3: HorizonStat;
+  n5: HorizonStat;
+  n10: HorizonStat;
+}
+
+export interface TimelinePoint {
+  anchor_date: string;
+  picks: number;
+  n1_avg: number | null;
+  n5_avg: number | null;
+  n10_avg: number | null;
+}
+
+export interface StatsResult {
+  total_runs: number;
+  total_picks: number;
+  overall: TierStats;
+  tiers: TierStats[];
+  timeline: TimelinePoint[];
+  range: { from: string | null; to: string | null };
+}
+
 export const TIER_LABELS: Record<Tier, string> = {
   high: '重点',
   secondary: '次级',

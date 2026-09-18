@@ -6,6 +6,7 @@ import type {
   StockBase,
   WatchGroup,
   Tier,
+  StatsResult,
 } from './types';
 
 // VITE_API_BASE 为空时退化为同源 /api（本地由 Vite 代理到 worker :8787）。
@@ -83,5 +84,14 @@ export const api = {
   /** 自选分组列表。 */
   listGroups(): Promise<WatchGroup[]> {
     return request<WatchGroup[]>('/api/groups');
+  },
+
+  /** 复盘统计：区间内 N1/N3/N5/N10 命中率与均值 + 各档位 + 时间线。 */
+  getStats(from?: string, to?: string): Promise<StatsResult> {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    return request<StatsResult>(`/api/stats${qs ? `?${qs}` : ''}`);
   },
 };
