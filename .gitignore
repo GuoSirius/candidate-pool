@@ -21,3 +21,8 @@ db/local.db*
 
 # 运行时/自动化本地目录
 .workbuddy/
+
+# Wrangler 本地状态（缓存 / 构建临时产物 / 本地 D1 数据，勿入库）
+.wrangler/
+.dev.vars
+.dev.vars.*
