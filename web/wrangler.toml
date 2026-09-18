@@ -1,0 +1,20 @@
+# Cloudflare Pages 项目配置（静态资源 + Pages Functions 同源部署）
+#
+# 重要：`wrangler pages deploy` 不支持 --config，只读取「当前工作目录」的 wrangler.toml，
+# 因此本文件必须放在 web/ 下（部署脚本的 cwd 就是 web/）。
+#
+# 一旦本文件包含 pages_build_output_dir，它就成为该 Pages 项目的配置源，
+# 对应字段在 Cloudflare 控制台将变为只读（仅可查看）。
+
+name = "candidate-pool-web"
+pages_build_output_dir = "./dist"
+
+# 与 worker/wrangler.toml 保持一致，保证 Worker 版与 Pages 版运行时行为相同
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# 与 worker/wrangler.toml 指向同一个 D1 库（零数据迁移，读写同一份数据）
+[[d1_databases]]
+binding = "DB"
+database_name = "candidate-pool"
+database_id = "76a2aced-03ca-411d-b2e2-47290b6672ef"
