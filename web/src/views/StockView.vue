@@ -8,7 +8,6 @@ import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
 
 const route = useRoute();
-const router = useRouter();
 
 const code = computed(() => String(route.params.code));
 const data = ref<StockHistory | null>(null);
