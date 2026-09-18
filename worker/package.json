@@ -9,7 +9,8 @@
     "dev:local": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "typegen": "wrangler types"
+    "typegen": "wrangler types",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "hono": "^4.6.0"

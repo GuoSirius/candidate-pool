@@ -358,6 +358,29 @@ npm run deploy
 
 部署后 Worker 会得到一个 `*.workers.dev` 子域，前端配置为该基地址即可。需要自定义域名时，在 `wrangler.toml` 取消 `routes` 注释并填入你的域名。
 
+### 部署后验证
+
+一条命令冒烟（Node 18+ 内置 `fetch`，零依赖；检测到代理环境变量会自动走代理）：
+
+```bash
+cd worker
+npm run smoke -- --api https://candidate-pool-api.<你的子域>.workers.dev
+# 或：WORKER_URL=https://... npm run smoke
+```
+
+校验项：`/health`、`/api/runs`、`/api/stats`、`/api/groups`，以及「最新批次 → 当日入选 → 个股详情（含 perf）」的深度链路；每项校验 HTTP 200 + 业务码 200。
+
+也可直接用浏览器打开（GET 返回 JSON）：
+
+| 地址 | 期望 |
+|------|------|
+| `/health` | `{"code":200,"message":"success","data":{"ok":true,...}}` |
+| `/api/runs?limit=3` | 最近 3 个批次数组 |
+| `/api/stats` | 统计对象（`total_picks`/`tiers`/`timeline`） |
+| `/api/stocks/<code>` | 个股详情（`picks[].perf` 含 n1/n3/n5/n10） |
+
+> ⚠️ 中国大陆网络直连 `*.workers.dev` 常被 DNS 污染 / 拦截（解析到非 Cloudflare IP、TCP 连接超时）。若本机打不开，属**链路问题而非 Worker 故障**——给 Worker 绑一个**自定义域名**后再验证，或从墙外网络访问。
+
 ---
 
 ## Web 前端（Vue3 + Vite PWA）
@@ -372,7 +395,8 @@ npm run deploy
 | `web/vite.config.ts` | Vite + Vue 插件 + PWA；`server.proxy` 把 `/api` 代理到 `wrangler dev`（:8787），免跨域 |
 | `web/src/api/client.ts` | 统一 fetch 封装，**读业务码判定**（200=成功，1000x=业务错误，非 200=传输异常） |
 | `web/src/api/types.ts` | 与 Worker `types.ts` 对齐的前端镜像类型 |
-| `web/src/views/` | `RunsView`（候选列表）/ `RulesView`（规则释义）/ `StockView`（个股复盘） |
+| `web/src/views/` | `RunsView`（候选列表）/ `StatsView`（复盘统计）/ `RulesView`（规则释义）/ `StockView`（个股复盘） |
+| `web/scripts/deploy.mjs` | 一键发布脚本：构建（注入 `VITE_API_BASE`）+ wrangler 推送 Pages，复用 worker 的 wrangler |
 
 ### 本地开发
 
@@ -384,20 +408,39 @@ npm run dev          # 默认 :5173，/api 自动代理到本地 Worker（需另
 
 > 前端 `npm run dev` 与 Worker `npm run dev` 两个终端并行：前端拿 `/api/*`，Vite 代理到 Worker 的 :8787。
 
-### 生产构建 / 部署（Cloudflare Pages）
+### 一键发布（Cloudflare Pages）
+
+前端内置发布脚本 `web/scripts/deploy.mjs`（跨平台，`npm run deploy`）：先注入 `VITE_API_BASE` 构建，再用 wrangler 推送到 Cloudflare Pages。wrangler 直接**复用 `worker/node_modules` 里已装的那份**，前端无需再单独安装。
+
+**首次准备（各一次）**
+
+| 步骤 | 命令 / 操作 | 说明 |
+|------|-------------|------|
+| 1 | 复制 `web/deploy.config.example.json` → `web/deploy.config.json` | 填 `apiBase`（你的 Worker 子域）等；该文件已被 `.gitignore` 忽略 |
+| 2 | `cd web && npx wrangler pages project create candidate-pool-web --production-branch main` | 仅当 Pages 项目尚不存在时执行一次 |
+
+**之后每次发布**
 
 ```bash
 cd web
-VITE_API_BASE=https://<你的-worker子域>.workers.dev npm run build   # 产物在 dist/
+npm run deploy                                   # 读 deploy.config.json
+npm run deploy -- --api https://xxx.workers.dev  # 临时指定 Worker 地址
 ```
 
-| 部署方式 | 关键配置 |
-|----------|----------|
-| 构建命令 | `npm run build` |
-| 输出目录 | `dist` |
-| 环境变量 | `VITE_API_BASE` = 上面 Worker 的基地址（未设则退化为同源 `/api`） |
+| 配置项 | 优先级 | 默认 |
+|--------|--------|------|
+| Worker 地址 | `--api` > `VITE_API_BASE` > `deploy.config.json:apiBase` | 无（必填） |
+| Pages 项目名 | `--project` > `PAGES_PROJECT` > `deploy.config.json:projectName` | `candidate-pool-web` |
+| 分支 | `--branch` > `PAGES_BRANCH` > `deploy.config.json:branch` | `main` |
 
-构建时把 `VITE_API_BASE` 指向已部署的 Worker 即可；Pages 只托管静态资源，数据全部走 Worker API。
+发布成功输出 `https://<projectName>.pages.dev`。`--branch` 与项目 production branch 一致时即为**生产发布**。
+
+> 手动方式（不用脚本）：
+> ```bash
+> cd web
+> VITE_API_BASE=https://<worker子域>.workers.dev npm run build   # 产物 dist/
+> npx wrangler pages deploy dist --project-name candidate-pool-web --branch main
+> ```
 
 ## 免责声明
 

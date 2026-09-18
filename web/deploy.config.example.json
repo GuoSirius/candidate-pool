@@ -1,0 +1,5 @@
+{
+  "apiBase": "https://candidate-pool-api.<你的子域>.workers.dev",
+  "projectName": "candidate-pool-web",
+  "branch": "main"
+}
