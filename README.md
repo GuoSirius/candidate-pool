@@ -8,32 +8,9 @@
 
 ---
 
-## 目录结构
-
-```
-candidate-pool/
-├── gen_candidates.js            # 核心脚本（Node >=18，CommonJS）
-├── build_universe.js            # 观察池构建/刷新（校验代码有效性、剔除 ST、回填名称与市值）
-├── candidates.json              # 候选观察池（377 只 / 26 个申万一级行业，可自由增删）
-├── notify.js                    # 结果推送（微信 Server酱/PushPlus + 163 邮箱，零依赖）
-├── run_today.cmd                # Windows 一键运行（双击即可）
-├── run_today.sh                 # bash 一键运行
-├── package.json                 # npm scripts: start / run / live / offline / universe / notify
-├── notify_config.example.json   # 推送配置模板（复制为 notify_config.json 后填真实凭据）
-├── data/
-│   └── snapshot-<锚定日>.json    # 实时抓取的快照（离线模式数据源，按日留档、覆盖式）
-├── reports/
-│   ├── stock_list_<锚定日>.html  # 实时生成的报告（按日留档、覆盖式，每天一份）
-│   └── stock_list_20260727.html  # 示例报告（2026-07-27 收盘后，同源快照离线重建）
-└── .github/workflows/
-    └── daily-screen.yml         # GitHub Actions 工作流（默认 live，托管 Runner 即可，失败自动回退 offline）
-```
-
----
-
 ## 环境要求
 
-- **Node.js >= 18**（本地测试用 22）。**零第三方依赖**，`npm install` 都不需要。
+- **Node.js >= 18**（本地测试用 22）。运行时依赖仅 `dayjs`（`npm install` 一次即可，统一处理北京时间），其余功能零第三方依赖。
 - **在线模式** 只要能访问下列腾讯公开接口即可，无需账号、Key 或任何本机技能：
   | 用途 | 接口 |
   |------|------|
@@ -42,6 +19,76 @@ candidate-pool/
   | 分时 | `https://web.ifzq.gtimg.cn/appstock/app/minute/query?code=<code>` |
 - 运行脚本的 Node 路径可用 `CANDIDATE_NODE` 环境变量指定（旧变量名 `WESTOCK_NODE` 仍兼容）。
 - **离线模式** 完全不发网络请求，从已提交的快照重建报告，任何机器 / CI 上都能跑。
+
+---
+
+## 数据存储与入库（本地 SQLite 开发 + Cloudflare D1 生产）
+
+初筛结果除了产出 HTML 报告，还会**结构化入库**，用于日后复盘、入选后 N 日表现追踪，以及 Web / PWA 前端查询。两层存储共用同一套建表与写入逻辑——开发用本地 SQLite、生产用 Cloudflare D1，可无缝切换：
+
+| 层 | 用途 | 客户端 | 触发方式 |
+|----|------|--------|----------|
+| 本地 SQLite | 开发 / 自查 | `db/sqlite_client.js`（Node 22 内置 `node:sqlite`，零依赖） | `node db/backfill.js --local` |
+| Cloudflare D1 | 生产 / 线上查询 | `db/d1client.js`（Cloudflare D1 HTTP API） | 工作流自动同步（见「GitHub Actions」一节） |
+
+### 表结构（带注释）
+
+建表脚本在 `db/schema.sql`，共 7 张表 + 9 个索引，覆盖「运行批次 / 入选记录 / 日线行情 / 股票档案 / 分组 / 备注」：
+
+- `run_batch`：每次初筛（一个 anchor_date）一行汇总（全池数、各梯队数、K 线失败率、数据来源等）。
+- `pick_record`：每次运行 × 每只入选票一行，`UNIQUE(run_id, code)`，**同一只票跨多个运行自动成多行**，满足「不同时期被收录全部保留、可区分」的复盘需求。
+- `price_daily`：全观察池每日一条，作为入选后 N 日表现复盘的收益底座。
+- `stock_base`：股票基础档案（名称 / 行业 / 题材 / 地域 / 主营 / 最赚钱业务），一票一档长期复用。
+- `watch_group` / `pick_group_rel`：自定义主题分组（如「军工」「低位补涨」），一只票可加入多组。
+- `stock_note`：按运行（anchor_date）或纯按票的评论 / 备忘。
+
+> **表 / 列注释**：SQLite 没有原生 `COMMENT` 语法，本项目用 SQL 行内注释（`--`）写在 `CREATE TABLE` 里。这些注释会**原样写入 `sqlite_master` 的建表原文**，在 DB Browser for SQLite / DBeaver 的「DDL / SQL」视图中可直接看到中文列说明，无需额外文档。所有时间字段统一为「北京时间字符串」`YYYY-MM-DD HH:mm:ss`（无 `Z`），由 `dayjs` 生成，彻底杜绝裸 `new Date().toISOString()` 带来的 `+8h` 时差。
+
+### 本地开发流程
+
+```bash
+# 1. 装依赖（仅 dayjs，统一处理北京时间）
+npm install
+
+# 2. 跑一次实时初筛，生成 reports/ + data/snapshot-<日期>.json
+node gen_candidates.js
+
+# 3. 把快照规范化写入本地 SQLite（db/local.db，首次自动建表）
+node db/backfill.js --local
+#    历史全量回填（遍历 data/snapshot-*.json，可重复跑，幂等）
+node db/backfill.js --local --dry     # 仅解析统计，不写库
+
+# 4. 只读查询本地库（只允许 SELECT / WITH，避免误改）
+node db/query_local.js                                       # 打印内置概览（批次 / 分类分布 / 多次入选）
+node db/query_local.js "SELECT * FROM run_batch ORDER BY anchor_date"
+node db/query_local.js "SELECT code,name,tier,reason FROM pick_record WHERE code='sz002594'"
+```
+
+`db/local.db*` 已被 `.gitignore` 忽略，不会入库。
+
+### 部署到 Cloudflare D1（生产存储）
+
+1. **建库**：在 Cloudflare 控制台 `Storage → D1` 创建数据库，或用 Wrangler：
+   ```bash
+   npx wrangler d1 create candidate-pool
+   ```
+2. **建表**：把 `db/schema.sql` 在 D1 上执行一次（D1 兼容 SQLite 语法）：
+   ```bash
+   npx wrangler d1 execute candidate-pool --file=db/schema.sql
+   ```
+3. **配置凭据**：复制 `db/.env.example` 为 `db/.env`（已忽略，不入库），填入三个变量；或直接写入系统环境变量：
+   | 变量 | 含义 | 获取位置 |
+   |------|------|----------|
+   | `CF_ACCOUNT_ID` | 账户 ID | 头像 → Account Home → Account ID |
+   | `CF_D1_DATABASE_ID` | D1 数据库 ID | `wrangler d1 create` 返回 / D1 详情页 |
+   | `CF_API_TOKEN` | API 令牌 | API Tokens 页创建，权限勾选 `Account → D1 → Edit` |
+4. **全量初始化入库**（本地一次性把历史快照同步到 D1，幂等，可重复跑）：
+   ```bash
+   node db/backfill.js          # 不设 --local 且检测到 CF_* 即写入 D1
+   ```
+5. **每日自动同步**：`daily-screen.yml` 在生成报告后自动调用 `node db/backfill.js`，凭仓库 Secrets 中的 `CF_*` 把当日快照同步进 D1（详见下一节）。未配置 `CF_*` 时该步骤安全跳过，不影响报告生成。
+
+> 写入是**幂等**的：`run_batch` 按 `anchor_date` UNIQUE、`pick_record` 按 `UNIQUE(run_id, code)`，`INSERT OR IGNORE / OR REPLACE`，重复跑不会重复插入。
 
 ---
 
@@ -220,7 +267,10 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 ### 第 1 步：配置仓库 Secrets
 
 仓库 `Settings → Secrets and variables → Actions → New repository secret`。
-**行情数据无需任何凭据**，这里只配推送相关的：
+
+**行情数据无需任何凭据**。以下按用途分两组：
+
+**A. 结果推送（仅实时运行需要）**
 
 | Secret | 说明 |
 |--------|------|
@@ -230,7 +280,15 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | `NOTIFY_MAIL_SENDER` / `NOTIFY_MAIL_AUTH` | 163 邮箱与授权码（用邮件推送时填） |
 | `NOTIFY_MAIL_RECEIVER` / `NOTIFY_MAIL_HOST` / `NOTIFY_MAIL_PORT` | 收件人 / SMTP 主机 / 端口（可选，有默认值） |
 
-> 本地运行则不用 Secrets，直接放一份 `notify_config.json` 即可（已被 `.gitignore` 忽略，不会入库）。
+**B. 入库同步（可选，配置后每天自动同步到 Cloudflare D1）**
+
+| Secret | 说明 |
+|--------|------|
+| `CF_ACCOUNT_ID` | Cloudflare 账户 ID |
+| `CF_D1_DATABASE_ID` | D1 数据库 ID |
+| `CF_API_TOKEN` | Cloudflare API 令牌，权限 `Account → D1 → Edit` |
+
+> 本地运行则不用 Secrets，推送放一份 `notify_config.json`（已被 `.gitignore` 忽略）；入库放一份 `db/.env`（同样被忽略，或写系统环境变量）。
 
 ### 第 2 步：触发
 
@@ -239,8 +297,10 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 
 ### 输出与提交
 
-- 实时运行按锚定日写出 `reports/stock_list_<锚定日>.html` 与 `data/snapshot-<锚定日>.json`，**覆盖式**写回仓库（每天一份）。
-- 工作流用 `GITHUB_TOKEN`（`permissions: contents: write`）提交，无需 PAT。
+- 实时运行按锚定日写出 `reports/stock_list_<锚定日>.html` 与 `data/snapshot-<锚定日>.json`（每天一份，覆盖式）。
+- **产物与代码分库**：这些报告/快照由工作流提交到独立的 `daily-artifacts` 分支，**不污染 `main` 代码分支**；`main` 始终只放代码，本地提交代码也不会与定时任务撞车。推送用 `GITHUB_TOKEN`（`permissions: contents: write`），无需 PAT。
+- **本地仍可提交产物**：你本地想保留报告/快照，照常把它们提交到 `main` 即可，与定时任务写入的 `daily-artifacts` 互不影响。
+- **入库同步（可选）**：若配置了 `CF_*` Secrets，工作流在提交报告后会自动调用 `node db/backfill.js`，把当日（及全部历史）快照规范化写入 Cloudflare D1。未配置时该步骤安全跳过，不影响报告。写入幂等，重复运行不会重复插入。
 
 ---
 

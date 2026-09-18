@@ -35,6 +35,19 @@ jobs:
         with:
           node-version: '22'
 
+      # dayjs 为运行时依赖，需先安装（此前为零依赖，可直接 node 运行）
+      - name: Install dependencies (dayjs)
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # 预取 latest 快照：从 daily-artifacts 分支把 data/ 拉进工作树，供离线兜底使用。
+      # 若 daily-artifacts 尚未创建则跳过（首次运行走实时，无需兜底）。
+      # -----------------------------------------------------------------------
+      - name: Seed latest snapshot for offline fallback
+        run: |
+          git fetch origin daily-artifacts --depth 1 || true
+          git checkout origin/daily-artifacts -- data/ 2>/dev/null || true
+
       # -----------------------------------------------------------------------
       # 实时抓取。若腾讯接口在 Runner 所在网络不可达，则不让整个工作流失败，
       # 转由下一步用仓库内最新快照重建报告，保证每天都有产物。
@@ -60,7 +73,8 @@ jobs:
           fi
 
       # -----------------------------------------------------------------------
-      # 兜底/显式离线：取仓库内日期最新的一份快照重建 HTML
+      # 兜底/显式离线：取工作树内日期最新的一份快照重建 HTML
+      # （工作树 data/ 已由上一步从 daily-artifacts 预取，或本次实时运行刚写入）
       # -----------------------------------------------------------------------
       - name: Rebuild from latest snapshot (离线兜底)
         if: ${{ github.event.inputs.mode == 'offline' || steps.live.outcome == 'failure' }}
@@ -75,17 +89,54 @@ jobs:
           echo "使用快照 $SNAP -> $OUT"
           node gen_candidates.js --offline --snapshot "$SNAP" --out "$OUT" --quiet
 
-      - name: Commit report & snapshot (按日留档，覆盖式)
+      # -----------------------------------------------------------------------
+      # 产物提交到独立分支 daily-artifacts（不污染 main 代码分支）：
+      # 用 git worktree 在一个独立工作树里把本次报告/快照提交并推到 daily-artifacts，
+      # 主工作树（main）保持不动，后续 D1 入库步骤仍可正常读取本地 data/。
+      # 本地仍可照常把产物提交到 main，与定时任务写入的 daily-artifacts 互不影响。
+      # -----------------------------------------------------------------------
+      - name: Commit artifacts to daily-artifacts branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/stock_list_*.html data/snapshot-*.json 2>/dev/null || true
+          rm -rf _artifacts
+          git fetch origin daily-artifacts --depth 1 || true
+          if git rev-parse --verify origin/daily-artifacts >/dev/null 2>&1; then
+            BASE=origin/daily-artifacts
+          else
+            BASE=$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "init artifacts branch")
+          fi
+          git worktree add --detach _artifacts "$BASE"
+          rm -rf _artifacts/reports _artifacts/data
+          mkdir -p _artifacts/reports _artifacts/data
+          cp -r reports/. _artifacts/reports/ 2>/dev/null || true
+          cp -r data/. _artifacts/data/ 2>/dev/null || true
+          cd _artifacts
+          git add -A
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else
             git commit -m "chore: 每日初筛 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push
+            git push origin HEAD:daily-artifacts
           fi
+          cd ..
+          git worktree remove _artifacts --force
+
+      # -----------------------------------------------------------------------
+      # 入库同步：把当日（及全部历史）快照规范化写入 Cloudflare D1（生产存储）。
+      # 仅当仓库 Secrets 配置了 CF_API_TOKEN 才执行；未配置时自动跳过，不阻断报告。
+      # 写入幂等（run_batch UNIQUE anchor_date；pick_record UNIQUE(run_id,code)），
+      # 重复跑不会重复插入。
+      # -----------------------------------------------------------------------
+      - name: Sync to Cloudflare D1 (入库同步)
+        id: d1
+        if: ${{ env.CF_API_TOKEN != '' }}
+        continue-on-error: true
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: node db/backfill.js
 
       # -----------------------------------------------------------------------
       # 实时失败必须【主动告警】。否则用户在 15:35 只是收不到微信，很容易误以为
