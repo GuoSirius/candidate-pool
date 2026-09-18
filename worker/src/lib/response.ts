@@ -1,4 +1,5 @@
 import type { Context } from 'hono';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 /**
  * 统一 API 响应信封
@@ -34,7 +35,7 @@ export function ok<T>(
   data: T,
   message = 'success',
   code: number = BizCode.OK,
-  status = 200,
+  status: ContentfulStatusCode = 200,
 ): Response {
   return c.json<ApiEnvelope<T>>({ code, message, data }, status);
 }
@@ -48,7 +49,7 @@ export function fail(
   message: string,
   code: number = BizCode.ERR_GENERIC,
   data: unknown = null,
-  status = 200,
+  status: ContentfulStatusCode = 200,
 ): Response {
   return c.json<ApiEnvelope>({ code, message, data }, status);
 }

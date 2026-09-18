@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "candidate-pool"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "76a2aced-03ca-411d-b2e2-47290b6672ef"
 
 # 可选：自定义域名 / 路由（取消注释并改成你的域名）
 # routes = [{ pattern = "api.your-domain.com", custom_domain = true }]
