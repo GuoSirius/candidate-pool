@@ -90,8 +90,14 @@ const totalPages = computed(() => Math.max(1, Math.ceil(searchedPicks.value.leng
 // 列表排序：点列头按该列排序
 // ---------------------------------------------------------------------------
 
-/** 可排序列。档位 / 规则 / 入选理由不是单一数值（标签、多标记、自由文本），保持不可排序。 */
+/**
+ * 可排序列。
+ * 「档位」按 重点 → 次级 → 条件 → 排除 的固有梯队比较，故取 TIER_ORDER 下标当数值排，
+ * 而不是拿 'high' / 'secondary' 去比字母序（那会排成 条件 → 排除 → 重点 → 次级）。
+ * 「规则」「入选理由」不是单一可比值（多标记 / 自由文本），保持不可排序。
+ */
 type PickSortKey =
+  | 'tier'
   | 'code'
   | 'name'
   | 'sector'
@@ -114,10 +120,14 @@ const {
   sortRows: sortPickRows,
 } = useColumnSort<PickSortKey>({
   initialKey: null,
-  numericKeys: ['price', 'r01_chg', 'turnover', 'vol_ratio', 'circ_market_cap', 'sector_pct'],
+  numericKeys: ['tier', 'price', 'r01_chg', 'turnover', 'vol_ratio', 'circ_market_cap', 'sector_pct'],
+  // 档位取的是梯队下标，「值大 = 梯队靠后（排除）」，与直觉相反，故默认升序 = 重点在前
+  dirFor: (k) => (k === 'tier' ? 'asc' : undefined),
 });
 
 function pickSortValue(p: PickRecord, k: PickSortKey): SortValue {
+  // 档位映射成 TIER_ORDER 下标参与数值比较：重点 0 < 次级 1 < 条件 2 < 排除 3
+  if (k === 'tier') return TIER_ORDER.indexOf(p.tier);
   return p[k];
 }
 
@@ -136,6 +146,14 @@ function pickArrow(k: PickSortKey): string {
   return pickSortDir.value === 'desc' ? '▼' : '▲';
 }
 
+/**
+ * 行序号：跨页连续（第 2 页从 51 起），按「当前展示顺序」编号。
+ * 所以排序 / 筛选 / 翻页后序号会跟着重排——它标的是「你现在看到第几条」，不是记录身份。
+ */
+function rowNo(i: number): number {
+  return (page.value - 1) * PAGE_SIZE + i + 1;
+}
+
 /** 表头定义：单一事实来源，模板列头与「当前排序」提示都从这里取。 */
 interface PickCol {
   /** 可排序列才有；值即 PickSortKey */
@@ -146,7 +164,7 @@ interface PickCol {
 const PICK_COLS: PickCol[] = [
   { key: 'code', label: '代码' },
   { key: 'name', label: '名称' },
-  { label: '档位', cls: 'ctr' },
+  { key: 'tier', label: '档位', cls: 'ctr' },
   { label: '规则', cls: 'ctr' },
   { key: 'sector', label: '板块' },
   { key: 'price', label: '价格', cls: 'num' },
@@ -323,8 +341,9 @@ onBeforeUnmount(writeState);
     <p class="legend" v-if="picks.length">
       <b>档位</b> = R01 梯队：重点（C1–C4 全达标）/ 次级（核心项 ≥3）/ 条件（核心项 ≥2）/ 排除（未达 R01 梯队，但命中 R07 或 R05 仍会入选）。
       <b>规则</b>列的 R01 / R07 / R05 为三条规则的命中标记（可叠加，R07、R05 与档位无关）。
-      <b>点列头</b>可按代码 / 名称 / 板块 / 价格 / R01 涨跌 / 换手率 / 量比 / 流通市值 / 板块强度排序（再点一次切换升降序），
-      默认仍是「档位分组 + 组内 R01 涨幅降序」。完整口径见
+      <b>点列头</b>可按档位 / 代码 / 名称 / 板块 / 价格 / R01 涨跌 / 换手率 / 量比 / 流通市值 / 板块强度排序（再点一次切换升降序），
+      其中<b>档位</b>按 重点 → 次级 → 条件 → 排除 的梯队顺序排（不是按拼音）。默认仍是「档位分组 + 组内 R01 涨幅降序」。
+      首列<b>序号</b>按当前展示顺序编号、跨页连续（第 2 页从 51 起），随排序 / 筛选 / 翻页重排。完整口径见
       <router-link to="/rules">规则释义</router-link>。
     </p>
 
@@ -333,21 +352,23 @@ onBeforeUnmount(writeState);
       <table class="grid">
         <!-- 列宽规划：文本列（代码/名称/板块/理由）较宽；标签列窄且居中；数值列右对齐 -->
         <colgroup>
-          <col style="width: 7%" />
-          <col style="width: 9%" />
+          <col style="width: 4%" />
+          <col style="width: 6.5%" />
+          <col style="width: 8.5%" />
           <col style="width: 5%" />
-          <col style="width: 7%" />
-          <col style="width: 9%" />
+          <col style="width: 6.5%" />
+          <col style="width: 8.5%" />
           <col style="width: 6%" />
           <col style="width: 6%" />
           <col style="width: 6%" />
           <col style="width: 5.5%" />
-          <col style="width: 8.5%" />
+          <col style="width: 8%" />
           <col style="width: 6%" />
-          <col style="width: 25%" />
+          <col style="width: 23.5%" />
         </colgroup>
         <thead>
           <tr>
+            <th class="ctr idx">序号</th>
             <th
               v-for="(c, i) in PICK_COLS"
               :key="i"
@@ -361,7 +382,8 @@ onBeforeUnmount(writeState);
           </tr>
         </thead>
         <tbody>
-          <tr v-for="p in pagedPicks" :key="p.id" @click="open(p.code)">
+          <tr v-for="(p, i) in pagedPicks" :key="p.id" @click="open(p.code)">
+            <td class="ctr idx" data-label="序号">{{ rowNo(i) }}</td>
             <td class="code" data-label="代码">{{ p.code }}</td>
             <td class="name" data-label="名称">{{ p.name ?? '—' }}</td>
             <td class="ctr" data-label="档位"><TierBadge :tier="p.tier" /></td>
@@ -452,6 +474,8 @@ onBeforeUnmount(writeState);
 .grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+/* 序号列：只做定位参考，不可排序，故比正文更淡、更窄 */
+.grid .idx { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11.5px; white-space: nowrap; }
 .grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .code { white-space: nowrap; font-weight: 600; color: var(--accent); }
 .grid .name { font-weight: 500; }
