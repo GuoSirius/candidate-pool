@@ -39,8 +39,29 @@ type SortKey =
   | 'n1_avg'
   | 'n2_avg'
   | 'n3_avg'
+  | 'last_n1'
+  | 'last_n2'
+  | 'last_n3'
   | 'last_anchor'
   | 'first_anchor';
+
+/**
+ * N 列的两种口径：
+ * - last：只看「最近一次入选」那一次的表现（单次快照，回答「这只票眼下什么状态」）；
+ * - avg：把历次入选各自的表现取算术平均（跨时间平均，回答「这只票长期靠不靠谱」）。
+ * 两者用途不同、互相不能替代，所以保留切换而不是二选一。
+ */
+type NCaliber = 'last' | 'avg';
+
+const nCaliber = ref<NCaliber>('last');
+
+/** 第 cy 个周期在当前口径下对应的数据字段名，同时也是该列的排序键。 */
+function nKey(cy: number): SortKey {
+  return (nCaliber.value === 'last' ? `last_n${cy}` : `n${cy}_avg`) as SortKey;
+}
+
+const N_CYCLES = [1, 2, 3] as const;
+const N_KEYS: SortKey[] = ['last_n1', 'last_n2', 'last_n3', 'n1_avg', 'n2_avg', 'n3_avg'];
 
 const NUM_KEYS: SortKey[] = [
   'picks',
@@ -48,9 +69,7 @@ const NUM_KEYS: SortKey[] = [
   'secondary',
   'conditional',
   'excluded',
-  'n1_avg',
-  'n2_avg',
-  'n3_avg',
+  ...N_KEYS,
 ];
 
 interface Col {
@@ -60,23 +79,41 @@ interface Col {
   tip?: string;
 }
 
-const AVG_TIP = '该票每次入选后第 N 个交易日的涨跌幅，相对各自入选价，再取算术平均';
+const AVG_TIP =
+  '该票每一次入选后第 N 个交易日的涨跌幅，各自相对自己的入选价，再取算术平均（跨时间平均，看长期）';
+const LAST_TIP =
+  '该票最近一次入选后第 N 个交易日的涨跌幅，相对那次入选价（单次快照，看眼下）';
 
-const COLS: Col[] = [
-  { key: 'code', label: '代码' },
-  { key: 'name', label: '名称' },
-  { key: 'sector', label: '板块' },
-  { key: 'picks', label: '入选<br />次数', num: true, tip: '该票在全部批次中的入选总次数' },
-  { key: 'high', label: '重点', num: true },
-  { key: 'secondary', label: '次级', num: true },
-  { key: 'conditional', label: '条件', num: true },
-  { key: 'excluded', label: '排除', num: true },
-  { key: 'n1_avg', label: 'N1<br />平均', num: true, tip: AVG_TIP },
-  { key: 'n2_avg', label: 'N2<br />平均', num: true, tip: AVG_TIP },
-  { key: 'n3_avg', label: 'N3<br />平均', num: true, tip: AVG_TIP },
-  { key: 'last_anchor', label: '最近入选', tip: '默认按此列倒序（最近入选的标的最前）' },
-  { key: 'first_anchor', label: '首次入选' },
-];
+/** 表头列：固定列 + 中间三个随口径切换的 N 列 + 时间列。列数与列宽保持不变。 */
+const COLS = computed<Col[]>(() => {
+  const tag = nCaliber.value === 'last' ? '最近' : '平均';
+  const tip = nCaliber.value === 'last' ? LAST_TIP : AVG_TIP;
+  const nCols: Col[] = N_CYCLES.map((cy) => ({ key: nKey(cy), label: `N${cy}<br />${tag}`, num: true, tip }));
+  return [
+    { key: 'code', label: '代码' },
+    { key: 'name', label: '名称' },
+    { key: 'sector', label: '板块' },
+    { key: 'picks', label: '入选<br />次数', num: true, tip: '该票在全部批次中的入选总次数' },
+    { key: 'high', label: '重点', num: true },
+    { key: 'secondary', label: '次级', num: true },
+    { key: 'conditional', label: '条件', num: true },
+    { key: 'excluded', label: '排除', num: true },
+    ...nCols,
+    { key: 'last_anchor', label: '最近入选', tip: '默认按此列倒序（最近入选的标的最前）' },
+    { key: 'first_anchor', label: '首次入选' },
+  ];
+});
+
+const nLabel = computed(() => (nCaliber.value === 'last' ? '最近' : '平均'));
+
+/** 切换口径；若当前正按某个 N 列排序，跟着切到同周期的新口径列，避免排序悄悄失效。 */
+function setCaliber(c: NCaliber) {
+  if (nCaliber.value === c) return;
+  const idx = N_KEYS.indexOf(sortKey.value);
+  nCaliber.value = c;
+  if (idx >= 0) sortKey.value = nKey((idx % 3) + 1);
+  writeState();
+}
 
 // 默认：按最近入选时间倒序
 const sortKey = ref<SortKey>('last_anchor');
@@ -87,6 +124,7 @@ const STATE_KEY = 'cp:allstocks:state';
 interface AllState {
   search?: string;
   tier?: '' | Tier;
+  caliber?: NCaliber;
   sortKey?: SortKey;
   sortDir?: 'asc' | 'desc';
   scrollY?: number;
@@ -103,6 +141,7 @@ function writeState() {
     const s: AllState = {
       search: search.value,
       tier: tierFilter.value,
+      caliber: nCaliber.value,
       sortKey: sortKey.value,
       sortDir: sortDir.value,
       scrollY: window.scrollY,
@@ -128,21 +167,28 @@ function cellValue(r: StockRankRow, k: SortKey): number | string {
   return v === null || v === undefined ? '' : v;
 }
 
-/** 收益列悬浮说明：把口径与样本数讲清楚（三个周期的样本数可能不一样）。 */
-function avgTitle(r: StockRankRow, h: 'n1' | 'n2' | 'n3'): string {
-  if (h === 'n1') {
-    return r.n1_avg === null
-      ? 'N1 平均：暂无可用样本（入选后第 1 个交易日的数据还没出来）'
-      : `N1 平均：${fmtPct(r.n1_avg)}｜样本 ${r.n1_n} 次入选（每次相对各自入选价）`;
+/** 当前口径下第 cy 个周期该行的取值（缺数据为 null）。 */
+function nVal(r: StockRankRow, cy: number): number | null {
+  const v = (r as unknown as Record<string, number | null | undefined>)[nKey(cy)];
+  return v === undefined ? null : v;
+}
+
+/**
+ * N 列悬浮说明：把「口径 + 参照的锚定日 + 样本数」讲清楚。
+ * 平均口径下三个周期的样本数可能不同（近期入选的还没走到第 2/3 个交易日），所以逐列显示。
+ */
+function nTitle(r: StockRankRow, cy: number): string {
+  const v = nVal(r, cy);
+  if (nCaliber.value === 'avg') {
+    const n = (r as unknown as Record<string, number | undefined>)[`n${cy}_n`] ?? 0;
+    return v === null
+      ? `N${cy} 平均：暂无可用样本（入选后第 ${cy} 个交易日的行情还没出来）`
+      : `N${cy} 平均：${fmtPct(v)}｜样本 ${n} 次入选（每次相对各自的入选价）`;
   }
-  if (h === 'n2') {
-    return r.n2_avg === null
-      ? 'N2 平均：暂无可用样本（入选后第 2 个交易日的数据还没出来）'
-      : `N2 平均：${fmtPct(r.n2_avg)}｜样本 ${r.n2_n} 次入选（每次相对各自入选价）`;
+  if (v === null) {
+    return `N${cy}（最近一次入选 ${r.last_anchor}）：暂无数据 —— 该次入选后第 ${cy} 个交易日的行情还没出来`;
   }
-  return r.n3_avg === null
-    ? 'N3 平均：暂无可用样本（入选后第 3 个交易日的数据还没出来）'
-    : `N3 平均：${fmtPct(r.n3_avg)}｜样本 ${r.n3_n} 次入选（每次相对各自入选价）`;
+  return `N${cy}（最近一次入选 ${r.last_anchor}）：${fmtPct(v)}，相对该次入选价`;
 }
 
 const filtered = computed(() => {
@@ -223,6 +269,8 @@ onMounted(() => {
   const saved = readState();
   if (saved.search) search.value = saved.search;
   if (saved.tier) tierFilter.value = saved.tier;
+  // 先恢复口径再恢复排序键：排序键可能是某个 N 列，两者要配套
+  if (saved.caliber) nCaliber.value = saved.caliber;
   if (saved.sortKey) sortKey.value = saved.sortKey;
   if (saved.sortDir) sortDir.value = saved.sortDir;
   pendingScrollY = saved.scrollY && saved.scrollY > 0 ? saved.scrollY : null;
@@ -265,6 +313,25 @@ onBeforeUnmount(writeState);
           <option v-for="o in TIER_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
       </label>
+      <div class="caliber" role="group" aria-label="N 列收益口径">
+        <span class="fl">收益口径</span>
+        <button
+          type="button"
+          :class="{ on: nCaliber === 'last' }"
+          title="只看最近一次入选那一次的表现（单次快照，看眼下状态）"
+          @click="setCaliber('last')"
+        >
+          最近一次
+        </button>
+        <button
+          type="button"
+          :class="{ on: nCaliber === 'avg' }"
+          title="把历次入选各自的表现取算术平均（跨时间平均，看长期表现）"
+          @click="setCaliber('avg')"
+        >
+          历史平均
+        </button>
+      </div>
       <input
         class="search-input"
         type="search"
@@ -326,14 +393,15 @@ onBeforeUnmount(writeState);
             <td class="num t-se" data-label="次级">{{ r.secondary || '—' }}</td>
             <td class="num t-co" data-label="条件">{{ r.conditional || '—' }}</td>
             <td class="num t-ex" data-label="排除">{{ r.excluded || '—' }}</td>
-            <td class="num perf" :class="perfClass(r.n1_avg)" data-label="N1 平均" :title="avgTitle(r, 'n1')">
-              {{ fmtPct(r.n1_avg) }}
-            </td>
-            <td class="num perf" :class="perfClass(r.n2_avg)" data-label="N2 平均" :title="avgTitle(r, 'n2')">
-              {{ fmtPct(r.n2_avg) }}
-            </td>
-            <td class="num perf" :class="perfClass(r.n3_avg)" data-label="N3 平均" :title="avgTitle(r, 'n3')">
-              {{ fmtPct(r.n3_avg) }}
+            <td
+              v-for="cy in N_CYCLES"
+              :key="cy"
+              class="num perf"
+              :class="perfClass(nVal(r, cy))"
+              :data-label="`N${cy} ${nLabel}`"
+              :title="nTitle(r, cy)"
+            >
+              {{ fmtPct(nVal(r, cy)) }}
             </td>
             <td class="mono ctr" data-label="最近入选">{{ r.last_anchor }}</td>
             <td class="mono ctr" data-label="首次入选">{{ r.first_anchor }}</td>
@@ -385,6 +453,17 @@ onBeforeUnmount(writeState);
   border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
 }
 .tier-select:focus { outline: none; border-color: var(--accent); }
+/* N 列口径切换：两段式，选中项高亮，一眼看出当前在看哪种口径 */
+.caliber { display: inline-flex; align-items: center; gap: 8px; }
+.caliber .fl { font-size: 12px; color: var(--muted); }
+.caliber button {
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  font: inherit; font-size: 12.5px; padding: 6px 12px; cursor: pointer;
+}
+.caliber button:first-of-type { border-radius: 999px 0 0 999px; }
+.caliber button:last-of-type { border-radius: 0 999px 999px 0; margin-left: -8px; }
+.caliber button.on { background: rgba(31,111,235,0.16); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.caliber button:not(.on):hover { color: var(--text); }
 .clear-btn {
   background: none; border: none; padding: 0; font: inherit; font-size: 12.5px;
   color: var(--accent); cursor: pointer;
@@ -463,5 +542,7 @@ onBeforeUnmount(writeState);
   .search-input { flex-basis: 100%; }
   .tier-filter { flex-basis: 100%; }
   .tier-select { flex: 1; }
+  .caliber { flex-basis: 100%; }
+  .caliber button { flex: 1; }
 }
 </style>

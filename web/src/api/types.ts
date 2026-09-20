@@ -208,6 +208,15 @@ export interface StockRankRow {
   n1_n: number;
   n2_n: number;
   n3_n: number;
+  /**
+   * 「最近一次入选」口径的 N1/N2/N3 收益（%）：只取 `last_anchor` 那一次入选，相对该次自身入选价计算。
+   * 该次入选后第 N 个交易日的行情尚未出来（或该次缺入选价）时为 null。
+   *
+   * 与 n*_avg 的分工：avg = 跨时间平均，看长期靠不靠谱；last = 单次快照，看眼下什么状态。
+   */
+  last_n1: number | null;
+  last_n2: number | null;
+  last_n3: number | null;
 }
 
 export const TIER_LABELS: Record<Tier, string> = {
