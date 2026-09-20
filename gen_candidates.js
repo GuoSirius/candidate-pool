@@ -76,11 +76,11 @@ const MAX_FAIL_RATE = Number(process.env.CANDIDATE_MAX_FAIL_RATE) || 0.2;
 
 // ---------- 小工具 ----------
 function log(...a) { process.stderr.write(a.join(' ') + '\n'); }
+// 交易日相关的小工具统一用 dayjs（北京时间），不用原生 Date：
+// 原生 Date 的 getDay()/getHours() 读的是「机器本地时区」，换台时区不是 +8 的机器
+// 就会把「15:00 前算盘中 / 周末顺延」判错；dayjs.tz 走显式时区，结果与机器设置无关。
 function ymd(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return dayjs.isDayjs(d) ? d.format('YYYY-MM-DD') : dayjs.tz(d).format('YYYY-MM-DD');
 }
 function parseArgs(argv) {
   const o = { date: null, limit: 0, out: null, quiet: false, offline: false, snapshot: null, dump: null, noNotify: false };
@@ -99,24 +99,25 @@ function parseArgs(argv) {
   }
   return o;
 }
-function isWeekend(d) { const g = d.getDay(); return g === 0 || g === 6; }
-function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function isWeekendD(d) { const g = d.day(); return g === 0 || g === 6; }
+/** dateStr（YYYY-MM-DD）之后的下一个交易日（仅剔除周末，不含节假日日历）。 */
 function nextTradingDay(dateStr) {
-  let d = addDays(new Date(dateStr + 'T00:00:00'), 1);
-  while (isWeekend(d)) d = addDays(d, 1);
+  let d = dayjs.tz(dateStr + ' 00:00:00').add(1, 'day');
+  while (isWeekendD(d)) d = d.add(1, 'day');
   return ymd(d);
 }
-function lastClosedTradingDay(now) {
-  const d = new Date(now);
+/** 最近一个「已收盘」的交易日：周六 → 周五，周日 → 周五，交易日 15:00 前 → 前一交易日。 */
+function lastClosedTradingDay(nowD) {
+  const d = dayjs.isDayjs(nowD) ? nowD : dayjs.tz(nowD);
+  const day = d.day();
+  const hour = d.hour();
   let back = 0;
-  const day = d.getDay();
-  const hour = d.getHours();
   if (day === 6) back = 1;        // 周六 -> 周五
   else if (day === 0) back = 2;   // 周日 -> 周五
   else if (hour < 15) back = 1;   // 交易日盘中 -> 前一交易日
-  d.setDate(d.getDate() - back);
-  while (isWeekend(d)) d.setDate(d.getDate() - 1);
-  return ymd(d);
+  let x = d.subtract(back, 'day');
+  while (isWeekendD(x)) x = x.subtract(1, 'day');
+  return ymd(x);
 }
 
 // ---------- HTTP 工具（腾讯公开行情接口，无需任何第三方 CLI）----------
@@ -330,12 +331,12 @@ async function main() {
   // --print-anchor：仅解析并输出目标锚定日（北京时间推算，时区安全），不发起任何网络请求。
   // 供 CI / 本地定时任务判断「今日快照是否已存在」，避免重复生成造成两端数据分歧。
   if (args.printAnchor) {
-    const now = dayjs.tz().toDate();
+    const now = dayjs.tz();
     console.log(args.date || lastClosedTradingDay(now));
     return;
   }
   if (args.offline) { await runOffline(args); return; }
-  const now = dayjs.tz().toDate();   // 当前北京时间对应的 Date（供交易日推算，时区安全）
+  const now = dayjs.tz();            // 当前北京时间（dayjs 对象；交易日推算与机器时区无关）
   const anchor = args.date || lastClosedTradingDay(now);
   const target = nextTradingDay(anchor);
   let limit = args.limit || 0; // 0 = 不限制，筛查观察池全部标的
