@@ -190,7 +190,7 @@ function tierStat(tier: string, perfs: Array<Perf | null>): TierStats {
 /**
  * 复盘统计：对区间内全部入选记录计算 N1/N2/N3/N5/N7/N9/N10 命中率与均值。
  * 复用 computePerf 的「按交易日偏移」口径，与个股详情页保持一致。
- * 为避免一次拉全表，price_daily 按入选代码分块（IN 参数上限 999）取回后在内存分组。
+ * 为避免一次拉全表，price_daily 按入选代码分块（D1 绑定参数上限 100，分块取 90）取回后在内存分组。
  */
 export async function getStats(
   db: D1Database,
@@ -215,9 +215,11 @@ export async function getStats(
   );
 
   // 按代码分块取日线，再在内存里按 code 分组。
+  // 注意：Cloudflare D1 单条 SQL 的「绑定参数」上限是 100（不是 SQLite 的 999），
+  // 分块必须 ≤ 100；此处取 90 留余量，否则 code 一多，IN(?,?,…) 会直接抛错 → /api/stats 500。
   const codes = Array.from(new Set(picks.map((p) => p.code)));
   const priceMap = new Map<string, Array<{ date: string; close: number }>>();
-  const CHUNK = 400;
+  const CHUNK = 90;
   for (let i = 0; i < codes.length; i += CHUNK) {
     const chunk = codes.slice(i, i + CHUNK);
     const placeholders = chunk.map(() => '?').join(',');
