@@ -36,6 +36,7 @@ export interface PickRecord {
   r01_chg: number | null;
   price: number | null;
   turnover: number | null;
+  vol_ratio: number | null;
   circ_market_cap: number | null;
   total_market_cap: number | null;
   sector_pct: number | null;

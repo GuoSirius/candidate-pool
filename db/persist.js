@@ -15,12 +15,13 @@ const RUN_SEL = 'SELECT id FROM run_batch WHERE anchor_date=?';
 // 新行（无冲突）正常 INSERT；冲突且更新条件不满足时静默保留较新数据。
 const PICK_Q = `INSERT INTO pick_record
   (run_id,anchor_date,code,name,sector,tier,r01_ok,r07_laggard,r05_partial,core,r01_chg,price,
-   turnover,circ_market_cap,total_market_cap,sector_pct,sector_rank,reason,picked_at,run_at)
-  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+   turnover,vol_ratio,circ_market_cap,total_market_cap,sector_pct,sector_rank,reason,picked_at,run_at)
+  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   ON CONFLICT(run_id, code) DO UPDATE SET
     name=excluded.name, sector=excluded.sector, tier=excluded.tier, r01_ok=excluded.r01_ok,
     r07_laggard=excluded.r07_laggard, r05_partial=excluded.r05_partial, core=excluded.core,
     r01_chg=excluded.r01_chg, price=excluded.price, turnover=excluded.turnover,
+    vol_ratio=excluded.vol_ratio,
     circ_market_cap=excluded.circ_market_cap, total_market_cap=excluded.total_market_cap,
     sector_pct=excluded.sector_pct, sector_rank=excluded.sector_rank, reason=excluded.reason,
     picked_at=excluded.picked_at, run_at=excluded.run_at
@@ -44,6 +45,7 @@ async function ensureColumns(client) {
   _migrated = true;
   for (const sql of [
     'ALTER TABLE pick_record ADD COLUMN run_at TEXT',
+    'ALTER TABLE pick_record ADD COLUMN vol_ratio REAL',
     'ALTER TABLE price_daily ADD COLUMN run_at TEXT',
   ]) {
     try { await client.query(sql); } catch (_) { /* 列已存在则忽略 */ }
@@ -67,7 +69,7 @@ async function persistSnap(snap, d1) {
   for (const p of picks) {
     stmts.push({ sql: PICK_Q, params: [
       runId, p.anchor_date, p.code, p.name, p.sector, p.tier, p.r01_ok, p.r07_laggard,
-      p.r05_partial, p.core, p.r01_chg, p.price, p.turnover, p.circ_market_cap,
+      p.r05_partial, p.core, p.r01_chg, p.price, p.turnover, p.vol_ratio, p.circ_market_cap,
       p.total_market_cap, p.sector_pct, p.sector_rank, p.reason, p.picked_at, run.run_at,
     ] });
   }

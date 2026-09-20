@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS pick_record (
   r01_chg          REAL,                           -- 当日涨幅 %（R01 口径）
   price            REAL,                           -- 入选价（收盘价，元）
   turnover         REAL,                           -- 当日换手率 %
+  vol_ratio        REAL,                           -- 量比（当日成交量 ÷ 近 5 日均量；R01 C1 口径）
   circ_market_cap  REAL,                           -- 流通市值（元）
   total_market_cap REAL,                           -- 总市值（元）
   sector_pct       REAL,                           -- 所属行业当日涨幅中位数 %

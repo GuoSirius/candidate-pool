@@ -74,6 +74,7 @@ function normalizeSnap(snap) {
       r05_partial: (s.r05 && s.r05.verdict === 'partial') ? 1 : 0,
       core: r.core ?? null, r01_chg: r.chg ?? null, price: r.close ?? null,
       turnover: r.turn ?? null,
+      vol_ratio: r.volRatio ?? null,
       circ_market_cap: r.circCapYi != null ? r.circCapYi * 1e8 : null,
       total_market_cap: r.mktCapYi != null ? r.mktCapYi * 1e8 : null,
       sector_pct: (s.r07 && s.r07.sectorPct) ?? null,
