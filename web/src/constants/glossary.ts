@@ -15,6 +15,8 @@ export type Horizon = (typeof HORIZONS)[number];
 /** 短周期（入选后 3 个交易日内）与长周期分组，供走势图快捷选段使用。 */
 export const H_SHORT: Horizon[] = ['n1', 'n2', 'n3'];
 export const H_LONG: Horizon[] = ['n5', 'n7', 'n9', 'n10'];
+/** 走势图默认展示的周期：更贴近短线持股节奏（一周内），避免 7 条线互相压盖。 */
+export const H_COMMON: Horizon[] = ['n1', 'n2', 'n3', 'n5'];
 
 export const H_LABEL: Record<Horizon, string> = {
   n1: 'N1',

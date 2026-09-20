@@ -10,6 +10,7 @@ import {
   H_COLOR,
   H_SHORT,
   H_LONG,
+  H_COMMON,
   HORIZON_NOTE,
   STAT_DEFS,
   timelineAvg,
@@ -58,7 +59,9 @@ function applyRange() {
 }
 
 // —— 走势图：可勾选显示的周期序列（sessionStorage 记忆）——
-const ACTIVE_KEY = 'cp:stats:horizons';
+// key 带版本号：默认展示项从「全部 7 条」收敛为 N1/N2/N3/N5 后，
+// 用新 key 让旧的本地记忆自然失效，否则老用户仍会被旧值覆盖。
+const ACTIVE_KEY = 'cp:stats:horizons:v2';
 const ALL_H: Horizon[] = [...HORIZONS];
 
 function readActive(): Horizon[] {
@@ -71,7 +74,7 @@ function readActive(): Horizon[] {
   } catch {
     /* 隐私模式等读取失败时忽略 */
   }
-  return ALL_H;
+  return [...H_COMMON];
 }
 
 const active = ref<Horizon[]>(readActive());
@@ -288,9 +291,10 @@ onMounted(load);
         <h2>平均收益走势</h2>
         <div class="chart-bar">
           <span class="presets">
-            <button class="chip" @click="setPreset(ALL_H)">全部</button>
+            <button class="chip" @click="setPreset(H_COMMON)">N1/N2/N3/N5</button>
             <button class="chip" @click="setPreset(H_SHORT)">N1–N3</button>
             <button class="chip" @click="setPreset(H_LONG)">N5–N10</button>
+            <button class="chip" @click="setPreset(ALL_H)">全部</button>
           </span>
           <div class="legend-toggles">
             <button
