@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { StockHistory } from '../api/types';
 import { fmtNum, fmtPct, perfClass } from '../utils/format';
 import { HORIZONS, H_LABEL, HORIZON_NOTE_SHORT } from '../constants/glossary';
+import { goBack, backLabelOf } from '../utils/nav';
 import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
 
 const route = useRoute();
+const router = useRouter();
 
 const code = computed(() => String(route.params.code));
 const data = ref<StockHistory | null>(null);
 const loading = ref(false);
 const error = ref<string>('');
+
+// 「从哪来、回哪去」：返回按钮文案跟随来源页，行为见 utils/nav.ts
+const backLabel = computed(() => backLabelOf(route));
+function back() {
+  goBack(router, route);
+}
 
 async function load(code: string) {
   loading.value = true;
@@ -50,7 +58,7 @@ onMounted(() => load(code.value));
   <div class="stock">
     <header class="page-head">
       <div class="title">
-        <router-link class="ghost-btn" to="/">← 候选列表</router-link>
+        <button class="ghost-btn" type="button" @click="back">← {{ backLabel }}</button>
         <h1>
           <span class="code">{{ code }}</span>
           <span class="name" v-if="base?.name">{{ base.name }}</span>
@@ -95,36 +103,32 @@ onMounted(() => load(code.value));
         </ul>
       </section>
 
-      <!-- 各周期复盘汇总 -->
+      <!-- 各周期复盘汇总：卡片形式，一个周期一张卡 -->
       <section class="card" v-if="picks.length">
         <h2>入选后各周期表现（复盘）</h2>
-        <div class="table-wrap">
-          <table class="grid">
-            <colgroup>
-              <col style="width: 14%" />
-              <col style="width: 16%" />
-              <col style="width: 20%" />
-              <col style="width: 25%" />
-              <col style="width: 25%" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th class="ctr">周期</th><th class="num">样本</th><th class="num">平均</th>
-                <th class="num">最佳</th><th class="num">最差</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="s in perfSummary" :key="s.h">
-                <td class="mono ctr">{{ H_LABEL[s.h] }}</td>
-                <td class="num">{{ s.n || '—' }}</td>
-                <td class="num" :class="perfClass(s.avg)">{{ fmtPct(s.avg) }}</td>
-                <td class="num" :class="perfClass(s.best)">{{ fmtPct(s.best) }}</td>
-                <td class="num" :class="perfClass(s.worst)">{{ fmtPct(s.worst) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <p class="legend head">
+          口径：每次入选都以<b>该期入选价（锚定日收盘价）</b>为基准，取 N 个交易日后的收盘价相对它的涨跌幅。
+          每张卡对应一个周期，<b>样本</b> = 该票历史入选记录中「该周期已有数据」的条数；
+          <b>平均</b> = 这些样本的算术平均，<b>最佳 / 最差</b> = 同一批样本里的最大值 / 最小值。
+          三者都是跟「入选价」比，不是样本之间互相比。
+        </p>
+        <div class="stat-row">
+          <div class="stat" v-for="s in perfSummary" :key="s.h">
+            <div class="stat-h">
+              <span class="hn">{{ H_LABEL[s.h] }}</span>
+              <span class="hs">样本 {{ s.n || '—' }}</span>
+            </div>
+            <div class="stat-main">
+              <span class="sl">平均</span>
+              <span class="sv" :class="perfClass(s.avg)">{{ fmtPct(s.avg) }}</span>
+            </div>
+            <div class="stat-sub">
+              <span>最佳 <b :class="perfClass(s.best)">{{ fmtPct(s.best) }}</b></span>
+              <span>最差 <b :class="perfClass(s.worst)">{{ fmtPct(s.worst) }}</b></span>
+            </div>
+          </div>
         </div>
-        <p class="legend">逐周期统计该票历史入选记录的表现，仅计入有数据的样本；距锚定日过近时后段周期暂缺（显示 —）。</p>
+        <p class="legend">距锚定日过近时后段周期暂无数据，显示 —；颜色惯例 红 = 正、绿 = 负。</p>
       </section>
 
       <!-- 各期入选与 N 日收益 -->
@@ -172,7 +176,11 @@ onMounted(() => load(code.value));
 .stock { display: flex; flex-direction: column; gap: 16px; }
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .page-head .title { display: flex; flex-direction: column; gap: 6px; }
-.ghost-btn { color: var(--accent); text-decoration: none; font-size: 13px; width: fit-content; white-space: nowrap; }
+/* 同一 class 既要给 <router-link> 用，也要给 <button> 用，故显式清掉按钮默认样式 */
+.ghost-btn {
+  color: var(--accent); text-decoration: none; font-size: 13px; width: fit-content; white-space: nowrap;
+  background: none; border: none; padding: 0; font-family: inherit; cursor: pointer;
+}
 .ghost-btn:hover { text-decoration: underline; }
 .page-head h1 { font-size: 22px; margin: 0; display: flex; align-items: baseline; gap: 10px; }
 .page-head .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); }
@@ -196,10 +204,17 @@ onMounted(() => load(code.value));
 .ncontent { line-height: 1.6; }
 .nmeta { color: var(--muted); font-size: 12px; margin-left: auto; }
 
-.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
-.stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
-.stat .k { font-size: 12px; color: var(--muted); }
-.stat .v { font-size: 18px; font-weight: 700; }
+/* 各周期复盘卡片：一个 N 周期一张卡 */
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.stat-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.stat-h .hn { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 700; color: var(--accent); }
+.stat-h .hs { font-size: 11px; color: var(--muted); }
+.stat-main { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.stat-main .sl { font-size: 12px; color: var(--muted); }
+.stat-main .sv { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-sub { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 6px; }
+.stat-sub b { font-variant-numeric: tabular-nums; }
 
 .table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
 .grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
@@ -214,7 +229,8 @@ onMounted(() => load(code.value));
 .up { color: #ff7b72; }
 .down { color: #3fb950; }
 .flat { color: var(--muted); }
-.legend { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+.legend { color: var(--muted); font-size: 12px; margin: 10px 0 0; line-height: 1.75; }
+.legend.head { margin: 0 0 12px; background: rgba(31,111,235,0.08); border: 1px solid rgba(31,111,235,0.25); border-radius: 8px; padding: 8px 10px; }
 
 .hint { color: var(--muted); padding: 20px 0; text-align: center; }
 .error { color: #ff7b72; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); padding: 10px 12px; border-radius: 8px; }

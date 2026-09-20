@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { RunBatch, PickRecord, Tier } from '../api/types';
 import { TIER_ORDER, TIER_LABELS } from '../api/types';
 import { fmtNum, fmtPct, fmtCap } from '../utils/format';
+import { openStock } from '../utils/nav';
 import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
 
 const router = useRouter();
+const route = useRoute();
 
 const runs = ref<RunBatch[]>([]);
 const selectedAnchor = ref<string>('');
@@ -128,8 +130,8 @@ function pickCount(r: RunBatch): number {
   return (r.high_count ?? 0) + (r.secondary_count ?? 0) + (r.conditional_count ?? 0);
 }
 
-function openStock(code: string) {
-  router.push(`/stock/${code}`);
+function open(code: string) {
+  openStock(router, route, code);
 }
 
 // 切换锚定日时回到第一页并清空搜索（恢复状态期间不重置）
@@ -266,7 +268,7 @@ onBeforeUnmount(writeState);
           </tr>
         </thead>
         <tbody>
-          <tr v-for="p in pagedPicks" :key="p.id" @click="openStock(p.code)">
+          <tr v-for="p in pagedPicks" :key="p.id" @click="open(p.code)">
             <td class="code" data-label="代码">{{ p.code }}</td>
             <td class="name" data-label="名称">{{ p.name ?? '—' }}</td>
             <td class="ctr" data-label="档位"><TierBadge :tier="p.tier" /></td>

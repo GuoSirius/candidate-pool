@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { StockRankRow } from '../api/types';
+import { openStock } from '../utils/nav';
 
 const router = useRouter();
+const route = useRoute();
 
 const rows = ref<StockRankRow[]>([]);
 const loading = ref(false);
@@ -49,6 +51,35 @@ const COLS: Col[] = [
 const sortKey = ref<SortKey>('last_anchor');
 const sortDir = ref<'asc' | 'desc'>('desc');
 
+// —— 列表状态保持：进个股详情再返回时，恢复搜索 / 排序 / 滚动位置 ——
+const STATE_KEY = 'cp:allstocks:state';
+interface AllState {
+  search?: string;
+  sortKey?: SortKey;
+  sortDir?: 'asc' | 'desc';
+  scrollY?: number;
+}
+function readState(): AllState {
+  try {
+    return JSON.parse(sessionStorage.getItem(STATE_KEY) || '{}') as AllState;
+  } catch {
+    return {};
+  }
+}
+function writeState() {
+  try {
+    const s: AllState = {
+      search: search.value,
+      sortKey: sortKey.value,
+      sortDir: sortDir.value,
+      scrollY: window.scrollY,
+    };
+    sessionStorage.setItem(STATE_KEY, JSON.stringify(s));
+  } catch {
+    /* 隐私模式等写入失败时忽略 */
+  }
+}
+
 function toggleSort(k: SortKey) {
   if (sortKey.value === k) {
     sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc';
@@ -92,8 +123,18 @@ const totals = computed(() => {
   return t;
 });
 
-function openStock(code: string) {
-  router.push(`/stock/${code}`);
+function open(code: string) {
+  openStock(router, route, code);
+}
+
+// 滚动位置恢复：等数据渲染完（load 的 finally）再滚，否则文档高度不足会被截断。
+let pendingScrollY: number | null = null;
+async function applyPendingScroll() {
+  if (pendingScrollY === null) return;
+  const y = pendingScrollY;
+  pendingScrollY = null;
+  await nextTick();
+  window.scrollTo(0, y);
 }
 
 async function load() {
@@ -106,10 +147,20 @@ async function load() {
     error.value = e instanceof ApiError ? e.message : String(e);
   } finally {
     loading.value = false;
+    await applyPendingScroll();
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  const saved = readState();
+  if (saved.search) search.value = saved.search;
+  if (saved.sortKey) sortKey.value = saved.sortKey;
+  if (saved.sortDir) sortDir.value = saved.sortDir;
+  pendingScrollY = saved.scrollY && saved.scrollY > 0 ? saved.scrollY : null;
+  load();
+});
+
+onBeforeUnmount(writeState);
 </script>
 
 <template>
@@ -182,7 +233,7 @@ onMounted(load);
           </tr>
         </thead>
         <tbody>
-          <tr v-for="r in sorted" :key="r.code" @click="openStock(r.code)">
+          <tr v-for="r in sorted" :key="r.code" @click="open(r.code)">
             <td class="code" data-label="代码">{{ r.code }}</td>
             <td class="name" data-label="名称">{{ r.name ?? '—' }}</td>
             <td class="sector" data-label="板块">{{ r.sector ?? '—' }}</td>
