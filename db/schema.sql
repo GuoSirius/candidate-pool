@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS pick_record (
   sector_rank      INTEGER,                        -- 行业内的涨幅排名（R07 口径）
   reason           TEXT,                           -- 入选 / 排除原因（中文说明）
   picked_at        TEXT,                           -- 入选记录写入时间（北京时间 YYYY-MM-DD HH:mm:ss）
+  run_at           TEXT,                           -- 快照生成时刻（北京时间）；双写冲突时用于 recency guard（仅当更新值更新才覆盖）
   UNIQUE(run_id, code)
 );
 
@@ -90,6 +91,7 @@ CREATE TABLE IF NOT EXISTS price_daily (
   turnover          REAL,                          -- 换手率 %
   circ_market_cap   REAL,                          -- 流通市值（元）
   total_market_cap  REAL,                          -- 总市值（元）
+  run_at            TEXT,                           -- 快照生成时刻（北京时间）；双写冲突时用于 recency guard
   PRIMARY KEY (code, date)
 );
 

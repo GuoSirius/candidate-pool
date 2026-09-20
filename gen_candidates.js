@@ -94,6 +94,7 @@ function parseArgs(argv) {
     else if (a === '--snapshot') o.snapshot = argv[++i];
     else if (a === '--dump') o.dump = argv[++i];
     else if (a === '--no-notify') o.noNotify = true;
+    else if (a === '--print-anchor') o.printAnchor = true;
     else if (a === '-h' || a === '--help') { o.help = true; }
   }
   return o;
@@ -324,6 +325,13 @@ async function main() {
     log('     node gen_candidates.js --offline --snapshot data/snapshot-YYYYMMDD.json [--out file.html]');
     log('     node gen_candidates.js --date YYYY-MM-DD --dump data/snapshot-YYYYMMDD.json   # 在线抓取后导出快照');
     log('     node gen_candidates.js --no-notify   # 实时运行但跳过微信/邮件推送');
+    return;
+  }
+  // --print-anchor：仅解析并输出目标锚定日（北京时间推算，时区安全），不发起任何网络请求。
+  // 供 CI / 本地定时任务判断「今日快照是否已存在」，避免重复生成造成两端数据分歧。
+  if (args.printAnchor) {
+    const now = dayjs.tz().toDate();
+    console.log(args.date || lastClosedTradingDay(now));
     return;
   }
   if (args.offline) { await runOffline(args); return; }
