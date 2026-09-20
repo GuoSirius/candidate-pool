@@ -188,7 +188,7 @@ export interface StatsResult {
   range: { from: string | null; to: string | null };
 }
 
-/** 全部入选股票汇总（按 code 聚合）：入选次数 + 各档数量 + 入选时间范围。 */
+/** 全部入选股票汇总（按 code 聚合）：入选次数 + 各档数量 + 入选时间范围 + N1/N2/N3 平均涨跌幅。 */
 export interface StockRankRow {
   code: string;
   name: string | null;
@@ -200,6 +200,14 @@ export interface StockRankRow {
   excluded: number;
   first_anchor: string;
   last_anchor: string;
+  /** 短周期平均涨跌幅（%）：该票每次入选相对各自入选价的 N1/N2/N3 收益取算术平均；无样本为 null */
+  n1_avg: number | null;
+  n2_avg: number | null;
+  n3_avg: number | null;
+  /** 上述平均各自的样本数（「该周期已有数据」的入选次数），三者可能不同 */
+  n1_n: number;
+  n2_n: number;
+  n3_n: number;
 }
 
 export const TIER_LABELS: Record<Tier, string> = {

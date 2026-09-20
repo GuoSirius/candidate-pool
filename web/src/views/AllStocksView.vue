@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import { TIER_LABELS, TIER_ORDER } from '../api/types';
 import type { StockRankRow, Tier } from '../api/types';
+import { fmtPct, perfClass } from '../utils/format';
 import { openStock } from '../utils/nav';
 
 const router = useRouter();
@@ -35,10 +36,22 @@ type SortKey =
   | 'secondary'
   | 'conditional'
   | 'excluded'
+  | 'n1_avg'
+  | 'n2_avg'
+  | 'n3_avg'
   | 'last_anchor'
   | 'first_anchor';
 
-const NUM_KEYS: SortKey[] = ['picks', 'high', 'secondary', 'conditional', 'excluded'];
+const NUM_KEYS: SortKey[] = [
+  'picks',
+  'high',
+  'secondary',
+  'conditional',
+  'excluded',
+  'n1_avg',
+  'n2_avg',
+  'n3_avg',
+];
 
 interface Col {
   key: SortKey;
@@ -46,6 +59,8 @@ interface Col {
   num?: boolean;
   tip?: string;
 }
+
+const AVG_TIP = '该票每次入选后第 N 个交易日的涨跌幅，相对各自入选价，再取算术平均';
 
 const COLS: Col[] = [
   { key: 'code', label: '代码' },
@@ -56,6 +71,9 @@ const COLS: Col[] = [
   { key: 'secondary', label: '次级', num: true },
   { key: 'conditional', label: '条件', num: true },
   { key: 'excluded', label: '排除', num: true },
+  { key: 'n1_avg', label: 'N1<br />平均', num: true, tip: AVG_TIP },
+  { key: 'n2_avg', label: 'N2<br />平均', num: true, tip: AVG_TIP },
+  { key: 'n3_avg', label: 'N3<br />平均', num: true, tip: AVG_TIP },
   { key: 'last_anchor', label: '最近入选', tip: '默认按此列倒序（最近入选的标的最前）' },
   { key: 'first_anchor', label: '首次入选' },
 ];
@@ -110,6 +128,23 @@ function cellValue(r: StockRankRow, k: SortKey): number | string {
   return v === null || v === undefined ? '' : v;
 }
 
+/** 收益列悬浮说明：把口径与样本数讲清楚（三个周期的样本数可能不一样）。 */
+function avgTitle(r: StockRankRow, h: 'n1' | 'n2' | 'n3'): string {
+  if (h === 'n1') {
+    return r.n1_avg === null
+      ? 'N1 平均：暂无可用样本（入选后第 1 个交易日的数据还没出来）'
+      : `N1 平均：${fmtPct(r.n1_avg)}｜样本 ${r.n1_n} 次入选（每次相对各自入选价）`;
+  }
+  if (h === 'n2') {
+    return r.n2_avg === null
+      ? 'N2 平均：暂无可用样本（入选后第 2 个交易日的数据还没出来）'
+      : `N2 平均：${fmtPct(r.n2_avg)}｜样本 ${r.n2_n} 次入选（每次相对各自入选价）`;
+  }
+  return r.n3_avg === null
+    ? 'N3 平均：暂无可用样本（入选后第 3 个交易日的数据还没出来）'
+    : `N3 平均：${fmtPct(r.n3_avg)}｜样本 ${r.n3_n} 次入选（每次相对各自入选价）`;
+}
+
 const filtered = computed(() => {
   const t = tierFilter.value;
   const q = search.value.trim().toLowerCase();
@@ -132,8 +167,14 @@ const sorted = computed(() => {
   const dir = sortDir.value === 'asc' ? 1 : -1;
   const numeric = NUM_KEYS.includes(k);
   return [...filtered.value].sort((a, b) => {
-    if (numeric) return (Number(cellValue(a, k)) - Number(cellValue(b, k))) * dir;
-    return String(cellValue(a, k)).localeCompare(String(cellValue(b, k))) * dir;
+    const av = cellValue(a, k);
+    const bv = cellValue(b, k);
+    // 空值（如收益列无样本）恒排最后，不随升降序翻转，也不会被当成 0 混在中间
+    const aEmpty = av === '';
+    const bEmpty = bv === '';
+    if (aEmpty || bEmpty) return aEmpty && bEmpty ? 0 : aEmpty ? 1 : -1;
+    if (numeric) return (Number(av) - Number(bv)) * dir;
+    return String(av).localeCompare(String(bv)) * dir;
   });
 });
 
@@ -247,15 +288,18 @@ onBeforeUnmount(writeState);
       <table class="grid">
         <colgroup>
           <col style="width: 8%" />
+          <col style="width: 10%" />
           <col style="width: 11%" />
+          <col style="width: 7%" />
+          <col style="width: 5%" />
+          <col style="width: 5%" />
+          <col style="width: 5%" />
+          <col style="width: 5%" />
+          <col style="width: 6%" />
+          <col style="width: 6%" />
+          <col style="width: 6%" />
           <col style="width: 13%" />
-          <col style="width: 8%" />
-          <col style="width: 7%" />
-          <col style="width: 7%" />
-          <col style="width: 7%" />
-          <col style="width: 7%" />
-          <col style="width: 16%" />
-          <col style="width: 16%" />
+          <col style="width: 13%" />
         </colgroup>
         <thead>
           <tr>
@@ -282,6 +326,15 @@ onBeforeUnmount(writeState);
             <td class="num t-se" data-label="次级">{{ r.secondary || '—' }}</td>
             <td class="num t-co" data-label="条件">{{ r.conditional || '—' }}</td>
             <td class="num t-ex" data-label="排除">{{ r.excluded || '—' }}</td>
+            <td class="num perf" :class="perfClass(r.n1_avg)" data-label="N1 平均" :title="avgTitle(r, 'n1')">
+              {{ fmtPct(r.n1_avg) }}
+            </td>
+            <td class="num perf" :class="perfClass(r.n2_avg)" data-label="N2 平均" :title="avgTitle(r, 'n2')">
+              {{ fmtPct(r.n2_avg) }}
+            </td>
+            <td class="num perf" :class="perfClass(r.n3_avg)" data-label="N3 平均" :title="avgTitle(r, 'n3')">
+              {{ fmtPct(r.n3_avg) }}
+            </td>
             <td class="mono ctr" data-label="最近入选">{{ r.last_anchor }}</td>
             <td class="mono ctr" data-label="首次入选">{{ r.first_anchor }}</td>
           </tr>
@@ -298,7 +351,9 @@ onBeforeUnmount(writeState);
 
     <p class="legend" v-if="sorted.length">
       数量列（入选次数 / 重点 / 次级 / 条件 / 排除）点列头先按「多 → 少」排序；时间列默认「近 → 远」。
-      档位含义见 <router-link to="/rules">规则释义</router-link>。
+      <b>N1 / N2 / N3 平均</b> = 该票<b>每一次</b>入选后第 1 / 2 / 3 个交易日的涨跌幅（各自相对入选价）取算术平均，
+      悬停单元格可看样本数；暂无样本显示 —，排序时恒排在最后。涨 = 红，跌 = 绿。档位含义见
+      <router-link to="/rules">规则释义</router-link>。
     </p>
   </div>
 </template>
@@ -359,6 +414,12 @@ onBeforeUnmount(writeState);
 .grid .t-se { color: #e3b341; }
 .grid .t-co { color: #79c0ff; }
 .grid .t-ex { color: var(--muted); }
+/* 收益列：红涨绿跌（全站惯例），无样本时退化为灰色普通字 */
+.grid .perf { font-weight: 600; }
+.grid .perf.up { color: #ff7b72; }
+.grid .perf.down { color: #3fb950; }
+.grid .perf.flat { color: var(--muted); }
+.grid .perf.muted { color: var(--muted); font-weight: 400; }
 .grid .code { white-space: nowrap; font-weight: 600; color: var(--accent); }
 .grid .name { font-weight: 500; }
 .grid .sector { color: var(--muted); }
