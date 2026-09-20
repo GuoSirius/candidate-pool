@@ -169,6 +169,8 @@ onMounted(() => load(code.value));
 .grid { width: 100%; border-collapse: collapse; font-size: 13px; }
 .grid th, .grid td { padding: 9px 12px; text-align: left; white-space: nowrap; }
 .grid thead th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+.grid th:first-child, .grid td:first-child { position: sticky; left: 0; background: var(--bg); z-index: 1; }
+.grid thead th:first-child { z-index: 2; background: var(--surface); }
 .grid tbody tr { border-top: 1px solid var(--border); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; }
 .grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; }
