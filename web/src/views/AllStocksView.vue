@@ -419,7 +419,7 @@ onBeforeUnmount(writeState);
             <th
               v-for="c in COLS"
               :key="c.key"
-              :class="{ num: c.num, ctr: !c.num, sorted: sortKey === c.key, active: !!tierFilter && tierFilter === c.key }"
+              :class="{ num: c.num, ctr: !c.num, sorted: sortKey === c.key }"
               :title="c.tip"
             >
               <button class="th-btn" @click="toggleSort(c.key)">
@@ -567,8 +567,6 @@ onBeforeUnmount(writeState);
 /* 本表所有表头都靠 .th-btn 自己撑内边距，序号列没有按钮，得把内边距补回来 */
 .grid thead th.idx { padding: 8px 7px; }
 .grid thead th.sorted { color: var(--accent); }
-/* 当前筛选的档位列：加一条下边框做提示，避免「筛了却不知道在看哪一列」 */
-.grid thead th.active { box-shadow: inset 0 -2px 0 0 var(--accent); }
 .grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
