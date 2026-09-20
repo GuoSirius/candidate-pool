@@ -3,6 +3,12 @@
 // 关键：tier 由 r01/r07/r05 字段重新推导（快照里不含 tier，保证与流水线口径一致），
 //      同票跨 run 自然成多行，满足「不同时期收录、全保留可区分」。
 // 时间统一走 dayjs（北京时间 YYYY-MM-DD HH:mm:ss），见 ../time。
+//
+// 三个输出的**收录范围不同**，别混为一谈：
+//   picks  → 只收「被分类的票」（重点/次级/条件 + R07/R05 触发），是入选记录；
+//   prices → **全观察池 × 本锚定日**，是 N 日复盘要的日线序列（与是否入选无关）；
+//   base   → 只收被分类的票的档案（候选列表/详情页用）。
+// 三者原来共用一个 `continue`，导致日线只写了入选日 → N 日收益口径长期失真。
 
 const { now: fmtNow } = require('../time');
 
@@ -64,7 +70,26 @@ function normalizeSnap(snap) {
     if (s.r07 && s.r07.laggard) r07++;
     if (s.r05 && s.r05.verdict === 'partial') r05++;
     if (r.error) err++;
-    if (!isPicked(s)) continue;   // 只入库被分类的票（重点/次级/条件/R07/R05），不保存全部 377 只
+
+    // —— 行情：**全观察池 × 本锚定日**，与「是否入选」无关 ——
+    // N 日收益 = 「锚定日之后第 N 个交易日」的收盘 vs 入选价，前提是每只票每个交易日都有行。
+    // 原来只写入选日那一行，序列必然断档：下一行往往是「该票**下一次被入选**那天」，
+    // 实测平均隔 8.9 个自然日（最长 37 天）、只有 19% 真的隔 1 天 —— N1 报的其实是第 8~37 天。
+    // 停牌 / 行情缺失（close 为空）**不写行**：写一行 null 会占掉一个交易日的位置，
+    // 让「第 N 个交易日」整体前移，比缺一行更糟。
+    const close = (typeof r.close === 'number' && r.close > 0) ? r.close : null;
+    if (close !== null) {
+      prices.push({
+        code: s.code, date: anchor, open: null, high: null, low: null,
+        close, chg_pct: r.chg ?? null, turnover: r.turn ?? null,
+        circ_market_cap: r.circCapYi != null ? r.circCapYi * 1e8 : null,
+        total_market_cap: r.mktCapYi != null ? r.mktCapYi * 1e8 : null,
+      });
+    }
+
+    // —— 入选记录 / 基础档案：只存被分类的票（重点/次级/条件/R07/R05），不保存全部 377 只 ——
+    // 与上面的行情是两回事：行情要「全池、逐日、相邻」，入选记录只要「被分类的票」。
+    if (!isPicked(s)) continue;
 
     picks.push({
       anchor_date: anchor, code: s.code, name: s.name,
@@ -80,13 +105,6 @@ function normalizeSnap(snap) {
       sector_pct: (s.r07 && s.r07.sectorPct) ?? null,
       sector_rank: (s.r07 && s.r07.sectorRank) ?? null,
       reason: reasonOf(s), picked_at: ts,
-    });
-
-    prices.push({
-      code: s.code, date: anchor, open: null, high: null, low: null,
-      close: r.close ?? null, chg_pct: r.chg ?? null, turnover: r.turn ?? null,
-      circ_market_cap: r.circCapYi != null ? r.circCapYi * 1e8 : null,
-      total_market_cap: r.mktCapYi != null ? r.mktCapYi * 1e8 : null,
     });
 
     base.push({ code: s.code, name: s.name, sector: s.sector || '未分类', updated_at: ts });
