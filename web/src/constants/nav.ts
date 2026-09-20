@@ -59,7 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
     key: 'mine',
     label: '我的',
     items: [
-      { key: 'mine', label: '分组与备注', to: '/mine', icon: 'tag', soon: true },
+      { key: 'mine', label: '分组与备注', to: '/mine', icon: 'tag' },
     ],
   },
   {

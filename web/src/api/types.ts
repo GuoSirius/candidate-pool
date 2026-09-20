@@ -127,6 +127,12 @@ export interface NotePatch {
   anchor_date?: string | null;
 }
 
+/** 备注列表项（GET /api/notes，已联表带上股票名称/行业）。 */
+export interface NoteListItem extends StockNote {
+  name: string | null;
+  sector: string | null;
+}
+
 /** N 日收益率（相对锚定日收盘价），单位 %，可能为空（数据缺失）。
  *  N = 相对锚定日（入选日）之后的第 N 个筛选周期/交易日。 */
 export interface Perf {

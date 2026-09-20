@@ -4,6 +4,7 @@ import type {
   GroupInput,
   GroupPatch,
   NoteInput,
+  NoteListItem,
   NotePatch,
   RunBatch,
   PickRecord,
@@ -117,6 +118,11 @@ export const api = {
   /** 分组详情：组信息 + 成员列表。 */
   getGroup(id: number): Promise<GroupDetail> {
     return request<GroupDetail>(`/api/groups/${id}`);
+  },
+
+  /** 备注全量列表（按创建时间倒序，带股票名称/行业）。 */
+  listNotes(limit = 300): Promise<NoteListItem[]> {
+    return request<NoteListItem[]>(`/api/notes?limit=${limit}`);
   },
 
   /** 复盘统计：区间内 N1/N2/N3/N5/N7/N9/N10 命中率与均值 + 各档位 + 时间线。 */
