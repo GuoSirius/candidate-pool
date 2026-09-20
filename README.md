@@ -37,7 +37,9 @@
 
 - `run_batch`：每次初筛（一个 anchor_date）一行汇总（全池数、各梯队数、K 线失败率、数据来源等）。
 - `pick_record`：每次运行 × 每只入选票一行，`UNIQUE(run_id, code)`，**同一只票跨多个运行自动成多行**，满足「不同时期被收录全部保留、可区分」的复盘需求。
-- `price_daily`：全观察池每日一条，作为入选后 N 日表现复盘的收益底座。
+- `price_daily`：**每次入选当天的收盘**（一条 = 一个「代码 × 入选日」），作为入选后 N 日表现复盘的收益底座。
+  > ⚠️ **N 周期口径的重要前提**：由于目前只写入「入选日」当天的收盘，`N1/N2/N3` 实际取到的是该票**下一次 / 下二次 / 下三次被入选那天**的收盘——间隔是几天到几十天不等，**不是严格的 1/2/3 个交易日**。
+  > 想让 N 变成真正的「入选后第 N 个交易日」，需要把每日**全观察池**的收盘都写进 `price_daily`（`data/snapshot-*.json` 里本来就含全池 377 只的 `r01.close`，改 `db/normalize.js` 的写入范围即可）。
 - `stock_base`：股票基础档案（名称 / 行业 / 题材 / 地域 / 主营 / 最赚钱业务），一票一档长期复用。
 - `watch_group` / `pick_group_rel`：自定义主题分组（如「军工」「低位补涨」），一只票可加入多组。
 - `stock_note`：按运行（anchor_date）或纯按票的评论 / 备忘。
@@ -309,37 +311,42 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 
 ## API 服务（Workers / Pages Functions）
 
-初筛数据入库到 Cloudflare D1 后，需要一个只读查询接口供 Web / PWA 前端调用。本项目用 **Hono + TypeScript** 写一套 API（`worker/` 目录），把 D1 暴露成统一 `{ code, message, data }` 结构的 JSON 接口，与另一套服务（`zhiliaowo-proxy`）的响应规范保持一致。
+初筛数据入库到 Cloudflare D1 后，需要一套接口供 Web / PWA 前端读写。本项目用 **Hono + TypeScript** 写一套 API（代码放在 `worker/` 目录），把 D1 暴露成统一 `{ code, message, data }` 结构的 JSON 接口，与另一套服务（`zhiliaowo-proxy`）的响应规范保持一致。
 
-**同一份 API 代码支持两种部署形态，按需二选一（也可并存）：**
+**部署形态：Pages Functions，与前端同源。API 代码不单独部署。**
 
-| 形态 | 入口 | 访问地址 | 适用范围 |
-|------|------|----------|----------|
-| Worker（独立） | `worker/src/index.ts` | `*.workers.dev` | 需要 Cron Triggers / Durable Objects 等 Worker 独有能力 |
-| **Pages Functions（推荐）** | `web/functions/` → 复用 `worker/src/pages.ts` | `*.pages.dev/api/*` | 与前端**同源**：免 CORS、免跨域地址配置，且 `*.pages.dev` 在国内可达 |
+| 形态 | 入口 | 访问地址 | 说明 |
+|------|------|----------|------|
+| **Pages Functions** | `web/functions/` → 复用 `worker/src/pages.ts` | `*.pages.dev/api/*` | 与前端**同源**：免 CORS、免跨域地址配置，且 `*.pages.dev` 在国内可达 |
 
-> 两种形态共用 `worker/src/lib/*` 与**同一个 D1 库**，不存在两套业务实现。
+> `worker/` 目录**不是发布产物**，它只承担两件事：① 存放被 Pages Functions 复用的 Hono app（`src/lib/*`、`src/types.ts`、`src/pages.ts`）；② 本地开发时用 `npm run dev` 起一个 dev 后端。
+> **改了 `worker/src/` 下的代码，同样只需要发布前端**（根目录 `npm run deploy`）即可生效——不需要、也不应该再去部署独立 Worker。
+> 历史上支持过「独立 Worker」形态（`*.workers.dev`），因中国大陆 DNS 污染 + SNI 拦截，已从发布流程中移除。
 
 ### 目录与依赖
 
 | 文件 | 作用 |
 |------|------|
-| `worker/src/index.ts` | 入口，注册路由、CORS、统一错误处理 |
-| `worker/src/lib/response.ts` | 统一信封 `ok / fail`（`{ code, message, data }`） |
-| `worker/src/lib/db.ts` | D1 查询封装（列表 / 详情 / 选股史 / N 日表现 / 分组） |
-| `worker/src/types.ts` | 接口类型 + `Bindings`（D1 binding） |
+| `worker/src/index.ts` | Hono app 入口：注册路由、CORS、统一错误处理 |
 | `worker/src/pages.ts` | Pages Functions 适配层：把同一个 Hono app 转成 Pages 的 `onRequest` 签名 |
-| `worker/wrangler.toml` | Worker（独立部署）配置 + `[[d1_databases]]` 绑定 |
-| `worker/package.json` | `hono` 运行时依赖；`wrangler` / `typescript` 开发依赖 |
+| `worker/src/lib/response.ts` | 统一信封 `ok / fail`（`{ code, message, data }`）+ 业务码常量 |
+| `worker/src/lib/db.ts` | D1 查询封装（批次 / 详情 / 选股史 / N 日表现 / 汇总排名 / 复盘统计） |
+| `worker/src/lib/notes.ts` | 写接口数据层（分组、分组内成员、评论 / 备忘的增删改） |
+| `worker/src/lib/errors.ts` | `BizError` 与 `invalid / notFound / conflict` 业务错误工厂 |
+| `worker/src/lib/validate.ts` | 入参校验（代码 / 日期 / 颜色 / 长度 / 枚举），不合法即抛 `10003` |
+| `worker/src/lib/time.ts` | 北京时间字符串（dayjs + `Asia/Shanghai`），与脚本 / 前端同一口径 |
+| `worker/src/types.ts` | 接口类型 + `Bindings`（D1 binding、`WRITE_TOKEN`） |
+| `worker/wrangler.toml` | **仅本地** `wrangler dev` 用（D1 绑定），不参与发布 |
+| `worker/package.json` | `hono` + `dayjs` 运行时依赖；`wrangler` / `typescript` 开发依赖 |
 
 > **环境注入说明**：两条链路的注入方式不同，别混用。
 >
 > | 运行位置 | 注入方式 | 是否需要 dotenv |
 > |----------|----------|-----------------|
-> | Worker / Pages Functions 运行时 | `wrangler.toml` 的 `[[d1_databases]]` binding → `c.env.DB`；本地 `wrangler dev` 读 `.dev.vars`，生产用 `wrangler secret put` | ❌ 不需要（不是 Node 环境） |
+> | Pages Functions 运行时（含本地 `wrangler dev`） | `wrangler.toml` 的 `[[d1_databases]]` binding → `c.env.DB`；本地 `wrangler dev` 读 `.dev.vars`，生产用 `wrangler pages secret put`（**配在 Pages 项目上，不是 Worker**） | ❌ 不需要（不是 Node 环境） |
 > | 本机 / CI 的入库脚本（`db/*.js`） | `dotenv` 读 `db/.env`，或直接用系统环境变量 / CI Secrets | ✅ 需要 |
 >
-> 本项目 API 只读 D1，运行时无需任何密钥。
+> **只读接口无需任何密钥**；写接口（分组 / 评论 / 备忘）需要 `WRITE_TOKEN`，配置步骤见 [DEPLOY.md · 日常发布](./DEPLOY.md#3-日常发布环境已就绪)。
 
 ### 接口一览
 
@@ -351,10 +358,24 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | GET | `/api/stock-base` | 股票档案库（可按名称/代码搜索、按分组过滤） | `?q=关键词`、`?group=分组名` |
 | GET | `/api/groups` | 自定义分组列表（前端筛选 chips 用） | 无 |
 | GET | `/api/stats` | 复盘统计：区间内 N1/N2/N3/N5/N7/N9/N10 命中率与均值 + 各档位 + 锚定日时间线 | `?from=YYYY-MM-DD`、`?to=YYYY-MM-DD`（可选） |
-| GET | `/api/stock-rank` | 全部入选标的汇总：每只票的入选次数、各档数量、首次 / 最近入选日 | `?sort=recent\|picks\|high\|secondary\|conditional\|excluded\|first\|code`、`?order=desc\|asc`、`?limit=`（默认 1000，上限 5000） |
+| GET | `/api/stock-rank` | 全部入选标的汇总：每只票的入选次数、各档数量、首次 / 最近入选日，以及 N1/N2/N3 收益（`n*_avg` 历史平均口径 + `last_n*` 最近一次入选口径） | `?sort=recent\|first\|picks\|high\|secondary\|conditional\|excluded\|n1\|n2\|n3\|ln1\|ln2\|ln3\|code`、`?order=desc\|asc`、`?limit=`（默认 1000，上限 5000） |
 | GET | `/health` | 健康检查 | 无 |
 
-所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`。`code` 是**业务码**（非 HTTP 状态码）：200 表示成功，非 200 为业务错误码——如 `10001` 通用错误、`10002` 资源不存在、`10003` 参数错误、`10004` 服务内部错误。`/api/runs/:anchor` 在锚定日不存在时返回 `{ "code": 10002, "message": "未找到锚定日 ...", "data": null }`，**HTTP 状态恒为 200**，前端统一读 `code` 判定即可。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n2 / n3 / n5 / n7 / n9 / n10` 日涨幅（%），缺数据时为 `null`——这是后续复盘统计（M3）的底座。
+**写接口**（分组 / 评论 / 备忘）需带 `x-write-token` 请求头，值为 Pages 项目里配置的 `WRITE_TOKEN`；未配置或令牌不符一律返回业务码 `10005`：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/groups/:id` | 单个分组详情（组信息 + 成员列表） |
+| POST | `/api/groups` | 新建分组 |
+| PUT | `/api/groups/:id` | 改分组（只传要改的字段，显式传 `null` = 清空） |
+| DELETE | `/api/groups/:id` | 删分组（先解除组内关联，再删组） |
+| POST | `/api/groups/:id/stocks` | 把某票加入分组（重复加入为幂等更新组内备注） |
+| DELETE | `/api/groups/:id/stocks/:code` | 把某票移出分组 |
+| POST | `/api/notes` | 新增评论 / 备忘（可关联某个 `anchor_date`，不传即通用备注） |
+| PUT | `/api/notes/:id` | 改评论内容 / 类型 / 关联锚定日 |
+| DELETE | `/api/notes/:id` | 删评论 |
+
+所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`。`code` 是**业务码**（非 HTTP 状态码）：200 表示成功，非 200 为业务错误码——如 `10001` 通用错误、`10002` 资源不存在、`10003` 参数错误、`10004` 服务内部错误、`10005` 写权限校验失败（`WRITE_TOKEN` 未配置或令牌不匹配）。`/api/runs/:anchor` 在锚定日不存在时返回 `{ "code": 10002, "message": "未找到锚定日 ...", "data": null }`，**HTTP 状态恒为 200**，前端统一读 `code` 判定即可。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n2 / n3 / n5 / n7 / n9 / n10` 日涨幅（%），缺数据时为 `null`——这是复盘统计的底座。
 
 ### 本地开发
 
@@ -368,20 +389,15 @@ npm run dev            # 直连真实 D1（--remote），前提是已按上文�
 #   node ../db/backfill.js --local
 ```
 
-### 部署到 Worker（独立地址）
+> 这里的 `worker` 只起**本地 dev 后端**（`http://127.0.0.1:8787`）的作用，前端 `cd web && npm run dev` 会把 `/api` 代理过去。
+> 它不是发布形态——生产由 Pages Functions 承担，前端 `npm run dev` 也应对着真实数据读写（见上文「部署形态」）。
 
-```bash
-cd worker
-# 1. 把 wrangler.toml 里的 database_id 换成你的 D1 库 ID（wrangler d1 info candidate-pool）
-# 2. 部署
-npm run deploy
-```
+> ℹ️ 本项目**不部署独立 Worker**。历史上支持过 `cd worker && npm run deploy`（产出 `*.workers.dev` 地址），
+> 但该域名在中国大陆被 DNS 污染 + SNI 拦截，且前端同源 `/api` 根本不依赖它，因此**已从发布流程中移除**。
+> `worker/` 目录现在的定位只有两个：① 存放被 Pages Functions 复用的 API 代码；② 本地开发用的 dev 后端。
+> 改了 `worker/src/` 下的代码，同样只需发布前端即可生效。
 
-部署后 Worker 会得到一个 `*.workers.dev` 子域。需要自定义域名时，在 `wrangler.toml` 取消 `routes` 注释并填入你的域名。
-
-> ⚠️ **中国大陆网络直连 `*.workers.dev` 会被 DNS 污染 + SNI 拦截**（实测同一域名三次解析出三个不同的非 Cloudflare IP，TCP 连接超时），而 `*.pages.dev` 不受影响。**没有自有域名时，请改用下面的方式。**
-
-### 部署到 Pages Functions（同源，推荐）
+### 部署到 Pages Functions（同源）
 
 把 API 挂到已有的 Pages 前端项目下，与静态资源**同源**，彻底绕开 `*.workers.dev`：
 
@@ -392,14 +408,14 @@ npm run deploy
 | `web/functions/health.ts` | 文件路由：`/health` |
 | `web/public/_routes.json` | 限定仅 `/api/*` 与 `/health` 触发 Functions，静态请求保持免费不限量 |
 
-部署命令就是前端的「一键发布」（见下一节），**无需额外步骤**。要点：
+部署命令就是前端的「一键发布」——根目录 `npm run deploy`，或 `cd web && npm run deploy`（两者等价，都会构建后发布），**无需额外步骤**。要点：
 
 | 事项 | 说明 |
 |------|------|
 | 访问地址 | `https://candidate-pool-web.pages.dev/api/runs`、`.../health` |
 | 前端地址配置 | `apiBase` 留**空字符串**（走相对 `/api`），不再指向外部 Worker |
 | CORS | 同源，已不需要（Hono 中仍保留，不影响） |
-| 依赖 | **零新增依赖**：`hono` 由 `worker/node_modules` 解析，`web/` 不必安装 |
+| 依赖 | 与 `worker/` 共用同一套运行时依赖（`hono` / `dayjs`），由 `worker/node_modules` 解析即可，`web/` 无需为 API 额外安装 |
 | 配置源 | `web/wrangler.toml` 含 `pages_build_output_dir` 后成为该 Pages 项目的配置源，控制台对应字段转为**只读** |
 
 ### 部署后验证
@@ -408,8 +424,7 @@ npm run deploy
 
 ```bash
 cd worker
-npm run smoke -- --api https://candidate-pool-web.pages.dev   # Pages Functions（推荐，国内可达）
-# 或指向独立 Worker：npm run smoke -- --api https://candidate-pool-api.<你的子域>.workers.dev
+npm run smoke -- --api https://candidate-pool-web.pages.dev
 # 或：WORKER_URL=https://... npm run smoke
 ```
 
@@ -424,7 +439,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev   # Pages Functions�
 | `/api/stats` | 统计对象（`total_picks`/`tiers`/`timeline`） |
 | `/api/stocks/<code>` | 个股详情（`picks[].perf` 含 n1–n10 全量周期） |
 
-> ⚠️ 中国大陆网络直连 `*.workers.dev` 会被 DNS 污染 / SNI 拦截（解析到非 Cloudflare IP、TCP 超时），属**链路问题而非 Worker 故障**；`*.pages.dev` 不受影响。没有自有域名时，改用上面的 [Pages Functions 同源部署](#部署到-pages-functions同源推荐)，即可在本机直接验证。
+> ⚠️ 中国大陆网络直连 `*.workers.dev` 会被 DNS 污染 / SNI 拦截（解析到非 Cloudflare IP、TCP 超时），属**链路问题而非服务故障**；`*.pages.dev` 不受影响。本项目已统一走 [Pages Functions 同源部署](#部署到-pages-functions同源)，本机可直接验证。
 
 ---
 

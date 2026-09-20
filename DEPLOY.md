@@ -10,10 +10,15 @@
 
 | 层 | 产物 | 位置 | 部署方式 |
 |----|------|------|----------|
-| 前端 | Vue3 + Vite PWA 静态资源 | Cloudflare Pages | `cd web && npm run deploy` |
+| 前端 | Vue3 + Vite PWA 静态资源 | Cloudflare Pages | `npm run deploy`（根目录，等价于 `cd web && npm run deploy`） |
 | API | Pages Functions（`/api/*`、`/health`） | 同一个 Pages 项目 | 同上（`wrangler pages deploy` 自动带上 `web/functions/`） |
 | 数据 | D1 库 `candidate-pool` | Cloudflare D1 | `wrangler d1 execute` 建表 + `node db/backfill.js` 灌数 |
 | 生成 | 每日报告 / 快照 | `daily-artifacts` 分支 | GitHub Actions 定时（工作日 15:35） |
+
+> ⛔ **`worker/` 目录不是发布产物，不需要单独部署。** 它只提供两样东西：
+> ① 被 Pages Functions 复用的 API 代码（`worker/src/lib/*`、`types.ts`、`pages.ts`）；② 本地开发用的 dev 后端（`npm run dev`）。
+> **改了 `worker/src/` 下的代码，同样只需发布前端即可生效**（`wrangler pages deploy` 会把 `web/functions/` 连同它引用的 worker 代码一起打包）。
+> 历史上存在的「独立 Worker」形态（`*.workers.dev`）已从发布流程中移除，原因见本文件顶部的「为什么不用独立 Worker」。
 
 **线上地址**
 
@@ -29,7 +34,6 @@
 |----|-----|
 | Pages 项目名 | `candidate-pool-web`（生产分支 `main`） |
 | D1 库名 / ID | `candidate-pool` / `76a2aced-03ca-411d-b2e2-47290b6672ef` |
-| Worker 名（可选，独立部署用） | `candidate-pool-api` |
 
 ---
 
@@ -50,11 +54,12 @@
 ```bash
 cd candidate-pool
 npm install                    # 根：dayjs（时间）+ dotenv（读 db/.env）
-cd worker && npm install       # API：hono + wrangler + typescript
-cd ../web && npm install       # 前端：vue + vite + vite-plugin-pwa
+cd worker && npm install       # API：hono + dayjs + wrangler + typescript
+cd ../web && npm install       # 前端：vue + vue-router + dayjs + vite + vite-plugin-pwa
 cd ..
 ```
 
+> 等价的一条命令：根目录执行 `npm run setup`（依次装齐三个 package）。
 > `worker/` 里的 wrangler 会被 `web/scripts/deploy.mjs` 复用，所以**先装 worker 再发布前端**，可省一次下载。
 
 **② 登录 Cloudflare（一次性）**
@@ -153,14 +158,15 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 
 | 改动范围 | 命令 | 说明 |
 |----------|------|------|
-| 前端页面 / 样式 / `functions/` API | `cd web && npm run deploy` | 最常用，一条命令 |
+| 前端页面 / 样式 / `web/functions/` / **`worker/src/` API** | `npm run deploy`（根目录） | 最常用，一条命令；**改 worker 代码也走这条** |
+| 需要透传参数时（`--api` / `--project` / `--branch`） | `cd web && npm run deploy -- --api https://api.example.com` | 参数只从 `web/` 下的脚本透传；根目录的 `npm run deploy` **不支持传参** |
 | 写接口密钥 `WRITE_TOKEN` | `cd web && npx wrangler pages secret put WRITE_TOKEN --project-name candidate-pool-web`，再 `npm run deploy` | **必须配在 Pages 项目**（写接口跑在 Pages Functions 里）；secrets 改动要一次新部署才生效 |
-| 把前端指向外部 Worker | `cd web && npm run deploy -- --api https://api.example.com` | 跨源模式，需目标端开 CORS |
-| 独立 Worker 版 API | `cd worker && npm run deploy` | 仅在使用 `*.workers.dev` 直连时；网页同源 `/api` 不依赖它 |
 | 建表脚本 / 入库逻辑 | `node db/backfill.js` | 幂等；改 `db/schema.sql` 需重跑 `wrangler d1 execute ... --remote` |
 | 只跑当日报告 | `run_today.cmd`（Windows）/ `./run_today.sh` | 生成报告后自动同步 D1 |
 
-> 本地自测：`cd web && npm run dev`（默认 `:5173`）+ `cd worker && npm run dev`（`:8787`）两个终端并行，Vite 把 `/api` 代理到 Worker。
+> 本地自测：`cd web && npm run dev`（默认 `:5173`）+ `cd worker && npm run dev`（`:8787`）两个终端并行，Vite 把 `/api` 代理到 worker dev 后端。
+> ⚠️ **本地 `worker dev` 只是开发用后端**，生产环境这个角色由 Pages Functions 承担——所以**不要用「有没有部署 worker」来判断线上是否生效**。
+> 另外，建表 / 加密钥这类数据库与项目配置改动**不在 `npm run deploy` 的覆盖范围内**，需按上表单独执行。
 
 ### 发布脚本参数
 
@@ -183,7 +189,8 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | `/api/runs` 返回空数组 | D1 库是空的 | `node db/backfill.js`（先确认 `db/.env` 或系统环境变量已配 `CF_*`） |
 | `npm ci` 失败：lock 与 package.json 不同步 | 加了依赖但没更新 `package-lock.json` | 在仓库根跑一次 `npm install` 并提交 `package-lock.json`（CI 用的是 `npm ci`，对 lock 一致性是强校验） |
 | `Cannot find module 'dotenv'` | 根依赖未安装 | 仓库根执行 `npm install` |
-| 浏览器打不开 `*.workers.dev` | DNS 污染 / SNI 拦截，**链路问题非服务故障** | 改用 `*.pages.dev` 同源地址 |
+| 浏览器打不开 `*.workers.dev` | DNS 污染 / SNI 拦截，**链路问题非服务故障**（本项目已不使用该域名） | 统一走 `*.pages.dev` 同源地址 |
+| 改了 `worker/src/` 但线上没变化 | `worker/` 不是发布产物，改它**不会**被自动带上线 | 重新执行 `npm run deploy`（Pages Functions 打包时会一并更新） |
 | `wrangler d1 execute` 报 binding 相关错误 | 漏了 `--remote` | 补上 `--remote` |
 | 本地 `db/backfill.js --local` 报模块不存在 | Node < 22 无 `node:sqlite` | 升级到 Node 22+ |
 
