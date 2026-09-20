@@ -1,7 +1,11 @@
 'use strict';
 // Cloudflare D1 HTTP API 客户端（供本机脚本 / CI 写入，非 Workers 内调用）
-// 凭据来自环境变量：CF_ACCOUNT_ID / CF_D1_DATABASE_ID / CF_API_TOKEN
+// 凭据来源（优先级从高到低）：
+//   1) 真实环境变量 CF_ACCOUNT_ID / CF_D1_DATABASE_ID / CF_API_TOKEN（CI Secrets / 系统环境变量）
+//   2) db/.env —— 由 dotenv 加载，默认**不覆盖**上面已存在的值
 // 仅在真正写入时才校验凭据；dry-run 不调用本模块。
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 function cfg() {
   const ACCOUNT_ID = process.env.CF_ACCOUNT_ID;

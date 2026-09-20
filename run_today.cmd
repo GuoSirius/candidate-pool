@@ -18,9 +18,8 @@ if not exist "%NODE%" (
   exit /b 1
 )
 "%NODE%" "%SCRIPT%" %*
-:: 自动同步入库：配置了 CF_API_TOKEN 才执行，缺失则跳过（不阻断报告）
-if defined CF_API_TOKEN (
-  echo [db] 同步入库...
-  "%NODE%" "%~dp0db\write_live.js" || echo [warn] 入库失败或跳过，详见日志
-)
+:: 自动同步入库：凭据来自系统环境变量或 db\.env（后者由 db\d1client.js 经 dotenv 自动加载）。
+:: 未配置时 write_live.js 自行跳过并退出 0，不会阻断报告生成。
+echo [db] 同步入库...
+"%NODE%" "%~dp0db\write_live.js" || echo [warn] 入库失败或跳过，详见日志
 endlocal
