@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import { TIER_LABELS, TIER_ORDER } from '../api/types';
 import type { StockRankRow, Tier } from '../api/types';
 import { fmtPct, perfClass } from '../utils/format';
 import { openStock } from '../utils/nav';
+import { useColumnSort, type SortValue } from '../utils/sort';
 
 const router = useRouter();
 const route = useRoute();
@@ -72,6 +73,20 @@ const NUM_KEYS: SortKey[] = [
   ...N_KEYS,
 ];
 
+// 表格排序：三张明细表共用 utils/sort.ts 的状态与「空值恒最后」比较逻辑。
+// 默认「最近入选」倒序；数量/收益列换列时默认降序，时间列同样先看「近 → 远」。
+const {
+  sortKey,
+  sortDir,
+  toggle: toggleSort,
+  sortRows,
+} = useColumnSort<SortKey>({
+  initialKey: 'last_anchor',
+  initialDir: 'desc',
+  numericKeys: NUM_KEYS,
+  dirFor: (k) => (k.endsWith('_anchor') ? 'desc' : undefined),
+});
+
 interface Col {
   key: SortKey;
   label: string;
@@ -109,24 +124,22 @@ const nLabel = computed(() => (nCaliber.value === 'last' ? '最近' : '平均'))
 /** 切换口径；若当前正按某个 N 列排序，跟着切到同周期的新口径列，避免排序悄悄失效。 */
 function setCaliber(c: NCaliber) {
   if (nCaliber.value === c) return;
-  const idx = N_KEYS.indexOf(sortKey.value);
+  const idx = sortKey.value ? N_KEYS.indexOf(sortKey.value) : -1;
   nCaliber.value = c;
   if (idx >= 0) sortKey.value = nKey((idx % 3) + 1);
   writeState();
 }
 
-// 默认：按最近入选时间倒序
-const sortKey = ref<SortKey>('last_anchor');
-const sortDir = ref<'asc' | 'desc'>('desc');
-
-// —— 列表状态保持：进个股详情再返回时，恢复搜索 / 档位 / 排序 / 滚动位置 ——
+// —— 列表状态保持：进个股详情再返回时，恢复搜索 / 档位 / 口径 / 排序 / 分页 / 滚动位置 ——
 const STATE_KEY = 'cp:allstocks:state';
 interface AllState {
   search?: string;
   tier?: '' | Tier;
   caliber?: NCaliber;
-  sortKey?: SortKey;
+  sortKey?: SortKey | null;
   sortDir?: 'asc' | 'desc';
+  pageSize?: PageSize;
+  page?: number;
   scrollY?: number;
 }
 function readState(): AllState {
@@ -144,6 +157,8 @@ function writeState() {
       caliber: nCaliber.value,
       sortKey: sortKey.value,
       sortDir: sortDir.value,
+      pageSize: pageSize.value,
+      page: page.value,
       scrollY: window.scrollY,
     };
     sessionStorage.setItem(STATE_KEY, JSON.stringify(s));
@@ -151,21 +166,8 @@ function writeState() {
     /* 隐私模式等写入失败时忽略 */
   }
 }
-
-function toggleSort(k: SortKey) {
-  if (sortKey.value === k) {
-    sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc';
-    return;
-  }
-  sortKey.value = k;
-  // 数量列先看「最多」，其余列先看「字典序 / 最早」
-  sortDir.value = NUM_KEYS.includes(k) ? 'desc' : k.endsWith('_anchor') ? 'desc' : 'asc';
-}
-
-function cellValue(r: StockRankRow, k: SortKey): number | string {
-  const v = (r as unknown as Record<string, number | string | null>)[k];
-  return v === null || v === undefined ? '' : v;
-}
+// 恢复状态期间不要重置页码（否则 saved.page 会被立刻覆盖为 1）
+let restoring = false;
 
 /** 当前口径下第 cy 个周期该行的取值（缺数据为 null）。 */
 function nVal(r: StockRankRow, cy: number): number | null {
@@ -208,20 +210,42 @@ function resetFilters(): void {
   tierFilter.value = '';
 }
 
-const sorted = computed(() => {
-  const k = sortKey.value;
-  const dir = sortDir.value === 'asc' ? 1 : -1;
-  const numeric = NUM_KEYS.includes(k);
-  return [...filtered.value].sort((a, b) => {
-    const av = cellValue(a, k);
-    const bv = cellValue(b, k);
-    // 空值（如收益列无样本）恒排最后，不随升降序翻转，也不会被当成 0 混在中间
-    const aEmpty = av === '';
-    const bEmpty = bv === '';
-    if (aEmpty || bEmpty) return aEmpty && bEmpty ? 0 : aEmpty ? 1 : -1;
-    if (numeric) return (Number(av) - Number(bv)) * dir;
-    return String(av).localeCompare(String(bv)) * dir;
-  });
+// 排序交给 utils/sort.ts：空值（收益列无样本）恒排最后，不随升降序翻转，也不会被当成 0 混在中间。
+const sorted = computed(() =>
+  sortRows(filtered.value, (r, k) => (r as unknown as Record<string, SortValue>)[k]),
+);
+
+// ---------------------------------------------------------------------------
+// 分页
+// ---------------------------------------------------------------------------
+
+/** 可选每页条数；'all' = 不分页（一次渲染全部）。默认 20 条，避免一进页面就渲染上千行。 */
+const PAGE_SIZE_PRESETS = [10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000] as const;
+type PageSize = (typeof PAGE_SIZE_PRESETS)[number] | 'all';
+
+const PAGE_SIZE_OPTIONS: Array<{ value: PageSize; label: string }> = [
+  ...PAGE_SIZE_PRESETS.map((n) => ({ value: n as PageSize, label: `${n} 条/页` })),
+  { value: 'all', label: '全部' },
+];
+
+const pageSize = ref<PageSize>(20);
+const page = ref(1);
+
+/** 每页实际条数：『全部』时取当前结果数（至少 1，避免除零）。 */
+const pageSizeNum = computed(() =>
+  pageSize.value === 'all' ? Math.max(sorted.value.length, 1) : pageSize.value,
+);
+const totalPages = computed(() => Math.max(1, Math.ceil(sorted.value.length / pageSizeNum.value)));
+
+/** 分页落在「筛选 + 排序」之后，保证翻页顺序与列头指示一致。 */
+const pagedRows = computed(() => {
+  const start = (page.value - 1) * pageSizeNum.value;
+  return sorted.value.slice(start, start + pageSizeNum.value);
+});
+
+/** 筛选 / 口径 / 排序 / 每页条数一变就回第一页——否则会停在「新结果里的第 N 页」，看着像数据丢了。 */
+watch([search, tierFilter, nCaliber, sortKey, sortDir, pageSize], () => {
+  if (!restoring) page.value = 1;
 });
 
 // 汇总跟随当前筛选：筛了档位/关键词后，卡片数字与表格里的行保持一致，避免两处对不上。
@@ -265,16 +289,27 @@ async function load() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   const saved = readState();
-  if (saved.search) search.value = saved.search;
-  if (saved.tier) tierFilter.value = saved.tier;
-  // 先恢复口径再恢复排序键：排序键可能是某个 N 列，两者要配套
-  if (saved.caliber) nCaliber.value = saved.caliber;
-  if (saved.sortKey) sortKey.value = saved.sortKey;
-  if (saved.sortDir) sortDir.value = saved.sortDir;
-  pendingScrollY = saved.scrollY && saved.scrollY > 0 ? saved.scrollY : null;
-  load();
+  restoring = true;
+  try {
+    if (saved.search) search.value = saved.search;
+    if (saved.tier) tierFilter.value = saved.tier;
+    // 先恢复口径再恢复排序键：排序键可能是某个 N 列，两者要配套
+    if (saved.caliber) nCaliber.value = saved.caliber;
+    if (saved.sortKey) sortKey.value = saved.sortKey;
+    if (saved.sortDir) sortDir.value = saved.sortDir;
+    if (saved.pageSize) pageSize.value = saved.pageSize;
+    if (saved.page && saved.page > 0) page.value = saved.page;
+    pendingScrollY = saved.scrollY && saved.scrollY > 0 ? saved.scrollY : null;
+    await load();
+    // 数据到位后兜底：若存下来的页码已超出当前总页数（比如筛选条件变了），收敛到最后一页
+    if (page.value > totalPages.value) page.value = totalPages.value;
+    await nextTick();
+  } finally {
+    // 守卫必须撑到 watch 回调 flush 之后，否则 page 会被刚恢复的值立刻重置成 1
+    restoring = false;
+  }
 });
 
 onBeforeUnmount(writeState);
@@ -302,7 +337,7 @@ onBeforeUnmount(writeState);
         <div class="card co"><span class="k">条件</span><span class="v">{{ totals.conditional }}</span></div>
         <div class="card ex"><span class="k">排除</span><span class="v">{{ totals.excluded }}</span></div>
       </div>
-      <p class="summary-note" v-if="filterActive">以上数字已按当前筛选统计。</p>
+      <p class="summary-note" v-if="filterActive">以上数字按当前筛选统计，统计范围是<b>全部符合条件的结果</b>，不受分页影响。</p>
     </section>
 
     <!-- 筛选：档位下拉 + 关键词搜索 -->
@@ -341,7 +376,8 @@ onBeforeUnmount(writeState);
       />
       <button v-if="filterActive" class="clear-btn" type="button" @click="resetFilters">清除筛选</button>
       <span class="meta"
-        >共 {{ sorted.length }} 只<template v-if="tierFilter"> · 档位「{{ TIER_LABELS[tierFilter] }}」</template> · 当前排序：<b>{{
+        >共 {{ sorted.length }} 只<template v-if="tierFilter"> · 档位「{{ TIER_LABELS[tierFilter] }}」</template>
+        · 第 {{ page }} / {{ totalPages }} 页 · 当前排序：<b>{{
           COLS.find((c) => c.key === sortKey)?.label.replace(/<br \/>/g, '')
         }}</b>
         {{ sortDir === 'desc' ? '（降序）' : '（升序）' }} · 点列头切换</span
@@ -384,7 +420,7 @@ onBeforeUnmount(writeState);
           </tr>
         </thead>
         <tbody>
-          <tr v-for="r in sorted" :key="r.code" @click="open(r.code)">
+          <tr v-for="r in pagedRows" :key="r.code" @click="open(r.code)">
             <td class="code" data-label="代码">{{ r.code }}</td>
             <td class="name" data-label="名称">{{ r.name ?? '—' }}</td>
             <td class="sector" data-label="板块">{{ r.sector ?? '—' }}</td>
@@ -408,6 +444,18 @@ onBeforeUnmount(writeState);
           </tr>
         </tbody>
       </table>
+      <!-- 分页：放在 table-wrap 内部，避免打断下方空态提示的 v-if / v-else-if 链 -->
+      <div class="pager">
+        <label class="pg-size">
+          <span class="fl">每页</span>
+          <select v-model="pageSize" class="tier-select" aria-label="每页显示条数">
+            <option v-for="o in PAGE_SIZE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+          </select>
+        </label>
+        <button class="pg-btn" type="button" :disabled="page <= 1" @click="page--">← 上一页</button>
+        <span class="pg-info">第 {{ page }} / {{ totalPages }} 页 · 本页 {{ pagedRows.length }} 只</span>
+        <button class="pg-btn" type="button" :disabled="page >= totalPages" @click="page++">下一页 →</button>
+      </div>
     </section>
 
     <p v-else-if="!error && !loading && filterActive" class="hint">
@@ -419,8 +467,17 @@ onBeforeUnmount(writeState);
 
     <p class="legend" v-if="sorted.length">
       数量列（入选次数 / 重点 / 次级 / 条件 / 排除）点列头先按「多 → 少」排序；时间列默认「近 → 远」。
-      <b>N1 / N2 / N3 平均</b> = 该票<b>每一次</b>入选后第 1 / 2 / 3 个交易日的涨跌幅（各自相对入选价）取算术平均，
-      悬停单元格可看样本数；暂无样本显示 —，排序时恒排在最后。涨 = 红，跌 = 绿。档位含义见
+      <template v-if="nCaliber === 'last'">
+        <b>N1 / N2 / N3 最近</b> = 该票<b>最近一次入选</b>（即「最近入选」那一列）后第 1 / 2 / 3 个交易日的涨跌幅，
+        相对那次入选价 —— 回答「这只票<b>眼下</b>什么状态」。该次入选距今天数不足 N 个交易日时显示 —（还没到观察窗口），
+        悬停单元格可看参照的锚定日。想换看长期表现，把上方「收益口径」切到<b>历史平均</b>。
+      </template>
+      <template v-else>
+        <b>N1 / N2 / N3 平均</b> = 该票<b>每一次</b>入选后第 1 / 2 / 3 个交易日的涨跌幅（各自相对自己的入选价）取算术平均
+        —— 回答「这只票<b>长期</b>靠不靠谱」。悬停单元格可看样本数（三个周期的样本数可能不同）。
+      </template>
+      暂无数据均显示 —，排序时恒排在最后。涨 = 红，跌 = 绿。默认每页 20 条，可在表格底部切换每页条数或选「全部」；
+      分页只影响本页显示，顶部汇总数字始终按全部筛选结果统计。档位含义见
       <router-link to="/rules">规则释义</router-link>。
     </p>
   </div>
@@ -478,6 +535,20 @@ onBeforeUnmount(writeState);
 .meta { font-size: 12px; color: var(--muted); }
 
 .table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+/* 分页条置于表格容器内部，故用上边框与表体分隔 */
+.pager {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 10px; border-top: 1px solid var(--border); background: var(--surface);
+}
+.pg-size { display: inline-flex; align-items: center; gap: 8px; }
+.pg-size .fl { font-size: 12px; color: var(--muted); }
+.pg-btn {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.pg-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.pg-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.pg-info { font-size: 12px; color: var(--muted); }
 .grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
 .grid th, .grid td { padding: 8px 7px; text-align: left; overflow-wrap: anywhere; }
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; line-height: 1.3; padding: 0; }
@@ -523,6 +594,9 @@ onBeforeUnmount(writeState);
 /* 窄屏：表格翻转成卡片 */
 @media (max-width: 820px) {
   .table-wrap { border: none; border-radius: 0; }
+  /* 表格容器在窄屏去掉了边框，分页条自己补一个卡片外观 */
+  .pager { border: 1px solid var(--border); border-radius: 12px; justify-content: space-between; }
+  .pg-size { flex-basis: 100%; }
   .grid, .grid tbody, .grid tr, .grid td { display: block; width: 100%; }
   .grid thead { display: none; }
   .grid tr {
