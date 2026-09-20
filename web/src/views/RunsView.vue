@@ -107,7 +107,20 @@ async function loadRun(anchor: string) {
     picks.value = [];
   } finally {
     loading.value = false;
+    await applyPendingScroll();
   }
+}
+
+// 滚动位置恢复：真因是「原实现在该批次数据渲染出来之前就 scrollTo」——
+// 此时表格还是空的、文档高度不足，浏览器会把位置截断到当前最大可滚范围。
+// 因此把它挂起到 loadRun 拿到数据后，等 DOM 更新完再滚一次即可。
+let pendingScrollY: number | null = null;
+async function applyPendingScroll() {
+  if (pendingScrollY === null) return;
+  const y = pendingScrollY;
+  pendingScrollY = null;
+  await nextTick();
+  window.scrollTo(0, y);
 }
 
 /** 该批次的入选数量（重点 + 次级 + 条件） */
@@ -129,7 +142,8 @@ watch(selectedAnchor, (a) => {
   loadRun(a);
 });
 watch([tierFilter, search], () => {
-  page.value = 1;
+  // 恢复状态期间不要重置页码，否则 saved.page 会被立刻覆盖为 1
+  if (!restoring) page.value = 1;
 });
 // 状态变化即落盘；离开列表时记录滚动位置
 watch([selectedAnchor, tierFilter, search, page], writeState);
@@ -137,6 +151,8 @@ watch([selectedAnchor, tierFilter, search, page], writeState);
 onMounted(async () => {
   const saved = readState();
   restoring = true;
+  // 滚动位置先挂起，等该批次数据渲染完（loadRun 的 finally）再恢复，否则页面高度不足会被截断
+  pendingScrollY = saved.scrollY && saved.scrollY > 0 ? saved.scrollY : null;
   try {
     if (saved.tier) tierFilter.value = saved.tier;
     if (saved.search) search.value = saved.search;
@@ -149,8 +165,6 @@ onMounted(async () => {
   } finally {
     restoring = false;
   }
-  await nextTick();
-  if (saved.scrollY) window.scrollTo(0, saved.scrollY);
 });
 
 onBeforeUnmount(writeState);
@@ -217,15 +231,38 @@ onBeforeUnmount(writeState);
       />
     </section>
 
+    <!-- 口径速览（完整说明见「规则释义」页） -->
+    <p class="legend" v-if="picks.length">
+      <b>档位</b> = R01 梯队：重点（C1–C4 全达标）/ 次级（核心项 ≥3）/ 条件（核心项 ≥2）/ 排除（未达 R01 梯队，但命中 R07 或 R05 仍会入选）。
+      <b>规则</b>列的 R01 / R07 / R05 为三条规则的命中标记（可叠加，R07、R05 与档位无关）。完整口径见
+      <router-link to="/rules">规则释义</router-link>。
+    </p>
+
     <!-- 入选列表 -->
     <section class="table-wrap" v-if="!loading && pagedPicks.length">
       <table class="grid">
+        <!-- 固定列宽（table-layout: fixed）+ 百分比分配：表格宽度恒等于容器，任何窗口宽度都不产生横向滚动 -->
+        <colgroup>
+          <col style="width: 8%" />
+          <col style="width: 7%" />
+          <col style="width: 5.5%" />
+          <col style="width: 9%" />
+          <col style="width: 7%" />
+          <col style="width: 6.5%" />
+          <col style="width: 7%" />
+          <col style="width: 6.5%" />
+          <col style="width: 6%" />
+          <col style="width: 9%" />
+          <col style="width: 6.5%" />
+          <col style="width: 22%" />
+        </colgroup>
         <thead>
           <tr>
             <th>代码</th><th>名称</th><th>档位</th><th>规则</th><th>板块</th>
-            <th class="num">价格</th><th class="num">R01涨跌</th><th class="num">换手率</th>
-            <th class="num">量比</th><th class="num">流通市值</th><th class="num">总市值</th>
-            <th class="num">板块强度</th><th>入选理由</th>
+            <th class="num">价格</th><th class="num">R01<br />涨跌</th><th class="num">换手率</th>
+            <th class="num">量比</th>
+            <th class="num">市值<br />流通 / 总</th>
+            <th class="num">板块<br />强度</th><th>入选理由</th>
           </tr>
         </thead>
         <tbody>
@@ -239,8 +276,10 @@ onBeforeUnmount(writeState);
             <td class="num" data-label="R01涨跌" :class="p.r01_chg !== null && p.r01_chg > 0 ? 'up' : p.r01_chg !== null && p.r01_chg < 0 ? 'down' : ''">{{ fmtPct(p.r01_chg) }}</td>
             <td class="num" data-label="换手率">{{ fmtPct(p.turnover) }}</td>
             <td class="num" data-label="量比">{{ fmtNum(p.vol_ratio) }}</td>
-            <td class="num" data-label="流通市值">{{ fmtCap(p.circ_market_cap) }}</td>
-            <td class="num" data-label="总市值">{{ fmtCap(p.total_market_cap) }}</td>
+            <td class="num cap" data-label="市值(流通/总)">
+              <span>{{ fmtCap(p.circ_market_cap) }}</span>
+              <span class="sub">{{ fmtCap(p.total_market_cap) }}</span>
+            </td>
             <td class="num" data-label="板块强度">{{ fmtPct(p.sector_pct) }}</td>
             <td class="reason" data-label="入选理由">{{ p.reason ?? '—' }}</td>
           </tr>
@@ -304,23 +343,24 @@ onBeforeUnmount(writeState);
 }
 .search-input:focus { outline: none; border-color: var(--accent); }
 
-/* 表格：桌面端自适应宽度，文本列允许换行 → 不再强制横向滚动 */
-.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
-.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
-.grid th, .grid td { padding: 9px 12px; text-align: left; }
-.grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; position: sticky; top: 0; z-index: 2; }
+/* 表格：table-layout: fixed + 百分比列宽 → 表格宽度恒等于容器，任何窗口宽度都不产生横向滚动 */
+.table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+.grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
+.grid th, .grid td { padding: 8px 7px; text-align: left; overflow-wrap: anywhere; }
+.grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; line-height: 1.3; }
 .grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
-.grid .code, .grid .num, .grid .mono { white-space: nowrap; }
-.grid .name, .grid .sector { white-space: nowrap; }
-.grid .num { text-align: right; font-variant-numeric: tabular-nums; }
-/* 首列（代码）吸顶吸左，作为横向滚动时的定位锚点 */
-.grid th:first-child, .grid td:first-child { position: sticky; left: 0; z-index: 1; background: var(--bg); }
-.grid thead th:first-child { z-index: 3; background: var(--surface); }
-.grid .code { font-weight: 600; color: var(--accent); }
+.grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+.grid .code { white-space: nowrap; font-weight: 600; color: var(--accent); }
 .grid .name { font-weight: 500; }
 .grid .sector, .grid .reason { color: var(--muted); }
-.grid .reason { white-space: normal; }
+.grid .reason { white-space: normal; line-height: 1.5; }
+/* 市值列：流通 / 总 两行展示，省下一列宽度 */
+.grid td.cap { line-height: 1.35; }
+.grid td.cap .sub { display: block; color: var(--muted); font-size: 11px; }
+/* 规则标签在本表内压缩，避免 3 个标签把「规则」列撑宽 */
+.grid :deep(.rule-tags) { gap: 2px; }
+.grid :deep(.rule-tag) { padding: 0 4px; font-size: 10px; }
 .up { color: #ff7b72; }
 .down { color: #3fb950; }
 
@@ -331,6 +371,10 @@ onBeforeUnmount(writeState);
 }
 .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .pg-info { font-size: 13px; color: var(--muted); }
+
+.legend { color: var(--muted); font-size: 12px; line-height: 1.75; margin: 0; }
+.legend a { color: var(--accent); text-decoration: none; }
+.legend a:hover { text-decoration: underline; }
 
 .hint { color: var(--muted); padding: 20px 0; text-align: center; }
 .error { color: #ff7b72; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); padding: 10px 12px; border-radius: 8px; }
