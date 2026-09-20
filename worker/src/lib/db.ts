@@ -28,6 +28,9 @@ async function firstRow<T>(db: D1Database, sql: string, params: unknown[] = []):
   return (row as T) ?? null;
 }
 
+/** 供写接口模块复用同一套「取多行 / 取单行」封装，避免各文件各写一份。 */
+export { allRows as queryAll, firstRow as queryOne };
+
 export async function listRuns(db: D1Database, limit: number): Promise<RunBatch[]> {
   return allRows<RunBatch>(
     db,

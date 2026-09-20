@@ -1,6 +1,11 @@
 /** Cloudflare Workers 通过 wrangler.toml 的 [[d1_databases]] 注入 D1 binding。 */
 export interface Bindings {
   DB: D1Database;
+  /**
+   * 写接口共享令牌（机密变量，`wrangler secret put WRITE_TOKEN` 注入）。
+   * 未配置时写接口一律拒绝（安全默认：宁可拒绝，也不「无令牌即放行」），见 lib/auth.ts。
+   */
+  WRITE_TOKEN?: string;
 }
 
 export interface RunBatch {
@@ -71,6 +76,25 @@ export interface StockNote {
   type: string | null;
   content: string;
   created_at: string | null;
+}
+
+/** 备注类型：comment = 评论，memo = 备忘。 */
+export type NoteType = 'comment' | 'memo';
+
+/** 分组内的成员（票 + 组内备注 + 入组时间） */
+export interface GroupMember {
+  code: string;
+  name: string | null;
+  sector: string | null;
+  /** 入组备注（如加入该组的理由） */
+  note: string | null;
+  created_at: string | null;
+}
+
+/** 单个分组详情：组信息 + 成员列表。 */
+export interface GroupDetail {
+  group: WatchGroup;
+  members: GroupMember[];
 }
 
 export interface Perf {

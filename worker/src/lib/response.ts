@@ -27,6 +27,8 @@ export const BizCode = {
   ERR_NOT_FOUND: 10002,
   ERR_INVALID_PARAM: 10003,
   ERR_INTERNAL: 10004,
+  /** 无写权限：未配置 WRITE_TOKEN 或令牌校验失败（见 lib/auth.ts） */
+  ERR_FORBIDDEN: 10005,
 } as const;
 
 /** 成功响应：业务码默认 200，HTTP 默认 200。 */
