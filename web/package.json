@@ -11,6 +11,7 @@
     "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
+    "dayjs": "^1.11.23",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"
   },

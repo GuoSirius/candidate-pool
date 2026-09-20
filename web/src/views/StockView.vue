@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { StockHistory } from '../api/types';
 import { fmtNum, fmtPct, perfClass } from '../utils/format';
+import { HORIZONS, H_LABEL, HORIZON_NOTE_SHORT } from '../constants/glossary';
 import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
 
@@ -30,13 +31,15 @@ async function load(code: string) {
 const base = computed(() => data.value?.base ?? null);
 const picks = computed(() => data.value?.picks ?? []);
 
-// N10 汇总：已平仓（数据完整）的样本均值与极值。
-const n10Stats = computed(() => {
-  const vals = picks.value.map((p) => p.perf?.n10).filter((v): v is number => v !== null && v !== undefined);
-  if (!vals.length) return null;
-  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  return { avg, best: Math.max(...vals), worst: Math.min(...vals), n: vals.length };
-});
+// 各周期复盘汇总：逐 N 统计有数据的样本数、平均、最佳、最差。
+const perfSummary = computed(() =>
+  HORIZONS.map((h) => {
+    const vals = picks.value.map((p) => p.perf?.[h]).filter((v): v is number => typeof v === 'number');
+    if (!vals.length) return { h, n: 0, avg: null as number | null, best: null as number | null, worst: null as number | null };
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return { h, n: vals.length, avg, best: Math.max(...vals), worst: Math.min(...vals) };
+  }),
+);
 
 watch(code, (c) => load(c), { immediate: false });
 
@@ -54,6 +57,7 @@ onMounted(() => load(code.value));
         </h1>
         <p class="sub" v-if="base?.sector">{{ base.sector }}<template v-if="base.region"> · {{ base.region }}</template></p>
       </div>
+      <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
     </header>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -91,15 +95,29 @@ onMounted(() => load(code.value));
         </ul>
       </section>
 
-      <!-- N10 复盘汇总 -->
-      <section class="card" v-if="n10Stats">
-        <h2>入选后 10 日表现（复盘）</h2>
-        <div class="stat-row">
-          <div class="stat"><span class="k">样本数</span><span class="v">{{ n10Stats.n }}</span></div>
-          <div class="stat"><span class="k">平均</span><span class="v" :class="perfClass(n10Stats.avg)">{{ fmtPct(n10Stats.avg) }}</span></div>
-          <div class="stat"><span class="k">最佳</span><span class="v" :class="perfClass(n10Stats.best)">{{ fmtPct(n10Stats.best) }}</span></div>
-          <div class="stat"><span class="k">最差</span><span class="v" :class="perfClass(n10Stats.worst)">{{ fmtPct(n10Stats.worst) }}</span></div>
+      <!-- 各周期复盘汇总 -->
+      <section class="card" v-if="picks.length">
+        <h2>入选后各周期表现（复盘）</h2>
+        <div class="table-wrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th>周期</th><th class="num">样本</th><th class="num">平均</th>
+                <th class="num">最佳</th><th class="num">最差</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in perfSummary" :key="s.h">
+                <td class="mono">{{ H_LABEL[s.h] }}</td>
+                <td class="num">{{ s.n || '—' }}</td>
+                <td class="num" :class="perfClass(s.avg)">{{ fmtPct(s.avg) }}</td>
+                <td class="num" :class="perfClass(s.best)">{{ fmtPct(s.best) }}</td>
+                <td class="num" :class="perfClass(s.worst)">{{ fmtPct(s.worst) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+        <p class="legend">逐周期统计该票历史入选记录的表现，仅计入有数据的样本；距锚定日过近时后段周期暂缺（显示 —）。</p>
       </section>
 
       <!-- 各期入选与 N 日收益 -->
@@ -110,8 +128,7 @@ onMounted(() => load(code.value));
             <thead>
               <tr>
                 <th>锚定日</th><th>档位</th><th>规则</th><th class="num">入选价</th>
-                <th class="num">N1</th><th class="num">N2</th><th class="num">N3</th>
-                <th class="num">N5</th><th class="num">N7</th><th class="num">N9</th><th class="num">N10</th>
+                <th v-for="h in HORIZONS" :key="h" class="num">{{ H_LABEL[h] }}</th>
               </tr>
             </thead>
             <tbody>
@@ -120,18 +137,17 @@ onMounted(() => load(code.value));
                 <td><TierBadge :tier="p.tier" /></td>
                 <td><RuleTags :pick="p" /></td>
                 <td class="num">{{ fmtNum(p.price) }}</td>
-                <td class="num" :class="perfClass(p.perf?.n1)">{{ fmtPct(p.perf?.n1) }}</td>
-                <td class="num" :class="perfClass(p.perf?.n2)">{{ fmtPct(p.perf?.n2) }}</td>
-                <td class="num" :class="perfClass(p.perf?.n3)">{{ fmtPct(p.perf?.n3) }}</td>
-                <td class="num" :class="perfClass(p.perf?.n5)">{{ fmtPct(p.perf?.n5) }}</td>
-                <td class="num" :class="perfClass(p.perf?.n7)">{{ fmtPct(p.perf?.n7) }}</td>
-                <td class="num" :class="perfClass(p.perf?.n9)">{{ fmtPct(p.perf?.n9) }}</td>
-                <td class="num" :class="perfClass(p.perf?.n10)">{{ fmtPct(p.perf?.n10) }}</td>
+                <td v-for="h in HORIZONS" :key="h" class="num" :class="perfClass(p.perf?.[h])">
+                  {{ fmtPct(p.perf?.[h]) }}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="legend">N = 相对锚定日（入选日）之后的第 N 个筛选周期/交易日；收益 = (该日收盘 − 入选价) / 入选价。涨 = 红，跌 = 绿；数据缺失显示 —。</p>
+        <p class="legend">
+          {{ HORIZON_NOTE_SHORT }}涨 = 红，跌 = 绿；数据缺失显示 —。档位（重点 / 次级 / 条件 / 排除）与 R01 / R07 / R05 标签含义见
+          <router-link to="/rules">规则释义</router-link>。
+        </p>
       </section>
     </template>
   </div>
@@ -139,8 +155,9 @@ onMounted(() => load(code.value));
 
 <style scoped>
 .stock { display: flex; flex-direction: column; gap: 16px; }
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .page-head .title { display: flex; flex-direction: column; gap: 6px; }
-.ghost-btn { color: var(--accent); text-decoration: none; font-size: 13px; width: fit-content; }
+.ghost-btn { color: var(--accent); text-decoration: none; font-size: 13px; width: fit-content; white-space: nowrap; }
 .ghost-btn:hover { text-decoration: underline; }
 .page-head h1 { font-size: 22px; margin: 0; display: flex; align-items: baseline; gap: 10px; }
 .page-head .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); }
@@ -169,17 +186,18 @@ onMounted(() => load(code.value));
 .stat .k { font-size: 12px; color: var(--muted); }
 .stat .v { font-size: 18px; font-weight: 700; }
 
-.table-wrap { overflow-x: auto; }
-.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
-.grid th, .grid td { padding: 9px 12px; text-align: left; white-space: nowrap; }
-.grid thead th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
-.grid th:first-child, .grid td:first-child { position: sticky; left: 0; background: var(--bg); z-index: 1; }
-.grid thead th:first-child { z-index: 2; background: var(--surface); }
+.table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+.grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
+.grid th, .grid td { padding: 8px 8px; text-align: left; overflow-wrap: anywhere; }
+.grid thead th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); line-height: 1.3; }
 .grid tbody tr { border-top: 1px solid var(--border); }
-.grid .num { text-align: right; font-variant-numeric: tabular-nums; }
-.grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; }
+.grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+.grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.grid :deep(.rule-tags) { gap: 2px; }
+.grid :deep(.rule-tag) { padding: 0 4px; font-size: 10px; }
 .up { color: #ff7b72; }
 .down { color: #3fb950; }
+.flat { color: var(--muted); }
 .legend { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
 
 .hint { color: var(--muted); padding: 20px 0; text-align: center; }

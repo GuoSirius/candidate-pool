@@ -350,10 +350,10 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | GET | `/api/stocks/:code` | 某票全量选股史 + 分组 + 备注 + 入选后 N 日表现 | 无 |
 | GET | `/api/stock-base` | 股票档案库（可按名称/代码搜索、按分组过滤） | `?q=关键词`、`?group=分组名` |
 | GET | `/api/groups` | 自定义分组列表（前端筛选 chips 用） | 无 |
-| GET | `/api/stats` | 复盘统计：区间内 N1/N3/N5/N10 命中率与均值 + 各档位 + 时间线 | `?from=YYYY-MM-DD`、`?to=YYYY-MM-DD`（可选） |
+| GET | `/api/stats` | 复盘统计：区间内 N1/N2/N3/N5/N7/N9/N10 命中率与均值 + 各档位 + 锚定日时间线 | `?from=YYYY-MM-DD`、`?to=YYYY-MM-DD`（可选） |
 | GET | `/health` | 健康检查 | 无 |
 
-所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`。`code` 是**业务码**（非 HTTP 状态码）：200 表示成功，非 200 为业务错误码——如 `10001` 通用错误、`10002` 资源不存在、`10003` 参数错误、`10004` 服务内部错误。`/api/runs/:anchor` 在锚定日不存在时返回 `{ "code": 10002, "message": "未找到锚定日 ...", "data": null }`，**HTTP 状态恒为 200**，前端统一读 `code` 判定即可。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n3 / n5 / n10` 日涨幅（%），缺数据时为 `null`——这是后续复盘统计（M3）的底座。
+所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`。`code` 是**业务码**（非 HTTP 状态码）：200 表示成功，非 200 为业务错误码——如 `10001` 通用错误、`10002` 资源不存在、`10003` 参数错误、`10004` 服务内部错误。`/api/runs/:anchor` 在锚定日不存在时返回 `{ "code": 10002, "message": "未找到锚定日 ...", "data": null }`，**HTTP 状态恒为 200**，前端统一读 `code` 判定即可。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n2 / n3 / n5 / n7 / n9 / n10` 日涨幅（%），缺数据时为 `null`——这是后续复盘统计（M3）的底座。
 
 ### 本地开发
 
@@ -421,7 +421,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev   # Pages Functions�
 | `/health` | `{"code":200,"message":"success","data":{"ok":true,...}}` |
 | `/api/runs?limit=3` | 最近 3 个批次数组 |
 | `/api/stats` | 统计对象（`total_picks`/`tiers`/`timeline`） |
-| `/api/stocks/<code>` | 个股详情（`picks[].perf` 含 n1/n3/n5/n10） |
+| `/api/stocks/<code>` | 个股详情（`picks[].perf` 含 n1–n10 全量周期） |
 
 > ⚠️ 中国大陆网络直连 `*.workers.dev` 会被 DNS 污染 / SNI 拦截（解析到非 Cloudflare IP、TCP 超时），属**链路问题而非 Worker 故障**；`*.pages.dev` 不受影响。没有自有域名时，改用上面的 [Pages Functions 同源部署](#部署到-pages-functions同源推荐)，即可在本机直接验证。
 
@@ -444,6 +444,19 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev   # Pages Functions�
 | `web/wrangler.toml` | Pages 项目配置：`pages_build_output_dir` + D1 绑定（与 worker 同一个库） |
 | `web/public/_routes.json` | 限定 Functions 只接管 `/api/*` 与 `/health`，其余走静态资源 |
 | `web/scripts/deploy.mjs` | 一键发布脚本：构建（注入 `VITE_API_BASE`）+ wrangler 推送 Pages，复用 worker 的 wrangler |
+| `web/src/constants/glossary.ts` | 规则 / 档位 / N 日周期 / 字段释义的**唯一事实来源**，四个页面统一引用 |
+| `web/src/utils/date.ts` | 日期工具（dayjs + `Asia/Shanghai`），如「近一月」区间计算 |
+
+### 页面与口径
+
+| 页面 | 路由 | 主要能力 |
+|------|------|----------|
+| 候选列表 | `/` | 锚定日下拉（倒序）、档位过滤 + 关键词搜索、分页；量比 / 换手率 / 流通市值 / 总市值等列；进详情返回时恢复列表状态 |
+| 复盘统计 | `/stats` | **默认最近一月**（可切近三月 / 全部）；各档命中率（每格**上行胜率、下行平均收益**，避免表过宽）；平均收益走势（N1–N10 全量，**可勾选 / 取消周期**）；锚定日明细（**倒序**）；统计口径 |
+| 规则释义 | `/rules` | R01 / R07 / R05 门槛、四档划分（重点 / 次级 / 条件 / 排除）、判定标记位、**N1–N10 全量周期一览**、字段释义、统计口径 |
+| 个股复盘 | `/stock/:code` | 档案 / 备注、各周期复盘汇总（逐 N 样本 · 均值 · 最佳 · 最差）、每期入选的 N 列全量表现 |
+
+> 口径说明集中在 `web/src/constants/glossary.ts`，四个页面统一引用——改一处即全站生效，避免「有的页面只写到 N5」这类不一致。
 
 ### 本地开发
 
@@ -507,7 +520,7 @@ npm run deploy -- --api https://api.example.com   # 改调外部 Worker（跨源
 |------|--------|-------------|
 | ① 类型门禁 | `npm run typecheck`（= `worker` + `web` 的 `tsc --noEmit` / `vue-tsc --noEmit`） | release 脚本自动跑，失败即中止 |
 | ② 未提交检测 | `git status --porcelain`，有改动先让你填提交信息并二次确认 | release 脚本交互 |
-| ③ 选版本 | ↑/↓ 选 patch / minor / major，实时预览新版本号与变更分组 | release 脚本交互 |
+| ③ 选版本 | ↑/↓ 选 patch / minor / major，只显示「当前版本 + 三档新版本号」（CHANGELOG 由 changelogen 在选定后生成，不在选择界面刷屏） | release 脚本交互 |
 | ④ 版本 + Changelog | `changelogen --<type> --bump` 写版本号 + 增量中文 `CHANGELOG.md` | release 脚本 |
 | ⑤ 版本同步 | 把新版本号同步进 `worker/`、`web/` 的 `package.json`，避免漂移 | release 脚本 |
 | ⑥ 提交 + 打 tag + 推送 | `chore(release): vX.Y.Z` 提交、`git tag vX.Y.Z`、`push` + `push --tags` | release 脚本 |

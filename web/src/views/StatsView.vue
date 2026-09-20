@@ -1,15 +1,36 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { api, ApiError } from '../api/client';
-import type { StatsResult, HorizonStat, TimelinePoint } from '../api/types';
+import type { StatsResult, HorizonStat } from '../api/types';
 import { fmtPct, perfClass } from '../utils/format';
+import { todayCN, monthsAgoCN } from '../utils/date';
+import {
+  HORIZONS,
+  H_LABEL,
+  H_COLOR,
+  H_SHORT,
+  H_LONG,
+  HORIZON_NOTE,
+  STAT_DEFS,
+  timelineAvg,
+  type Horizon,
+} from '../constants/glossary';
 import TierBadge from '../components/TierBadge.vue';
 
 const stats = ref<StatsResult | null>(null);
 const loading = ref(false);
 const error = ref<string>('');
-const from = ref('');
-const to = ref('');
+
+// —— 区间过滤：默认「最近一个月」（复盘以近期命中率为主，历史可用「全部」放开）——
+type RangeKey = 'm1' | 'm3' | 'all' | 'custom';
+const RANGE_PRESETS: Array<{ key: RangeKey; label: string; months: number }> = [
+  { key: 'm1', label: '近一月', months: 1 },
+  { key: 'm3', label: '近三月', months: 3 },
+  { key: 'all', label: '全部', months: 0 },
+];
+const preset = ref<RangeKey>('m1');
+const from = ref(monthsAgoCN(1));
+const to = ref(todayCN());
 
 async function load() {
   loading.value = true;
@@ -24,6 +45,66 @@ async function load() {
   }
 }
 
+function applyPreset(p: { key: RangeKey; months: number }) {
+  preset.value = p.key;
+  from.value = monthsAgoCN(p.months);
+  to.value = monthsAgoCN(p.months) === '' ? '' : todayCN();
+  load();
+}
+
+function applyRange() {
+  preset.value = 'custom';
+  load();
+}
+
+// —— 走势图：可勾选显示的周期序列（sessionStorage 记忆）——
+const ACTIVE_KEY = 'cp:stats:horizons';
+const ALL_H: Horizon[] = [...HORIZONS];
+
+function readActive(): Horizon[] {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(ACTIVE_KEY) || 'null') as unknown;
+    if (Array.isArray(raw)) {
+      const ok = raw.filter((h): h is Horizon => (HORIZONS as readonly string[]).includes(String(h)));
+      if (ok.length) return ok;
+    }
+  } catch {
+    /* 隐私模式等读取失败时忽略 */
+  }
+  return ALL_H;
+}
+
+const active = ref<Horizon[]>(readActive());
+
+function persistActive() {
+  try {
+    sessionStorage.setItem(ACTIVE_KEY, JSON.stringify(active.value));
+  } catch {
+    /* 写入失败忽略 */
+  }
+}
+
+function isActive(h: Horizon): boolean {
+  return active.value.includes(h);
+}
+
+/** 勾选 / 取消某个周期；至少保留一条，避免出现空图。 */
+function toggle(h: Horizon) {
+  const i = active.value.indexOf(h);
+  if (i >= 0) {
+    if (active.value.length === 1) return;
+    active.value = active.value.filter((x) => x !== h);
+  } else {
+    active.value = [...active.value, h];
+  }
+  persistActive();
+}
+
+function setPreset(hs: Horizon[]) {
+  active.value = [...hs];
+  persistActive();
+}
+
 function rate(s: HorizonStat): string {
   if (!s.samples) return '—';
   return `${Math.round((s.win / s.samples) * 100)}%`;
@@ -35,24 +116,18 @@ function rateCls(s: HorizonStat): string {
 function sampleText(s: HorizonStat): string {
   return s.samples ? `${s.win}/${s.samples}` : '0/0';
 }
+/** 单格提示：样本数 + 均值，鼠标悬停可看，不占列宽。 */
+function cellTitle(s: HorizonStat): string {
+  if (!s.samples) return '无样本';
+  return `样本 ${s.win}/${s.samples} · 均值 ${fmtPct(s.avg)} · 亏损 ${s.lose}`;
+}
 
-const horizons = ['n1', 'n2', 'n3', 'n5', 'n7', 'n9', 'n10'] as const;
-type Horizon = (typeof horizons)[number];
-const H_LABEL: Record<Horizon, string> = {
-  n1: 'N1',
-  n2: 'N2',
-  n3: 'N3',
-  n5: 'N5',
-  n7: 'N7',
-  n9: 'N9',
-  n10: 'N10',
-};
-
-// 时间线折线（纯 SVG，无第三方依赖）：横轴为锚定日序号，纵轴为平均收益 %。
+// 时间线折线（纯 SVG，无第三方依赖）：横轴为锚定日（旧 → 新），纵轴为平均收益 %。
 const chart = computed(() => {
   const pts = stats.value?.timeline ?? [];
   if (pts.length < 2) return null;
-  const vals = pts.flatMap((p) => [p.n1_avg, p.n5_avg, p.n10_avg]).filter((v): v is number => v != null);
+  const shown = HORIZONS.filter((h) => active.value.includes(h));
+  const vals = pts.flatMap((p) => shown.map((h) => timelineAvg(p, h))).filter((v): v is number => v != null);
   if (!vals.length) return null;
 
   const W = 680;
@@ -74,14 +149,29 @@ const chart = computed(() => {
 
   const x = (i: number) => padL + (W - padL - padR) * (i / (pts.length - 1));
   const y = (v: number) => padT + (H - padT - padB) * (1 - (v - min) / (max - min));
-  const line = (sel: (p: TimelinePoint) => number | null) =>
-    pts
+
+  const showDots = pts.length <= 60;
+  const series = shown.map((h) => ({
+    h,
+    color: H_COLOR[h],
+    points: pts
       .map((p, i) => {
-        const v = sel(p);
+        const v = timelineAvg(p, h);
         return v == null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`;
       })
       .filter((s): s is string => s !== null)
-      .join(' ');
+      .join(' '),
+  }));
+  const dots = showDots
+    ? pts.flatMap((p, i) =>
+        shown
+          .map((h) => {
+            const v = timelineAvg(p, h);
+            return v == null ? null : { k: `${h}-${i}`, color: H_COLOR[h], cx: x(i), cy: y(v) };
+          })
+          .filter((d): d is { k: string; color: string; cx: number; cy: number } => d !== null),
+      )
+    : [];
 
   return {
     W,
@@ -93,13 +183,16 @@ const chart = computed(() => {
     min,
     max,
     zeroY: y(0),
-    n1: line((p) => p.n1_avg),
-    n5: line((p) => p.n5_avg),
-    n10: line((p) => p.n10_avg),
+    series,
+    dots,
+    showDots,
     first: pts[0].anchor_date,
     last: pts[pts.length - 1].anchor_date,
   };
 });
+
+// 锚定日倒序（最新在上）；走势图仍按时间正序，便于看清「向右 = 更近」的趋势。
+const timelineDesc = computed(() => [...(stats.value?.timeline ?? [])].reverse());
 
 onMounted(load);
 </script>
@@ -114,12 +207,23 @@ onMounted(load);
       <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
     </header>
 
-    <!-- 区间过滤 -->
+    <!-- 区间过滤：默认最近一个月 -->
     <section class="filters">
-      <label>起 <input type="date" v-model="from" /></label>
-      <label>止 <input type="date" v-model="to" /></label>
-      <button class="apply" @click="load">应用</button>
-      <button class="reset" @click="((from = ''), (to = ''), load())">全部</button>
+      <span class="presets">
+        <button
+          v-for="p in RANGE_PRESETS"
+          :key="p.key"
+          class="chip"
+          :class="{ active: preset === p.key }"
+          @click="applyPreset(p)"
+        >
+          {{ p.label }}
+        </button>
+      </span>
+      <label>起 <input type="date" v-model="from" @change="preset = 'custom'" /></label>
+      <label>止 <input type="date" v-model="to" @change="preset = 'custom'" /></label>
+      <button class="apply" @click="applyRange">应用</button>
+      <span class="range-meta">{{ from || '不限' }} ~ {{ to || '不限' }}</span>
     </section>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -130,95 +234,137 @@ onMounted(load);
       <section class="summary">
         <div class="card"><span class="k">运行批次</span><span class="v">{{ stats.total_runs }}</span></div>
         <div class="card"><span class="k">入选总数</span><span class="v">{{ stats.total_picks }}</span></div>
-        <div class="card" v-for="h in horizons" :key="h">
+        <div class="card" v-for="h in HORIZONS" :key="h">
           <span class="k">{{ H_LABEL[h] }} 胜率</span>
           <span class="v" :class="rateCls(stats.overall[h])">{{ rate(stats.overall[h]) }}</span>
           <span class="s">{{ sampleText(stats.overall[h]) }} · 均 {{ fmtPct(stats.overall[h].avg) }}</span>
         </div>
       </section>
 
-      <!-- 各档命中率 -->
+      <!-- 各档命中率：每个 N 只占一列（上行胜率 / 下行平均收益），避免 15 列过宽 -->
       <section class="block">
         <h2>各档命中率</h2>
         <p class="legend head">
-          N = 相对锚定日（入选日）之后的第 N 个筛选周期/交易日；收益 = (该日收盘 − 入选价) / 入选价。
-          例如看「入选 3 日内」就重点比较 N1 / N2 / N3 三列。
+          {{ HORIZON_NOTE }}<br />
+          每格：<b>上行 = 胜率</b>（收益 &gt; 0 的占比），<b>下行 = 平均收益</b>（仅统计有数据的样本）；悬停可见样本数。颜色惯例
+          <b>红 = 正、绿 = 负</b>（A 股口径）。
         </p>
         <div class="table-wrap">
           <table class="grid">
             <thead>
               <tr>
                 <th>档位</th><th class="num">入选</th>
-                <th v-for="h in horizons" :key="h" class="num">{{ H_LABEL[h] }} 胜率</th>
-                <th v-for="h in horizons" :key="h + 'a'" class="num">{{ H_LABEL[h] }} 均值</th>
+                <th v-for="h in HORIZONS" :key="h" class="num th-merged">
+                  <span class="th1">{{ H_LABEL[h] }}</span>
+                  <span class="th2">胜率 / 收益</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="t in stats.tiers" :key="t.tier">
                 <td><TierBadge :tier="t.tier" /></td>
                 <td class="num">{{ t.picks }}</td>
-                <td v-for="h in horizons" :key="h" class="num" :class="rateCls(t[h])">
-                  {{ rate(t[h]) }}
-                </td>
-                <td v-for="h in horizons" :key="h + 'a'" class="num" :class="perfClass(t[h].avg)">
-                  {{ fmtPct(t[h].avg) }}
+                <td v-for="h in HORIZONS" :key="h" class="num merged" :title="cellTitle(t[h])">
+                  <span class="rate" :class="rateCls(t[h])">{{ rate(t[h]) }}</span>
+                  <span class="gain" :class="perfClass(t[h].avg)">{{ fmtPct(t[h].avg) }}</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="legend">胜率 = 收益 &gt; 0 的样本占比；均值仅统计有数据的样本。颜色：红=正收益，绿=负收益。</p>
+        <p class="legend">
+          档位含义见 <router-link to="/rules">规则释义</router-link>：重点（R01 全达标）/ 次级 / 条件 / 排除（仅 R07、R05 触发）；
+          「排除」档计入本表，仅代表未达 R01 梯队，不代表无信号。
+        </p>
       </section>
 
-      <!-- 时间线 -->
-      <section class="block" v-if="chart">
+      <!-- 平均收益走势 -->
+      <section class="block" v-if="stats.timeline.length">
         <h2>平均收益走势</h2>
-        <div class="chart-legend">
-          <span class="lg n1">N1 均值</span>
-          <span class="lg n5">N5 均值</span>
-          <span class="lg n10">N10 均值</span>
+        <div class="chart-bar">
+          <span class="presets">
+            <button class="chip" @click="setPreset(ALL_H)">全部</button>
+            <button class="chip" @click="setPreset(H_SHORT)">N1–N3</button>
+            <button class="chip" @click="setPreset(H_LONG)">N5–N10</button>
+          </span>
+          <div class="legend-toggles">
+            <button
+              v-for="h in HORIZONS"
+              :key="h"
+              class="lg"
+              :class="{ off: !isActive(h) }"
+              :style="{ '--c': H_COLOR[h] }"
+              :aria-pressed="isActive(h)"
+              @click="toggle(h)"
+            >
+              {{ H_LABEL[h] }}
+            </button>
+          </div>
+          <span class="tip">点图例可勾选 / 取消</span>
         </div>
-        <svg class="chart" :viewBox="`0 0 ${chart.W} ${chart.H}`" preserveAspectRatio="none">
+
+        <svg v-if="chart" class="chart" :viewBox="`0 0 ${chart.W} ${chart.H}`" preserveAspectRatio="none">
           <line :x1="chart.padL" :x2="chart.W - chart.padR" :y1="chart.zeroY" :y2="chart.zeroY" class="zero" />
-          <polyline :points="chart.n1" class="s-n1" />
-          <polyline :points="chart.n5" class="s-n5" />
-          <polyline :points="chart.n10" class="s-n10" />
+          <polyline
+            v-for="s in chart.series"
+            :key="s.h"
+            :points="s.points"
+            class="line"
+            :style="{ stroke: s.color }"
+          />
+          <template v-if="chart.showDots">
+            <circle v-for="d in chart.dots" :key="d.k" :cx="d.cx" :cy="d.cy" r="2.5" :style="{ fill: d.color }" />
+          </template>
           <text :x="2" :y="chart.padT + 8" class="axis">{{ chart.max.toFixed(1) }}</text>
           <text :x="2" :y="chart.zeroY + 4" class="axis">0</text>
           <text :x="2" :y="chart.H - chart.padB" class="axis">{{ chart.min.toFixed(1) }}</text>
         </svg>
-        <div class="chart-x">
-          <span>{{ chart.first }}</span>
-          <span>{{ chart.last }}</span>
+        <p v-else class="legend">该区间锚定日不足 2 个，暂不绘制走势；下方明细表仍可用。</p>
+        <div class="chart-x" v-if="chart">
+          <span>{{ chart.first }}（较早）</span>
+          <span>{{ chart.last }}（最新）</span>
         </div>
 
+        <!-- 明细：锚定日倒序 -->
         <div class="table-wrap timeline">
           <table class="grid">
             <thead>
               <tr>
                 <th>锚定日</th><th class="num">入选</th>
-                <th class="num">N1</th><th class="num">N2</th><th class="num">N3</th>
-                <th class="num">N5</th><th class="num">N7</th><th class="num">N9</th><th class="num">N10</th>
+                <th v-for="h in HORIZONS" :key="h" class="num">{{ H_LABEL[h] }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in stats.timeline" :key="p.anchor_date">
+              <tr v-for="p in timelineDesc" :key="p.anchor_date">
                 <td class="mono">{{ p.anchor_date }}</td>
                 <td class="num">{{ p.picks }}</td>
-                <td class="num" :class="perfClass(p.n1_avg)">{{ fmtPct(p.n1_avg) }}</td>
-                <td class="num" :class="perfClass(p.n2_avg)">{{ fmtPct(p.n2_avg) }}</td>
-                <td class="num" :class="perfClass(p.n3_avg)">{{ fmtPct(p.n3_avg) }}</td>
-                <td class="num" :class="perfClass(p.n5_avg)">{{ fmtPct(p.n5_avg) }}</td>
-                <td class="num" :class="perfClass(p.n7_avg)">{{ fmtPct(p.n7_avg) }}</td>
-                <td class="num" :class="perfClass(p.n9_avg)">{{ fmtPct(p.n9_avg) }}</td>
-                <td class="num" :class="perfClass(p.n10_avg)">{{ fmtPct(p.n10_avg) }}</td>
+                <td v-for="h in HORIZONS" :key="h" class="num" :class="perfClass(timelineAvg(p, h))">
+                  {{ fmtPct(timelineAvg(p, h)) }}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
+        <p class="legend">明细按锚定日<b>倒序</b>（最新在上）；走势图横轴为时间正序（向右 = 更近）。</p>
       </section>
 
-      <p v-if="stats.total_picks === 0" class="hint">该区间暂无入选记录。</p>
+      <!-- 统计口径 -->
+      <section class="block">
+        <h2>统计口径</h2>
+        <table class="grid">
+          <thead>
+            <tr><th>指标</th><th>含义</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="d in STAT_DEFS" :key="d.k">
+              <td>{{ d.t }}</td>
+              <td class="desc">{{ d.d }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <p v-if="stats.total_picks === 0" class="hint">该区间暂无入选记录，可切换「近三月 / 全部」。</p>
     </template>
   </div>
 </template>
@@ -241,6 +387,12 @@ onMounted(load);
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
 }
 .filters .apply { border-color: var(--accent); color: var(--accent); background: rgba(31,111,235,0.12); }
+.presets { display: inline-flex; gap: 6px; }
+.chip {
+  border-radius: 999px !important; padding: 5px 12px !important; font-size: 12px !important;
+}
+.chip.active { border-color: var(--accent); color: var(--accent); background: rgba(31,111,235,0.12); }
+.range-meta { font-size: 12px; }
 
 .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
@@ -249,32 +401,45 @@ onMounted(load);
 .card .s { font-size: 11px; color: var(--muted); }
 
 .block h2 { font-size: 16px; margin: 0 0 12px; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
-.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
-.grid th, .grid td { padding: 9px 12px; text-align: left; white-space: nowrap; }
+.table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+.grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
+.grid th, .grid td { padding: 8px 8px; text-align: left; overflow-wrap: anywhere; }
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; }
-.grid th:first-child, .grid td:first-child { position: sticky; left: 0; background: var(--bg); z-index: 1; }
-.grid thead th:first-child { z-index: 2; background: var(--surface); }
 .grid tbody tr { border-top: 1px solid var(--border); }
-.grid .num { text-align: right; font-variant-numeric: tabular-nums; }
-.grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; }
+.grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.grid .desc { white-space: normal; color: var(--muted); line-height: 1.6; }
+
+/* 合并列：上行胜率 + 下行平均收益（保持 table-cell，避免破坏列对齐） */
+.th-merged { line-height: 1.25; }
+.th1 { display: block; }
+.th2 { display: block; font-size: 10px; font-weight: 400; color: var(--muted); opacity: 0.8; }
+.merged .rate, .merged .gain { display: block; line-height: 1.3; }
+.merged .rate { font-weight: 700; }
+.merged .gain { font-size: 11px; }
+
 .up { color: #ff7b72; }
 .down { color: #3fb950; }
+.flat { color: var(--muted); }
 .muted { color: var(--muted); }
-.legend { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
-.legend.head { margin: 0 0 10px; line-height: 1.7; background: rgba(31,111,235,0.08); border: 1px solid rgba(31,111,235,0.25); border-radius: 8px; padding: 8px 10px; }
+.legend { color: var(--muted); font-size: 12px; margin: 10px 0 0; line-height: 1.7; }
+.legend a { color: var(--accent); text-decoration: none; }
+.legend a:hover { text-decoration: underline; }
+.legend.head { margin: 0 0 10px; background: rgba(31,111,235,0.08); border: 1px solid rgba(31,111,235,0.25); border-radius: 8px; padding: 8px 10px; }
 
-.chart-legend { display: flex; gap: 16px; font-size: 12px; margin-bottom: 6px; }
-.lg { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
-.lg::before { content: ''; width: 14px; height: 2px; border-radius: 2px; }
-.lg.n1::before { background: #ff7b72; }
-.lg.n5::before { background: #e3b341; }
-.lg.n10::before { background: #79c0ff; }
+.chart-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.legend-toggles { display: flex; gap: 10px; flex-wrap: wrap; }
+.lg {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--text);
+  background: none; border: none; cursor: pointer; font: inherit; font-size: 12px; padding: 2px 0;
+}
+.lg::before { content: ''; width: 14px; height: 2px; border-radius: 2px; background: var(--c); }
+.lg.off { opacity: 0.35; text-decoration: line-through; }
+.tip { font-size: 11px; color: var(--muted); }
+
 .chart { width: 100%; height: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 .chart .zero { stroke: var(--border); stroke-width: 1; stroke-dasharray: 4 4; }
-.chart .s-n1 { fill: none; stroke: #ff7b72; stroke-width: 2; }
-.chart .s-n5 { fill: none; stroke: #e3b341; stroke-width: 2; }
-.chart .s-n10 { fill: none; stroke: #79c0ff; stroke-width: 2; }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .chart .axis { fill: var(--muted); font-size: 10px; }
 .chart-x { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: 4px; }
 .timeline { margin-top: 14px; }
