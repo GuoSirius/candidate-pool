@@ -251,9 +251,14 @@ onMounted(load);
         </p>
         <div class="table-wrap">
           <table class="grid">
+            <colgroup>
+              <col style="width: 12%" />
+              <col style="width: 8%" />
+              <col v-for="h in HORIZONS" :key="h" style="width: 11.4%" />
+            </colgroup>
             <thead>
               <tr>
-                <th>档位</th><th class="num">入选</th>
+                <th class="ctr">档位</th><th class="num">入选</th>
                 <th v-for="h in HORIZONS" :key="h" class="num th-merged">
                   <span class="th1">{{ H_LABEL[h] }}</span>
                   <span class="th2">胜率 / 收益</span>
@@ -262,7 +267,7 @@ onMounted(load);
             </thead>
             <tbody>
               <tr v-for="t in stats.tiers" :key="t.tier">
-                <td><TierBadge :tier="t.tier" /></td>
+                <td class="ctr"><TierBadge :tier="t.tier" /></td>
                 <td class="num">{{ t.picks }}</td>
                 <td v-for="h in HORIZONS" :key="h" class="num merged" :title="cellTitle(t[h])">
                   <span class="rate" :class="rateCls(t[h])">{{ rate(t[h]) }}</span>
@@ -328,15 +333,20 @@ onMounted(load);
         <!-- 明细：锚定日倒序 -->
         <div class="table-wrap timeline">
           <table class="grid">
+            <colgroup>
+              <col style="width: 16%" />
+              <col style="width: 8%" />
+              <col v-for="h in HORIZONS" :key="h" style="width: 10.8%" />
+            </colgroup>
             <thead>
               <tr>
-                <th>锚定日</th><th class="num">入选</th>
+                <th class="ctr">锚定日</th><th class="num">入选</th>
                 <th v-for="h in HORIZONS" :key="h" class="num">{{ H_LABEL[h] }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="p in timelineDesc" :key="p.anchor_date">
-                <td class="mono">{{ p.anchor_date }}</td>
+                <td class="mono ctr">{{ p.anchor_date }}</td>
                 <td class="num">{{ p.picks }}</td>
                 <td v-for="h in HORIZONS" :key="h" class="num" :class="perfClass(timelineAvg(p, h))">
                   {{ fmtPct(timelineAvg(p, h)) }}
@@ -352,6 +362,10 @@ onMounted(load);
       <section class="block">
         <h2>统计口径</h2>
         <table class="grid">
+          <colgroup>
+            <col style="width: 20%" />
+            <col style="width: 80%" />
+          </colgroup>
           <thead>
             <tr><th>指标</th><th>含义</th></tr>
           </thead>
@@ -407,6 +421,7 @@ onMounted(load);
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; }
 .grid tbody tr { border-top: 1px solid var(--border); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .grid .desc { white-space: normal; color: var(--muted); line-height: 1.6; }
 

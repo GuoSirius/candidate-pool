@@ -62,12 +62,17 @@ function groupOf(h: Horizon): string {
         报告与列表按四档分类。<code>tier</code> <b>仅表示 R01 梯队</b>，不代表综合推荐度；即便为「排除」档，只要触发 R07 / R05 也会被写入。
       </p>
       <table class="grid">
+        <colgroup>
+          <col style="width: 12%" />
+          <col style="width: 50%" />
+          <col style="width: 38%" />
+        </colgroup>
         <thead>
           <tr><th>档位</th><th>含义</th><th>入选条件</th></tr>
         </thead>
         <tbody>
           <tr v-for="t in TIERS" :key="t.key">
-            <td><span class="tier-badge" :class="`tier-${t.key}`">{{ t.label }}</span></td>
+            <td class="ctr"><span class="tier-badge" :class="`tier-${t.key}`">{{ t.label }}</span></td>
             <td class="wrap">{{ t.desc }}</td>
             <td class="cond">{{ t.cond }}</td>
           </tr>
@@ -80,13 +85,18 @@ function groupOf(h: Horizon): string {
       <h2>判定标记位（记录里存了什么）</h2>
       <p class="note">列表「规则」列的 R01 / R07 / R05 标签，以及列表中不直接展示但参与判定的字段：</p>
       <table class="grid">
+        <colgroup>
+          <col style="width: 18%" />
+          <col style="width: 14%" />
+          <col style="width: 68%" />
+        </colgroup>
         <thead>
           <tr><th>字段</th><th>名称</th><th>说明</th></tr>
         </thead>
         <tbody>
           <tr v-for="f in RULE_FLAGS" :key="f.k">
             <td class="mono">{{ f.k }}</td>
-            <td>{{ f.t }}</td>
+            <td class="ctr">{{ f.t }}</td>
             <td class="wrap">{{ f.d }}</td>
           </tr>
         </tbody>
@@ -98,12 +108,18 @@ function groupOf(h: Horizon): string {
       <h2>N 日周期一览（N1 / N2 / N3 / N5 / N7 / N9 / N10）</h2>
       <p class="legend head">{{ HORIZON_NOTE }}</p>
       <table class="grid">
+        <colgroup>
+          <col style="width: 12%" />
+          <col style="width: 40%" />
+          <col style="width: 20%" />
+          <col style="width: 28%" />
+        </colgroup>
         <thead>
           <tr><th>周期</th><th>对应</th><th>分组</th><th>走势图配色</th></tr>
         </thead>
         <tbody>
           <tr v-for="h in HORIZONS" :key="h">
-            <td class="hname">{{ H_LABEL[h] }}</td>
+            <td class="hname ctr">{{ H_LABEL[h] }}</td>
             <td>锚定日之后的第 {{ H_OFFSET[h] }} 个交易日收盘 vs 入选价</td>
             <td class="cond">{{ groupOf(h) }}</td>
             <td>
@@ -123,13 +139,18 @@ function groupOf(h: Horizon): string {
     <section class="block">
       <h2>候选列表字段释义</h2>
       <table class="grid">
+        <colgroup>
+          <col style="width: 18%" />
+          <col style="width: 14%" />
+          <col style="width: 68%" />
+        </colgroup>
         <thead>
           <tr><th>字段</th><th>名称</th><th>说明</th></tr>
         </thead>
         <tbody>
           <tr v-for="c in FIELDS" :key="c.k">
             <td class="mono">{{ c.k }}</td>
-            <td>{{ c.t }}</td>
+            <td class="ctr">{{ c.t }}</td>
             <td class="wrap">{{ c.d }}</td>
           </tr>
         </tbody>
@@ -139,15 +160,19 @@ function groupOf(h: Horizon): string {
     <!-- 6. 统计口径 -->
     <section class="block">
       <h2>统计口径（复盘统计页）</h2>
-      <table class="grid">
-        <thead>
-          <tr><th>指标</th><th>含义</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="d in STAT_DEFS" :key="d.k">
-            <td>{{ d.t }}</td>
-            <td class="wrap">{{ d.d }}</td>
-          </tr>
+        <table class="grid">
+          <colgroup>
+            <col style="width: 20%" />
+            <col style="width: 80%" />
+          </colgroup>
+          <thead>
+            <tr><th>指标</th><th>含义</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="d in STAT_DEFS" :key="d.k">
+              <td class="ctr">{{ d.t }}</td>
+              <td class="wrap">{{ d.d }}</td>
+            </tr>
         </tbody>
       </table>
       <p class="legend">颜色惯例：<b>红 = 正、绿 = 负</b>（A 股口径）；无数据显示 <code>—</code>，与「0%」区分。</p>
@@ -177,10 +202,11 @@ function groupOf(h: Horizon): string {
 .rule-card ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 .rule-card li { font-size: 12.5px; color: var(--text); line-height: 1.5; }
 
-.grid { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.grid th, .grid td { padding: 10px 12px; text-align: left; }
+.grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.grid th, .grid td { padding: 10px 12px; text-align: left; overflow-wrap: anywhere; }
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; }
 .grid tbody tr { border-top: 1px solid var(--border); }
+.grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .cond, .grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--muted); }
 .grid .wrap { line-height: 1.65; }
 .grid .hname { font-weight: 700; color: var(--text); }

@@ -100,15 +100,22 @@ onMounted(() => load(code.value));
         <h2>入选后各周期表现（复盘）</h2>
         <div class="table-wrap">
           <table class="grid">
+            <colgroup>
+              <col style="width: 14%" />
+              <col style="width: 16%" />
+              <col style="width: 20%" />
+              <col style="width: 25%" />
+              <col style="width: 25%" />
+            </colgroup>
             <thead>
               <tr>
-                <th>周期</th><th class="num">样本</th><th class="num">平均</th>
+                <th class="ctr">周期</th><th class="num">样本</th><th class="num">平均</th>
                 <th class="num">最佳</th><th class="num">最差</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="s in perfSummary" :key="s.h">
-                <td class="mono">{{ H_LABEL[s.h] }}</td>
+                <td class="mono ctr">{{ H_LABEL[s.h] }}</td>
                 <td class="num">{{ s.n || '—' }}</td>
                 <td class="num" :class="perfClass(s.avg)">{{ fmtPct(s.avg) }}</td>
                 <td class="num" :class="perfClass(s.best)">{{ fmtPct(s.best) }}</td>
@@ -125,17 +132,25 @@ onMounted(() => load(code.value));
         <h2>入选记录（共 {{ picks.length }} 期）</h2>
         <div class="table-wrap">
           <table class="grid">
+            <colgroup>
+              <col style="width: 12%" />
+              <col style="width: 7%" />
+              <col style="width: 9%" />
+              <col style="width: 8%" />
+              <col v-for="h in HORIZONS" :key="h" style="width: 9.1%" />
+            </colgroup>
             <thead>
               <tr>
-                <th>锚定日</th><th>档位</th><th>规则</th><th class="num">入选价</th>
+                <th class="ctr">锚定日</th><th class="ctr">档位</th><th class="ctr">规则</th>
+                <th class="num">入选价</th>
                 <th v-for="h in HORIZONS" :key="h" class="num">{{ H_LABEL[h] }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="p in picks" :key="p.id">
-                <td class="mono">{{ p.anchor_date }}</td>
-                <td><TierBadge :tier="p.tier" /></td>
-                <td><RuleTags :pick="p" /></td>
+                <td class="mono ctr">{{ p.anchor_date }}</td>
+                <td class="ctr"><TierBadge :tier="p.tier" /></td>
+                <td class="ctr"><RuleTags :pick="p" /></td>
                 <td class="num">{{ fmtNum(p.price) }}</td>
                 <td v-for="h in HORIZONS" :key="h" class="num" :class="perfClass(p.perf?.[h])">
                   {{ fmtPct(p.perf?.[h]) }}
@@ -192,6 +207,7 @@ onMounted(() => load(code.value));
 .grid thead th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); line-height: 1.3; }
 .grid tbody tr { border-top: 1px solid var(--border); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+.grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .grid :deep(.rule-tags) { gap: 2px; }
 .grid :deep(.rule-tag) { padding: 0 4px; font-size: 10px; }

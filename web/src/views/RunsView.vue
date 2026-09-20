@@ -241,24 +241,24 @@ onBeforeUnmount(writeState);
     <!-- 入选列表 -->
     <section class="table-wrap" v-if="!loading && pagedPicks.length">
       <table class="grid">
-        <!-- 固定列宽（table-layout: fixed）+ 百分比分配：表格宽度恒等于容器，任何窗口宽度都不产生横向滚动 -->
+        <!-- 列宽规划：文本列（代码/名称/板块/理由）较宽；标签列窄且居中；数值列右对齐 -->
         <colgroup>
-          <col style="width: 8%" />
           <col style="width: 7%" />
-          <col style="width: 5.5%" />
           <col style="width: 9%" />
+          <col style="width: 5%" />
           <col style="width: 7%" />
-          <col style="width: 6.5%" />
-          <col style="width: 7%" />
-          <col style="width: 6.5%" />
+          <col style="width: 9%" />
           <col style="width: 6%" />
-          <col style="width: 9%" />
-          <col style="width: 6.5%" />
-          <col style="width: 22%" />
+          <col style="width: 6%" />
+          <col style="width: 6%" />
+          <col style="width: 5.5%" />
+          <col style="width: 8.5%" />
+          <col style="width: 6%" />
+          <col style="width: 25%" />
         </colgroup>
         <thead>
           <tr>
-            <th>代码</th><th>名称</th><th>档位</th><th>规则</th><th>板块</th>
+            <th>代码</th><th>名称</th><th class="ctr">档位</th><th class="ctr">规则</th><th>板块</th>
             <th class="num">价格</th><th class="num">R01<br />涨跌</th><th class="num">换手率</th>
             <th class="num">量比</th>
             <th class="num">市值<br />流通 / 总</th>
@@ -269,8 +269,8 @@ onBeforeUnmount(writeState);
           <tr v-for="p in pagedPicks" :key="p.id" @click="openStock(p.code)">
             <td class="code" data-label="代码">{{ p.code }}</td>
             <td class="name" data-label="名称">{{ p.name ?? '—' }}</td>
-            <td data-label="档位"><TierBadge :tier="p.tier" /></td>
-            <td data-label="规则"><RuleTags :pick="p" /></td>
+            <td class="ctr" data-label="档位"><TierBadge :tier="p.tier" /></td>
+            <td class="ctr" data-label="规则"><RuleTags :pick="p" /></td>
             <td class="sector" data-label="板块">{{ p.sector ?? '—' }}</td>
             <td class="num" data-label="价格">{{ fmtNum(p.price) }}</td>
             <td class="num" data-label="R01涨跌" :class="p.r01_chg !== null && p.r01_chg > 0 ? 'up' : p.r01_chg !== null && p.r01_chg < 0 ? 'down' : ''">{{ fmtPct(p.r01_chg) }}</td>
@@ -351,6 +351,7 @@ onBeforeUnmount(writeState);
 .grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+.grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .code { white-space: nowrap; font-weight: 600; color: var(--accent); }
 .grid .name { font-weight: 500; }
 .grid .sector, .grid .reason { color: var(--muted); }
@@ -398,6 +399,7 @@ onBeforeUnmount(writeState);
     flex: 0 0 auto; margin-right: 8px;
   }
   .grid td.num { text-align: left; }
+  .grid td.ctr { text-align: left; }
   .grid td.code, .grid td.num, .grid td.mono { white-space: nowrap; }
   .grid td.sector, .grid td.reason { white-space: normal; max-width: none; color: var(--muted); }
   .grid th:first-child, .grid td:first-child { position: static; background: transparent; }

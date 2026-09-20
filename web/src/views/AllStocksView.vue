@@ -155,23 +155,23 @@ onMounted(load);
     <section class="table-wrap" v-if="!loading && sorted.length">
       <table class="grid">
         <colgroup>
-          <col style="width: 10%" />
-          <col style="width: 10%" />
-          <col style="width: 9%" />
-          <col style="width: 9%" />
           <col style="width: 8%" />
+          <col style="width: 11%" />
+          <col style="width: 13%" />
           <col style="width: 8%" />
-          <col style="width: 8%" />
-          <col style="width: 8%" />
-          <col style="width: 15%" />
-          <col style="width: 15%" />
+          <col style="width: 7%" />
+          <col style="width: 7%" />
+          <col style="width: 7%" />
+          <col style="width: 7%" />
+          <col style="width: 16%" />
+          <col style="width: 16%" />
         </colgroup>
         <thead>
           <tr>
             <th
               v-for="c in COLS"
               :key="c.key"
-              :class="{ num: c.num, sorted: sortKey === c.key }"
+              :class="{ num: c.num, ctr: !c.num, sorted: sortKey === c.key }"
               :title="c.tip"
             >
               <button class="th-btn" @click="toggleSort(c.key)">
@@ -191,8 +191,8 @@ onMounted(load);
             <td class="num t-se" data-label="次级">{{ r.secondary || '—' }}</td>
             <td class="num t-co" data-label="条件">{{ r.conditional || '—' }}</td>
             <td class="num t-ex" data-label="排除">{{ r.excluded || '—' }}</td>
-            <td class="mono" data-label="最近入选">{{ r.last_anchor }}</td>
-            <td class="mono" data-label="首次入选">{{ r.first_anchor }}</td>
+            <td class="mono ctr" data-label="最近入选">{{ r.last_anchor }}</td>
+            <td class="mono ctr" data-label="首次入选">{{ r.first_anchor }}</td>
           </tr>
         </tbody>
       </table>
@@ -242,6 +242,7 @@ onMounted(load);
 .grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+.grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .strong { font-weight: 700; }
 .grid .t-hi { color: #ff7b72; }
 .grid .t-se { color: #e3b341; }
@@ -258,6 +259,7 @@ onMounted(load);
   padding: 8px 7px; text-align: left;
 }
 .grid th.num .th-btn { justify-content: flex-end; }
+.grid th.ctr .th-btn { justify-content: center; }
 .th-btn .arrow { font-size: 9px; color: var(--accent); }
 
 .legend { color: var(--muted); font-size: 12px; line-height: 1.75; margin: 0; }
