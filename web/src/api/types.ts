@@ -78,11 +78,15 @@ export interface StockNote {
   created_at: string | null;
 }
 
-/** N 日收益率（相对锚定日收盘价），单位 %，可能为空（数据缺失）。 */
+/** N 日收益率（相对锚定日收盘价），单位 %，可能为空（数据缺失）。
+ *  N = 相对锚定日（入选日）之后的第 N 个筛选周期/交易日。 */
 export interface Perf {
   n1: number | null;
+  n2: number | null;
   n3: number | null;
   n5: number | null;
+  n7: number | null;
+  n9: number | null;
   n10: number | null;
 }
 
@@ -101,13 +105,16 @@ export interface HorizonStat {
   avg: number | null;
 }
 
-/** 某档位在 N1/N3/N5/N10 上的表现（stats.tiers 中的 tier 必为四档之一）。 */
+/** 某档位在 N1/N2/N3/N5/N7/N9/N10 上的表现（stats.tiers 中的 tier 必为四档之一）。 */
 export interface TierStats {
   tier: Tier;
   picks: number;
   n1: HorizonStat;
+  n2: HorizonStat;
   n3: HorizonStat;
   n5: HorizonStat;
+  n7: HorizonStat;
+  n9: HorizonStat;
   n10: HorizonStat;
 }
 
@@ -115,7 +122,11 @@ export interface TimelinePoint {
   anchor_date: string;
   picks: number;
   n1_avg: number | null;
+  n2_avg: number | null;
+  n3_avg: number | null;
   n5_avg: number | null;
+  n7_avg: number | null;
+  n9_avg: number | null;
   n10_avg: number | null;
 }
 

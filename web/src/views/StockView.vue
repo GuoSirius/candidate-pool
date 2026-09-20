@@ -110,7 +110,8 @@ onMounted(() => load(code.value));
             <thead>
               <tr>
                 <th>锚定日</th><th>档位</th><th>规则</th><th class="num">入选价</th>
-                <th class="num">N1</th><th class="num">N3</th><th class="num">N5</th><th class="num">N10</th>
+                <th class="num">N1</th><th class="num">N2</th><th class="num">N3</th>
+                <th class="num">N5</th><th class="num">N7</th><th class="num">N9</th><th class="num">N10</th>
               </tr>
             </thead>
             <tbody>
@@ -120,14 +121,17 @@ onMounted(() => load(code.value));
                 <td><RuleTags :pick="p" /></td>
                 <td class="num">{{ fmtNum(p.price) }}</td>
                 <td class="num" :class="perfClass(p.perf?.n1)">{{ fmtPct(p.perf?.n1) }}</td>
+                <td class="num" :class="perfClass(p.perf?.n2)">{{ fmtPct(p.perf?.n2) }}</td>
                 <td class="num" :class="perfClass(p.perf?.n3)">{{ fmtPct(p.perf?.n3) }}</td>
                 <td class="num" :class="perfClass(p.perf?.n5)">{{ fmtPct(p.perf?.n5) }}</td>
+                <td class="num" :class="perfClass(p.perf?.n7)">{{ fmtPct(p.perf?.n7) }}</td>
+                <td class="num" :class="perfClass(p.perf?.n9)">{{ fmtPct(p.perf?.n9) }}</td>
                 <td class="num" :class="perfClass(p.perf?.n10)">{{ fmtPct(p.perf?.n10) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="legend">涨 = 红，跌 = 绿。收益相对锚定日收盘价计算，数据缺失显示 —。</p>
+        <p class="legend">N = 相对锚定日（入选日）之后的第 N 个筛选周期/交易日；收益 = (该日收盘 − 入选价) / 入选价。涨 = 红，跌 = 绿；数据缺失显示 —。</p>
       </section>
     </template>
   </div>

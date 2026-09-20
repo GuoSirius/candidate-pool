@@ -36,15 +36,23 @@ function sampleText(s: HorizonStat): string {
   return s.samples ? `${s.win}/${s.samples}` : '0/0';
 }
 
-const horizons = ['n1', 'n3', 'n5', 'n10'] as const;
+const horizons = ['n1', 'n2', 'n3', 'n5', 'n7', 'n9', 'n10'] as const;
 type Horizon = (typeof horizons)[number];
-const H_LABEL: Record<Horizon, string> = { n1: 'N1', n3: 'N3', n5: 'N5', n10: 'N10' };
+const H_LABEL: Record<Horizon, string> = {
+  n1: 'N1',
+  n2: 'N2',
+  n3: 'N3',
+  n5: 'N5',
+  n7: 'N7',
+  n9: 'N9',
+  n10: 'N10',
+};
 
 // 时间线折线（纯 SVG，无第三方依赖）：横轴为锚定日序号，纵轴为平均收益 %。
 const chart = computed(() => {
   const pts = stats.value?.timeline ?? [];
   if (pts.length < 2) return null;
-  const vals = pts.flatMap((p) => [p.n5_avg, p.n10_avg]).filter((v): v is number => v != null);
+  const vals = pts.flatMap((p) => [p.n1_avg, p.n5_avg, p.n10_avg]).filter((v): v is number => v != null);
   if (!vals.length) return null;
 
   const W = 680;
@@ -85,6 +93,7 @@ const chart = computed(() => {
     min,
     max,
     zeroY: y(0),
+    n1: line((p) => p.n1_avg),
     n5: line((p) => p.n5_avg),
     n10: line((p) => p.n10_avg),
     first: pts[0].anchor_date,
@@ -100,7 +109,7 @@ onMounted(load);
     <header class="page-head">
       <div>
         <h1>复盘统计</h1>
-        <p class="sub">入选后 N1 / N3 / N5 / N10 的命中率与平均收益（胜 = 收益 &gt; 0）</p>
+        <p class="sub">入选后 N1 / N2 / N3 / N5 / N7 / N9 / N10 的命中率与平均收益（胜 = 收益 &gt; 0）</p>
       </div>
     </header>
 
@@ -130,6 +139,10 @@ onMounted(load);
       <!-- 各档命中率 -->
       <section class="block">
         <h2>各档命中率</h2>
+        <p class="legend head">
+          N = 相对锚定日（入选日）之后的第 N 个筛选周期/交易日；收益 = (该日收盘 − 入选价) / 入选价。
+          例如看「入选 3 日内」就重点比较 N1 / N2 / N3 三列。
+        </p>
         <div class="table-wrap">
           <table class="grid">
             <thead>
@@ -153,18 +166,20 @@ onMounted(load);
             </tbody>
           </table>
         </div>
-        <p class="legend">胜率 = 收益 &gt; 0 的样本占比；均值仅统计有数据的样本。</p>
+        <p class="legend">胜率 = 收益 &gt; 0 的样本占比；均值仅统计有数据的样本。颜色：红=正收益，绿=负收益。</p>
       </section>
 
       <!-- 时间线 -->
       <section class="block" v-if="chart">
         <h2>平均收益走势</h2>
         <div class="chart-legend">
+          <span class="lg n1">N1 均值</span>
           <span class="lg n5">N5 均值</span>
           <span class="lg n10">N10 均值</span>
         </div>
         <svg class="chart" :viewBox="`0 0 ${chart.W} ${chart.H}`" preserveAspectRatio="none">
           <line :x1="chart.padL" :x2="chart.W - chart.padR" :y1="chart.zeroY" :y2="chart.zeroY" class="zero" />
+          <polyline :points="chart.n1" class="s-n1" />
           <polyline :points="chart.n5" class="s-n5" />
           <polyline :points="chart.n10" class="s-n10" />
           <text :x="2" :y="chart.padT + 8" class="axis">{{ chart.max.toFixed(1) }}</text>
@@ -179,14 +194,22 @@ onMounted(load);
         <div class="table-wrap timeline">
           <table class="grid">
             <thead>
-              <tr><th>锚定日</th><th class="num">入选</th><th class="num">N1 均值</th><th class="num">N5 均值</th><th class="num">N10 均值</th></tr>
+              <tr>
+                <th>锚定日</th><th class="num">入选</th>
+                <th class="num">N1</th><th class="num">N2</th><th class="num">N3</th>
+                <th class="num">N5</th><th class="num">N7</th><th class="num">N9</th><th class="num">N10</th>
+              </tr>
             </thead>
             <tbody>
               <tr v-for="p in stats.timeline" :key="p.anchor_date">
                 <td class="mono">{{ p.anchor_date }}</td>
                 <td class="num">{{ p.picks }}</td>
                 <td class="num" :class="perfClass(p.n1_avg)">{{ fmtPct(p.n1_avg) }}</td>
+                <td class="num" :class="perfClass(p.n2_avg)">{{ fmtPct(p.n2_avg) }}</td>
+                <td class="num" :class="perfClass(p.n3_avg)">{{ fmtPct(p.n3_avg) }}</td>
                 <td class="num" :class="perfClass(p.n5_avg)">{{ fmtPct(p.n5_avg) }}</td>
+                <td class="num" :class="perfClass(p.n7_avg)">{{ fmtPct(p.n7_avg) }}</td>
+                <td class="num" :class="perfClass(p.n9_avg)">{{ fmtPct(p.n9_avg) }}</td>
                 <td class="num" :class="perfClass(p.n10_avg)">{{ fmtPct(p.n10_avg) }}</td>
               </tr>
             </tbody>
@@ -235,14 +258,17 @@ onMounted(load);
 .down { color: #3fb950; }
 .muted { color: var(--muted); }
 .legend { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+.legend.head { margin: 0 0 10px; line-height: 1.7; background: rgba(31,111,235,0.08); border: 1px solid rgba(31,111,235,0.25); border-radius: 8px; padding: 8px 10px; }
 
 .chart-legend { display: flex; gap: 16px; font-size: 12px; margin-bottom: 6px; }
 .lg { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
 .lg::before { content: ''; width: 14px; height: 2px; border-radius: 2px; }
+.lg.n1::before { background: #ff7b72; }
 .lg.n5::before { background: #e3b341; }
 .lg.n10::before { background: #79c0ff; }
 .chart { width: 100%; height: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 .chart .zero { stroke: var(--border); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart .s-n1 { fill: none; stroke: #ff7b72; stroke-width: 2; }
 .chart .s-n5 { fill: none; stroke: #e3b341; stroke-width: 2; }
 .chart .s-n10 { fill: none; stroke: #79c0ff; stroke-width: 2; }
 .chart .axis { fill: var(--muted); font-size: 10px; }

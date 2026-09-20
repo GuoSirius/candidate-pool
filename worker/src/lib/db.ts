@@ -59,8 +59,9 @@ export async function getPicks(db: D1Database, runId: number, tier?: string): Pr
 
 /**
  * 计算某票相对入选价（锚定日收盘）的 N 日表现。
- * prices 为该票全部日线（升序）；找到锚定日所在行后，向后取 1/3/5/10 个交易日，
+ * prices 为该票全部日线（升序）；找到锚定日所在行后，向后取 1/2/3/5/7/9/10 个交易日，
  * 用 (后价 - 入选价) / 入选价 算涨幅 %。缺数据返回 null。
+ * N 表示相对锚定日之后的第 N 个筛选周期/交易日。
  */
 function computePerf(
   prices: Array<{ date: string; close: number }>,
@@ -78,8 +79,11 @@ function computePerf(
   const at = (n: number) => sorted[idx + n]?.close;
   return {
     n1: pct(at(1)),
+    n2: pct(at(2)),
     n3: pct(at(3)),
     n5: pct(at(5)),
+    n7: pct(at(7)),
+    n9: pct(at(9)),
     n10: pct(at(10)),
   };
 }
@@ -174,14 +178,17 @@ function tierStat(tier: string, perfs: Array<Perf | null>): TierStats {
     tier,
     picks: perfs.length,
     n1: horizonStat(perfs, 'n1'),
+    n2: horizonStat(perfs, 'n2'),
     n3: horizonStat(perfs, 'n3'),
     n5: horizonStat(perfs, 'n5'),
+    n7: horizonStat(perfs, 'n7'),
+    n9: horizonStat(perfs, 'n9'),
     n10: horizonStat(perfs, 'n10'),
   };
 }
 
 /**
- * 复盘统计：对区间内全部入选记录计算 N1/N3/N5/N10 命中率与均值。
+ * 复盘统计：对区间内全部入选记录计算 N1/N2/N3/N5/N7/N9/N10 命中率与均值。
  * 复用 computePerf 的「按交易日偏移」口径，与个股详情页保持一致。
  * 为避免一次拉全表，price_daily 按入选代码分块（IN 参数上限 999）取回后在内存分组。
  */
@@ -247,7 +254,11 @@ export async function getStats(
       anchor_date,
       picks: perfs.length,
       n1_avg: horizonStat(perfs, 'n1').avg,
+      n2_avg: horizonStat(perfs, 'n2').avg,
+      n3_avg: horizonStat(perfs, 'n3').avg,
       n5_avg: horizonStat(perfs, 'n5').avg,
+      n7_avg: horizonStat(perfs, 'n7').avg,
+      n9_avg: horizonStat(perfs, 'n9').avg,
       n10_avg: horizonStat(perfs, 'n10').avg,
     }));
 
