@@ -30,6 +30,7 @@ import {
   createNote,
   updateNote,
   deleteNote,
+  listNotes,
 } from './lib/notes.js';
 import {
   DESC_MAX,
@@ -115,6 +116,7 @@ app.get('/', (c) =>
       'GET /api/stock-rank?sort=recent|first|picks|high|secondary|conditional|excluded|n1|n2|n3|ln1|ln2|ln3|code&order=desc|asc&limit=',
       'GET /api/groups',
       'GET /api/groups/:id',
+      'GET /api/notes',
       'POST /api/groups',
       'PUT /api/groups/:id',
       'DELETE /api/groups/:id',
@@ -267,6 +269,17 @@ app.delete(
     return ok(c, await removeStockFromGroup(c.env.DB, id, code), '已移出分组');
   }, { write: true }),
 );
+
+// ---------------------------------------------------------------------------
+// 评论 / 备忘（读：全量列表，供「我的备注」页）
+// ---------------------------------------------------------------------------
+
+app.get('/api/notes', async (c) => {
+  const limitRaw = c.req.query('limit');
+  const limit = limitRaw ? Number(limitRaw) : 300;
+  const data = await listNotes(c.env.DB, Number.isFinite(limit) ? limit : 300);
+  return ok(c, data);
+});
 
 // ---------------------------------------------------------------------------
 // 评论 / 备忘（写，需 x-write-token）

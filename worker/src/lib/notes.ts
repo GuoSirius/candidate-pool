@@ -205,3 +205,20 @@ export async function deleteNote(db: D1Database, id: number): Promise<{ removed:
   if (!(res.meta.changes ?? 0)) throw notFound(`未找到备注 ${id}`);
   return { removed: true };
 }
+
+/** 备注列表（全量，带股票名称/行业，供「我的备注」页直接展示，不必逐股再查）。 */
+export async function listNotes(
+  db: D1Database,
+  limit = 300,
+): Promise<Array<StockNote & { name: string | null; sector: string | null }>> {
+  const n = Math.min(Math.max(limit, 1), 1000);
+  return queryAll(db,
+    `SELECT n.id, n.code, b.name AS name, b.sector AS sector,
+            n.anchor_date, n.type, n.content, n.created_at
+       FROM stock_note n
+       LEFT JOIN stock_base b ON b.code = n.code
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT ?`,
+    [n],
+  );
+}
