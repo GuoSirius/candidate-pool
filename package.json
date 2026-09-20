@@ -19,16 +19,16 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.6.0",
-    "@commitlint/config-conventional": "^19.6.0",
-    "changelogen": "^0.5.7",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "changelogen": "^0.6.2",
     "husky": "^9.1.7"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.23",
     "dotenv": "^18.0.1"
   }
 }
