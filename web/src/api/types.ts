@@ -79,6 +79,54 @@ export interface StockNote {
   created_at: string | null;
 }
 
+/** 备注类型：comment = 评论，memo = 备忘（缺省 comment）。 */
+export type NoteType = 'comment' | 'memo';
+
+/** 分组内的成员（票 + 组内备注 + 入组时间）。 */
+export interface GroupMember {
+  code: string;
+  name: string | null;
+  sector: string | null;
+  note: string | null;
+  created_at: string | null;
+}
+
+/** 单个分组详情：组信息 + 成员列表。 */
+export interface GroupDetail {
+  group: WatchGroup;
+  members: GroupMember[];
+}
+
+/** 新建分组的入参。 */
+export interface GroupInput {
+  name: string;
+  color?: string | null;
+  description?: string | null;
+}
+
+/** 更新分组：只传要改的字段；显式传 null 表示清空。 */
+export interface GroupPatch {
+  name?: string;
+  color?: string | null;
+  description?: string | null;
+}
+
+/** 新增备注的入参。 */
+export interface NoteInput {
+  code: string;
+  content: string;
+  type?: NoteType;
+  /** 关联的入选锚定日；不传 = 通用备注 */
+  anchor_date?: string | null;
+}
+
+/** 更新备注：只传要改的字段。 */
+export interface NotePatch {
+  content?: string;
+  type?: NoteType;
+  anchor_date?: string | null;
+}
+
 /** N 日收益率（相对锚定日收盘价），单位 %，可能为空（数据缺失）。
  *  N = 相对锚定日（入选日）之后的第 N 个筛选周期/交易日。 */
 export interface Perf {
