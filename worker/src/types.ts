@@ -157,7 +157,7 @@ export interface StatsResult {
   range: { from: string | null; to: string | null };
 }
 
-/** 全部入选股票汇总：按 code 聚合的入选次数、各档数量与入选时间范围。 */
+/** 全部入选股票汇总：按 code 聚合的入选次数、各档数量、入选时间范围与短周期表现。 */
 export interface StockRankRow {
   code: string;
   name: string | null;
@@ -172,4 +172,15 @@ export interface StockRankRow {
   first_anchor: string;
   /** 最近一次入选的锚定日 */
   last_anchor: string;
+  /**
+   * 短周期平均涨跌幅（%）：把该票**每一次**入选相对各自入选价的 N1/N2/N3 收益取算术平均。
+   * 口径与个股详情页「各周期复盘」一致；没有任何可用样本时为 null。
+   */
+  n1_avg: number | null;
+  n2_avg: number | null;
+  n3_avg: number | null;
+  /** 上述三个平均各自的样本数（该票「该周期已有数据」的入选次数），可能互不相同。 */
+  n1_n: number;
+  n2_n: number;
+  n3_n: number;
 }

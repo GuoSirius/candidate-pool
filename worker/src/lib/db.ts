@@ -279,7 +279,7 @@ export async function getStats(
 }
 
 /** 排序键 → 真实列名（白名单，避免拼接注入）。 */
-const RANK_SORTS: Record<string, string> = {
+const RANK_SORTS: Record<string, keyof StockRankRow> = {
   recent: 'last_anchor', // 默认：最近入选的在前
   first: 'first_anchor',
   picks: 'picks',
@@ -287,36 +287,159 @@ const RANK_SORTS: Record<string, string> = {
   secondary: 'secondary',
   conditional: 'conditional',
   excluded: 'excluded',
+  n1: 'n1_avg',
+  n2: 'n2_avg',
+  n3: 'n3_avg',
   code: 'code',
 };
 
+/** 一组数的算术平均（保留 1 位）；无样本返回 null。 */
+function mean(vals: number[]): number | null {
+  if (!vals.length) return null;
+  return round1(vals.reduce((a, b) => a + b, 0) / vals.length);
+}
+
+type RankAcc = {
+  code: string;
+  name: string | null;
+  sector: string | null;
+  picks: number;
+  high: number;
+  secondary: number;
+  conditional: number;
+  excluded: number;
+  first_anchor: string;
+  last_anchor: string;
+  n1: number[];
+  n2: number[];
+  n3: number[];
+};
+
 /**
- * 全部入选股票汇总：按 code 聚合出「入选总次数 + 各档数量 + 首次/最近入选日」。
- * 一次 GROUP BY 出全部结果（数据量为百级），排序既可由 sort/order 指定，前端也可就地再排。
+ * 全部入选股票汇总：按 code 聚合出「入选总次数 + 各档数量 + 首次/最近入选日 + N1/N2/N3 平均涨跌幅」。
+ *
+ * 为什么改成在 JS 里聚合而不是一条 GROUP BY：
+ * 各周期的平均收益必须按「每次入选各自的入选价」逐条算（computePerf），
+ * 这是 SQL 聚合表达不了的（要按日线偏移取第 N 个交易日）。数据量是百级，取回内存聚合最直接，
+ * 而且与 /api/stats、个股详情页共用同一个 computePerf，口径不会分叉。
+ *
+ * price_daily 按代码分块取回（D1 单条语句绑定参数上限 100，取 90 留余量）。
  */
 export async function rankStocks(
   db: D1Database,
   opts: { sort?: string | null; order?: string | null; limit?: number } = {},
 ): Promise<StockRankRow[]> {
-  const col = RANK_SORTS[opts.sort ?? 'recent'] ?? 'last_anchor';
-  const dir = (opts.order ?? 'desc').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-  const limit = Math.min(Math.max(opts.limit ?? 1000, 1), 5000);
-  return allRows<StockRankRow>(
+  const picks = await allRows<{
+    code: string;
+    name: string | null;
+    sector: string | null;
+    tier: string;
+    anchor_date: string;
+    price: number | null;
+  }>(
     db,
-    `SELECT code,
-            MAX(name)   AS name,
-            MAX(sector) AS sector,
-            COUNT(*)    AS picks,
-            SUM(CASE WHEN tier = 'high'        THEN 1 ELSE 0 END) AS high,
-            SUM(CASE WHEN tier = 'secondary'   THEN 1 ELSE 0 END) AS secondary,
-            SUM(CASE WHEN tier = 'conditional' THEN 1 ELSE 0 END) AS conditional,
-            SUM(CASE WHEN tier = 'excluded'    THEN 1 ELSE 0 END) AS excluded,
-            MIN(anchor_date) AS first_anchor,
-            MAX(anchor_date) AS last_anchor
-       FROM pick_record
-      GROUP BY code
-      ORDER BY ${col} ${dir}, code ASC
-      LIMIT ?`,
-    [limit],
+    'SELECT code, name, sector, tier, anchor_date, price FROM pick_record ORDER BY anchor_date ASC, code ASC',
   );
+
+  const codes = Array.from(new Set(picks.map((p) => p.code)));
+  const priceMap = new Map<string, Array<{ date: string; close: number }>>();
+  const CHUNK = 90;
+  for (let i = 0; i < codes.length; i += CHUNK) {
+    const chunk = codes.slice(i, i + CHUNK);
+    const placeholders = chunk.map(() => '?').join(',');
+    const rows = await allRows<{ code: string; date: string; close: number }>(
+      db,
+      `SELECT code, date, close FROM price_daily WHERE code IN (${placeholders}) ORDER BY code, date ASC`,
+      chunk,
+    );
+    for (const r of rows) {
+      const arr = priceMap.get(r.code);
+      if (arr) arr.push({ date: r.date, close: r.close });
+      else priceMap.set(r.code, [{ date: r.date, close: r.close }]);
+    }
+  }
+
+  const acc = new Map<string, RankAcc>();
+  for (const p of picks) {
+    let a = acc.get(p.code);
+    if (!a) {
+      a = {
+        code: p.code,
+        name: null,
+        sector: null,
+        picks: 0,
+        high: 0,
+        secondary: 0,
+        conditional: 0,
+        excluded: 0,
+        first_anchor: p.anchor_date,
+        last_anchor: p.anchor_date,
+        n1: [],
+        n2: [],
+        n3: [],
+      };
+      acc.set(p.code, a);
+    }
+    a.picks += 1;
+    if (p.tier === 'high') a.high += 1;
+    else if (p.tier === 'secondary') a.secondary += 1;
+    else if (p.tier === 'conditional') a.conditional += 1;
+    else if (p.tier === 'excluded') a.excluded += 1;
+    if (p.anchor_date < a.first_anchor) a.first_anchor = p.anchor_date;
+    if (p.anchor_date > a.last_anchor) a.last_anchor = p.anchor_date;
+    if (p.name) a.name = p.name;
+    if (p.sector) a.sector = p.sector;
+
+    if (p.price != null) {
+      const perf = computePerf(priceMap.get(p.code) ?? [], p.anchor_date, p.price);
+      if (perf) {
+        if (perf.n1 != null) a.n1.push(perf.n1);
+        if (perf.n2 != null) a.n2.push(perf.n2);
+        if (perf.n3 != null) a.n3.push(perf.n3);
+      }
+    }
+  }
+
+  const rows: StockRankRow[] = Array.from(acc.values()).map((a) => ({
+    code: a.code,
+    name: a.name,
+    sector: a.sector,
+    picks: a.picks,
+    high: a.high,
+    secondary: a.secondary,
+    conditional: a.conditional,
+    excluded: a.excluded,
+    first_anchor: a.first_anchor,
+    last_anchor: a.last_anchor,
+    n1_avg: mean(a.n1),
+    n2_avg: mean(a.n2),
+    n3_avg: mean(a.n3),
+    n1_n: a.n1.length,
+    n2_n: a.n2.length,
+    n3_n: a.n3.length,
+  }));
+
+  const col = RANK_SORTS[opts.sort ?? 'recent'] ?? 'last_anchor';
+  const dir = (opts.order ?? 'desc').toLowerCase() === 'asc' ? 1 : -1;
+  const limit = Math.min(Math.max(opts.limit ?? 1000, 1), 5000);
+
+  rows.sort((x, y) => {
+    const xv = x[col];
+    const yv = y[col];
+    // 空值恒排最后，不参与方向翻转（否则升序时空值会挤到最前面）
+    const xNull = xv === null || xv === undefined;
+    const yNull = yv === null || yv === undefined;
+    if (xNull || yNull) return xNull && yNull ? 0 : xNull ? 1 : -1;
+    const c =
+      typeof xv === 'number' && typeof yv === 'number'
+        ? xv - yv
+        : String(xv) < String(yv)
+          ? -1
+          : String(xv) > String(yv)
+            ? 1
+            : 0;
+    return c * dir || x.code.localeCompare(y.code);
+  });
+
+  return rows.slice(0, limit);
 }

@@ -111,7 +111,7 @@ app.get('/', (c) =>
       'GET /api/stocks/:code',
       'GET /api/stock-base?q=&group=',
       'GET /api/stats?from=&to=',
-      'GET /api/stock-rank?sort=recent|picks|high|secondary|conditional|excluded|first|code&order=desc|asc&limit=',
+      'GET /api/stock-rank?sort=recent|first|picks|high|secondary|conditional|excluded|n1|n2|n3|code&order=desc|asc&limit=',
       'GET /api/groups',
       'GET /api/groups/:id',
       'POST /api/groups',
