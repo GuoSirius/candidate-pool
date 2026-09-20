@@ -50,7 +50,9 @@ const columns = [
   { k: 'tier', t: '档位', d: 'high / secondary / conditional / excluded（仅反映 R01 梯队）。' },
   { k: 'r01_chg', t: 'R01 涨跌', d: '当日涨幅 %（R01 口径）。' },
   { k: 'turnover', t: '换手率', d: '当日换手率 %（按成交量 ÷ 流通股本自行推算）。' },
+  { k: 'vol_ratio', t: '量比', d: '当日成交量 ÷ 近 5 日均量（与 R01 C1 门槛同一口径，≥1.5 视为放量）。' },
   { k: 'circ_market_cap', t: '流通市值', d: '单位元，前端按亿/万换算展示。' },
+  { k: 'total_market_cap', t: '总市值', d: '单位元，前端按亿/万换算展示。' },
   { k: 'sector_pct', t: '板块强度', d: '所属申万一级行业当日涨幅中位数 %。' },
 ];
 </script>
@@ -116,7 +118,13 @@ const columns = [
 
     <section class="block">
       <h2>N 日表现（复盘底座）</h2>
-      <p class="note">股票详情页的 <code>perf</code> 给出该票相对入选价（锚定日收盘）的 <code>n1 / n3 / n5 / n10</code> 日涨幅（%）。缺数据时显示 <code>—</code>。这是后续复盘统计（胜率、各档命中率）的数据底座。</p>
+      <p class="note">
+        股票详情页与复盘统计页的 <code>perf</code> 给出该票相对入选价（锚定日收盘）的
+        <code>n1 / n2 / n3 / n5 / n7 / n9 / n10</code> 日涨幅（%）：收益 = (该日后收盘 − 入选价) ÷ 入选价。
+        这里的 <b>N = 相对锚定日之后的第 N 个筛选周期 / 交易日</b>——例如想看「入选后 3 日内」的表现，就重点比较
+        <code>N1 / N2 / N3</code> 三列（N1 即入选后的下一个周期）。数据缺失时显示 <code>—</code>；
+        颜色惯例 <b>红 = 涨、绿 = 跌</b>（A 股口径）。
+      </p>
     </section>
   </div>
 </template>

@@ -111,6 +111,7 @@ onMounted(load);
         <h1>复盘统计</h1>
         <p class="sub">入选后 N1 / N2 / N3 / N5 / N7 / N9 / N10 的命中率与平均收益（胜 = 收益 &gt; 0）</p>
       </div>
+      <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
     </header>
 
     <!-- 区间过滤 -->
@@ -224,8 +225,11 @@ onMounted(load);
 
 <style scoped>
 .stats { display: flex; flex-direction: column; gap: 16px; }
+.page-head { display: flex; align-items: center; justify-content: space-between; }
 .page-head h1 { font-size: 22px; margin: 0; }
 .sub { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
+.ghost-btn { color: var(--accent); text-decoration: none; font-size: 14px; }
+.ghost-btn:hover { text-decoration: underline; }
 
 .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .filters input[type='date'] {

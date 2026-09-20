@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { RunBatch, PickRecord, Tier } from '../api/types';
@@ -23,6 +23,39 @@ const error = ref<string>('');
 
 type TierFilter = 'all' | Tier;
 const tierFilters: TierFilter[] = ['all', ...TIER_ORDER];
+
+// —— 列表状态保持：进个股详情再返回时，恢复锚定日 / 档位 / 搜索 / 页码 / 滚动位置 ——
+const STATE_KEY = 'cp:runs:state';
+interface RunsState {
+  anchor?: string;
+  tier?: 'all' | Tier;
+  search?: string;
+  page?: number;
+  scrollY?: number;
+}
+function readState(): RunsState {
+  try {
+    return JSON.parse(sessionStorage.getItem(STATE_KEY) || '{}') as RunsState;
+  } catch {
+    return {};
+  }
+}
+function writeState() {
+  try {
+    const s: RunsState = {
+      anchor: selectedAnchor.value,
+      tier: tierFilter.value,
+      search: search.value,
+      page: page.value,
+      scrollY: window.scrollY,
+    };
+    sessionStorage.setItem(STATE_KEY, JSON.stringify(s));
+  } catch {
+    /* 隐私模式等写入失败时忽略 */
+  }
+}
+// 恢复状态期间，切换锚定日不重置搜索/页码
+let restoring = false;
 
 const tierCounts = computed(() => {
   const c: Record<Tier, number> = { high: 0, secondary: 0, conditional: 0, excluded: 0 };
@@ -77,27 +110,50 @@ async function loadRun(anchor: string) {
   }
 }
 
-function selectAnchor(anchor: string) {
-  selectedAnchor.value = anchor;
+/** 该批次的入选数量（重点 + 次级 + 条件） */
+function pickCount(r: RunBatch): number {
+  return (r.high_count ?? 0) + (r.secondary_count ?? 0) + (r.conditional_count ?? 0);
 }
 
 function openStock(code: string) {
   router.push(`/stock/${code}`);
 }
 
-// 切换锚定日 / 档位 / 关键词时回到第一页
+// 切换锚定日时回到第一页并清空搜索（恢复状态期间不重置）
 watch(selectedAnchor, (a) => {
-  if (a) {
+  if (!a) return;
+  if (!restoring) {
     page.value = 1;
     search.value = '';
-    loadRun(a);
   }
+  loadRun(a);
 });
 watch([tierFilter, search], () => {
   page.value = 1;
 });
+// 状态变化即落盘；离开列表时记录滚动位置
+watch([selectedAnchor, tierFilter, search, page], writeState);
 
-onMounted(loadRuns);
+onMounted(async () => {
+  const saved = readState();
+  restoring = true;
+  try {
+    if (saved.tier) tierFilter.value = saved.tier;
+    if (saved.search) search.value = saved.search;
+    if (saved.page && saved.page > 0) page.value = saved.page;
+    if (saved.anchor) selectedAnchor.value = saved.anchor; // 先占位，loadRuns 不再覆盖为最新
+    await loadRuns();
+    if (saved.anchor && !runs.value.some((r) => r.anchor_date === saved.anchor)) {
+      selectedAnchor.value = runs.value[0]?.anchor_date ?? ''; // 已失效则回退最新
+    }
+  } finally {
+    restoring = false;
+  }
+  await nextTick();
+  if (saved.scrollY) window.scrollTo(0, saved.scrollY);
+});
+
+onBeforeUnmount(writeState);
 </script>
 
 <template>
@@ -112,20 +168,17 @@ onMounted(loadRuns);
 
     <p v-if="error" class="error">{{ error }}</p>
 
-    <!-- 锚定日选择 -->
+    <!-- 锚定日选择（下拉：日期 + 入选数量） -->
     <section class="anchors" v-if="runs.length">
-      <div class="anchor-scroll">
-        <button
-          v-for="r in runs"
-          :key="r.anchor_date"
-          class="anchor-chip"
-          :class="{ active: r.anchor_date === selectedAnchor }"
-          @click="selectAnchor(r.anchor_date)"
-        >
-          <span class="d">{{ r.anchor_date }}</span>
-          <span class="c">{{ (r.high_count ?? 0) + (r.secondary_count ?? 0) + (r.conditional_count ?? 0) }} 只</span>
-        </button>
-      </div>
+      <label class="anchor-select">
+        <span class="lbl">锚定日</span>
+        <select v-model="selectedAnchor">
+          <option v-for="r in runs" :key="r.anchor_date" :value="r.anchor_date">
+            {{ r.anchor_date }} · {{ pickCount(r) }} 只
+          </option>
+        </select>
+        <span class="meta">共 {{ runs.length }} 个批次</span>
+      </label>
     </section>
 
     <p v-else-if="!error" class="hint">加载运行批次中…</p>
@@ -171,7 +224,8 @@ onMounted(loadRuns);
           <tr>
             <th>代码</th><th>名称</th><th>档位</th><th>规则</th><th>板块</th>
             <th class="num">价格</th><th class="num">R01涨跌</th><th class="num">换手率</th>
-            <th class="num">流通市值</th><th class="num">板块强度</th><th>入选理由</th>
+            <th class="num">量比</th><th class="num">流通市值</th><th class="num">总市值</th>
+            <th class="num">板块强度</th><th>入选理由</th>
           </tr>
         </thead>
         <tbody>
@@ -184,7 +238,9 @@ onMounted(loadRuns);
             <td class="num" data-label="价格">{{ fmtNum(p.price) }}</td>
             <td class="num" data-label="R01涨跌" :class="p.r01_chg !== null && p.r01_chg > 0 ? 'up' : p.r01_chg !== null && p.r01_chg < 0 ? 'down' : ''">{{ fmtPct(p.r01_chg) }}</td>
             <td class="num" data-label="换手率">{{ fmtPct(p.turnover) }}</td>
+            <td class="num" data-label="量比">{{ fmtNum(p.vol_ratio) }}</td>
             <td class="num" data-label="流通市值">{{ fmtCap(p.circ_market_cap) }}</td>
+            <td class="num" data-label="总市值">{{ fmtCap(p.total_market_cap) }}</td>
             <td class="num" data-label="板块强度">{{ fmtPct(p.sector_pct) }}</td>
             <td class="reason" data-label="入选理由">{{ p.reason ?? '—' }}</td>
           </tr>
@@ -213,17 +269,16 @@ onMounted(loadRuns);
 .ghost-btn { color: var(--accent); text-decoration: none; font-size: 14px; }
 .ghost-btn:hover { text-decoration: underline; }
 
-.anchors { overflow: hidden; }
-.anchor-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
-.anchor-chip {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+.anchors { display: flex; align-items: center; }
+.anchor-select { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.anchor-select .lbl { font-weight: 600; color: var(--text); }
+.anchor-select select {
   background: var(--surface); border: 1px solid var(--border); color: var(--text);
-  border-radius: 10px; padding: 8px 12px; cursor: pointer; white-space: nowrap;
-  font: inherit;
+  border-radius: 10px; padding: 7px 12px; font: inherit; font-size: 13px; min-width: 190px;
+  cursor: pointer;
 }
-.anchor-chip.active { border-color: var(--accent); background: rgba(31,111,235,0.12); }
-.anchor-chip .d { font-weight: 600; font-size: 13px; }
-.anchor-chip .c { font-size: 11px; color: var(--muted); }
+.anchor-select select:focus { outline: none; border-color: var(--accent); }
+.anchor-select .meta { font-size: 12px; }
 
 .summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
