@@ -221,6 +221,11 @@ export async function getStats(
   // 按代码分块取日线，再在内存里按 code 分组。
   // 注意：Cloudflare D1 单条 SQL 的「绑定参数」上限是 100（不是 SQLite 的 999），
   // 分块必须 ≤ 100；此处取 90 留余量，否则 code 一多，IN(?,?,…) 会直接抛错 → /api/stats 500。
+  //
+  // price_daily 按「全观察池 × 每个交易日」写入（约 377 行/交易日），会随时间持续增长。
+  // 这里补一个下界：computePerf 只从锚定日**往后**取价，而所有锚定日都 ≥ opts.from，
+  // 所以 date < from 的行永远用不到 —— 不加会白取「整段历史 × 全部入选代码」。
+  const priceFrom = opts.from ?? null;
   const codes = Array.from(new Set(picks.map((p) => p.code)));
   const priceMap = new Map<string, Array<{ date: string; close: number }>>();
   const CHUNK = 90;
@@ -229,8 +234,10 @@ export async function getStats(
     const placeholders = chunk.map(() => '?').join(',');
     const rows = await allRows<{ code: string; date: string; close: number }>(
       db,
-      `SELECT code, date, close FROM price_daily WHERE code IN (${placeholders}) ORDER BY code, date ASC`,
-      chunk,
+      `SELECT code, date, close FROM price_daily WHERE code IN (${placeholders})` +
+        (priceFrom ? ' AND date >= ?' : '') +
+        ' ORDER BY code, date ASC',
+      priceFrom ? [...chunk, priceFrom] : chunk,
     );
     for (const r of rows) {
       const arr = priceMap.get(r.code);
