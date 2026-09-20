@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { api, ApiError } from '../api/client';
-import type { StatsResult, HorizonStat } from '../api/types';
+import type { StatsResult, HorizonStat, TimelinePoint } from '../api/types';
 import { fmtPct, perfClass } from '../utils/format';
 import { todayCN, monthsAgoCN } from '../utils/date';
+import { useColumnSort, type SortValue } from '../utils/sort';
 import {
   HORIZONS,
   H_LABEL,
@@ -194,8 +195,34 @@ const chart = computed(() => {
   };
 });
 
-// 锚定日倒序（最新在上）；走势图仍按时间正序，便于看清「向右 = 更近」的趋势。
-const timelineDesc = computed(() => [...(stats.value?.timeline ?? [])].reverse());
+// 锚定日明细表：默认「锚定日倒序」（最新在上）；走势图仍按时间正序，便于看清「向右 = 更近」的趋势。
+// 列头可点：锚定日 / 入选数 / N1…N10（该锚定日全部入选票在该周期的平均收益）。
+type TimelineSortKey = 'anchor' | 'picks' | Horizon;
+const {
+  sortKey: tlSortKey,
+  sortDir: tlSortDir,
+  toggle: toggleTlSort,
+  sortRows: sortTlRows,
+} = useColumnSort<TimelineSortKey>({
+  initialKey: 'anchor',
+  initialDir: 'desc',
+  numericKeys: ['picks', ...HORIZONS],
+  dirFor: (k) => (k === 'anchor' ? 'desc' : undefined),
+});
+
+function tlSortValue(p: TimelinePoint, k: TimelineSortKey): SortValue {
+  if (k === 'anchor') return p.anchor_date;
+  if (k === 'picks') return p.picks;
+  return timelineAvg(p, k);
+}
+
+const timelineRows = computed(() => sortTlRows(stats.value?.timeline ?? [], tlSortValue));
+
+/** 列头箭头：仅当前排序列显示方向。 */
+function tlArrow(k: TimelineSortKey): string {
+  if (tlSortKey.value !== k) return '';
+  return tlSortDir.value === 'desc' ? '▼' : '▲';
+}
 
 onMounted(load);
 </script>
@@ -344,12 +371,30 @@ onMounted(load);
             </colgroup>
             <thead>
               <tr>
-                <th class="ctr">锚定日</th><th class="num">入选</th>
-                <th v-for="h in HORIZONS" :key="h" class="num">{{ H_LABEL[h] }}</th>
+                <th class="ctr sortable" :class="{ sorted: tlSortKey === 'anchor' }">
+                  <button class="th-btn" type="button" @click="toggleTlSort('anchor')">
+                    <span>锚定日</span><span class="arrow">{{ tlArrow('anchor') }}</span>
+                  </button>
+                </th>
+                <th class="num sortable" :class="{ sorted: tlSortKey === 'picks' }">
+                  <button class="th-btn" type="button" @click="toggleTlSort('picks')">
+                    <span>入选</span><span class="arrow">{{ tlArrow('picks') }}</span>
+                  </button>
+                </th>
+                <th
+                  v-for="h in HORIZONS"
+                  :key="h"
+                  class="num sortable"
+                  :class="{ sorted: tlSortKey === h }"
+                >
+                  <button class="th-btn" type="button" @click="toggleTlSort(h)">
+                    <span>{{ H_LABEL[h] }}</span><span class="arrow">{{ tlArrow(h) }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in timelineDesc" :key="p.anchor_date">
+              <tr v-for="p in timelineRows" :key="p.anchor_date">
                 <td class="mono ctr">{{ p.anchor_date }}</td>
                 <td class="num">{{ p.picks }}</td>
                 <td v-for="h in HORIZONS" :key="h" class="num" :class="perfClass(timelineAvg(p, h))">
@@ -359,7 +404,10 @@ onMounted(load);
             </tbody>
           </table>
         </div>
-        <p class="legend">明细按锚定日<b>倒序</b>（最新在上）；走势图横轴为时间正序（向右 = 更近）。</p>
+        <p class="legend">
+          明细默认按锚定日<b>倒序</b>（最新在上）；走势图横轴为时间正序（向右 = 更近）。
+          <b>点列头</b>可按锚定日 / 入选数 / 任一 N 周期排序（再点一次切换升降序），空值恒排在最后。
+        </p>
       </section>
 
       <!-- 统计口径 -->

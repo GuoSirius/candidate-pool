@@ -33,3 +33,18 @@ a { color: var(--accent); }
 
 ::-webkit-scrollbar { height: 8px; width: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+
+/* ---- 可排序表头 ----
+   个股「入选记录」、全部标的汇总、复盘「锚定日明细」三张表都要「点列头排序」，
+   样式放全局一份，避免各视图各写一遍后箭头 / 对齐逐渐走样。
+   加 .sortable 的 th 内边距交给按钮，免得与 th 自身 padding 叠加。 */
+.grid thead th.sortable { padding: 0; }
+.grid thead th.sorted { color: var(--accent); }
+.th-btn {
+  width: 100%; display: flex; align-items: center; gap: 4px;
+  background: none; border: none; color: inherit; font: inherit; cursor: pointer;
+  padding: 8px 7px; text-align: left;
+}
+.grid th.num .th-btn { justify-content: flex-end; }
+.grid th.ctr .th-btn { justify-content: center; }
+.th-btn .arrow { font-size: 9px; color: var(--accent); }

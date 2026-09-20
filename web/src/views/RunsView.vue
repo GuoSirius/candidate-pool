@@ -6,6 +6,7 @@ import type { RunBatch, PickRecord, Tier } from '../api/types';
 import { TIER_ORDER, TIER_LABELS } from '../api/types';
 import { fmtNum, fmtPct, fmtCap } from '../utils/format';
 import { openStock } from '../utils/nav';
+import { useColumnSort, type SortValue } from '../utils/sort';
 import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
 
@@ -33,6 +34,8 @@ interface RunsState {
   tier?: 'all' | Tier;
   search?: string;
   page?: number;
+  sortKey?: PickSortKey | null;
+  sortDir?: 'asc' | 'desc';
   scrollY?: number;
 }
 function readState(): RunsState {
@@ -49,6 +52,8 @@ function writeState() {
       tier: tierFilter.value,
       search: search.value,
       page: page.value,
+      sortKey: pickSortKey.value,
+      sortDir: pickSortDir.value,
       scrollY: window.scrollY,
     };
     sessionStorage.setItem(STATE_KEY, JSON.stringify(s));
@@ -80,10 +85,82 @@ const searchedPicks = computed(() => {
 });
 
 const totalPages = computed(() => Math.max(1, Math.ceil(searchedPicks.value.length / PAGE_SIZE)));
+
+// ---------------------------------------------------------------------------
+// 列表排序：点列头按该列排序
+// ---------------------------------------------------------------------------
+
+/** 可排序列。档位 / 规则 / 入选理由不是单一数值（标签、多标记、自由文本），保持不可排序。 */
+type PickSortKey =
+  | 'code'
+  | 'name'
+  | 'sector'
+  | 'price'
+  | 'r01_chg'
+  | 'turnover'
+  | 'vol_ratio'
+  | 'circ_market_cap'
+  | 'sector_pct';
+
+/**
+ * 初始**不排序**：接口返回的顺序本身就是「档位分组（重点 → 次级 → 条件 → 排除）+ 组内 R01 涨幅降序」，
+ * 有业务含义，不该被一个默认排序键悄悄打散。用户点列头后才进入显式排序，可随时「恢复默认顺序」。
+ */
+const {
+  sortKey: pickSortKey,
+  sortDir: pickSortDir,
+  toggle: togglePickSort,
+  clearSort: clearPickSort,
+  sortRows: sortPickRows,
+} = useColumnSort<PickSortKey>({
+  initialKey: null,
+  numericKeys: ['price', 'r01_chg', 'turnover', 'vol_ratio', 'circ_market_cap', 'sector_pct'],
+});
+
+function pickSortValue(p: PickRecord, k: PickSortKey): SortValue {
+  return p[k];
+}
+
+/** 排序在「档位 / 关键词筛选」之后、「分页」之前：三者叠加时顺序稳定，页码也才对得上。 */
+const sortedPicks = computed(() => sortPickRows(searchedPicks.value, pickSortValue));
+
+/** 分页取「筛选 + 排序」后的结果，保证翻页看到的顺序与列头指示一致。 */
 const pagedPicks = computed(() => {
   const s = (page.value - 1) * PAGE_SIZE;
-  return searchedPicks.value.slice(s, s + PAGE_SIZE);
+  return sortedPicks.value.slice(s, s + PAGE_SIZE);
 });
+
+/** 列头箭头：仅当前排序列显示方向。 */
+function pickArrow(k: PickSortKey): string {
+  if (pickSortKey.value !== k) return '';
+  return pickSortDir.value === 'desc' ? '▼' : '▲';
+}
+
+/** 表头定义：单一事实来源，模板列头与「当前排序」提示都从这里取。 */
+interface PickCol {
+  /** 可排序列才有；值即 PickSortKey */
+  key?: PickSortKey;
+  label: string;
+  cls?: 'num' | 'ctr';
+}
+const PICK_COLS: PickCol[] = [
+  { key: 'code', label: '代码' },
+  { key: 'name', label: '名称' },
+  { label: '档位', cls: 'ctr' },
+  { label: '规则', cls: 'ctr' },
+  { key: 'sector', label: '板块' },
+  { key: 'price', label: '价格', cls: 'num' },
+  { key: 'r01_chg', label: 'R01<br />涨跌', cls: 'num' },
+  { key: 'turnover', label: '换手率', cls: 'num' },
+  { key: 'vol_ratio', label: '量比', cls: 'num' },
+  { key: 'circ_market_cap', label: '市值<br />流通 / 总', cls: 'num' },
+  { key: 'sector_pct', label: '板块<br />强度', cls: 'num' },
+  { label: '入选理由' },
+];
+
+const sortLabel = computed(
+  () => PICK_COLS.find((c) => c.key === pickSortKey.value)?.label.replace(/<br \/>/g, '') ?? '',
+);
 
 async function loadRuns() {
   error.value = '';
@@ -147,8 +224,12 @@ watch([tierFilter, search], () => {
   // 恢复状态期间不要重置页码，否则 saved.page 会被立刻覆盖为 1
   if (!restoring) page.value = 1;
 });
+// 改排序也回到第一页：否则会停在「新顺序的第 N 页」，与刚点的列头对不上
+watch([pickSortKey, pickSortDir], () => {
+  if (!restoring) page.value = 1;
+});
 // 状态变化即落盘；离开列表时记录滚动位置
-watch([selectedAnchor, tierFilter, search, page], writeState);
+watch([selectedAnchor, tierFilter, search, page, pickSortKey, pickSortDir], writeState);
 
 onMounted(async () => {
   const saved = readState();
@@ -158,6 +239,8 @@ onMounted(async () => {
   try {
     if (saved.tier) tierFilter.value = saved.tier;
     if (saved.search) search.value = saved.search;
+    if (saved.sortKey !== undefined) pickSortKey.value = saved.sortKey;
+    if (saved.sortDir) pickSortDir.value = saved.sortDir;
     if (saved.page && saved.page > 0) page.value = saved.page;
     if (saved.anchor) selectedAnchor.value = saved.anchor; // 先占位，loadRuns 不再覆盖为最新
     await loadRuns();
@@ -231,12 +314,17 @@ onBeforeUnmount(writeState);
         placeholder="搜索代码 / 名称 / 板块"
         aria-label="搜索入选标的"
       />
+      <button v-if="pickSortKey" class="clear-sort" type="button" @click="clearPickSort">
+        已按「{{ sortLabel }}」{{ pickSortDir === 'desc' ? '降序' : '升序' }} · 点此恢复默认顺序
+      </button>
     </section>
 
     <!-- 口径速览（完整说明见「规则释义」页） -->
     <p class="legend" v-if="picks.length">
       <b>档位</b> = R01 梯队：重点（C1–C4 全达标）/ 次级（核心项 ≥3）/ 条件（核心项 ≥2）/ 排除（未达 R01 梯队，但命中 R07 或 R05 仍会入选）。
-      <b>规则</b>列的 R01 / R07 / R05 为三条规则的命中标记（可叠加，R07、R05 与档位无关）。完整口径见
+      <b>规则</b>列的 R01 / R07 / R05 为三条规则的命中标记（可叠加，R07、R05 与档位无关）。
+      <b>点列头</b>可按代码 / 名称 / 板块 / 价格 / R01 涨跌 / 换手率 / 量比 / 流通市值 / 板块强度排序（再点一次切换升降序），
+      默认仍是「档位分组 + 组内 R01 涨幅降序」。完整口径见
       <router-link to="/rules">规则释义</router-link>。
     </p>
 
@@ -260,11 +348,16 @@ onBeforeUnmount(writeState);
         </colgroup>
         <thead>
           <tr>
-            <th>代码</th><th>名称</th><th class="ctr">档位</th><th class="ctr">规则</th><th>板块</th>
-            <th class="num">价格</th><th class="num">R01<br />涨跌</th><th class="num">换手率</th>
-            <th class="num">量比</th>
-            <th class="num">市值<br />流通 / 总</th>
-            <th class="num">板块<br />强度</th><th>入选理由</th>
+            <th
+              v-for="(c, i) in PICK_COLS"
+              :key="i"
+              :class="[c.cls, { sortable: !!c.key, sorted: !!c.key && pickSortKey === c.key }]"
+            >
+              <button v-if="c.key" class="th-btn" type="button" @click="togglePickSort(c.key)">
+                <span v-html="c.label"></span><span class="arrow">{{ pickArrow(c.key) }}</span>
+              </button>
+              <span v-else v-html="c.label"></span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -344,6 +437,12 @@ onBeforeUnmount(writeState);
   border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 13px;
 }
 .search-input:focus { outline: none; border-color: var(--accent); }
+/* 排序状态提示 + 一键回到默认顺序（默认顺序本身有业务含义，不能只能靠反复点列头找回来） */
+.clear-sort {
+  background: none; border: none; padding: 0; font: inherit; font-size: 12.5px;
+  color: var(--accent); cursor: pointer;
+}
+.clear-sort:hover { text-decoration: underline; }
 
 /* 表格：table-layout: fixed + 百分比列宽 → 表格宽度恒等于容器，任何窗口宽度都不产生横向滚动 */
 .table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }

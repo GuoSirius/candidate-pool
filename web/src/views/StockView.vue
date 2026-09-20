@@ -2,10 +2,11 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError, BizCode } from '../api/client';
-import type { StockHistory, StockNote, NoteType, WatchGroup } from '../api/types';
+import type { StockHistory, StockNote, NoteType, WatchGroup, PickRecord, Perf } from '../api/types';
 import { fmtNum, fmtPct, perfClass } from '../utils/format';
-import { HORIZONS, H_LABEL, HORIZON_NOTE_SHORT } from '../constants/glossary';
+import { HORIZONS, H_LABEL, HORIZON_NOTE_SHORT, type Horizon } from '../constants/glossary';
 import { goBack, backLabelOf } from '../utils/nav';
+import { useColumnSort, type SortValue } from '../utils/sort';
 import { writeToken } from '../utils/writeToken';
 import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
@@ -204,6 +205,35 @@ async function load(c: string): Promise<void> {
 
 const base = computed(() => data.value?.base ?? null);
 const picks = computed(() => data.value?.picks ?? []);
+
+// —— 入选记录表排序：锚定日 / 入选价 / N1…N10 列头可点 ——
+// 默认「锚定日倒序」，与接口返回顺序一致；空值（该周期还没数据）恒排最后。
+type PickSortKey = 'anchor' | 'price' | Horizon;
+const {
+  sortKey: pickSortKey,
+  sortDir: pickSortDir,
+  toggle: togglePickSort,
+  sortRows: sortPickRows,
+} = useColumnSort<PickSortKey>({
+  initialKey: 'anchor',
+  initialDir: 'desc',
+  numericKeys: ['price', ...HORIZONS],
+  dirFor: (k) => (k === 'anchor' ? 'desc' : undefined),
+});
+
+function pickSortValue(p: PickRecord & { perf: Perf | null }, k: PickSortKey): SortValue {
+  if (k === 'anchor') return p.anchor_date;
+  if (k === 'price') return p.price;
+  return p.perf?.[k] ?? null;
+}
+
+const sortedPicks = computed(() => sortPickRows(picks.value, pickSortValue));
+
+/** 列头箭头：仅当前排序列显示方向。 */
+function pickArrow(k: PickSortKey): string {
+  if (pickSortKey.value !== k) return '';
+  return pickSortDir.value === 'desc' ? '▼' : '▲';
+}
 
 // 各周期复盘汇总：逐 N 统计有数据的样本数、平均、最佳、最差。
 const perfSummary = computed(() =>
@@ -407,13 +437,31 @@ onMounted(() => {
             </colgroup>
             <thead>
               <tr>
-                <th class="ctr">锚定日</th><th class="ctr">档位</th><th class="ctr">规则</th>
-                <th class="num">入选价</th>
-                <th v-for="h in HORIZONS" :key="h" class="num">{{ H_LABEL[h] }}</th>
+                <th class="ctr sortable" :class="{ sorted: pickSortKey === 'anchor' }">
+                  <button class="th-btn" type="button" @click="togglePickSort('anchor')">
+                    <span>锚定日</span><span class="arrow">{{ pickArrow('anchor') }}</span>
+                  </button>
+                </th>
+                <th class="ctr">档位</th><th class="ctr">规则</th>
+                <th class="num sortable" :class="{ sorted: pickSortKey === 'price' }">
+                  <button class="th-btn" type="button" @click="togglePickSort('price')">
+                    <span>入选价</span><span class="arrow">{{ pickArrow('price') }}</span>
+                  </button>
+                </th>
+                <th
+                  v-for="h in HORIZONS"
+                  :key="h"
+                  class="num sortable"
+                  :class="{ sorted: pickSortKey === h }"
+                >
+                  <button class="th-btn" type="button" @click="togglePickSort(h)">
+                    <span>{{ H_LABEL[h] }}</span><span class="arrow">{{ pickArrow(h) }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in picks" :key="p.id">
+              <tr v-for="p in sortedPicks" :key="p.id">
                 <td class="mono ctr">{{ p.anchor_date }}</td>
                 <td class="ctr"><TierBadge :tier="p.tier" /></td>
                 <td class="ctr"><RuleTags :pick="p" /></td>
@@ -426,7 +474,9 @@ onMounted(() => {
           </table>
         </div>
         <p class="legend">
-          {{ HORIZON_NOTE_SHORT }}涨 = 红，跌 = 绿；数据缺失显示 —。档位（重点 / 次级 / 条件 / 排除）与 R01 / R07 / R05 标签含义见
+          {{ HORIZON_NOTE_SHORT }}涨 = 红，跌 = 绿；数据缺失显示 —。
+          <b>点列头</b>可按锚定日 / 入选价 / 任一 N 周期排序（再点一次切换升降序），空值恒排在最后。
+          档位（重点 / 次级 / 条件 / 排除）与 R01 / R07 / R05 标签含义见
           <router-link to="/rules">规则释义</router-link>。
         </p>
       </section>
