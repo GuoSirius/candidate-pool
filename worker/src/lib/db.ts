@@ -313,13 +313,21 @@ type RankAcc = {
   n1: number[];
   n2: number[];
   n3: number[];
+  /** 最近一次入选（last_anchor）那次的 N1/N2/N3；未到期或缺数据为 null */
+  last_n1: number | null;
+  last_n2: number | null;
+  last_n3: number | null;
 };
 
 /**
- * 全部入选股票汇总：按 code 聚合出「入选总次数 + 各档数量 + 首次/最近入选日 + N1/N2/N3 平均涨跌幅」。
+ * 全部入选股票汇总：按 code 聚合出「入选总次数 + 各档数量 + 首次/最近入选日 + N1/N2/N3 收益」。
+ *
+ * N1/N2/N3 同时给两种口径，前端可切换：
+ * - `n*_avg`：该票每一次入选相对各自入选价的收益取算术平均（跨时间平均，看长期靠不靠谱）；
+ * - `last_n*`：只取最近一次入选（`last_anchor`）那次的收益（单次快照，看眼下什么状态）。
  *
  * 为什么改成在 JS 里聚合而不是一条 GROUP BY：
- * 各周期的平均收益必须按「每次入选各自的入选价」逐条算（computePerf），
+ * 各周期的收益必须按「每次入选各自的入选价」逐条算（computePerf），
  * 这是 SQL 聚合表达不了的（要按日线偏移取第 N 个交易日）。数据量是百级，取回内存聚合最直接，
  * 而且与 /api/stats、个股详情页共用同一个 computePerf，口径不会分叉。
  *
@@ -377,9 +385,17 @@ export async function rankStocks(
         n1: [],
         n2: [],
         n3: [],
+        last_n1: null,
+        last_n2: null,
+        last_n3: null,
       };
       acc.set(p.code, a);
     }
+
+    // picks 已按 anchor_date 升序取回，因此「本行是否该票最近一次入选」用 >= 判定即可
+    // （同一锚定日 + 同一代码只会有 1 条入选记录，>= 只是为重复数据留个确定性：后写入者胜）。
+    const isLatest = p.anchor_date >= a.last_anchor;
+
     a.picks += 1;
     if (p.tier === 'high') a.high += 1;
     else if (p.tier === 'secondary') a.secondary += 1;
@@ -390,13 +406,19 @@ export async function rankStocks(
     if (p.name) a.name = p.name;
     if (p.sector) a.sector = p.sector;
 
-    if (p.price != null) {
-      const perf = computePerf(priceMap.get(p.code) ?? [], p.anchor_date, p.price);
-      if (perf) {
-        if (perf.n1 != null) a.n1.push(perf.n1);
-        if (perf.n2 != null) a.n2.push(perf.n2);
-        if (perf.n3 != null) a.n3.push(perf.n3);
-      }
+    const perf = p.price != null ? computePerf(priceMap.get(p.code) ?? [], p.anchor_date, p.price) : null;
+    if (perf) {
+      if (perf.n1 != null) a.n1.push(perf.n1);
+      if (perf.n2 != null) a.n2.push(perf.n2);
+      if (perf.n3 != null) a.n3.push(perf.n3);
+    }
+    // 「最近一次入选」口径：三个周期整体取同一次入选，不跨次拼装
+    // （否则可能出现 N1 来自甲的入选、N3 来自乙的入选，行内自相矛盾）。
+    // 该次若还没走到第 N 个交易日（或该次缺入选价），对应周期诚实留 null → 前端显示 —。
+    if (isLatest) {
+      a.last_n1 = perf?.n1 ?? null;
+      a.last_n2 = perf?.n2 ?? null;
+      a.last_n3 = perf?.n3 ?? null;
     }
   }
 
@@ -417,6 +439,9 @@ export async function rankStocks(
     n1_n: a.n1.length,
     n2_n: a.n2.length,
     n3_n: a.n3.length,
+    last_n1: a.last_n1,
+    last_n2: a.last_n2,
+    last_n3: a.last_n3,
   }));
 
   const col = RANK_SORTS[opts.sort ?? 'recent'] ?? 'last_anchor';

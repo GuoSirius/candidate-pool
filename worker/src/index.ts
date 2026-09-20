@@ -111,7 +111,7 @@ app.get('/', (c) =>
       'GET /api/stocks/:code',
       'GET /api/stock-base?q=&group=',
       'GET /api/stats?from=&to=',
-      'GET /api/stock-rank?sort=recent|first|picks|high|secondary|conditional|excluded|n1|n2|n3|code&order=desc|asc&limit=',
+      'GET /api/stock-rank?sort=recent|first|picks|high|secondary|conditional|excluded|n1|n2|n3|ln1|ln2|ln3|code&order=desc|asc&limit=',
       'GET /api/groups',
       'GET /api/groups/:id',
       'POST /api/groups',
@@ -127,7 +127,8 @@ app.get('/', (c) =>
   }),
 );
 
-// 全部入选股票汇总：每只票的入选次数 + 各档数量 + 首次/最近入选日。
+// 全部入选股票汇总：每只票的入选次数 + 各档数量 + 首次/最近入选日 + N1/N2/N3（平均 / 最近一次两种口径）。
+// sort 的 n1|n2|n3 = 历史平均口径，ln1|ln2|ln3 = 最近一次入选口径（last_n*）。
 app.get('/api/stock-rank', async (c) => {
   const data = await rankStocks(c.env.DB, {
     sort: c.req.query('sort') ?? null,

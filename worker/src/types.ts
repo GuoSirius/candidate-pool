@@ -183,4 +183,15 @@ export interface StockRankRow {
   n1_n: number;
   n2_n: number;
   n3_n: number;
+  /**
+   * 短周期涨跌幅（%）的「最近一次入选」口径：只取 `last_anchor` 那一次入选，
+   * 相对该次自身入选价（锚定日收盘）的 N1/N2/N3 收益。
+   *
+   * 与 n*_avg 的区别：avg 是跨时间平均（适合筛「长期靠不靠谱」），
+   * last 是单次快照（适合看「这只票眼下什么状态」）。
+   * 若该次入选距今天数不足 N 个交易日、或缺少入选价/日线，对应值为 null。
+   */
+  last_n1: number | null;
+  last_n2: number | null;
+  last_n3: number | null;
 }
