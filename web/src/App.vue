@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router';
+import WriteTokenBar from './components/WriteTokenBar.vue';
 </script>
 
 <template>
@@ -10,6 +11,7 @@ import { RouterLink, RouterView } from 'vue-router';
       <RouterLink to="/stocks">全部标的</RouterLink>
       <RouterLink to="/stats">复盘统计</RouterLink>
       <RouterLink to="/rules">规则释义</RouterLink>
+      <WriteTokenBar />
     </nav>
   </header>
   <main>
@@ -32,7 +34,7 @@ import { RouterLink, RouterView } from 'vue-router';
   color: var(--text);
   text-decoration: none;
 }
-nav { display: flex; gap: 16px; font-size: 14px; }
+nav { display: flex; align-items: center; gap: 16px; font-size: 14px; }
 nav a { color: var(--muted); text-decoration: none; }
 nav a.router-link-active { color: var(--accent); }
 </style>
