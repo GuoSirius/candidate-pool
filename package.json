@@ -10,7 +10,8 @@
     "offline": "node gen_candidates.js --offline",
     "universe": "node build_universe.js",
     "universe:dry": "node build_universe.js --dry",
-    "notify": "node notify.js"
+    "notify": "node notify.js",
+    "setup": "npm install && npm install --prefix ./worker && npm install --prefix ./web"
   },
   "engines": {
     "node": ">=18"
