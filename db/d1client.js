@@ -44,13 +44,20 @@ async function query(sql, params = []) {
   const r = await post('/query', { sql, params });
   return (r && r[0] && r[0].results) || [];
 }
-// 批量语句（按 200 条分块，避免单次请求过大）
+// 批量语句（每条语句形如 { sql, params }）
+// 说明：Cloudflare D1 的 /execute 路由在本账号/数据库稳定返回 404 "Route not found"，
+// 而 /query 的批量 { statements:[...] } 入参也被拒绝（要求单个 sql）。
+// 因此改为走 /query 逐条提交 { sql, params }（与 query() 同一可用路径），
+// 以有界并发（CONC）提交，避免串行过慢、又不过度压测 API 限流。
+const BATCH_CONC = 10;
 async function batch(statements) {
   const out = [];
-  for (let i = 0; i < statements.length; i += 200) {
-    const slice = statements.slice(i, i + 200);
-    const r = await post('/execute', { statements: slice });
-    (r || []).forEach(x => { if (x && x.results) out.push(...x.results); });
+  for (let i = 0; i < statements.length; i += BATCH_CONC) {
+    const slice = statements.slice(i, i + BATCH_CONC);
+    const results = await Promise.all(slice.map(s =>
+      post('/query', { sql: s.sql, params: s.params || [] })
+    ));
+    results.forEach(r => { if (Array.isArray(r)) out.push(...r); });
   }
   return out;
 }
