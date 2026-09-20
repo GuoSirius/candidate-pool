@@ -4,21 +4,21 @@ name: Daily A-Share Screening
 # 因此实时模式可直接跑在 GitHub 托管 Runner 上，不再需要 self-hosted runner。
 
 on:
-  # 每个交易日 15:35（北京时间 = UTC 07:35，周一至周五）自动触发，走实时抓取
+  # 每个交易日 16:00（北京时间 = UTC 08:00，周一至周五）自动触发，走实时抓取
   schedule:
-    - cron: '35 7 * * 1-5'
+    - cron: "0 8 * * 1-5"
   workflow_dispatch:
     inputs:
       mode:
-        description: 'live = 实时抓取（默认）；offline = 从仓库内已提交快照重建报告'
+        description: "live = 实时抓取（默认）；offline = 从仓库内已提交快照重建报告"
         required: false
-        default: 'live'
+        default: "live"
         type: choice
         options:
           - live
           - offline
       date:
-        description: '锚定日（YYYY-MM-DD，留空 = 最近一个已收盘交易日）'
+        description: "锚定日（YYYY-MM-DD，留空 = 最近一个已收盘交易日）"
         required: false
         type: string
 
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "24"
 
       # dayjs 为运行时依赖，需先安装（此前为零依赖，可直接 node 运行）
       - name: Install dependencies (dayjs)
@@ -117,7 +117,7 @@ jobs:
             echo "无变化，跳过提交"
           else
             git commit -m "chore: 每日初筛 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push origin HEAD:daily-artifacts
+            git push origin HEAD:refs/heads/daily-artifacts
           fi
           cd ..
           git worktree remove _artifacts --force
