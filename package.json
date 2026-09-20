@@ -11,6 +11,7 @@
     "universe": "node build_universe.js",
     "universe:dry": "node build_universe.js --dry",
     "notify": "node notify.js",
+    "deploy": "npm run deploy --prefix ./web",
     "setup": "npm install && npm install --prefix ./worker && npm install --prefix ./web",
     "typecheck": "npm run typecheck --prefix ./worker && npm run typecheck --prefix ./web",
     "changelog": "changelogen",
