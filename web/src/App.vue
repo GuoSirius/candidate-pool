@@ -7,6 +7,7 @@ import { RouterLink, RouterView } from 'vue-router';
     <RouterLink class="brand" to="/">次日候选池</RouterLink>
     <nav>
       <RouterLink to="/">候选列表</RouterLink>
+      <RouterLink to="/stocks">全部标的</RouterLink>
       <RouterLink to="/stats">复盘统计</RouterLink>
       <RouterLink to="/rules">规则释义</RouterLink>
     </nav>

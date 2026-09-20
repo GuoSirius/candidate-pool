@@ -351,6 +351,7 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | GET | `/api/stock-base` | 股票档案库（可按名称/代码搜索、按分组过滤） | `?q=关键词`、`?group=分组名` |
 | GET | `/api/groups` | 自定义分组列表（前端筛选 chips 用） | 无 |
 | GET | `/api/stats` | 复盘统计：区间内 N1/N2/N3/N5/N7/N9/N10 命中率与均值 + 各档位 + 锚定日时间线 | `?from=YYYY-MM-DD`、`?to=YYYY-MM-DD`（可选） |
+| GET | `/api/stock-rank` | 全部入选标的汇总：每只票的入选次数、各档数量、首次 / 最近入选日 | `?sort=recent\|picks\|high\|secondary\|conditional\|excluded\|first\|code`、`?order=desc\|asc`、`?limit=`（默认 1000，上限 5000） |
 | GET | `/health` | 健康检查 | 无 |
 
 所有成功响应形如 `{ "code": 200, "message": "success", "data": ... }`。`code` 是**业务码**（非 HTTP 状态码）：200 表示成功，非 200 为业务错误码——如 `10001` 通用错误、`10002` 资源不存在、`10003` 参数错误、`10004` 服务内部错误。`/api/runs/:anchor` 在锚定日不存在时返回 `{ "code": 10002, "message": "未找到锚定日 ...", "data": null }`，**HTTP 状态恒为 200**，前端统一读 `code` 判定即可。`/api/stocks/:code` 的 `data.picks[].perf` 给出该票相对入选价（锚定日收盘）的 `n1 / n2 / n3 / n5 / n7 / n9 / n10` 日涨幅（%），缺数据时为 `null`——这是后续复盘统计（M3）的底座。
@@ -439,7 +440,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev   # Pages Functions�
 | `web/vite.config.ts` | Vite + Vue 插件 + PWA；`server.proxy` 把 `/api` 代理到 `wrangler dev`（:8787），免跨域 |
 | `web/src/api/client.ts` | 统一 fetch 封装，**读业务码判定**（200=成功，1000x=业务错误，非 200=传输异常） |
 | `web/src/api/types.ts` | 与 Worker `types.ts` 对齐的前端镜像类型 |
-| `web/src/views/` | `RunsView`（候选列表）/ `StatsView`（复盘统计）/ `RulesView`（规则释义）/ `StockView`（个股复盘） |
+| `web/src/views/` | `RunsView`（候选列表）/ `AllStocksView`（全部标的汇总）/ `StatsView`（复盘统计）/ `RulesView`（规则释义）/ `StockView`（个股复盘） |
 | `web/functions/` | Pages Functions：把 `/api/*`、`/health` 转发给共享 Hono app（同源部署 API） |
 | `web/wrangler.toml` | Pages 项目配置：`pages_build_output_dir` + D1 绑定（与 worker 同一个库） |
 | `web/public/_routes.json` | 限定 Functions 只接管 `/api/*` 与 `/health`，其余走静态资源 |
@@ -452,6 +453,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev   # Pages Functions�
 | 页面 | 路由 | 主要能力 |
 |------|------|----------|
 | 候选列表 | `/` | 锚定日下拉（倒序）、档位过滤 + 关键词搜索、分页；量比 / 换手率 / 流通市值 / 总市值等列；进详情返回时恢复列表状态 |
+| 全部标的 | `/stocks` | 按个股汇总历史入选：入选次数 + 各档数量（重点 / 次级 / 条件 / 排除）+ 首次 / 最近入选日；**列头可排序**（数量列按多→少、时间列按近→远），默认最近入选倒序；关键词搜索 |
 | 复盘统计 | `/stats` | **默认最近一月**（可切近三月 / 全部）；各档命中率（每格**上行胜率、下行平均收益**，避免表过宽）；平均收益走势（N1–N10 全量，**可勾选 / 取消周期**）；锚定日明细（**倒序**）；统计口径 |
 | 规则释义 | `/rules` | R01 / R07 / R05 门槛、四档划分（重点 / 次级 / 条件 / 排除）、判定标记位、**N1–N10 全量周期一览**、字段释义、统计口径 |
 | 个股复盘 | `/stock/:code` | 档案 / 备注、各周期复盘汇总（逐 N 样本 · 均值 · 最佳 · 最差）、每期入选的 N 列全量表现 |

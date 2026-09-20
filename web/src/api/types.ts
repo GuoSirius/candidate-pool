@@ -140,6 +140,20 @@ export interface StatsResult {
   range: { from: string | null; to: string | null };
 }
 
+/** 全部入选股票汇总（按 code 聚合）：入选次数 + 各档数量 + 入选时间范围。 */
+export interface StockRankRow {
+  code: string;
+  name: string | null;
+  sector: string | null;
+  picks: number;
+  high: number;
+  secondary: number;
+  conditional: number;
+  excluded: number;
+  first_anchor: string;
+  last_anchor: string;
+}
+
 export const TIER_LABELS: Record<Tier, string> = {
   high: '重点',
   secondary: '次级',

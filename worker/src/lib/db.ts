@@ -10,6 +10,7 @@ import type {
   TierStats,
   TimelinePoint,
   StatsResult,
+  StockRankRow,
 } from '../types.js';
 
 const RUN_COLS =
@@ -272,4 +273,47 @@ export async function getStats(
     timeline,
     range: { from: opts.from ?? null, to: opts.to ?? null },
   };
+}
+
+/** 排序键 → 真实列名（白名单，避免拼接注入）。 */
+const RANK_SORTS: Record<string, string> = {
+  recent: 'last_anchor', // 默认：最近入选的在前
+  first: 'first_anchor',
+  picks: 'picks',
+  high: 'high',
+  secondary: 'secondary',
+  conditional: 'conditional',
+  excluded: 'excluded',
+  code: 'code',
+};
+
+/**
+ * 全部入选股票汇总：按 code 聚合出「入选总次数 + 各档数量 + 首次/最近入选日」。
+ * 一次 GROUP BY 出全部结果（数据量为百级），排序既可由 sort/order 指定，前端也可就地再排。
+ */
+export async function rankStocks(
+  db: D1Database,
+  opts: { sort?: string | null; order?: string | null; limit?: number } = {},
+): Promise<StockRankRow[]> {
+  const col = RANK_SORTS[opts.sort ?? 'recent'] ?? 'last_anchor';
+  const dir = (opts.order ?? 'desc').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+  const limit = Math.min(Math.max(opts.limit ?? 1000, 1), 5000);
+  return allRows<StockRankRow>(
+    db,
+    `SELECT code,
+            MAX(name)   AS name,
+            MAX(sector) AS sector,
+            COUNT(*)    AS picks,
+            SUM(CASE WHEN tier = 'high'        THEN 1 ELSE 0 END) AS high,
+            SUM(CASE WHEN tier = 'secondary'   THEN 1 ELSE 0 END) AS secondary,
+            SUM(CASE WHEN tier = 'conditional' THEN 1 ELSE 0 END) AS conditional,
+            SUM(CASE WHEN tier = 'excluded'    THEN 1 ELSE 0 END) AS excluded,
+            MIN(anchor_date) AS first_anchor,
+            MAX(anchor_date) AS last_anchor
+       FROM pick_record
+      GROUP BY code
+      ORDER BY ${col} ${dir}, code ASC
+      LIMIT ?`,
+    [limit],
+  );
 }

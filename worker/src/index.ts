@@ -14,6 +14,7 @@ import {
   searchStockBase,
   listGroups,
   getStats,
+  rankStocks,
 } from './lib/db.js';
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -39,9 +40,20 @@ app.get('/', (c) =>
       'GET /api/stock-base?q=&group=',
       'GET /api/groups',
       'GET /api/stats?from=&to=',
+      'GET /api/stock-rank?sort=recent|picks|high|secondary|conditional|excluded|first|code&order=desc|asc&limit=',
     ],
   }),
 );
+
+// 全部入选股票汇总：每只票的入选次数 + 各档数量 + 首次/最近入选日。
+app.get('/api/stock-rank', async (c) => {
+  const data = await rankStocks(c.env.DB, {
+    sort: c.req.query('sort') ?? null,
+    order: c.req.query('order') ?? null,
+    limit: Number(c.req.query('limit')) || 1000,
+  });
+  return ok(c, data);
+});
 
 app.get('/api/runs', async (c) => {
   const raw = Number(c.req.query('limit')) || 30;

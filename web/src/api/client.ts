@@ -7,6 +7,7 @@ import type {
   WatchGroup,
   Tier,
   StatsResult,
+  StockRankRow,
 } from './types';
 
 // VITE_API_BASE 为空时退化为同源 /api（本地由 Vite 代理到 worker :8787）。
@@ -86,12 +87,17 @@ export const api = {
     return request<WatchGroup[]>('/api/groups');
   },
 
-  /** 复盘统计：区间内 N1/N3/N5/N10 命中率与均值 + 各档位 + 时间线。 */
+  /** 复盘统计：区间内 N1/N2/N3/N5/N7/N9/N10 命中率与均值 + 各档位 + 时间线。 */
   getStats(from?: string, to?: string): Promise<StatsResult> {
     const params = new URLSearchParams();
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     const qs = params.toString();
     return request<StatsResult>(`/api/stats${qs ? `?${qs}` : ''}`);
+  },
+
+  /** 全部入选股票汇总（入选次数 + 各档数量 + 首次/最近入选日）。 */
+  getStockRank(): Promise<StockRankRow[]> {
+    return request<StockRankRow[]>('/api/stock-rank?limit=5000');
   },
 };

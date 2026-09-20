@@ -132,3 +132,20 @@ export interface StatsResult {
   timeline: TimelinePoint[];
   range: { from: string | null; to: string | null };
 }
+
+/** 全部入选股票汇总：按 code 聚合的入选次数、各档数量与入选时间范围。 */
+export interface StockRankRow {
+  code: string;
+  name: string | null;
+  sector: string | null;
+  /** 入选总次数（该票在 pick_record 中的记录数） */
+  picks: number;
+  high: number;
+  secondary: number;
+  conditional: number;
+  excluded: number;
+  /** 首次入选的锚定日 */
+  first_anchor: string;
+  /** 最近一次入选的锚定日 */
+  last_anchor: string;
+}

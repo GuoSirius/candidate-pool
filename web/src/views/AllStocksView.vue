@@ -1,0 +1,291 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { api, ApiError } from '../api/client';
+import type { StockRankRow } from '../api/types';
+
+const router = useRouter();
+
+const rows = ref<StockRankRow[]>([]);
+const loading = ref(false);
+const error = ref<string>('');
+const search = ref('');
+
+type SortKey =
+  | 'code'
+  | 'name'
+  | 'sector'
+  | 'picks'
+  | 'high'
+  | 'secondary'
+  | 'conditional'
+  | 'excluded'
+  | 'last_anchor'
+  | 'first_anchor';
+
+const NUM_KEYS: SortKey[] = ['picks', 'high', 'secondary', 'conditional', 'excluded'];
+
+interface Col {
+  key: SortKey;
+  label: string;
+  num?: boolean;
+  tip?: string;
+}
+
+const COLS: Col[] = [
+  { key: 'code', label: '代码' },
+  { key: 'name', label: '名称' },
+  { key: 'sector', label: '板块' },
+  { key: 'picks', label: '入选<br />次数', num: true, tip: '该票在全部批次中的入选总次数' },
+  { key: 'high', label: '重点', num: true },
+  { key: 'secondary', label: '次级', num: true },
+  { key: 'conditional', label: '条件', num: true },
+  { key: 'excluded', label: '排除', num: true },
+  { key: 'last_anchor', label: '最近入选', tip: '默认按此列倒序（最近入选的标的最前）' },
+  { key: 'first_anchor', label: '首次入选' },
+];
+
+// 默认：按最近入选时间倒序
+const sortKey = ref<SortKey>('last_anchor');
+const sortDir = ref<'asc' | 'desc'>('desc');
+
+function toggleSort(k: SortKey) {
+  if (sortKey.value === k) {
+    sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc';
+    return;
+  }
+  sortKey.value = k;
+  // 数量列先看「最多」，其余列先看「字典序 / 最早」
+  sortDir.value = NUM_KEYS.includes(k) ? 'desc' : k.endsWith('_anchor') ? 'desc' : 'asc';
+}
+
+function cellValue(r: StockRankRow, k: SortKey): number | string {
+  const v = (r as unknown as Record<string, number | string | null>)[k];
+  return v === null || v === undefined ? '' : v;
+}
+
+const filtered = computed(() => {
+  const q = search.value.trim().toLowerCase();
+  if (!q) return rows.value;
+  return rows.value.filter((r) => `${r.code} ${r.name ?? ''} ${r.sector ?? ''}`.toLowerCase().includes(q));
+});
+
+const sorted = computed(() => {
+  const k = sortKey.value;
+  const dir = sortDir.value === 'asc' ? 1 : -1;
+  const numeric = NUM_KEYS.includes(k);
+  return [...filtered.value].sort((a, b) => {
+    if (numeric) return (Number(cellValue(a, k)) - Number(cellValue(b, k))) * dir;
+    return String(cellValue(a, k)).localeCompare(String(cellValue(b, k))) * dir;
+  });
+});
+
+const totals = computed(() => {
+  const t = { stocks: rows.value.length, picks: 0, high: 0, secondary: 0, conditional: 0, excluded: 0 };
+  for (const r of rows.value) {
+    t.picks += r.picks;
+    t.high += r.high;
+    t.secondary += r.secondary;
+    t.conditional += r.conditional;
+    t.excluded += r.excluded;
+  }
+  return t;
+});
+
+function openStock(code: string) {
+  router.push(`/stock/${code}`);
+}
+
+async function load() {
+  loading.value = true;
+  error.value = '';
+  try {
+    rows.value = await api.getStockRank();
+  } catch (e) {
+    rows.value = [];
+    error.value = e instanceof ApiError ? e.message : String(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(load);
+</script>
+
+<template>
+  <div class="allstocks">
+    <header class="page-head">
+      <div>
+        <h1>全部入选标的</h1>
+        <p class="sub">按个股汇总历史入选情况：入选次数 / 各档数量 / 入选时间范围</p>
+      </div>
+      <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
+    </header>
+
+    <p v-if="error" class="error">{{ error }}</p>
+
+    <!-- 汇总 -->
+    <section class="summary" v-if="rows.length">
+      <div class="card"><span class="k">标的数</span><span class="v">{{ totals.stocks }}</span></div>
+      <div class="card"><span class="k">入选总次数</span><span class="v">{{ totals.picks }}</span></div>
+      <div class="card hi"><span class="k">重点</span><span class="v">{{ totals.high }}</span></div>
+      <div class="card se"><span class="k">次级</span><span class="v">{{ totals.secondary }}</span></div>
+      <div class="card co"><span class="k">条件</span><span class="v">{{ totals.conditional }}</span></div>
+      <div class="card ex"><span class="k">排除</span><span class="v">{{ totals.excluded }}</span></div>
+    </section>
+
+    <!-- 搜索 -->
+    <section class="filters" v-if="rows.length">
+      <input
+        class="search-input"
+        type="search"
+        v-model="search"
+        placeholder="搜索代码 / 名称 / 板块"
+        aria-label="搜索标的"
+      />
+      <span class="meta"
+        >共 {{ sorted.length }} 只 · 当前排序：<b>{{ COLS.find((c) => c.key === sortKey)?.label.replace(/<br \/>/g, '') }}</b>
+        {{ sortDir === 'desc' ? '（降序）' : '（升序）' }} · 点列头切换</span
+      >
+    </section>
+
+    <p v-else-if="loading" class="hint">加载汇总中…</p>
+
+    <!-- 汇总表：固定列宽，任何窗口宽度都不横向滚动 -->
+    <section class="table-wrap" v-if="!loading && sorted.length">
+      <table class="grid">
+        <colgroup>
+          <col style="width: 10%" />
+          <col style="width: 10%" />
+          <col style="width: 9%" />
+          <col style="width: 9%" />
+          <col style="width: 8%" />
+          <col style="width: 8%" />
+          <col style="width: 8%" />
+          <col style="width: 8%" />
+          <col style="width: 15%" />
+          <col style="width: 15%" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th
+              v-for="c in COLS"
+              :key="c.key"
+              :class="{ num: c.num, sorted: sortKey === c.key }"
+              :title="c.tip"
+            >
+              <button class="th-btn" @click="toggleSort(c.key)">
+                <span v-html="c.label"></span>
+                <span class="arrow">{{ sortKey === c.key ? (sortDir === 'desc' ? '▼' : '▲') : '' }}</span>
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in sorted" :key="r.code" @click="openStock(r.code)">
+            <td class="code" data-label="代码">{{ r.code }}</td>
+            <td class="name" data-label="名称">{{ r.name ?? '—' }}</td>
+            <td class="sector" data-label="板块">{{ r.sector ?? '—' }}</td>
+            <td class="num strong" data-label="入选次数">{{ r.picks }}</td>
+            <td class="num t-hi" data-label="重点">{{ r.high || '—' }}</td>
+            <td class="num t-se" data-label="次级">{{ r.secondary || '—' }}</td>
+            <td class="num t-co" data-label="条件">{{ r.conditional || '—' }}</td>
+            <td class="num t-ex" data-label="排除">{{ r.excluded || '—' }}</td>
+            <td class="mono" data-label="最近入选">{{ r.last_anchor }}</td>
+            <td class="mono" data-label="首次入选">{{ r.first_anchor }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <p v-else-if="!error && !loading && search.trim()" class="hint">无匹配「{{ search }}」的标的。</p>
+    <p v-else-if="!error && !loading" class="hint">暂无入选记录。</p>
+
+    <p class="legend" v-if="sorted.length">
+      数量列（入选次数 / 重点 / 次级 / 条件 / 排除）点列头先按「多 → 少」排序；时间列默认「近 → 远」。
+      档位含义见 <router-link to="/rules">规则释义</router-link>。
+    </p>
+  </div>
+</template>
+
+<style scoped>
+.allstocks { display: flex; flex-direction: column; gap: 16px; }
+.page-head { display: flex; align-items: center; justify-content: space-between; }
+.page-head h1 { font-size: 22px; margin: 0; }
+.sub { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
+.ghost-btn { color: var(--accent); text-decoration: none; font-size: 14px; }
+.ghost-btn:hover { text-decoration: underline; }
+
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.card .k { font-size: 12px; color: var(--muted); }
+.card .v { font-size: 18px; font-weight: 700; }
+.card.hi .v { color: #ff7b72; }
+.card.se .v { color: #e3b341; }
+.card.co .v { color: #79c0ff; }
+.card.ex .v { color: #8b949e; }
+
+.filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-input {
+  min-width: 200px; flex: 0 1 260px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 13px;
+}
+.search-input:focus { outline: none; border-color: var(--accent); }
+.meta { font-size: 12px; color: var(--muted); }
+
+.table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+.grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
+.grid th, .grid td { padding: 8px 7px; text-align: left; overflow-wrap: anywhere; }
+.grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; line-height: 1.3; padding: 0; }
+.grid thead th.sorted { color: var(--accent); }
+.grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
+.grid tbody tr:hover { background: rgba(31,111,235,0.06); }
+.grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+.grid .strong { font-weight: 700; }
+.grid .t-hi { color: #ff7b72; }
+.grid .t-se { color: #e3b341; }
+.grid .t-co { color: #79c0ff; }
+.grid .t-ex { color: var(--muted); }
+.grid .code { white-space: nowrap; font-weight: 600; color: var(--accent); }
+.grid .name { font-weight: 500; }
+.grid .sector { color: var(--muted); }
+.grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+.th-btn {
+  width: 100%; display: flex; align-items: center; gap: 4px;
+  background: none; border: none; color: inherit; font: inherit; cursor: pointer;
+  padding: 8px 7px; text-align: left;
+}
+.grid th.num .th-btn { justify-content: flex-end; }
+.th-btn .arrow { font-size: 9px; color: var(--accent); }
+
+.legend { color: var(--muted); font-size: 12px; line-height: 1.75; margin: 0; }
+.legend a { color: var(--accent); text-decoration: none; }
+.legend a:hover { text-decoration: underline; }
+
+.hint { color: var(--muted); padding: 20px 0; text-align: center; }
+.error { color: #ff7b72; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); padding: 10px 12px; border-radius: 8px; }
+
+/* 窄屏：表格翻转成卡片 */
+@media (max-width: 820px) {
+  .table-wrap { border: none; border-radius: 0; }
+  .grid, .grid tbody, .grid tr, .grid td { display: block; width: 100%; }
+  .grid thead { display: none; }
+  .grid tr {
+    border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px;
+    padding: 8px 4px; background: var(--surface);
+  }
+  .grid tbody tr:hover { background: var(--surface); }
+  .grid td {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    padding: 6px 12px; border: none; text-align: left;
+  }
+  .grid td::before {
+    content: attr(data-label); color: var(--muted); font-size: 12px; font-weight: 600;
+    flex: 0 0 auto; margin-right: 8px;
+  }
+  .grid td.num { text-align: left; }
+  .search-input { flex-basis: 100%; }
+}
+</style>
