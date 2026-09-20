@@ -40,6 +40,7 @@ function argOf(flag) {
 const OPT = {
   now: argOf('--now'),
   force: argv.includes('--force'),
+  wait: argv.includes('--wait'),
   noNotify: argv.includes('--no-notify'),
   json: argv.includes('--json'),
   replay: argOf('--replay'),
@@ -103,6 +104,17 @@ async function run() {
 
   // 离线回放不依赖任何行情与时段（ Sundays 也要能重建报告）
   if (OPT.replay) return runReplay(OPT.replay);
+
+  // --wait：GitHub Actions 的 cron 有 1–5 分钟级延迟，故由程序内等到 14:50 再跑，
+  // 保证「分时尾盘段完整 + 口径固定」。（计划任务本地触发时不需要它，但加了也无害）
+  if (OPT.wait && !OPT.force) {
+    const target = nowBjt().hour(+cfg.session.cutAt.slice(0, 2)).minute(+cfg.session.cutAt.slice(3, 5)).second(10);
+    const diffMs = target.diff(nowBjt());
+    if (diffMs > 0) {
+      log(`[等待] 距 ${cfg.session.cutAt} 还有 ${(diffMs / 60000).toFixed(1)} 分钟，程序内等待…`);
+      await new Promise((r) => setTimeout(r, diffMs));
+    }
+  }
 
   const now = OPT.now ? nowBjt().year(OPT.now.slice(0, 4)).month(+OPT.now.slice(5, 7) - 1)
     .date(+OPT.now.slice(8, 10)).hour(+OPT.now.slice(11, 13)).minute(+OPT.now.slice(14, 16)).second(0)

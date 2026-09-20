@@ -1,0 +1,115 @@
+name: EOD Tail Screening
+
+# 尾盘选股（14:50 固定口径）。为什么由程序内等待而非把 cron 设在 14:50：
+# GitHub 的 schedule cron 有 1–5 分钟级的触发延迟，若恰好在 14:50 触发，
+# 实际开始抓数可能是 14:53——分时数据虽完整（barAtOrBefore 兜底），但存在
+# 「行情时间戳落后 45 分钟即判陈旧」等边界风险。故 cron 设在 14:40（06:40 UTC），
+# 由 tail_screener.js --wait 在 Runner 内等到 14:50 再开始抓取。
+
+on:
+  schedule:
+    - cron: "40 6 * * 1-5"   # 周一至周五 06:40 UTC = 14:40 北京时间
+  workflow_dispatch:
+    inputs:
+      wait:
+        description: "是否程序内等到 14:50 再跑（手动补跑选 false）"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: write
+
+jobs:
+  tail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies (dayjs)
+        run: npm ci
+
+      - name: Fetch industry map cache (从 artifacts 分支取行业映射)
+        run: |
+          git fetch origin daily-artifacts --depth 1 || true
+          git checkout origin/daily-artifacts -- eod/data/industry-map.json 2>/dev/null || \
+            echo "::warning::daily-artifacts 上没有行业映射，分组将退化为「未分类」"
+
+      - name: Run tail screening (尾盘选股 + 报告 + 推送)
+        id: live
+        continue-on-error: true
+        env:
+          NOTIFY_WX_PROVIDER: ${{ secrets.NOTIFY_WX_PROVIDER }}
+          NOTIFY_WX_KEY: ${{ secrets.NOTIFY_WX_KEY }}
+          NOTIFY_WX_TOKEN: ${{ secrets.NOTIFY_WX_TOKEN }}
+          NOTIFY_MAIL_SENDER: ${{ secrets.NOTIFY_MAIL_SENDER }}
+          NOTIFY_MAIL_AUTH: ${{ secrets.NOTIFY_MAIL_AUTH }}
+          NOTIFY_MAIL_RECEIVER: ${{ secrets.NOTIFY_MAIL_RECEIVER }}
+          NOTIFY_MAIL_HOST: ${{ secrets.NOTIFY_MAIL_HOST }}
+          NOTIFY_MAIL_PORT: ${{ secrets.NOTIFY_MAIL_PORT }}
+        run: |
+          if [ "${{ github.event.inputs.wait }}" = "true" ]; then
+            node eod/tail_screener.js --wait
+          else
+            node eod/tail_screener.js
+          fi
+
+      # ---------------------------------------------------------------------
+      # 产物（报告 + 日度 JSON）提交到 daily-artifacts 分支，与每日初筛共用一个
+      # 留档分支；报告也可在 Actions 页面直接下载。
+      # ---------------------------------------------------------------------
+      - name: Commit artifacts to daily-artifacts branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin daily-artifacts --depth 1 || true
+          if git rev-parse --verify origin/daily-artifacts >/dev/null 2>&1; then
+            BASE=origin/daily-artifacts
+          else
+            BASE=$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "init artifacts branch")
+          fi
+          git worktree add --detach _artifacts "$BASE"
+          mkdir -p _artifacts/eod/reports _artifacts/eod/data
+          cp -r eod/reports/. _artifacts/eod/reports/ 2>/dev/null || true
+          cp -r eod/data/. _artifacts/eod/data/ 2>/dev/null || true
+          cd _artifacts
+          git add -A eod
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore: 尾盘选股 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin HEAD:refs/heads/daily-artifacts
+          fi
+          cd ..
+          git worktree remove _artifacts --force
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tail-report
+          path: |
+            eod/reports/
+            eod/data/eod-*.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Report failure (标红 + 微信告警)
+        if: ${{ steps.live.outcome == 'failure' }}
+        env:
+          NOTIFY_WX_PROVIDER: ${{ secrets.NOTIFY_WX_PROVIDER }}
+          NOTIFY_WX_KEY: ${{ secrets.NOTIFY_WX_KEY }}
+          NOTIFY_WX_TOKEN: ${{ secrets.NOTIFY_WX_TOKEN }}
+        run: |
+          echo "::warning::尾盘选股失败，请查看日志"
+          node notify.js --send \
+            "⚠️ 尾盘选股失败（GitHub Actions）" \
+            "今日尾盘选股在 GitHub Runner 上执行失败，**本次没有 14:50 口径结果**。
+
+          常见原因：腾讯行情接口被拦（WAF / 超时）或行业映射缺失。
+          运行记录：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
