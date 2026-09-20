@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# 类型门禁：仅当三个包的依赖都已安装时执行，避免无 node_modules 时阻塞提交。
+if [ -d node_modules ] && [ -d worker/node_modules ] && [ -d web/node_modules ]; then
+  npm run typecheck
+else
+  echo "⚠ 依赖未安装，跳过 pre-commit typecheck 门禁（请先执行 npm install / npm run setup）"
+fi

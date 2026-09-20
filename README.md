@@ -499,6 +499,34 @@ npm run deploy -- --api https://api.example.com   # 改调外部 Worker（跨源
 > npx wrangler pages deploy dist --project-name candidate-pool-web --branch main
 > ```
 
+## 发布流程（版本 + Changelog + 类型门禁 + 提交校验 + 部署）
+
+统一在**仓库根目录**执行 `npm run release`，一条命令串起全流程。**发布前请先 `npm install` / `npm run setup`**（会自动 `prepare → husky` 安装 Git 钩子）。
+
+| 阶段 | 做什么 | 触发 / 执行 |
+|------|--------|-------------|
+| ① 类型门禁 | `npm run typecheck`（= `worker` + `web` 的 `tsc --noEmit` / `vue-tsc --noEmit`） | release 脚本自动跑，失败即中止 |
+| ② 未提交检测 | `git status --porcelain`，有改动先让你填提交信息并二次确认 | release 脚本交互 |
+| ③ 选版本 | ↑/↓ 选 patch / minor / major，实时预览新版本号与变更分组 | release 脚本交互 |
+| ④ 版本 + Changelog | `changelogen --<type> --bump` 写版本号 + 增量中文 `CHANGELOG.md` | release 脚本 |
+| ⑤ 版本同步 | 把新版本号同步进 `worker/`、`web/` 的 `package.json`，避免漂移 | release 脚本 |
+| ⑥ 提交 + 打 tag + 推送 | `chore(release): vX.Y.Z` 提交、`git tag vX.Y.Z`、`push` + `push --tags` | release 脚本 |
+| ⑦ 部署 | `npm run deploy --prefix worker`（Worker）+ `npm run deploy --prefix web`（Pages，含构建） | release 脚本 |
+
+> 约定式提交（commitlint）通过 husky 的 `commit-msg` 钩子**对所有提交强制校验**——包括上面的 ② 与 ⑥ 提交，不符合 `feat/fix/...` 规范会被拒绝。类型门禁通过 husky 的 `pre-commit` 钩子执行（仅当三个包的 `node_modules` 都已安装时，否则跳过并提示）。
+
+```bash
+# 日常：本地提交会自动过 commitlint + typecheck 钩子
+git commit -m "feat(api): 新增 N2/N7/N9 涨幅口径"
+
+# 发布（交互式选版本 → 自动 changelog + 部署）
+npm run release
+```
+
+> 版本号以根 `package.json` 为准（当前 `1.0.0`），后续每次发布在此基础上递增；`worker` / `web` 与之保持同步。
+
+---
+
 ## 免责声明
 
 本报告由程序基于公开市场数据**自动生成**，仅用于短线交易候选池的量化初筛与观察评级，**不构成任何投资建议或买卖邀约**。所有判定均基于历史/收盘数据，存在前视偏差与数据缺口（如 R05 分时不可得）。市场有风险，决策需独立判断并自担风险。
