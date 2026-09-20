@@ -16,7 +16,9 @@ export default defineConfig({
         name: '次日候选池',
         short_name: '候选池',
         description: 'A股次日候选筛选与复盘',
-        theme_color: '#1f6feb',
+        // 与 index.html 的 theme-color 一致：standalone 启动画面 / 状态栏跟随深色底，
+        // 否则会出现白底闪一下再变深色的割裂感。
+        theme_color: '#0d1117',
         background_color: '#0d1117',
         display: 'standalone',
         start_url: '/',

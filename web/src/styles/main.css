@@ -22,11 +22,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 铺满但加最大宽度限制：超宽屏下避免表格列被拉得过散、视线来回扫。 */
+/* 铺满但加最大宽度限制：超宽屏下避免表格列被拉得过散、视线来回扫。
+   竖向留白改由外壳各自承担（侧栏要贴顶做 sticky、移动端顶栏/底栏要通栏贴边），
+   所以这里只保留左右页边距。 */
 #app {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 18px 22px 48px;
+  padding: 0 22px;
+}
+
+/* 窄屏切到「顶部栏 + 底部栏」形态：两者都要通栏贴边，故去掉页边距 */
+@media (max-width: 899px) {
+  #app { padding: 0; }
 }
 
 a { color: var(--accent); }

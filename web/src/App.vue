@@ -1,40 +1,9 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
-import WriteTokenBar from './components/WriteTokenBar.vue';
+// 入口只负责挂载应用外壳；导航与布局职责全部下沉到 components/AppShell.vue
+// （导航数据在 constants/nav.ts）。这样各视图不再关心顶栏长什么样。
+import AppShell from './components/AppShell.vue';
 </script>
 
 <template>
-  <header class="topbar">
-    <RouterLink class="brand" to="/">次日候选池</RouterLink>
-    <nav>
-      <RouterLink to="/">候选列表</RouterLink>
-      <RouterLink to="/stocks">全部标的</RouterLink>
-      <RouterLink to="/stats">复盘统计</RouterLink>
-      <RouterLink to="/rules">规则释义</RouterLink>
-      <WriteTokenBar />
-    </nav>
-  </header>
-  <main>
-    <RouterView />
-  </main>
+  <AppShell />
 </template>
-
-<style scoped>
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0 16px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 18px;
-}
-.brand {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--text);
-  text-decoration: none;
-}
-nav { display: flex; align-items: center; gap: 16px; font-size: 14px; }
-nav a { color: var(--muted); text-decoration: none; }
-nav a.router-link-active { color: var(--accent); }
-</style>

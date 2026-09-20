@@ -1,8 +1,15 @@
 <script setup lang="ts">
-// 顶栏「写权限」控件：管理本机保存的写令牌（WRITE_TOKEN）。
+// 「写权限」控件：管理本机保存的写令牌（WRITE_TOKEN）。
 // 与详情页共用 utils/writeToken.ts 里的响应式变量，改完即时联动。
+//
+// placement：
+//   'down' —— 面板向下弹出（用于移动端顶部栏，右对齐）
+//   'up'   —— 面板向上、左对齐弹出（用于桌面左栏页脚与移动端抽屉页脚，
+//             这两处左侧没有空间，向下弹会被视口裁掉）
 import { ref } from 'vue';
 import { writeToken, setWriteToken, clearWriteToken } from '../utils/writeToken';
+
+withDefaults(defineProps<{ placement?: 'down' | 'up' }>(), { placement: 'down' });
 
 const open = ref(false);
 const draft = ref('');
@@ -31,7 +38,7 @@ function clear(): void {
       <span class="dot" :class="{ on: !!writeToken }" :title="writeToken ? '已设置令牌' : '未设置令牌'"></span>
     </button>
 
-    <div v-if="open" class="wt-panel">
+    <div v-if="open" class="wt-panel" :class="placement">
       <p class="wt-tip">
         备注与分组的<b>写入</b>需要在 Worker 侧配置机密变量 <code>WRITE_TOKEN</code>
         （<code>wrangler secret put WRITE_TOKEN</code>），再在这里填入同一个令牌。
@@ -69,11 +76,17 @@ function clear(): void {
 .dot.on { background: #3fb950; }
 
 .wt-panel {
-  position: absolute; top: calc(100% + 10px); right: 0; z-index: 30;
-  width: 340px; padding: 12px;
+  position: absolute; z-index: 70;
+  /* 抽屉里可用宽度可能只有 ~320px，硬写 340px 会溢出视口 */
+  width: min(340px, calc(100vw - 44px));
+  padding: 12px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
+.wt-panel.down { top: calc(100% + 10px); right: 0; }
+/* 左栏 / 抽屉页脚：左侧没空间，改为向上弹、左对齐 */
+.wt-panel.up { bottom: calc(100% + 10px); left: 0; }
+
 .wt-tip { margin: 0 0 10px; font-size: 12px; line-height: 1.7; color: var(--muted); }
 .wt-tip code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

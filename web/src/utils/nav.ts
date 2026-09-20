@@ -4,6 +4,7 @@
 // 做法：进入详情时把「来路完整路径」挂到 `?from=`（含查询串），返回时按原路回；
 //       来源页自身再用 sessionStorage 记住筛选 / 页码 / 滚动位置，于是「从哪来、回哪去，状态不丢」。
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
+import { findNavItem } from '../constants/nav';
 
 /** 打开个股详情，并带上来源完整路径（如 `/` 或 `/stocks?sort=picks`）。 */
 export function openStock(router: Router, route: RouteLocationNormalizedLoaded, code: string): void {
@@ -25,12 +26,17 @@ export function goBack(router: Router, route: RouteLocationNormalizedLoaded, fal
   router.push(fallback);
 }
 
-/** 返回按钮文案：让用户提前知道会回到哪一页（整串直接用，模板里不再补「返回」二字）。 */
+/**
+ * 返回按钮文案：让用户提前知道会回到哪一页（整串直接用，模板里不再补「返回」二字）。
+ * 由 constants/nav.ts 反查来源页名称 —— 此前是「写死 4 个路径的 if 链」，
+ * 每加一个页面都要回来补一条；现在新增页面自动生效。
+ */
 export function backLabelOf(route: RouteLocationNormalizedLoaded): string {
   const from = typeof route.query.from === 'string' ? route.query.from : '';
-  if (from === '/' || from.startsWith('/?')) return '返回候选列表';
-  if (from.startsWith('/stocks')) return '返回全部标的';
-  if (from.startsWith('/stats')) return '返回复盘统计';
-  if (from.startsWith('/rules')) return '返回规则释义';
+  if (from) {
+    const fromPath = from.split('?')[0];
+    const item = findNavItem(fromPath);
+    if (item) return `返回${item.label}`;
+  }
   return '返回上一页';
 }
