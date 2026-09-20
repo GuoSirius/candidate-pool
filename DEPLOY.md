@@ -154,8 +154,9 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | 改动范围 | 命令 | 说明 |
 |----------|------|------|
 | 前端页面 / 样式 / `functions/` API | `cd web && npm run deploy` | 最常用，一条命令 |
+| 写接口密钥 `WRITE_TOKEN` | `cd web && npx wrangler pages secret put WRITE_TOKEN --project-name candidate-pool-web`，再 `npm run deploy` | **必须配在 Pages 项目**（写接口跑在 Pages Functions 里）；secrets 改动要一次新部署才生效 |
 | 把前端指向外部 Worker | `cd web && npm run deploy -- --api https://api.example.com` | 跨源模式，需目标端开 CORS |
-| 独立 Worker 版 API | `cd worker && npm run deploy` | 仅在使用 `*.workers.dev` 时 |
+| 独立 Worker 版 API | `cd worker && npm run deploy` | 仅在使用 `*.workers.dev` 直连时；网页同源 `/api` 不依赖它 |
 | 建表脚本 / 入库逻辑 | `node db/backfill.js` | 幂等；改 `db/schema.sql` 需重跑 `wrangler d1 execute ... --remote` |
 | 只跑当日报告 | `run_today.cmd`（Windows）/ `./run_today.sh` | 生成报告后自动同步 D1 |
 
