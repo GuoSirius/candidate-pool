@@ -41,7 +41,9 @@
   > **为什么必须全池逐日**：N 周期口径是「锚定日之后第 N 个**交易日**」的收盘 vs 入选价。只有每只票每个交易日都有行，`N1/N2/N3` 才真的等于 1/2/3 个交易日。
   > 历史实现只写「入选日」那一行，序列因此断档——下一行往往是该票**下一次被入选**那天，实测平均隔 **8.9 个自然日**（最长 37 天）、仅 19% 真的隔 1 天，于是 `N1` 报的其实是第 8~37 天，且「最近一次入选」口径结构性恒为 `null`。
   > 现已在 `db/normalize.js` 中改为**全池逐日写入**（快照 `stocks[]` 里 377 只各含 `r01.close`，停牌 / 无收盘不写行，避免 `null` 占掉一个交易日的位置）。回填后实测：N1 可得率 **57% → 96%**、N 列平均间隔 **8.9 → 1.4 天**、「最近一次入选」可得 **0/261 → 234/261**。
-  > 存量数据需要重跑一次 `node db/backfill.js`（远程）/ `node db/backfill.js --local`（本地）才会补齐。
+  > **存量数据需重跑一次回填**：`node db/backfill.js` 写**远程 D1**，`node db/backfill.js --local` 写 `db/local.db`。二者是**两个彼此独立的库**，不加 `--local` 时**完全不碰本地文件**；每日流水线（`daily-screen.yml`）走的也是远程，所以 `db/local.db` 本质是一个「手动快照」，不显式跑 `--local` 就会一直停在旧数据上。
+  > 已回填并实测（远程 D1）：`price_daily` **11,296 行 / 397 只 / 32 个交易日**，`close` 无空值；32 天中 30 天为全池逐日（约 376 行/天），按锚定日逐日核算 `N1` 平均间隔 = **1 或 3 个自然日**（3 天 = 跨周末），整体 N1 可得率 **95.6%**。
+  > ⚠️ **已知残留**：`2026-07-27`、`2026-08-07` 两个锚定日的快照是旧的 Top-12 格式（只含 12 只、无全池行情），共 **8 条**入选记录（613 条中的 1.3%）的 N 周期因此仍不可用或偏大；要彻底修正需从行情源补抓这两个日期区间的日线，暂未实施。
 - `stock_base`：股票基础档案（名称 / 行业 / 题材 / 地域 / 主营 / 最赚钱业务），一票一档长期复用。
 - `watch_group` / `pick_group_rel`：自定义主题分组（如「军工」「低位补涨」），一只票可加入多组。
 - `stock_note`：按运行（anchor_date）或纯按票的评论 / 备忘。
@@ -360,7 +362,7 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | GET | `/api/stock-base` | 股票档案库（可按名称/代码搜索、按分组过滤） | `?q=关键词`、`?group=分组名` |
 | GET | `/api/groups` | 自定义分组列表（前端筛选 chips 用） | 无 |
 | GET | `/api/stats` | 复盘统计：区间内 N1/N2/N3/N5/N7/N9/N10 命中率与均值 + 各档位 + 锚定日时间线 | `?from=YYYY-MM-DD`、`?to=YYYY-MM-DD`（可选） |
-| GET | `/api/stock-rank` | 全部入选标的汇总：每只票的入选次数、各档数量、首次 / 最近入选日，以及 N1/N2/N3 收益（`n*_avg` 历史平均口径 + `last_n*` 最近一次入选口径） | `?sort=recent\|first\|picks\|high\|secondary\|conditional\|excluded\|n1\|n2\|n3\|ln1\|ln2\|ln3\|code`、`?order=desc\|asc`、`?limit=`（默认 1000，上限 5000） |
+| GET | `/api/stock-rank` | 全部入选标的汇总：每只票的入选次数、各档数量、首次 / 最近入选日，以及 N1/N2/N3 收益（`n*_avg` 历史平均口径 + `last_n*` 最近一次入选口径） | `?sort=recent\|first\|picks\|high\|secondary\|conditional\|excluded\|n1\|n2\|n3\|ln1\|ln2\|ln3\|code`、`?order=desc\|asc`、`?limit=`（默认 1000，上限 5000）。**`sort` / `order` 走白名单校验，非法取值返回 `10003`**（不静默回落，避免「看着合理、口径已换」） |
 | GET | `/health` | 健康检查 | 无 |
 
 **写接口**（分组 / 评论 / 备忘）需带 `x-write-token` 请求头，值为 Pages 项目里配置的 `WRITE_TOKEN`；未配置或令牌不符一律返回业务码 `10005`：
