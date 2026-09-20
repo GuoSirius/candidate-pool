@@ -282,12 +282,14 @@ onMounted(load);
         <div class="table-wrap">
           <table class="grid">
             <colgroup>
-              <col style="width: 12%" />
-              <col style="width: 8%" />
-              <col v-for="h in HORIZONS" :key="h" style="width: 11.4%" />
+              <col style="width: 5%" />
+              <col style="width: 10.5%" />
+              <col style="width: 7.5%" />
+              <col v-for="h in HORIZONS" :key="h" style="width: 11%" />
             </colgroup>
             <thead>
               <tr>
+                <th class="ctr idx">序号</th>
                 <th class="ctr">档位</th><th class="num">入选</th>
                 <th v-for="h in HORIZONS" :key="h" class="num th-merged">
                   <span class="th1">{{ H_LABEL[h] }}</span>
@@ -296,7 +298,8 @@ onMounted(load);
               </tr>
             </thead>
             <tbody>
-              <tr v-for="t in stats.tiers" :key="t.tier">
+              <tr v-for="(t, i) in stats.tiers" :key="t.tier">
+                <td class="ctr idx">{{ i + 1 }}</td>
                 <td class="ctr"><TierBadge :tier="t.tier" /></td>
                 <td class="num">{{ t.picks }}</td>
                 <td v-for="h in HORIZONS" :key="h" class="num merged" :title="cellTitle(t[h])">
@@ -365,12 +368,14 @@ onMounted(load);
         <div class="table-wrap timeline">
           <table class="grid">
             <colgroup>
-              <col style="width: 16%" />
-              <col style="width: 8%" />
-              <col v-for="h in HORIZONS" :key="h" style="width: 10.8%" />
+              <col style="width: 5%" />
+              <col style="width: 14.5%" />
+              <col style="width: 7.5%" />
+              <col v-for="h in HORIZONS" :key="h" style="width: 10.4%" />
             </colgroup>
             <thead>
               <tr>
+                <th class="ctr idx">序号</th>
                 <th class="ctr sortable" :class="{ sorted: tlSortKey === 'anchor' }">
                   <button class="th-btn" type="button" @click="toggleTlSort('anchor')">
                     <span>锚定日</span><span class="arrow">{{ tlArrow('anchor') }}</span>
@@ -394,7 +399,8 @@ onMounted(load);
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in timelineRows" :key="p.anchor_date">
+              <tr v-for="(p, i) in timelineRows" :key="p.anchor_date">
+                <td class="ctr idx">{{ i + 1 }}</td>
                 <td class="mono ctr">{{ p.anchor_date }}</td>
                 <td class="num">{{ p.picks }}</td>
                 <td v-for="h in HORIZONS" :key="h" class="num" :class="perfClass(timelineAvg(p, h))">
@@ -407,6 +413,7 @@ onMounted(load);
         <p class="legend">
           明细默认按锚定日<b>倒序</b>（最新在上）；走势图横轴为时间正序（向右 = 更近）。
           <b>点列头</b>可按锚定日 / 入选数 / 任一 N 周期排序（再点一次切换升降序），空值恒排在最后。
+          首列<b>序号</b>按当前展示顺序编号（排序后跟着重排）。
         </p>
       </section>
 
@@ -473,6 +480,8 @@ onMounted(load);
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; }
 .grid tbody tr { border-top: 1px solid var(--border); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 序号列：按当前展示顺序编号（排序后跟着重排），只做定位参考 */
+.grid .idx { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; white-space: nowrap; }
 .grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .grid .desc { white-space: normal; color: var(--muted); line-height: 1.6; }

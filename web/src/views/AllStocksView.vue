@@ -243,6 +243,14 @@ const pagedRows = computed(() => {
   return sorted.value.slice(start, start + pageSizeNum.value);
 });
 
+/**
+ * 行序号：跨页连续（第 2 页接着第 1 页往下编号），按「筛选 + 排序」后的当前顺序编号。
+ * 所以换排序 / 改筛选后序号会重排——它标的是「你现在看到第几条」，不是标的身份。
+ */
+function rowNo(i: number): number {
+  return (page.value - 1) * pageSizeNum.value + i + 1;
+}
+
 /** 筛选 / 口径 / 排序 / 每页条数一变就回第一页——否则会停在「新结果里的第 N 页」，看着像数据丢了。 */
 watch([search, tierFilter, nCaliber, sortKey, sortDir, pageSize], () => {
   if (!restoring) page.value = 1;
@@ -390,22 +398,24 @@ onBeforeUnmount(writeState);
     <section class="table-wrap" v-if="!loading && sorted.length">
       <table class="grid">
         <colgroup>
-          <col style="width: 8%" />
-          <col style="width: 10%" />
-          <col style="width: 11%" />
-          <col style="width: 7%" />
-          <col style="width: 5%" />
-          <col style="width: 5%" />
-          <col style="width: 5%" />
-          <col style="width: 5%" />
-          <col style="width: 6%" />
-          <col style="width: 6%" />
-          <col style="width: 6%" />
-          <col style="width: 13%" />
-          <col style="width: 13%" />
+          <col style="width: 4.2%" />
+          <col style="width: 7.5%" />
+          <col style="width: 9.5%" />
+          <col style="width: 10.5%" />
+          <col style="width: 6.5%" />
+          <col style="width: 4.8%" />
+          <col style="width: 4.8%" />
+          <col style="width: 4.8%" />
+          <col style="width: 4.8%" />
+          <col style="width: 5.8%" />
+          <col style="width: 5.8%" />
+          <col style="width: 5.8%" />
+          <col style="width: 12.6%" />
+          <col style="width: 12.6%" />
         </colgroup>
         <thead>
           <tr>
+            <th class="ctr idx">序号</th>
             <th
               v-for="c in COLS"
               :key="c.key"
@@ -420,7 +430,8 @@ onBeforeUnmount(writeState);
           </tr>
         </thead>
         <tbody>
-          <tr v-for="r in pagedRows" :key="r.code" @click="open(r.code)">
+          <tr v-for="(r, i) in pagedRows" :key="r.code" @click="open(r.code)">
+            <td class="ctr idx" data-label="序号">{{ rowNo(i) }}</td>
             <td class="code" data-label="代码">{{ r.code }}</td>
             <td class="name" data-label="名称">{{ r.name ?? '—' }}</td>
             <td class="sector" data-label="板块">{{ r.sector ?? '—' }}</td>
@@ -477,7 +488,8 @@ onBeforeUnmount(writeState);
         —— 回答「这只票<b>长期</b>靠不靠谱」。悬停单元格可看样本数（三个周期的样本数可能不同）。
       </template>
       暂无数据均显示 —，排序时恒排在最后。涨 = 红，跌 = 绿。默认每页 20 条，可在表格底部切换每页条数或选「全部」；
-      分页只影响本页显示，顶部汇总数字始终按全部筛选结果统计。档位含义见
+      分页只影响本页显示，顶部汇总数字始终按全部筛选结果统计。首列<b>序号</b>按当前顺序编号、跨页连续（第 2 页从第 21 条起），
+      随筛选 / 排序 / 口径重排。档位含义见
       <router-link to="/rules">规则释义</router-link>。
     </p>
   </div>
@@ -552,12 +564,16 @@ onBeforeUnmount(writeState);
 .grid { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
 .grid th, .grid td { padding: 8px 7px; text-align: left; overflow-wrap: anywhere; }
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; line-height: 1.3; padding: 0; }
+/* 本表所有表头都靠 .th-btn 自己撑内边距，序号列没有按钮，得把内边距补回来 */
+.grid thead th.idx { padding: 8px 7px; }
 .grid thead th.sorted { color: var(--accent); }
 /* 当前筛选的档位列：加一条下边框做提示，避免「筛了却不知道在看哪一列」 */
 .grid thead th.active { box-shadow: inset 0 -2px 0 0 var(--accent); }
 .grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+/* 序号列：跨页连续编号，只做定位参考，故比正文更淡 */
+.grid .idx { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11.5px; white-space: nowrap; }
 .grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .strong { font-weight: 700; }
 .grid .t-hi { color: #ff7b72; }

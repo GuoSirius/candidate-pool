@@ -429,14 +429,16 @@ onMounted(() => {
         <div class="table-wrap">
           <table class="grid">
             <colgroup>
-              <col style="width: 12%" />
-              <col style="width: 7%" />
-              <col style="width: 9%" />
-              <col style="width: 8%" />
-              <col v-for="h in HORIZONS" :key="h" style="width: 9.1%" />
+              <col style="width: 5%" />
+              <col style="width: 11%" />
+              <col style="width: 6.5%" />
+              <col style="width: 8.5%" />
+              <col style="width: 7.5%" />
+              <col v-for="h in HORIZONS" :key="h" style="width: 8.8%" />
             </colgroup>
             <thead>
               <tr>
+                <th class="ctr idx">序号</th>
                 <th class="ctr sortable" :class="{ sorted: pickSortKey === 'anchor' }">
                   <button class="th-btn" type="button" @click="togglePickSort('anchor')">
                     <span>锚定日</span><span class="arrow">{{ pickArrow('anchor') }}</span>
@@ -461,7 +463,8 @@ onMounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in sortedPicks" :key="p.id">
+              <tr v-for="(p, i) in sortedPicks" :key="p.id">
+                <td class="ctr idx">{{ i + 1 }}</td>
                 <td class="mono ctr">{{ p.anchor_date }}</td>
                 <td class="ctr"><TierBadge :tier="p.tier" /></td>
                 <td class="ctr"><RuleTags :pick="p" /></td>
@@ -476,6 +479,7 @@ onMounted(() => {
         <p class="legend">
           {{ HORIZON_NOTE_SHORT }}涨 = 红，跌 = 绿；数据缺失显示 —。
           <b>点列头</b>可按锚定日 / 入选价 / 任一 N 周期排序（再点一次切换升降序），空值恒排在最后。
+          首列<b>序号</b>按当前展示顺序编号（排序后跟着重排）。
           档位（重点 / 次级 / 条件 / 排除）与 R01 / R07 / R05 标签含义见
           <router-link to="/rules">规则释义</router-link>。
         </p>
@@ -605,6 +609,8 @@ select:disabled, .inp:disabled, textarea:disabled { opacity: 0.55; cursor: not-a
 .grid thead th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); line-height: 1.3; }
 .grid tbody tr { border-top: 1px solid var(--border); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+/* 序号列：按当前展示顺序编号（排序后跟着重排），只做定位参考 */
+.grid .idx { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11.5px; white-space: nowrap; }
 .grid th.ctr, .grid td.ctr { text-align: center; }
 .grid .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .grid :deep(.rule-tags) { gap: 2px; }
