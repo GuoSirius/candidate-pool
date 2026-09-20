@@ -47,7 +47,7 @@
 ### 本地开发流程
 
 ```bash
-# 1. 装依赖（仅 dayjs，统一处理北京时间）
+# 1. 装依赖（dayjs 处理北京时间 + dotenv 加载 db/.env）
 npm install
 
 # 2. 跑一次实时初筛，生成 reports/ + data/snapshot-<日期>.json
@@ -83,6 +83,9 @@ node db/query_local.js "SELECT code,name,tier,reason FROM pick_record WHERE code
    | `CF_ACCOUNT_ID` | 账户 ID | 头像 → Account Home → Account ID |
    | `CF_D1_DATABASE_ID` | D1 数据库 ID | `wrangler d1 create` 返回 / D1 详情页 |
    | `CF_API_TOKEN` | API 令牌 | API Tokens 页创建，权限勾选 `Account → D1 → Edit` |
+
+   > `db/.env` 由 `db/d1client.js` 通过 **`dotenv`** 加载（`config({ path: db/.env })`），所有入库脚本（`backfill.js` / `write_live.js` / `enrich_stock_base.js`）共用。dotenv 默认**不覆盖已存在的变量**，因此 CI Secrets / 系统环境变量优先级更高。
+   > ⚠️ 凭据命名有两套：**本项目脚本用 `CF_*`**，wrangler 用 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`，不要混用。
 4. **全量初始化入库**（本地一次性把历史快照同步到 D1，幂等，可重复跑）：
    ```bash
    node db/backfill.js          # 不设 --local 且检测到 CF_* 即写入 D1
@@ -329,7 +332,14 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | `worker/wrangler.toml` | Worker（独立部署）配置 + `[[d1_databases]]` 绑定 |
 | `worker/package.json` | `hono` 运行时依赖；`wrangler` / `typescript` 开发依赖 |
 
-> **环境注入说明**：这里是 Cloudflare Worker，不是 Node，所以**不需要 `dotenv`**。D1 通过 `wrangler.toml` 的 `[[d1_databases]]` binding（`c.env.DB`）注入；本地 `wrangler dev` 自动加载 `.dev.vars`，生产用 `wrangler secret put`（本项目接口只读 D1，无需任何密钥）。
+> **环境注入说明**：两条链路的注入方式不同，别混用。
+>
+> | 运行位置 | 注入方式 | 是否需要 dotenv |
+> |----------|----------|-----------------|
+> | Worker / Pages Functions 运行时 | `wrangler.toml` 的 `[[d1_databases]]` binding → `c.env.DB`；本地 `wrangler dev` 读 `.dev.vars`，生产用 `wrangler secret put` | ❌ 不需要（不是 Node 环境） |
+> | 本机 / CI 的入库脚本（`db/*.js`） | `dotenv` 读 `db/.env`，或直接用系统环境变量 / CI Secrets | ✅ 需要 |
+>
+> 本项目 API 只读 D1，运行时无需任何密钥。
 
 ### 接口一览
 
