@@ -2,7 +2,8 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
-import type { StockRankRow } from '../api/types';
+import { TIER_LABELS, TIER_ORDER } from '../api/types';
+import type { StockRankRow, Tier } from '../api/types';
 import { openStock } from '../utils/nav';
 
 const router = useRouter();
@@ -12,6 +13,18 @@ const rows = ref<StockRankRow[]>([]);
 const loading = ref(false);
 const error = ref<string>('');
 const search = ref('');
+
+/**
+ * 档位筛选：'' = 全部；否则只看「在该档位至少入选过 1 次」的标的。
+ * 用「有过该档记录」而不是「只保留该档」，是因为一只票可能同时有重点与条件记录，
+ * 用前者才能把「曾进过重点」的票都捞出来。
+ */
+const tierFilter = ref<'' | Tier>('');
+
+const TIER_OPTIONS: Array<{ value: '' | Tier; label: string }> = [
+  { value: '', label: '全部档位' },
+  ...TIER_ORDER.map((t) => ({ value: t as '' | Tier, label: TIER_LABELS[t] })),
+];
 
 type SortKey =
   | 'code'
@@ -51,10 +64,11 @@ const COLS: Col[] = [
 const sortKey = ref<SortKey>('last_anchor');
 const sortDir = ref<'asc' | 'desc'>('desc');
 
-// —— 列表状态保持：进个股详情再返回时，恢复搜索 / 排序 / 滚动位置 ——
+// —— 列表状态保持：进个股详情再返回时，恢复搜索 / 档位 / 排序 / 滚动位置 ——
 const STATE_KEY = 'cp:allstocks:state';
 interface AllState {
   search?: string;
+  tier?: '' | Tier;
   sortKey?: SortKey;
   sortDir?: 'asc' | 'desc';
   scrollY?: number;
@@ -70,6 +84,7 @@ function writeState() {
   try {
     const s: AllState = {
       search: search.value,
+      tier: tierFilter.value,
       sortKey: sortKey.value,
       sortDir: sortDir.value,
       scrollY: window.scrollY,
@@ -96,10 +111,21 @@ function cellValue(r: StockRankRow, k: SortKey): number | string {
 }
 
 const filtered = computed(() => {
+  const t = tierFilter.value;
   const q = search.value.trim().toLowerCase();
-  if (!q) return rows.value;
-  return rows.value.filter((r) => `${r.code} ${r.name ?? ''} ${r.sector ?? ''}`.toLowerCase().includes(q));
+  let list = rows.value;
+  if (t) list = list.filter((r) => r[t] > 0);
+  if (!q) return list;
+  return list.filter((r) => `${r.code} ${r.name ?? ''} ${r.sector ?? ''}`.toLowerCase().includes(q));
 });
+
+/** 是否有生效中的筛选（决定是否显示「清除」与空态文案）。 */
+const filterActive = computed(() => !!search.value.trim() || !!tierFilter.value);
+
+function resetFilters(): void {
+  search.value = '';
+  tierFilter.value = '';
+}
 
 const sorted = computed(() => {
   const k = sortKey.value;
@@ -111,9 +137,10 @@ const sorted = computed(() => {
   });
 });
 
+// 汇总跟随当前筛选：筛了档位/关键词后，卡片数字与表格里的行保持一致，避免两处对不上。
 const totals = computed(() => {
-  const t = { stocks: rows.value.length, picks: 0, high: 0, secondary: 0, conditional: 0, excluded: 0 };
-  for (const r of rows.value) {
+  const t = { stocks: filtered.value.length, picks: 0, high: 0, secondary: 0, conditional: 0, excluded: 0 };
+  for (const r of filtered.value) {
     t.picks += r.picks;
     t.high += r.high;
     t.secondary += r.secondary;
@@ -154,6 +181,7 @@ async function load() {
 onMounted(() => {
   const saved = readState();
   if (saved.search) search.value = saved.search;
+  if (saved.tier) tierFilter.value = saved.tier;
   if (saved.sortKey) sortKey.value = saved.sortKey;
   if (saved.sortDir) sortDir.value = saved.sortDir;
   pendingScrollY = saved.scrollY && saved.scrollY > 0 ? saved.scrollY : null;
@@ -175,18 +203,27 @@ onBeforeUnmount(writeState);
 
     <p v-if="error" class="error">{{ error }}</p>
 
-    <!-- 汇总 -->
-    <section class="summary" v-if="rows.length">
-      <div class="card"><span class="k">标的数</span><span class="v">{{ totals.stocks }}</span></div>
-      <div class="card"><span class="k">入选总次数</span><span class="v">{{ totals.picks }}</span></div>
-      <div class="card hi"><span class="k">重点</span><span class="v">{{ totals.high }}</span></div>
-      <div class="card se"><span class="k">次级</span><span class="v">{{ totals.secondary }}</span></div>
-      <div class="card co"><span class="k">条件</span><span class="v">{{ totals.conditional }}</span></div>
-      <div class="card ex"><span class="k">排除</span><span class="v">{{ totals.excluded }}</span></div>
+    <!-- 汇总（跟随筛选） -->
+    <section class="summary-wrap" v-if="rows.length">
+      <div class="summary">
+        <div class="card"><span class="k">标的数</span><span class="v">{{ totals.stocks }}</span></div>
+        <div class="card"><span class="k">入选总次数</span><span class="v">{{ totals.picks }}</span></div>
+        <div class="card hi"><span class="k">重点</span><span class="v">{{ totals.high }}</span></div>
+        <div class="card se"><span class="k">次级</span><span class="v">{{ totals.secondary }}</span></div>
+        <div class="card co"><span class="k">条件</span><span class="v">{{ totals.conditional }}</span></div>
+        <div class="card ex"><span class="k">排除</span><span class="v">{{ totals.excluded }}</span></div>
+      </div>
+      <p class="summary-note" v-if="filterActive">以上数字已按当前筛选统计。</p>
     </section>
 
-    <!-- 搜索 -->
+    <!-- 筛选：档位下拉 + 关键词搜索 -->
     <section class="filters" v-if="rows.length">
+      <label class="tier-filter">
+        <span class="fl">档位</span>
+        <select v-model="tierFilter" class="tier-select" aria-label="按档位筛选">
+          <option v-for="o in TIER_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+      </label>
       <input
         class="search-input"
         type="search"
@@ -194,8 +231,11 @@ onBeforeUnmount(writeState);
         placeholder="搜索代码 / 名称 / 板块"
         aria-label="搜索标的"
       />
+      <button v-if="filterActive" class="clear-btn" type="button" @click="resetFilters">清除筛选</button>
       <span class="meta"
-        >共 {{ sorted.length }} 只 · 当前排序：<b>{{ COLS.find((c) => c.key === sortKey)?.label.replace(/<br \/>/g, '') }}</b>
+        >共 {{ sorted.length }} 只<template v-if="tierFilter"> · 档位「{{ TIER_LABELS[tierFilter] }}」</template> · 当前排序：<b>{{
+          COLS.find((c) => c.key === sortKey)?.label.replace(/<br \/>/g, '')
+        }}</b>
         {{ sortDir === 'desc' ? '（降序）' : '（升序）' }} · 点列头切换</span
       >
     </section>
@@ -222,7 +262,7 @@ onBeforeUnmount(writeState);
             <th
               v-for="c in COLS"
               :key="c.key"
-              :class="{ num: c.num, ctr: !c.num, sorted: sortKey === c.key }"
+              :class="{ num: c.num, ctr: !c.num, sorted: sortKey === c.key, active: !!tierFilter && tierFilter === c.key }"
               :title="c.tip"
             >
               <button class="th-btn" @click="toggleSort(c.key)">
@@ -249,7 +289,11 @@ onBeforeUnmount(writeState);
       </table>
     </section>
 
-    <p v-else-if="!error && !loading && search.trim()" class="hint">无匹配「{{ search }}」的标的。</p>
+    <p v-else-if="!error && !loading && filterActive" class="hint">
+      没有符合当前筛选条件的标的<template v-if="search.trim()">（关键词「{{ search }}」）</template
+      ><template v-if="tierFilter">（档位：{{ TIER_LABELS[tierFilter] }}）</template>。
+      <button class="clear-btn" type="button" @click="resetFilters">清除筛选</button>
+    </p>
     <p v-else-if="!error && !loading" class="hint">暂无入选记录。</p>
 
     <p class="legend" v-if="sorted.length">
@@ -267,7 +311,9 @@ onBeforeUnmount(writeState);
 .ghost-btn { color: var(--accent); text-decoration: none; font-size: 14px; }
 .ghost-btn:hover { text-decoration: underline; }
 
+.summary-wrap { display: flex; flex-direction: column; gap: 8px; }
 .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.summary-note { margin: 0; font-size: 12px; color: var(--muted); }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
 .card .k { font-size: 12px; color: var(--muted); }
 .card .v { font-size: 18px; font-weight: 700; }
@@ -277,6 +323,18 @@ onBeforeUnmount(writeState);
 .card.ex .v { color: #8b949e; }
 
 .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.tier-filter { display: inline-flex; align-items: center; gap: 8px; }
+.tier-filter .fl { font-size: 12px; color: var(--muted); }
+.tier-select {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.tier-select:focus { outline: none; border-color: var(--accent); }
+.clear-btn {
+  background: none; border: none; padding: 0; font: inherit; font-size: 12.5px;
+  color: var(--accent); cursor: pointer;
+}
+.clear-btn:hover { text-decoration: underline; }
 .search-input {
   min-width: 200px; flex: 0 1 260px;
   background: var(--surface); border: 1px solid var(--border); color: var(--text);
@@ -290,6 +348,8 @@ onBeforeUnmount(writeState);
 .grid th, .grid td { padding: 8px 7px; text-align: left; overflow-wrap: anywhere; }
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; line-height: 1.3; padding: 0; }
 .grid thead th.sorted { color: var(--accent); }
+/* 当前筛选的档位列：加一条下边框做提示，避免「筛了却不知道在看哪一列」 */
+.grid thead th.active { box-shadow: inset 0 -2px 0 0 var(--accent); }
 .grid tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
@@ -340,5 +400,7 @@ onBeforeUnmount(writeState);
   }
   .grid td.num { text-align: left; }
   .search-input { flex-basis: 100%; }
+  .tier-filter { flex-basis: 100%; }
+  .tier-select { flex: 1; }
 }
 </style>
