@@ -9,6 +9,7 @@ import { openStock } from '../utils/nav';
 import { useColumnSort, type SortValue } from '../utils/sort';
 import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
+import PageHeader from '../components/PageHeader.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -275,13 +276,11 @@ onBeforeUnmount(writeState);
 
 <template>
   <div class="runs">
-    <header class="page-head">
-      <div>
-        <h1>次日候选池</h1>
-        <p class="sub">按锚定日查看入选标的与档位分布</p>
-      </div>
-      <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
-    </header>
+    <PageHeader title="次日候选池" sub="按锚定日查看入选标的与档位分布">
+      <template #actions>
+        <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
+      </template>
+    </PageHeader>
 
     <p v-if="error" class="error">{{ error }}</p>
 
@@ -419,11 +418,8 @@ onBeforeUnmount(writeState);
 
 <style scoped>
 .runs { display: flex; flex-direction: column; gap: 16px; }
-.page-head { display: flex; align-items: center; justify-content: space-between; }
-.page-head h1 { font-size: 22px; margin: 0; }
+/* 标题行样式统一在 components/PageHeader.vue；.sub 这里仅剩表格内的副行（总市值）仍在用 */
 .sub { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
-.ghost-btn { color: var(--accent); text-decoration: none; font-size: 14px; }
-.ghost-btn:hover { text-decoration: underline; }
 
 .anchors { display: flex; align-items: center; }
 .anchor-select { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }

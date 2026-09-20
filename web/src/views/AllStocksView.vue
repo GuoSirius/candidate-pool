@@ -7,6 +7,7 @@ import type { StockRankRow, Tier } from '../api/types';
 import { fmtPct, perfClass } from '../utils/format';
 import { openStock } from '../utils/nav';
 import { useColumnSort, type SortValue } from '../utils/sort';
+import PageHeader from '../components/PageHeader.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -325,13 +326,11 @@ onBeforeUnmount(writeState);
 
 <template>
   <div class="allstocks">
-    <header class="page-head">
-      <div>
-        <h1>全部入选标的</h1>
-        <p class="sub">按个股汇总历史入选情况：入选次数 / 各档数量 / 入选时间范围</p>
-      </div>
-      <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
-    </header>
+    <PageHeader title="全部入选标的" sub="按个股汇总历史入选情况：入选次数 / 各档数量 / 入选时间范围">
+      <template #actions>
+        <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
+      </template>
+    </PageHeader>
 
     <p v-if="error" class="error">{{ error }}</p>
 
@@ -497,11 +496,6 @@ onBeforeUnmount(writeState);
 
 <style scoped>
 .allstocks { display: flex; flex-direction: column; gap: 16px; }
-.page-head { display: flex; align-items: center; justify-content: space-between; }
-.page-head h1 { font-size: 22px; margin: 0; }
-.sub { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
-.ghost-btn { color: var(--accent); text-decoration: none; font-size: 14px; }
-.ghost-btn:hover { text-decoration: underline; }
 
 .summary-wrap { display: flex; flex-direction: column; gap: 8px; }
 .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }

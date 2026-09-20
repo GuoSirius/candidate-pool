@@ -15,6 +15,7 @@ import {
   HORIZON_NOTE,
   type Horizon,
 } from '../constants/glossary';
+import PageHeader from '../components/PageHeader.vue';
 
 /** N 周期分组：N1–N3 为短周期（入选后 3 个交易日内），N5–N10 为中长周期。 */
 function groupOf(h: Horizon): string {
@@ -24,16 +25,12 @@ function groupOf(h: Horizon): string {
 
 <template>
   <div class="rules">
-    <header class="page-head">
-      <div>
-        <h1>规则释义</h1>
-        <p class="sub">初筛口径、档位划分、N 日周期与统计指标的完整说明</p>
-      </div>
-      <div class="head-links">
+    <PageHeader title="规则释义" sub="初筛口径、档位划分、N 日周期与统计指标的完整说明">
+      <template #actions>
         <router-link class="ghost-btn" to="/stats">复盘统计 →</router-link>
         <router-link class="ghost-btn" to="/">← 返回候选列表</router-link>
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- 1. 三条规则 -->
     <section class="block">
@@ -182,12 +179,6 @@ function groupOf(h: Horizon): string {
 
 <style scoped>
 .rules { display: flex; flex-direction: column; gap: 22px; }
-.page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.page-head h1 { font-size: 22px; margin: 0; }
-.sub { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
-.head-links { display: flex; gap: 14px; }
-.ghost-btn { color: var(--accent); text-decoration: none; font-size: 14px; white-space: nowrap; }
-.ghost-btn:hover { text-decoration: underline; }
 
 .block h2 { font-size: 16px; margin: 0 0 12px; }
 .note { color: var(--muted); font-size: 13px; line-height: 1.7; margin: 0 0 12px; }

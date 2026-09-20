@@ -10,6 +10,7 @@ import { useColumnSort, type SortValue } from '../utils/sort';
 import { writeToken } from '../utils/writeToken';
 import TierBadge from '../components/TierBadge.vue';
 import RuleTags from '../components/RuleTags.vue';
+import PageHeader from '../components/PageHeader.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -262,17 +263,21 @@ onMounted(() => {
 
 <template>
   <div class="stock">
-    <header class="page-head">
-      <div class="title">
+    <PageHeader
+      :title="code"
+      :sub="base?.sector ? base.sector + (base.region ? ` · ${base.region}` : '') : ''"
+    >
+      <template #before>
         <button class="ghost-btn" type="button" @click="back">← {{ backLabel }}</button>
-        <h1>
-          <span class="code">{{ code }}</span>
-          <span class="name" v-if="base?.name">{{ base.name }}</span>
-        </h1>
-        <p class="sub" v-if="base?.sector">{{ base.sector }}<template v-if="base?.region"> · {{ base.region }}</template></p>
-      </div>
-      <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
-    </header>
+      </template>
+      <template #title>
+        <span class="code">{{ code }}</span>
+        <span class="name" v-if="base?.name">{{ base.name }}</span>
+      </template>
+      <template #actions>
+        <router-link class="ghost-btn" to="/rules">规则释义 →</router-link>
+      </template>
+    </PageHeader>
 
     <p v-if="error" class="error">{{ error }}</p>
     <p v-else-if="loading" class="hint">加载股票档案…</p>
@@ -490,18 +495,12 @@ onMounted(() => {
 
 <style scoped>
 .stock { display: flex; flex-direction: column; gap: 16px; }
-.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.page-head .title { display: flex; flex-direction: column; gap: 6px; }
-/* 同一 class 既要给 <router-link> 用，也要给 <button> 用，故显式清掉按钮默认样式 */
-.ghost-btn {
-  color: var(--accent); text-decoration: none; font-size: 13px; width: fit-content; white-space: nowrap;
-  background: none; border: none; padding: 0; font-family: inherit; cursor: pointer;
-}
-.ghost-btn:hover { text-decoration: underline; }
-.page-head h1 { font-size: 22px; margin: 0; display: flex; align-items: baseline; gap: 10px; }
+/* 标题行（h1 / .sub / 返回链接）统一在 components/PageHeader.vue，
+   这里只保留详情页特有的「代码 + 名称」呈现。
+   .code / .name 是塞进 PageHeader 具名插槽的节点 —— 插槽内容编译在父组件作用域，
+   因此仍带本组件的 data-v 属性，选择器照常生效。 */
 .page-head .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); }
 .page-head .name { font-size: 18px; }
-.sub { color: var(--muted); margin: 0; font-size: 13px; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
 .card h2 { font-size: 15px; margin: 0 0 12px; }

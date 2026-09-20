@@ -55,3 +55,22 @@ a { color: var(--accent); }
 .grid th.num .th-btn { justify-content: flex-end; }
 .grid th.ctr .th-btn { justify-content: center; }
 .th-btn .arrow { font-size: 9px; color: var(--accent); }
+
+/* ---- 文字链接按钮 ----
+   各页的「规则释义 →」「← 返回…」等文字链接，以及页面标题行右侧的操作链接。
+   此前 5 个视图各写一份，字号（13px / 14px）与 hover 表现逐页漂移；
+   且 StockView 的返回是 <button>、其余是 <router-link>，需要同一套样式同时兼容两者。
+   统一到全局一份。 */
+.ghost-btn {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+  width: fit-content;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ghost-btn:hover { text-decoration: underline; }
