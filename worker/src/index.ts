@@ -5,7 +5,7 @@
 // 读接口无需密钥；写接口需配置 WRITE_TOKEN（见 lib/auth.ts 与 lib/notes.ts）。
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { ok, fail, BizCode } from './lib/response.js';
+import { ok, okCached, fail, BizCode } from './lib/response.js';
 import { guardWrite } from './lib/auth.js';
 import { BizError, invalid } from './lib/errors.js';
 import type { Bindings, NoteType } from './types.js';
@@ -146,7 +146,8 @@ app.get('/api/stock-rank', async (c) => {
     order,
     limit: Number(c.req.query('limit')) || 1000,
   });
-  return ok(c, data);
+  // 派生行情数据，一天只变一次；缓存 5 分钟可把重复打开页面的 D1 读取降到 0
+  return okCached(c, data, 300);
 });
 
 app.get('/api/runs', async (c) => {
@@ -180,11 +181,13 @@ app.get('/api/stock-base', async (c) => {
 });
 
 // 复盘统计：区间内全部入选记录的 N1/N3/N5/N10 命中率与均值（可选 from/to 过滤）。
+// 注意 from 会真正减少扫描行数（见 getStats），是控 D1 读取最直接的手段。
 app.get('/api/stats', async (c) => {
   const from = c.req.query('from');
   const to = c.req.query('to');
   const data = await getStats(c.env.DB, { from: from ?? null, to: to ?? null });
-  return ok(c, data);
+  // 同 stock-rank：纯派生数据，按 URL（含 from/to）缓存 5 分钟
+  return okCached(c, data, 300);
 });
 
 // ---------------------------------------------------------------------------

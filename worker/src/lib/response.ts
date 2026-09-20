@@ -43,6 +43,21 @@ export function ok<T>(
 }
 
 /**
+ * 成功响应 + 浏览器缓存（`Cache-Control: public, max-age=N`）。
+ *
+ * 为什么需要：D1 免费额度按「**扫描行数**」计量（5,000,000 行 / 天，UTC 00:00 重置）。
+ * 行情类接口每次都要按代码取回整段 `price_daily`（实测 261 只 ≈ 7,600 行/次），
+ * 而这类数据一天只变一次 —— 让浏览器缓存几分钟，重复打开页面就完全不产生 D1 读取。
+ *
+ * ⚠️ 只用于「纯派生行情」接口（`/api/stock-rank`、`/api/stats`）。
+ * 写接口与用户数据（分组 / 备注）**绝不能**用，否则写完立刻读会拿到旧值。
+ */
+export function okCached<T>(c: Context, data: T, maxAgeSeconds: number, message = 'success'): Response {
+  c.header('Cache-Control', `public, max-age=${maxAgeSeconds}`);
+  return ok(c, data, message);
+}
+
+/**
  * 失败响应：业务码默认 10001（通用业务错误），HTTP 默认 200（由 code 区分错误）。
  * 如需让 HTTP 层也感知（如真实 5xx），传 status。
  */
