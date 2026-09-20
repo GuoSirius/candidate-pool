@@ -28,8 +28,64 @@
 
 | 层 | 用途 | 客户端 | 触发方式 |
 |----|------|--------|----------|
-| 本地 SQLite | 开发 / 自查 | `db/sqlite_client.js`（Node 22 内置 `node:sqlite`，零依赖） | `node db/backfill.js --local` |
-| Cloudflare D1 | 生产 / 线上查询 | `db/d1client.js`（Cloudflare D1 HTTP API） | 工作流自动同步（见「GitHub Actions」一节） |
+| 本地 SQLite | 开发 / 自查 | `db/sqlite_client.js`（Node 22 内置 `node:sqlite`，零依赖） | `node db/write_live.js --local`（当天）/ `node db/backfill.js --local`（全量） |
+| Cloudflare D1 | 生产 / 线上查询 | `db/d1client.js`（Cloudflare D1 HTTP API） | 本机任务与工作流自动同步（见「GitHub Actions」一节） |
+
+**写入目标由参数决定**（`db/clients.js` 统一解析，`backfill.js` 与 `write_live.js` 共用）：
+
+| 参数 | 远程 D1 | 本地 `db/local.db` |
+|------|---------|--------------------|
+| （不带） | 有凭据则写 | 不写 |
+| `--local` | 不写 | 写 |
+| `--both` | 有凭据则写 | 写 |
+
+> 本机日常任务（`run_today.cmd` / `run_today.sh`）已固定用 `--both`，跑完一次两端同时前进。
+
+### 本地与线上一致性（`db/verify_sync.js`）
+
+`db/local.db` 被 `.gitignore` 排除、**不在仓库里**，CI（GitHub Actions）根本碰不到它 —— 所以「两端一致」只可能由**本机**保证。此前默认只写远程，于是本机任务跑完后本地库永远停在旧数据上（表现为本地 `price_daily` 停在 613 行，线上已是 11,296 行）。
+
+| 场景 | 命令 | 效果 |
+|------|------|------|
+| 本机日常跑任务 | `run_today.cmd` / `run_today.sh` | 报告 + **双写**（远程与本地同时更新） |
+| 手动补当天 | `node db/write_live.js --both` | 只把最新一份快照写到两端 |
+| 手动补全量 | `npm run db:sync` | = `backfill.js --both`，全量幂等重放，**哪端落后就补齐哪端** |
+| 核对是否一致 | `npm run db:verify` | 逐字段比对派生表指纹，不一致则非 0 退出，可直接当定时任务哨兵 |
+| GitHub 定时任务 | `daily-screen.yml` → `node db/backfill.js` | **只写远程**（CI 里没有本地库，也不需要） |
+
+比对范围是**由快照派生的 4 张表**：`run_batch` / `pick_record` / `price_daily` / `stock_base`。
+`watch_group` / `pick_group_rel` / `stock_note` 由网页写接口产生、只存在于线上，**明确排除**在比对之外。
+
+因为 `data/snapshot-*.json` 是唯一真相来源，写入又是纯函数式规范化 + 幂等（UNIQUE 约束 + `run_at` recency guard），两端只要回放过同一批快照，指纹必然逐字段相等 —— **不需要增量同步，也不需要人工 diff**。
+
+### D1 用量限额（免费额度按「扫描行数」计量，务必留意）
+
+官方定价：<https://developers.cloudflare.com/d1/platform/pricing/>
+
+| 计费项 | Workers Free | Workers Paid |
+|--------|--------------|--------------|
+| Rows read | **5,000,000 / 天** | 前 25 billion / 月，超出 $0.001 / 百万行 |
+| Rows written | **100,000 / 天** | 前 50 million / 月，超出 $1.00 / 百万行 |
+| Storage | 5 GB（账号合计） | 前 5 GB，超出 $0.75 / GB-月 |
+
+关键细节：免费额度按**查询扫描到的行数**计，与行大小无关；过滤条件没走索引时，即便只返回少量行也按扫描量算。免费额度**每天 UTC 00:00 重置**，超额后当天 D1 直接拒绝查询。
+
+本项目实测（2026-09-20，`price_daily` 11,296 行 / 261 只入选票）：
+
+| 行为 | 行数 | 说明 |
+|------|------|------|
+| 日常入库（`write_live --both` 的远程侧） | ≈ 415 行写 | 19 入选 + ≈377 日线 + 19 档案；占日写额度 0.4% |
+| 全量回填（`backfill --both` 的远程侧） | ≈ 13,300 行写 | 32 份快照重放；占日写额度 13% |
+| `GET /api/stock-rank` | ≈ 8,240 行读 | 7,624（`price_daily`，已命中索引）+ 613（`pick_record`） |
+| `GET /api/stats`（不带 `from`） | ≈ 8,240 行读 | 同上 |
+| 打开一次「全部标的」+「复盘统计」 | ≈ 16,500 行读 | 占日读额度 0.33%，即免费额度约够 **300 次**页面访问 / 天 |
+
+> ⚠️ **读量随 `price_daily` 线性增长**（全池逐日后约 377 行/交易日，一年 ≈ 9 万行），届时单次页面访问的读量会到 6 万行量级，免费额度只够约 80 次访问/天。相应对策：
+> - `/api/stock-rank` 与 `/api/stats` 已加 `Cache-Control: max-age=300`（派生行情一天只变一次，重复打开页面不再产生 D1 读取）；
+> - 只看某个区间时给 `/api/stats?from=YYYY-MM-DD`，`getStats` 会据此裁剪 `price_daily` 的扫描下界；
+> - **不要**把 `backfill.js` 放进每日定时任务（每次重放全部历史，约 13k 行写）；日常只需 `write_live.js`；
+> - 想进一步压读量，可把 N 周期收益在**写入时**算好并落到 `pick_record`，让汇总接口只读 613 行而非 8,000+ 行（未实施）；
+> - 用量自查：Dashboard → D1 → 选中 `candidate-pool` → **Metrics → Row Metrics**（GraphQL Analytics API 也可，但 token 需具备 Account Analytics 读权限）。
 
 ### 表结构（带注释）
 
