@@ -18,6 +18,7 @@ import {
   listGroups,
   getStats,
   rankStocks,
+  RANK_SORT_KEYS,
 } from './lib/db.js';
 import {
   getGroupDetail,
@@ -129,10 +130,20 @@ app.get('/', (c) =>
 
 // 全部入选股票汇总：每只票的入选次数 + 各档数量 + 首次/最近入选日 + N1/N2/N3（平均 / 最近一次两种口径）。
 // sort 的 n1|n2|n3 = 历史平均口径，ln1|ln2|ln3 = 最近一次入选口径（last_n*）。
+// 非法取值一律 10003：曾因白名单漏了 ln* 而静默回落成 last_anchor，结果「看着合理、口径已换」。
 app.get('/api/stock-rank', async (c) => {
+  const sort = c.req.query('sort') ?? 'recent';
+  if (!RANK_SORT_KEYS.includes(sort)) {
+    return fail(c, `sort 只能为 ${RANK_SORT_KEYS.join(' / ')}，收到 ${sort}`, BizCode.ERR_INVALID_PARAM);
+  }
+  const rawOrder = c.req.query('order') ?? 'desc';
+  const order = rawOrder.toLowerCase();
+  if (order !== 'desc' && order !== 'asc') {
+    return fail(c, `order 只能为 desc / asc，收到 ${rawOrder}`, BizCode.ERR_INVALID_PARAM);
+  }
   const data = await rankStocks(c.env.DB, {
-    sort: c.req.query('sort') ?? null,
-    order: c.req.query('order') ?? null,
+    sort,
+    order,
     limit: Number(c.req.query('limit')) || 1000,
   });
   return ok(c, data);

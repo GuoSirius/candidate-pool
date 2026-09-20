@@ -286,6 +286,18 @@ export async function getStats(
 }
 
 /** 排序键 → 真实列名（白名单，避免拼接注入）。 */
+/**
+ * `?sort=` 取值 → 实际排序字段。
+ *
+ * ⚠️ 这里是 sort 的**唯一真相来源**：`index.ts` 的路由用 RANK_SORT_KEYS 做白名单校验，
+ * 新增取值只改这一处即可。
+ *
+ * 历史教训：文档（README + `GET /` 的 endpoints 列表）一直写着支持 `ln1|ln2|ln3`
+ * （最近一次入选口径），但表里漏了这三个键 → `?? 'last_anchor'` 静默回落成
+ * 「按最近入选日排序」。而最近锚定日的票恰好都还没走到第 1 个交易日、`last_n*` 全是 null，
+ * 于是 `?sort=ln1` 返回的结果看起来就是「空值排在最前」，极具误导性。
+ * 现在：白名单校验 + 缺失即抛，不再有任何静默回落。
+ */
 const RANK_SORTS: Record<string, keyof StockRankRow> = {
   recent: 'last_anchor', // 默认：最近入选的在前
   first: 'first_anchor',
@@ -294,11 +306,17 @@ const RANK_SORTS: Record<string, keyof StockRankRow> = {
   secondary: 'secondary',
   conditional: 'conditional',
   excluded: 'excluded',
-  n1: 'n1_avg',
+  n1: 'n1_avg', // 历史平均口径
   n2: 'n2_avg',
   n3: 'n3_avg',
+  ln1: 'last_n1', // 最近一次入选口径
+  ln2: 'last_n2',
+  ln3: 'last_n3',
   code: 'code',
 };
+
+/** 合法 `?sort=` 取值，供路由做白名单校验（拼错时报 10003，而不是悄悄换个口径）。 */
+export const RANK_SORT_KEYS: string[] = Object.keys(RANK_SORTS);
 
 /** 一组数的算术平均（保留 1 位）；无样本返回 null。 */
 function mean(vals: number[]): number | null {
@@ -451,7 +469,11 @@ export async function rankStocks(
     last_n3: a.last_n3,
   }));
 
-  const col = RANK_SORTS[opts.sort ?? 'recent'] ?? 'last_anchor';
+  const sortKey = opts.sort ?? 'recent';
+  const col = RANK_SORTS[sortKey];
+  // 路由已做白名单校验；这里断言只为「万一有别的调用方绕过路由」时不再静默排错
+  // ——宁可 500 暴露出来，也不要悄悄换一个口径返回看似合理的顺序。
+  if (!col) throw new Error(`未知排序键 ${sortKey}，合法值：${RANK_SORT_KEYS.join(' / ')}`);
   const dir = (opts.order ?? 'desc').toLowerCase() === 'asc' ? 1 : -1;
   const limit = Math.min(Math.max(opts.limit ?? 1000, 1), 5000);
 
