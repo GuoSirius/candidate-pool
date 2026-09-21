@@ -89,7 +89,7 @@
 
 ### 表结构（带注释）
 
-建表脚本在 `db/schema.sql`，共 7 张表 + 9 个索引，覆盖「运行批次 / 入选记录 / 日线行情 / 股票档案 / 分组 / 备注」：
+建表脚本在 `db/schema.sql`，共 **10 张表 + 12 个索引**，覆盖「运行批次 / 入选记录 / 日线行情 / 股票档案 / 分组 / 备注 / 尾盘选股 / 结构元信息」：
 
 - `run_batch`：每次初筛（一个 anchor_date）一行汇总（全池数、各梯队数、K 线失败率、数据来源等）。
 - `pick_record`：每次运行 × 每只入选票一行，`UNIQUE(run_id, code)`，**同一只票跨多个运行自动成多行**，满足「不同时期被收录全部保留、可区分」的复盘需求。
@@ -103,8 +103,49 @@
 - `stock_base`：股票基础档案（名称 / 行业 / 题材 / 地域 / 主营 / 最赚钱业务），一票一档长期复用。
 - `watch_group` / `pick_group_rel`：自定义主题分组（如「军工」「低位补涨」），一只票可加入多组。
 - `stock_note`：按运行（anchor_date）或纯按票的评论 / 备忘。
+- `tail_run`：尾盘选股运行批次，`PRIMARY KEY (trade_date, mode)`，`mode = formal`（14:50 固定口径）/ `observe`（14:30 起观察口径）；`runs_json` / `stats_json` 存当日多次运行历史与初筛漏斗（JSON）。
+- `tail_pick`：尾盘选股候选，`PRIMARY KEY (trade_date, mode, code)`；六项打分在 `score_json`、尾盘段明细在 `tail_*`、收盘回填的 N1~N10 在 `fill_json`（P5 脚本写入，缺失时由 worker 从 `price_daily` 现算）。
+- `schema_meta`：**结构同步元信息，业务代码不读**。记 `schema_hash`（本库已应用的 `schema.sql` 指纹）与 `mig:<文件名>`（已执行的增量迁移），用于核对两端结构是否同版本。
+
+> ⚠️ 本节说的「10 张表」是 `schema.sql` 的期望结构；**代码里引用某张表不等于库里就有**。2026-09-21 线上四个尾盘页面全 500 就是因为 `tail_run` / `tail_pick` 只在代码与 schema.sql 里，两个库都没建。改完 schema 记得跑 `npm run db:migrate:both`（见上一节）。
 
 > **表 / 列注释**：SQLite 没有原生 `COMMENT` 语法，本项目用 SQL 行内注释（`--`）写在 `CREATE TABLE` 里。这些注释会**原样写入 `sqlite_master` 的建表原文**，在 DB Browser for SQLite / DBeaver 的「DDL / SQL」视图中可直接看到中文列说明，无需额外文档。所有时间字段统一为「北京时间字符串」`YYYY-MM-DD HH:mm:ss`（无 `Z`），由 `dayjs` 生成，彻底杜绝裸 `new Date().toISOString()` 带来的 `+8h` 时差。
+
+### 表 / 列 / 索引结构变更：一键同步（`npm run db:migrate`）
+
+**唯一真相源是 `db/schema.sql`** —— 想加表、加列、加索引，只改这一个文件，然后跑一条命令把两端补齐。代码里不要再写第二份 `CREATE TABLE`（历史事故就是这么来的：同一份 DDL 曾散落在 `db/schema.sql`、`eod/lib/store_d1.js`、`db/persist.js` 三处，且两条「自动应用」路径都是坏的）。
+
+| 命令 | 作用 | 什么时候用 |
+|------|------|------------|
+| `npm run db:migrate:dry` | **只打印差异，不写任何库** | 改完 schema.sql 先看一眼要动什么（默认只预览远程；加 `--local` / `--both` 可预览本地） |
+| `npm run db:migrate` | 同步**线上 D1**（默认目标；无 `CF_*` 凭据则提示跳过） | 线上表缺失 / 落后 |
+| `npm run db:migrate:local` | 同步**本地 `db/local.db`** | 本地表缺失 / 落后 |
+| `npm run db:migrate:both` | **两端一起**（推荐，日常就用这个） | 所有结构变更 |
+| `npm run db:selftest` | 跑结构同步的回归自测（零依赖，19 项断言） | 改动 `db/diff.js` / `db/migrate.js` 后 |
+
+执行是**差异驱动**，不是「整份重放」：先把 `schema.sql`（期望）与库中 `sqlite_master`（实际）做结构比对，**只补真正缺的东西** —— 缺表 `CREATE TABLE`、缺列 `ALTER TABLE ADD COLUMN`、缺索引 `CREATE INDEX`。之所以必须做差异识别：`CREATE TABLE IF NOT EXISTS` 对**已存在**的表是空操作，整份重放**永远补不上新增字段**（本项目已手工加过 `run_at`、`vol_ratio`，都是这么补的）。
+
+自动处理与需要人工介入的边界：
+
+| 变更 | 处理方式 |
+|------|----------|
+| 新增表 / 新增列 / 新增索引 | ✅ 自动执行（`ALTER TABLE ADD COLUMN` 对存量行补 `NULL` 或 `DEFAULT`） |
+| 新增列是主键 / `UNIQUE` / `NOT NULL` 且无 `DEFAULT` | ⚠️ 只**警告**不执行（SQLite 的 `ALTER` 不支持），需手写迁移 |
+| 改列定义（类型 / 约束） | ⚠️ 只警告不执行（SQLite 不支持直接改列，需重建表） |
+| 删列 / 删表 | ⚠️ 只警告不执行（涉及数据丢弃，**绝不静默删**） |
+
+上面这些「⚠️ 需人工」的变更，写成 `db/migrations/NNN-描述.sql`（如 `001-rebuild-pick_record.sql`），`db/migrate.*` 会按文件名顺序执行，并在 `schema_meta` 里记录 `mig:<文件名>` 保证**只跑一次**。目录当前为空（还没有需要重建表的变更），不存在时自动跳过。
+
+跑完会往 `schema_meta` 写一条 `schema_hash`（`schema.sql` 的 sha1 前 12 位），**两端 hash 相同 = 两端结构同版本**，一眼可核对：
+
+```bash
+# 服务端 / 本地都应是同一个 hash
+node db/query_local.js "SELECT key,value,updated_at FROM schema_meta"
+# 线上（D1）
+npx wrangler d1 execute candidate-pool --remote --command "SELECT * FROM schema_meta"
+```
+
+CI 兜底：`daily-screen.yml` 在入库前会跑一次结构同步，所以**即使忘了手动跑，第二天线上也会自动补齐**（容器内无本地库，故只作用于远程）。
 
 ### 本地开发流程
 
@@ -134,11 +175,16 @@ node db/query_local.js "SELECT code,name,tier,reason FROM pick_record WHERE code
    ```bash
    npx wrangler d1 create candidate-pool
    ```
-2. **建表**：把 `db/schema.sql` 在 D1 上执行一次（D1 兼容 SQLite 语法）。
-   **务必加 `--remote`**：`wrangler d1 execute` 默认跑 local 模式，会去 `wrangler.toml` 找 binding 而报错；加 `--remote` 才作用于真实远程库（按库名命中，无需配置文件）。
+2. **建表**：配好第 3 步的凭据后，跑一条命令按差异建表（推荐，幂等、可重复跑、顺带记录 `schema_hash`）：
+   ```bash
+   npm run db:migrate         # 只同步线上 D1
+   npm run db:migrate:both    # 线上 + 本地 db/local.db 一起（日常用这个）
+   ```
+   兜底方案（不依赖项目脚本，直接执行整份 `db/schema.sql`；**只对新库有效**，已存在的表补不上新增字段）：
    ```bash
    npx wrangler d1 execute candidate-pool --remote --file=db/schema.sql
    ```
+   > **务必加 `--remote`**：`wrangler d1 execute` 默认跑 local 模式，会去 `wrangler.toml` 找 binding 而报错；加 `--remote` 才作用于真实远程库（按库名命中，无需配置文件）。
 3. **配置凭据**：复制 `db/.env.example` 为 `db/.env`（已忽略，不入库），填入三个变量；或直接写入系统环境变量：
    | 变量 | 含义 | 获取位置 |
    |------|------|----------|
@@ -448,6 +494,8 @@ npm run dev            # 直连真实 D1（--remote），前提是已按上文�
 #   npx wrangler d1 execute candidate-pool --local --file=../db/schema.sql
 #   node ../db/backfill.js --local
 ```
+
+> ⚠️ 注意这里有**两个不同的「本地库」**，别混：`npx wrangler d1 execute --local` 操作的是 wrangler/miniflare 的本地 D1（存在 `worker/.wrangler/state`），只服务于 `npm run dev:local` 起的后端；而 `db/*.js` 脚本（`backfill.js --local`、`query_local.js`）读写的是仓库根的 `db/local.db`。**结构变更要同步的是后者**（`npm run db:migrate:local`）。
 
 > 这里的 `worker` 只起**本地 dev 后端**（`http://127.0.0.1:8787`）的作用，前端 `cd web && npm run dev` 会把 `/api` 代理过去。
 > 它不是发布形态——生产由 Pages Functions 承担，前端 `npm run dev` 也应对着真实数据读写（见上文「部署形态」）。
