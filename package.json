@@ -1,6 +1,6 @@
 {
   "name": "candidate-pool",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "A股短线选股工具包：次日候选池初筛（R01 量能验证突破 + R07 板块内补涨）与尾盘选股（14:50 口径），数据取自腾讯公开行情接口，输出单文件双语 HTML 报告",
   "bin": {
     "candidate-pool": "bin/candidate-pool.js",
