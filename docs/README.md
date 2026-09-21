@@ -6,9 +6,11 @@
 
 | 目录 | 主题 |
 |------|------|
-| `docs/eod-tail-screener/` | 尾盘选股（收盘前 10 分钟）新功能：需求 / 方案 / 计划 |
+| `docs/eod-tail-screener/` | 尾盘选股（收盘前 10 分钟）新功能：需求 / 方案 / 计划 / 上线后复盘 |
 | `docs/notes-groups/` | 评论（备注）与分组管理：可写能力方案 |
 | `docs/npm-publish/` | 独立发布（npm 包 / 免拉代码运行）：三方案对比与落地顺序 / 实施计划 |
+| `docs/ops/` | 定时任务与调度口径：双通道拓扑、尾盘三口径、落库目标、排查 |
+| `docs/storage/` | 数据存储与入库：本地 SQLite / Cloudflare D1、结构同步、用量限额 |
 
 ## 命名规范
 
@@ -30,3 +32,5 @@
 | [notes-groups/01-方案.md](notes-groups/01-方案.md) | 评论/分组：需求、接口清单、写鉴权方案、前端交互、边界 |
 | [npm-publish/02-方案.md](npm-publish/02-方案.md) | 独立发布：两种运行模式差异、边界清单、全量打包 / 只发尾盘 / npx github 三方案对比、落地顺序、已完成的可重定位层 |
 | [npm-publish/03-计划.md](npm-publish/03-计划.md) | 独立发布实施计划：方案 A 交付物、首次运行脚手架、发布链路、部署已解耦、向后兼容四条保票、npx 不 pin 版本、三道闸、踩坑、验证清单 |
+| [ops/01-方案.md](ops/01-方案.md) | 定时任务：本地 ↔ GitHub Actions 双通道拓扑、cron 只作触发、尾盘三口径（cut/observe/intraday）、落库双写、三种「看着跑了其实没跑」排查 |
+| [storage/01-方案.md](storage/01-方案.md) | 数据存储：两层存储与写入目标、两端一致性校验、D1 用量限额实测、10 张表说明、`npm run db:migrate` 差异驱动同步、两个「本地库」的区别 |
