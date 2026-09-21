@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError, BizCode } from '../api/client';
 import type { StockHistory, StockNote, NoteType, WatchGroup, PickRecord, Perf } from '../api/types';
 import { fmtNum, fmtPct, perfClass } from '../utils/format';
-import { HORIZONS, H_LABEL, HORIZON_NOTE_SHORT, type Horizon } from '../constants/glossary';
+import { HORIZONS, H_LABEL, type Horizon } from '../constants/glossary';
 import { goBack, backLabelOf } from '../utils/nav';
 import { useColumnSort, type SortValue } from '../utils/sort';
 import { writeToken } from '../utils/writeToken';
@@ -404,10 +404,8 @@ onMounted(() => {
       <section class="card" v-if="picks.length">
         <h2>入选后各周期表现（复盘）</h2>
         <p class="legend head">
-          口径：每次入选都以<b>该期入选价（锚定日收盘价）</b>为基准，取 N 个交易日后的收盘价相对它的涨跌幅。
-          每张卡对应一个周期，<b>样本</b> = 该票历史入选记录中「该周期已有数据」的条数；
-          <b>平均</b> = 这些样本的算术平均，<b>最佳 / 最差</b> = 同一批样本里的最大值 / 最小值。
-          三者都是跟「入选价」比，不是样本之间互相比。
+          口径：以<b>该期入选价（锚定日收盘价）</b>为基准取 N 个交易日后的涨跌幅；样本 / 平均 / 最佳 / 最差的定义见
+          <router-link to="/rules">规则释义</router-link>。
         </p>
         <div class="stat-row">
           <div class="stat" v-for="s in perfSummary" :key="s.h">
@@ -425,7 +423,6 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <p class="legend">距锚定日过近时后段周期暂无数据，显示 —；颜色惯例 红 = 正、绿 = 负。</p>
       </section>
 
       <!-- 各期入选与 N 日收益 -->
@@ -482,10 +479,7 @@ onMounted(() => {
           </table>
         </div>
         <p class="legend">
-          {{ HORIZON_NOTE_SHORT }}涨 = 红，跌 = 绿；数据缺失显示 —。
-          <b>点列头</b>可按锚定日 / 入选价 / 任一 N 周期排序（再点一次切换升降序），空值恒排在最后。
-          首列<b>序号</b>按当前展示顺序编号（排序后跟着重排）。
-          档位（重点 / 次级 / 条件 / 排除）与 R01 / R07 / R05 标签含义见
+          <b>点列头</b>可排序，空值恒排在最后；档位与 N 周期口径见
           <router-link to="/rules">规则释义</router-link>。
         </p>
       </section>

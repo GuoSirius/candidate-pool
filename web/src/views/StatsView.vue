@@ -12,8 +12,6 @@ import {
   H_SHORT,
   H_LONG,
   H_COMMON,
-  HORIZON_NOTE,
-  STAT_DEFS,
   timelineAvg,
   type Horizon,
 } from '../constants/glossary';
@@ -277,9 +275,8 @@ onMounted(load);
       <section class="block">
         <h2>各档命中率</h2>
         <p class="legend head">
-          {{ HORIZON_NOTE }}<br />
-          每格：<b>上行 = 胜率</b>（收益 &gt; 0 的占比），<b>下行 = 平均收益</b>（仅统计有数据的样本）；悬停可见样本数。颜色惯例
-          <b>红 = 正、绿 = 负</b>（A 股口径）。
+          每格：<b>上行 = 胜率</b>（收益 &gt; 0 的占比），<b>下行 = 平均收益</b>（悬停可见样本数）；
+          档位与指标口径见 <router-link to="/rules">规则释义</router-link>。
         </p>
         <div class="table-wrap">
           <table class="grid">
@@ -312,10 +309,6 @@ onMounted(load);
             </tbody>
           </table>
         </div>
-        <p class="legend">
-          档位含义见 <router-link to="/rules">规则释义</router-link>：重点（R01 全达标）/ 次级 / 条件 / 排除（仅 R07、R05 触发）；
-          「排除」档计入本表，仅代表未达 R01 梯队，不代表无信号。
-        </p>
       </section>
 
       <!-- 平均收益走势 -->
@@ -413,30 +406,9 @@ onMounted(load);
           </table>
         </div>
         <p class="legend">
-          明细默认按锚定日<b>倒序</b>（最新在上）；走势图横轴为时间正序（向右 = 更近）。
-          <b>点列头</b>可按锚定日 / 入选数 / 任一 N 周期排序（再点一次切换升降序），空值恒排在最后。
-          首列<b>序号</b>按当前展示顺序编号（排序后跟着重排）。
+          明细默认按锚定日<b>倒序</b>；<b>点列头</b>可排序，空值恒排在最后。指标与排序口径见
+          <router-link to="/rules">规则释义</router-link>。
         </p>
-      </section>
-
-      <!-- 统计口径 -->
-      <section class="block">
-        <h2>统计口径</h2>
-        <table class="grid">
-          <colgroup>
-            <col style="width: 20%" />
-            <col style="width: 80%" />
-          </colgroup>
-          <thead>
-            <tr><th>指标</th><th>含义</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="d in STAT_DEFS" :key="d.k">
-              <td>{{ d.t }}</td>
-              <td class="desc">{{ d.d }}</td>
-            </tr>
-          </tbody>
-        </table>
       </section>
 
       <p v-if="stats.total_picks === 0" class="hint">该区间暂无入选记录，可切换「近三月 / 全部」。</p>
