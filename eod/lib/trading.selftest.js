@@ -174,5 +174,83 @@ for (const t of ['09:40', '10:30', '11:20', '11:45', '12:30', '13:00', '13:05', 
     tm ? `segPct=${tm.segPct.toFixed(2)}% bars=${tm.bars}` : 'null（会被判 data_gap 剔除）');
 }
 
+console.log('\n[9] 落库口径：内部口径必须翻译成 D1/API 的 formal / observe');
+// 历史 bug（2026-09-21）：本地内部把「14:50 固定口径」叫 `cut`，落库时原样写进 D1 →
+//   · 记录页把正式运行显示成「观察」（前端 else 兜底）；
+//   · /api/tail/run?mode=cut 被 worker 拒成 10003「mode 只能为 formal / observe」；
+//   · 口径对照页找不到 formal 行 → 整页为空。
+{
+  const { d1Mode } = require('./store_d1');
+  check('cut → formal（14:50 固定口径的旧叫法）', d1Mode('cut') === 'formal', d1Mode('cut'));
+  check('formal → formal（幂等，重跑不会写成别的）', d1Mode('formal') === 'formal');
+  check('observe → observe', d1Mode('observe') === 'observe');
+  let threw = false;
+  try { d1Mode('intraday'); } catch (_) { threw = true; }
+  check('未知口径直接抛错（绝不往 D1 写第三种口径）', threw);
+}
+
+console.log('\n[10] 落库 SQL：列数 / 占位符数 / 参数数 必须三者一致，且列清单对齐 schema.sql');
+// 历史 bug（2026-09-21）：tail_pick 列清单 33 列但 VALUES 手写了 32 个 `?`
+//   → 每条候选插入报 `7500 32 values for 33 columns`；db/d1client 的 batch 是
+//     「分片 Promise.all」不是事务，tail_run 在第一批已提交 → 线上只剩运行记录、
+//     候选一条没有（网页主表 / 分行业明细 / 口径对照全空）。
+// 现在占位符由列清单派生，这里再把「列清单 vs schema.sql」钉住，
+// 防止 schema 加了列而 store_d1 没跟上（反向漂移同样会让插入失败）。
+{
+  const fs = require('fs');
+  const path = require('path');
+  const { SQL, COLS, buildStatements } = require('./store_d1');
+
+  for (const [name, sql] of Object.entries(SQL)) {
+    const cols = sql.match(/INSERT INTO \w+ \(([^)]*)\)/)[1].split(',').length;
+    const holders = sql.match(/VALUES \(([^)]*)\)/)[1].split(',').length;
+    check(`${name}：占位符数(${holders}) = 列数(${cols})`, holders === cols);
+  }
+
+  // 从 db/schema.sql（唯一真相源）解析建表列名
+  const schema = fs.readFileSync(path.join(__dirname, '..', '..', 'db', 'schema.sql'), 'utf8');
+  const schemaCols = (table) => {
+    const m = schema.match(new RegExp(`CREATE TABLE IF NOT EXISTS ${table} \\(([\\s\\S]*?)\\n\\);`));
+    if (!m) return null;
+    return m[1].split('\n')
+      .map((l) => l.replace(/--.*$/, '').trim())
+      .filter((l) => l && !/^(PRIMARY|UNIQUE|FOREIGN|CONSTRAINT|CHECK)\b/i.test(l))
+      .map((l) => l.split(/\s+/)[0].replace(/["`[\]]/g, ''));
+  };
+  for (const [table, colList] of [['tail_run', COLS.RUN_COLS], ['tail_pick', COLS.PICK_COLS]]) {
+    const fromSchema = schemaCols(table);
+    check(`${table}：列清单与 schema.sql 完全一致（顺序敏感）`,
+      fromSchema !== null && JSON.stringify(fromSchema) === JSON.stringify(colList),
+      fromSchema === null ? 'schema.sql 未解析到该表' : `schema=${fromSchema.length} 列 / 代码=${colList.length} 列`);
+  }
+
+  // 真造一份 doc 走 buildStatements，断言每条语句的 params 数与占位符数相等
+  const doc = {
+    tradeDate: '2026-01-01', mode: 'cut', cutAt: '1450', updatedAt: '2026-01-01 14:50:00',
+    runs: [{ at: '2026-01-01 14:50:00', runner: 'local' }],
+    stats: { candidateCount: 1, groupCount: 1, prePassCount: 2, snapshotCount: 3 },
+    records: {
+      sh600000: {
+        code: 'sh600000', name: '浦发银行', sector: '银行', board: 'sh', boardLabel: '上海',
+        price: 10, prevClose: 9.9, high: 10.1, chgPct: 1.01, turnover: 1.2, volRatio: 1.3,
+        volRatioEst: 1.4, floatCapYi: 100, avgPrice: 9.95, groupRank: 1, bestInGroup: true,
+        groupSize: 1, total: 88, sectorMedianChg: 0.5, sectorRank: 1, sectorTotal: 1,
+        tail: { segPct: 1.2, upRatio: 0.7, maxDrawdownPct: -0.3, priceVsAvgPct: 0.5, avgAtCut: 9.95, p0: 9.9, p1: 10, bars: [9.9, 10] },
+        score: { momentum: 25 }, fill: {},
+      },
+    },
+  };
+  const built = buildStatements(doc);
+  const stmts = [built.runStmt, ...built.pickStmts];
+  check(`buildStatements 产出 1 行运行 + 1 行候选`, stmts.length === 2);
+  const mismatch = stmts.filter((s) => {
+    const holders = s.sql.match(/VALUES \(([^)]*)\)/)[1].split(',').length;
+    return s.params.length !== holders;
+  });
+  check('每条的 params 数 = 占位符数', mismatch.length === 0,
+    mismatch.length ? `${mismatch.length} 条不匹配（首条 params=${mismatch[0].params.length}）` : '');
+  check('口径已翻译：buildStatements 里没有 cut', !JSON.stringify(built.runStmt.params).includes('cut'));
+}
+
 console.log(failed ? `\n自我检查失败：${failed} 项` : '\n全部通过');
 process.exit(failed ? 1 : 0);
