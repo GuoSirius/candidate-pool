@@ -39,15 +39,36 @@ const search = ref('');
 const pageSize = ref<number>(50);
 const page = ref(1);
 
-/** 六项子分：顺序固定，标签取中文；原始值已乘权重（0..权重）。 */
-const SCORE_KEYS: { key: string; label: string }[] = [
-  { key: 'tailMomentum', label: '动能' },
-  { key: 'volume', label: '量能' },
-  { key: 'position', label: '位置' },
-  { key: 'avgLine', label: '均线' },
-  { key: 'sector', label: '板块' },
-  { key: 'turnoverFit', label: '换手' },
+/**
+ * 六维子分按「这分是谁给的」分两组：
+ *   · 个股自身 65 分 = 动能 30 + 量能 20 + 位置 15 —— 这只票自己在走出来的证据，**重点看这组**；
+ *   · 环境与质量 35 分 = 板块 15 + 均线 10 + 换手 10 —— 板块与流动性给的背景分，靠它撑起来的高分不可信。
+ * 组内按权重降序（权重大的先看）；顺序即渲染顺序，原始值已乘权重（0..权重）。
+ * ⚠️ 与 eod/lib/report.js 的 SCORE_GROUPS 是同一份口径，改一处必须改另一处。
+ */
+const SCORE_GROUPS: {
+  key: string; label: string; max: number; cls: string;
+  keys: { key: string; label: string }[];
+}[] = [
+  {
+    key: 'self', label: '个股自身', max: 65, cls: 'self',
+    keys: [
+      { key: 'tailMomentum', label: '动能' },
+      { key: 'volume', label: '量能' },
+      { key: 'position', label: '位置' },
+    ],
+  },
+  {
+    key: 'ctx', label: '环境质量', max: 35, cls: 'ctx',
+    keys: [
+      { key: 'sector', label: '板块' },
+      { key: 'avgLine', label: '均线' },
+      { key: 'turnoverFit', label: '换手' },
+    ],
+  },
 ];
+/** 扁平化：归一化 / 取值循环用（顺序 = 渲染顺序）。 */
+const SCORE_KEYS = SCORE_GROUPS.flatMap((g) => g.keys);
 
 /** 复盘口径只算这 7 个检查点（N4/N6/N8 不落库）。 */
 const N_KEYS = ['n1', 'n2', 'n3', 'n5', 'n7', 'n9', 'n10'] as const;
@@ -186,7 +207,7 @@ onMounted(loadRuns);
 
 <template>
   <div class="tail">
-    <PageHeader title="尾盘候选" sub="盘中（14:50 截点）按尾盘动能等六维打分筛选的候选池">
+    <PageHeader title="尾盘候选" sub="盘中（14:50 截点）六维打分筛选：个股自身 65 分（重点看）+ 环境与质量 35 分">
       <template #actions>
         <router-link class="ghost-btn" to="/tail/review">尾盘复盘 →</router-link>
         <router-link class="ghost-btn" to="/tail/diff">口径对照 →</router-link>
@@ -266,7 +287,7 @@ onMounted(loadRuns);
     </section>
 
     <p class="legend" v-if="detail">
-      总分 = 六维子分加权求和；子分柱按该维度在列表中最大值归一。复盘红涨绿跌；N 列仅 N1/N2/N3/N5/N7/N9/N10 七个检查点。
+      分项得分分两组：<b class="lg-self">个股自身 65 分</b>（动能 30 + 量能 20 + 位置 15，重点看这组）· <b class="lg-ctx">环境与质量 35 分</b>（板块 15 + 均线 10 + 换手 10，靠它撑起来的高分不可信）。总分 = 两组之和；子分柱按该维度在列表中最大值归一。复盘红涨绿跌；N 列仅 N1/N2/N3/N5/N7/N9/N10 七个检查点。
     </p>
 
     <!-- 候选表（宽表：11 逻辑列 → 移动端横向滚动，不翻转） -->
@@ -292,7 +313,7 @@ onMounted(loadRuns);
             <th :class="{ sortable: true, sorted: pickSortKey === 'name' }"><button class="th-btn" @click="togglePickSort('name')">名称<span class="arrow">{{ pickArrow('name') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'sector' }"><button class="th-btn" @click="togglePickSort('sector')">板块<span class="arrow">{{ pickArrow('sector') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'total' }"><button class="th-btn" @click="togglePickSort('total')">总分<span class="arrow">{{ pickArrow('total') }}</span></button></th>
-            <th>六维分项</th>
+            <th>分项得分<span class="thsub">自身 65 · 环境 35</span></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'chg_pct' }"><button class="th-btn" @click="togglePickSort('chg_pct')">涨跌幅<span class="arrow">{{ pickArrow('chg_pct') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'vol_ratio' }"><button class="th-btn" @click="togglePickSort('vol_ratio')">量比<span class="arrow">{{ pickArrow('vol_ratio') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'turnover' }"><button class="th-btn" @click="togglePickSort('turnover')">换手率<span class="arrow">{{ pickArrow('turnover') }}</span></button></th>
@@ -311,11 +332,14 @@ onMounted(loadRuns);
             <td class="name" data-label="名称">{{ p.name ?? '—' }}</td>
             <td class="sector" data-label="板块">{{ p.sector ?? '—' }}</td>
             <td class="num total" data-label="总分">{{ fmtNum(p.total) }}</td>
-            <td class="scores" data-label="六维分项">
-              <div class="scrow" v-for="s in SCORE_KEYS" :key="s.key">
-                <span class="scl">{{ s.label }}</span>
-                <span class="scbar"><i :style="{ width: scorePct(p, s.key) + '%' }"></i></span>
-                <span class="scv">{{ fmtNum(scoreVal(p, s.key)) }}</span>
+            <td class="scores" data-label="分项得分">
+              <div class="scgrp" v-for="g in SCORE_GROUPS" :key="g.key" :class="'g-' + g.cls">
+                <div class="scgcap"><span>{{ g.label }}</span><span>{{ g.max }}</span></div>
+                <div class="scrow" v-for="s in g.keys" :key="s.key">
+                  <span class="scl">{{ s.label }}</span>
+                  <span class="scbar"><i :style="{ width: scorePct(p, s.key) + '%' }"></i></span>
+                  <span class="scv">{{ fmtNum(scoreVal(p, s.key)) }}</span>
+                </div>
               </div>
             </td>
             <td class="num" data-label="涨跌幅" :class="perfClass(p.chg_pct)">{{ fmtPct(p.chg_pct) }}</td>
@@ -397,12 +421,15 @@ onMounted(loadRuns);
 .clear-sort:hover { text-decoration: underline; }
 
 .legend { color: var(--muted); font-size: 12px; line-height: 1.75; margin: 0; }
+.legend .lg-self { color: var(--accent); }
+.legend .lg-ctx { color: var(--muted); }
 
 /* 宽表：移动端不翻转，横向滚动 */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
 .grid { width: 100%; min-width: 920px; border-collapse: collapse; font-size: 12.5px; }
 .grid th, .grid td { padding: 8px 7px; text-align: left; overflow-wrap: anywhere; vertical-align: top; }
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; line-height: 1.3; white-space: nowrap; }
+.grid thead th .thsub { display: block; font-size: 10px; font-weight: 400; color: var(--muted); }
 .grid tbody tr { border-top: 1px solid var(--border); }
 .grid tbody tr:hover { background: rgba(31,111,235,0.06); }
 .grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
@@ -418,8 +445,17 @@ onMounted(loadRuns);
 .flat { color: var(--text); }
 .muted { color: var(--muted); }
 
-/* 六维分项：竖向 6 行 slim，label + 迷你柱 + 值 */
+/* 六维分项：竖向 slim 条，按「个股自身 65 / 环境质量 35」切成两块 ——
+   左栏 2px 竖线 + 组标题行，让「哪几个子分该当真」不靠读文字也能看出来 */
 .scores { white-space: nowrap; }
+.scgrp { padding-left: 6px; border-left: 2px solid var(--border); }
+.scgrp + .scgrp { margin-top: 5px; }
+.scgrp.g-self { border-left-color: var(--accent); }
+.scgcap { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; line-height: 1.6; letter-spacing: 0.02em; }
+.scgrp.g-self .scgcap { color: var(--accent); font-weight: 700; }
+.scgrp.g-ctx .scgcap { color: var(--muted); }
+.scgrp.g-self .scv { font-weight: 600; }
+.scgrp.g-ctx .scbar i { background: var(--muted); }
 .scrow { display: grid; grid-template-columns: 28px 1fr 34px; align-items: center; gap: 4px; line-height: 1.5; }
 .scl { font-size: 11px; color: var(--muted); }
 .scbar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }

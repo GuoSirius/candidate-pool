@@ -22,14 +22,53 @@ function pct(n) { return (n == null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') +
 function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + ' 亿'; }
 function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-const SCORE_COLS = [
-  ['tailMomentum', '尾盘动能', 'Tail momentum'],
-  ['volume', '量能', 'Volume'],
-  ['position', '位置', 'Position'],
-  ['avgLine', '均价线', 'VWAP'],
-  ['sector', '板块', 'Sector'],
-  ['turnoverFit', '换手', 'Turnover'],
+/*
+ * 六维分项按「这分是谁给的」分两组（2026-09-21）：
+ *   · 个股自身 65 分 = 尾盘动能 30 + 量能 20 + 位置 15 —— 这只票「自己在走」的证据，**重点看这组**；
+ *   · 环境与质量 35 分 = 板块 15 + 均价线 10 + 换手 10 —— 板块与流动性给的背景分。
+ * 只看总分会被「板块热 + 换手够」抬高分数骗到，故两组在表头/底色上必须可分辨。
+ * 组内按权重降序（权重大的先看）—— 顺序即渲染顺序。
+ * ⚠️ 与 web/src/views/TailView.vue 的 SCORE_GROUPS 是同一份口径，改一处必须改另一处。
+ */
+const SCORE_GROUPS = [
+  {
+    key: 'self', cls: 'self', max: 65,
+    zh: '个股自身 · 重点看（65 分）', en: 'The stock itself · focus (65)',
+    cols: [
+      ['tailMomentum', '尾盘动能', 'Tail momentum'],
+      ['volume', '量能', 'Volume'],
+      ['position', '位置', 'Position'],
+    ],
+  },
+  {
+    key: 'ctx', cls: 'ctx', max: 35,
+    zh: '环境与质量（35 分）', en: 'Context &amp; quality (35)',
+    cols: [
+      ['sector', '板块', 'Sector'],
+      ['avgLine', '均价线', 'VWAP'],
+      ['turnoverFit', '换手', 'Turnover'],
+    ],
+  },
 ];
+
+/** 扁平化后的六列（顺序 = 渲染顺序），供行内单元格逐个取值。 */
+const SCORE_COLS = SCORE_GROUPS.flatMap((g) => g.cols);
+/** 与 SCORE_COLS 一一对应的单元格 class：分组底色 + 每组首列加左分隔线。 */
+const SCORE_CELL_CLS = SCORE_GROUPS.flatMap((g) =>
+  g.cols.map((_, i) => `num sc-${g.cls}${i === 0 ? ' sc-start' : ''}`));
+
+/** 两级表头第一行：两个分组的合并标题（含组权重，一眼看出哪个是重点） */
+function scoreHeadTop() {
+  return SCORE_GROUPS
+    .map((g) => `<th colspan="${g.cols.length}" class="grp grp-${g.cls}">${b(g.zh, g.en)}</th>`)
+    .join('');
+}
+/** 两级表头第二行：六项子分列名 */
+function scoreHeadSub() {
+  return SCORE_GROUPS.map((g) =>
+    g.cols.map(([, zh, en], i) => `<th class="grp-sub grp-${g.cls}${i === 0 ? ' sc-start' : ''}">${b(zh, en)}</th>`).join(''))
+    .join('');
+}
 
 /** 单条候选的行（用于 TOP 表 / 分组卡片） */
 function rowHtml(c, i, cfg, withBreakdown) {
@@ -41,7 +80,7 @@ function rowHtml(c, i, cfg, withBreakdown) {
     tagBits.push(`<span class="tag gap">${b('拉升不连贯', 'choppy tail')}</span>`);
   }
   const cells = withBreakdown
-    ? SCORE_COLS.map(([k]) => `<td>${num(c.score ? c.score[k] : null, 1)}</td>`).join('')
+    ? SCORE_COLS.map(([k], idx) => `<td class="${SCORE_CELL_CLS[idx]}">${num(c.score ? c.score[k] : null, 1)}</td>`).join('')
     : '';
   return `<tr>
     <td>${i + 1}</td>
@@ -95,6 +134,19 @@ const CSS = `  :root {
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: #fefce8; }
+  /* 六维分项分两组：表头两级 + 组底色 + 组首左分隔线，让「重点看哪组」不用读文字 */
+  th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
+  th.grp-self { background: #fed7aa; color: #7c2d12; font-weight: 700; }
+  th.grp-ctx { background: #e2e8f0; color: #475569; }
+  th.grp-sub.grp-self { background: #fff7ed; color: var(--accent); }
+  th.grp-sub.grp-ctx { background: #f1f5f9; color: var(--slate); }
+  th.sc-start, td.sc-start { border-left: 2px solid var(--border); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.sc-self { background: rgba(217, 119, 6, 0.06); }
+  td.sc-ctx { background: rgba(100, 116, 139, 0.05); }
+  .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: #57534e; background: #fff7ed; border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
+  .score-note .sn-self { color: var(--accent); }
+  .score-note .sn-ctx { color: var(--slate); }
   td.wrap { white-space: normal; min-width: 150px; }
   td .src { display: block; color: var(--slate); font-size: 0.72rem; }
   details { margin-top: 10px; }
@@ -136,11 +188,19 @@ function buildHTML(m) {
 
   // ---- TOP N 表 ----
   const topRows = top.map((c, i) => rowHtml(c, i, cfg, true)).join('');
-  const topHead = `<tr><th>#</th><th>${b('标的', 'Name')}</th><th>${b('行业', 'Industry')}</th>
-    <th>${b('涨幅', 'Chg')}</th><th>${b('尾盘段', 'Tail seg')}</th><th>${b('量比', 'Vol ratio')}</th>
-    <th>${b('换手', 'Turnover')}</th><th>${b('流通值', 'Float cap')}</th>
-    ${SCORE_COLS.map(([, zh, en]) => `<th>${b(zh, en)}</th>`).join('')}
-    <th>${b('总分', 'Total')}</th><th>${b('标记', 'Flags')}</th></tr>`;
+  // 两级表头：第一行把六个子分切成「个股自身 65 / 环境与质量 35」两块，
+  // 第一行列宽靠 colspan 自动对齐到下面的子分列，不需要额外配 colgroup。
+  const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
+    <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
+    <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('流通值', 'Float cap')}</th>
+    ${scoreHeadTop()}
+    <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标记', 'Flags')}</th></tr>
+    <tr>${scoreHeadSub()}</tr>`;
+
+  // 读分说明：不解释这一步，用户只会看到一堆等宽数字，不知道哪几个该当真。
+  const scoreNote = `<p class="score-note">${b(
+    `六维分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 65 分</b>（尾盘动能 30 + 量能 20 + 位置 15）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 35 分</b>（板块 15 + 均价线 10 + 换手 10）—— 板块与流动性给的背景分，靠它撑起来的高分不可信。`,
+    `<b class='sn-self'>The stock itself — 65 pts</b> (tail momentum 30 + volume 20 + position 15): evidence this name moved on its own — <b>this is the group to read first</b>. <b class='sn-ctx'>Context &amp; quality — 35 pts</b> (sector 15 + VWAP 10 + turnover 10): background handed over by the sector and by liquidity; a high total carried by this group alone is not trustworthy.`)}</p>`;
 
   // ---- 分组卡片 ----
   const groupCards = groups.map((g) => {
@@ -213,8 +273,9 @@ function buildHTML(m) {
     <ul>${conclusion.map((c) => `<li>${c}</li>`).join('')}</ul>
   </div>
 
-  <h2>${b(`TOP ${top.length} 候选（含六项分项得分）`, `Top ${top.length} Candidates (with score breakdown)`)}</h2>
-  ${top.length ? `<div class="table-wrap"><table><thead>${topHead}</thead><tbody>${topRows}</tbody></table></div>`
+  <h2>${b(`TOP ${top.length} 候选（分项得分：个股自身 65 + 环境质量 35）`,
+    `Top ${top.length} Candidates (breakdown: stock 65 + context 35)`)}</h2>
+  ${top.length ? `${scoreNote}<div class="table-wrap"><table><thead>${topHead}</thead><tbody>${topRows}</tbody></table></div>`
     : `<div class="card">${b('本时段无满足全部门槛的候选。', 'No candidate passed all gates in this window.')}</div>`}
 
   <h2>${b('分行业明细', 'By Industry')}</h2>
