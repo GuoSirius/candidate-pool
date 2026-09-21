@@ -376,6 +376,19 @@ app.delete(
 
 app.onError((err, c) => {
   console.error('[unhandled error]', err);
+  const msg = String((err as Error)?.message ?? err);
+  // 「库里没有这张表/这一列」= 结构与代码不同步，是最常见也最难从 internal error 看出的故障。
+  // 2026-09-21：线上缺 tail_run / tail_pick，四个尾盘页面全 500，响应体只有一句 internal error，
+  // 只能靠翻源码猜。这里直接把它翻译成可操作的提示，别再让下一次排查重走一遍。
+  if (/no such (table|column)/i.test(msg)) {
+    return fail(
+      c,
+      `数据库结构与代码不一致：${msg}。请执行 npm run db:migrate 同步线上 D1`,
+      BizCode.ERR_INTERNAL,
+      null,
+      500,
+    );
+  }
   return fail(c, 'internal error', BizCode.ERR_INTERNAL, null, 500);
 });
 

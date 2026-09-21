@@ -31,6 +31,14 @@ permissions:
 jobs:
   screen:
     runs-on: ubuntu-latest
+    # CF_* 提到 job 级：`if: env.X != ''` 只能可靠读到 workflow / job 级 env。
+    # 原先把这三个写在各个 step 自己的 env 里、又用同一步骤的 if 去判它，
+    # 而「step 自身 env 在 if 求值时是否已生效」官方没有保证（见 Contexts 可用性表），
+    # 属于隐患 —— 一旦恒为假，结构同步与入库都会被静默跳过。
+    env:
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -123,6 +131,19 @@ jobs:
           fi
           cd ..
           git worktree remove _artifacts --force
+
+      # -----------------------------------------------------------------------
+      # 结构同步：把 db/schema.sql（唯一真相源）幂等应用到生产 D1 —— 只补缺的表 / 索引，
+      # 已存在的一律不动，可无限重复执行。
+      # 为什么必须有这一步（2026-09-21 事故）：schema.sql 改了之后，原先没有任何自动
+      # 应用路径（本地 sqlite 只在「缺 run_batch 表」时才建表、远程完全靠人工
+      # wrangler d1 execute），于是新加的 tail_run / tail_pick 线上从未被创建，
+      # /api/tail/* 全部 no such table → 四个页面 500。
+      # 位置刻意放在「报告生成 + 产物提交」之后：结构问题不会拖累当天报告的产出。
+      # -----------------------------------------------------------------------
+      - name: Apply schema to D1 (结构同步)
+        if: ${{ env.CF_API_TOKEN != '' }}
+        run: node db/migrate.js
 
       # -----------------------------------------------------------------------
       # 入库同步：把当日（及全部历史）快照规范化写入 Cloudflare D1（生产存储）。
