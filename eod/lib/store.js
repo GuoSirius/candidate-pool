@@ -48,6 +48,9 @@ function toRecord(c) {
       p0: c.tail.p0,
       p1: c.tail.p1,
       bars: c.tail.bars,
+      // 实际取数窗口（盘中模式的滚动窗口靠它才可回溯；正式口径固定 1430→1450）
+      segFrom: c.tail.segFromUsed ?? c.tail.segFrom ?? null,
+      cut: c.tail.cut ?? null,
     } : null,
     score: c.score,
     total: c.total,
@@ -59,9 +62,39 @@ function toRecord(c) {
   };
 }
 
-function dayFile(cfg, tradeDate, mode, cutHHMM) {
-  const base = mode === 'observe' ? `eod-${tradeDate}-obs${cutHHMM}` : `eod-${tradeDate}`;
-  return path.join(__dirname, '..', cfg.store.dataDir, `${base}.json`);
+/**
+ * 文件名后缀（不含扩展名）。
+ *   正式  (cut)      → ''
+ *   观察  (observe)  → '-obs<HHMM>'                 ← 由定时任务在固定时点触发，一天至多 1~2 个
+ *   盘中  (intraday) → '-intraday'                  ← **一天一个文件**，多次运行靠 runs[] 留痕
+ *                      '-intraday<HHMM>-w<分钟>'（stamp=true）
+ *
+ * 为什么盘中默认不按时点建文件：盘中模式是「随手看一眼」，一天可能跑十几次，
+ * 按时点命名会一天生成十几个 JSON + 十几个 HTML，目录很快失控；而它的口径本身
+ * 随窗口滚动，不同时刻的结果**本来就不可横向比较**，逐个留档没有复盘价值。
+ * 真正需要留痕的是「跑了几次、每次什么口径、多少候选」—— 那正是 runs[] 的职责。
+ * 需要完整保留某一次时显式加 --stamp；stamp 模式下连窗口长度一起写进文件名，
+ * 因为「对比 20 分钟 vs 30 分钟窗口」正是 stamp 的主要用途（同名会互相覆盖）。
+ */
+function daySuffix(mode, cutHHMM, { stamp = false, segMinutes = null } = {}) {
+  if (mode === 'observe') return `-obs${cutHHMM}`;
+  if (mode === 'intraday') {
+    if (!stamp) return '-intraday';
+    return `-intraday${cutHHMM}${segMinutes ? `-w${segMinutes}` : ''}`;
+  }
+  return '';
+}
+
+/**
+ * 存档文件名（数据 JSON）。
+ *   正式  (cut)      → eod-<日>.json            ← 唯一被 D1 同步 / 复盘引用的口径
+ *   观察  (observe)  → eod-<日>-obs<HHMM>.json
+ *   盘中  (intraday) → eod-<日>-intraday.json   （--stamp 时带时点与窗口）
+ * 盘中必须另存：它的「尾盘段」是滚动窗口近似，与正式口径不是一回事，
+ * 若写进正式文件会把当天的正式结果覆盖成假的 14:50 口径。
+ */
+function dayFile(cfg, tradeDate, mode, cutHHMM, opts) {
+  return path.join(__dirname, '..', cfg.store.dataDir, `eod-${tradeDate}${daySuffix(mode, cutHHMM, opts)}.json`);
 }
 
 /** 读取某交易日的正式存档（无则 null） */
@@ -73,12 +106,16 @@ function loadDay(cfg, tradeDate) {
 
 /**
  * 保存一次运行结果（幂等）。
+ * @param {object} p
+ *   - segFrom    尾盘段起点 'HHMM'（盘中模式会随之滚动，存进 runs[] 才能回溯口径）
+ *   - segMinutes 盘中窗口长度（分钟）；正式/观察为 null
+ *   - stamp      盘中模式下是否在文件名里带上时点（默认 false = 一天一个文件）
  * @returns {{file:string, recordCount:number, runCount:number, replacedFill:number}}
  */
-function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner }) {
+function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null, segMinutes = null, stamp = false }) {
   const dir = path.join(__dirname, '..', cfg.store.dataDir);
   fs.mkdirSync(dir, { recursive: true });
-  const file = dayFile(cfg, tradeDate, mode, cutHHMM);
+  const file = dayFile(cfg, tradeDate, mode, cutHHMM, { stamp, segMinutes });
 
   const old = fs.existsSync(file) ? (() => {
     try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
@@ -88,6 +125,10 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner }) {
     at: nowBJ(),
     mode,
     cutAt: cutHHMM,
+    // 尾盘段起点与窗口长度：正式/观察恒为 1430；盘中是滚动窗口，必须记下来，
+    // 否则事后看 runs[] 只知道「11:20 跑过一次」，不知道那次用的是哪一段。
+    segFrom,
+    segMinutes,
     candidateCount: result.candidates.length,
     groupCount: result.groups.length,
     prePassCount: result.stats.prePassCount,
@@ -151,4 +192,4 @@ function applyFill(cfg, tradeDate, patch) {
   return { updated, missing };
 }
 
-module.exports = { saveRun, loadDay, applyFill, toRecord };
+module.exports = { saveRun, loadDay, applyFill, toRecord, dayFile, daySuffix };

@@ -11,12 +11,27 @@
  *
  * 用法：
  *   node eod/tail_screener.js                          # 正常运行（受时段限制）
+ *   node eod/tail_screener.js --intraday               # 盘中模式：14:30 前也可跑，段=最近 20 分钟
+ *   node eod/tail_screener.js --intraday --stamp        # 盘中模式并在文件名里保留时点
+ *                                                      #   默认**不带时点**（一天一个文件，多次运行靠 runs[] 留痕）；
+ *                                                      #   要对比不同窗口/不同时刻的完整 records 时才加 --stamp。
+ *   node eod/tail_screener.js --intraday --seg-minutes 30
+ *                                                      # 盘中模式的段长改用 30 分钟（默认 20）
+ *                                                      #   注意：段长变了，尾盘段门槛（tailSegMinPct=0.5）
+ *                                                      #   与满分线（2.0%）是按 20 分钟标定的，跨窗口
+ *                                                      #   比较前先看 tail.config.js 的注释。
  *   node eod/tail_screener.js --now "2026-09-18 14:55" # 指定时刻（测试 / 补跑）
  *   node eod/tail_screener.js --force                  # 忽略时段，按 14:50 口径取数
  *   node eod/tail_screener.js --no-notify              # 不推送（测试用）
  *   node eod/tail_screener.js --replay data/eod-2026-09-18.json
  *                                                      # 离线回放：从存档重建报告，不抓行情
  *   node eod/tail_screener.js --json                   # stdout 输出机器可读摘要
+ *
+ * 时段守卫（默认保留，别去掉）：
+ *   不加参数时，14:30 之前一律「未到尾盘观察时点」→ 跳过且不产出任何文件。
+ *   这是为定时任务设计的护栏（避免上午空跑推送 0 候选）。要盘中随手看一眼，
+ *   用 --intraday：它**自动**关闭 D1 同步与推送，并另存 eod-<日>-intraday<HHMM>.json，
+ *   绝不覆盖当天的正式口径文件。
  * ---------------------------------------------------------------------------
  */
 
@@ -27,7 +42,7 @@ const cfg = require('./tail.config');
 const { sessionState, estimateFullDayVolRatio, nowBjt } = require('./lib/trading');
 const market = require('./lib/market');
 const { buildCandidates } = require('./lib/screen');
-const { saveRun, loadDay } = require('./lib/store');
+const { saveRun, loadDay, daySuffix } = require('./lib/store');
 const { syncTailRun } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
@@ -42,11 +57,26 @@ const OPT = {
   now: argOf('--now'),
   force: argv.includes('--force'),
   wait: argv.includes('--wait'),
+  intraday: argv.includes('--intraday'),
+  segMinutes: Number(argOf('--seg-minutes')) || null,
+  stamp: argv.includes('--stamp'),
   noNotify: argv.includes('--no-notify'),
   json: argv.includes('--json'),
   noD1: argv.includes('--no-d1'),
   replay: argOf('--replay'),
 };
+
+/**
+ * 盘中模式（--intraday）是**只读自查**用途：口径本身是滚动窗口近似，
+ * 不是当日的正式尾盘结果。故强制关掉「外发」两条链路，避免把近似值
+ * 当成正式数据写进 D1（网页 /api/tail/* 会读它）或推送到微信/邮箱。
+ * 想改这个行为前先想清楚：D1 的 tail_run/tail_pick 只有 formal/observe 两种口径，
+ * 盘中数据一旦写进去，复盘页会把它当成正式记录参与对比。
+ */
+if (OPT.intraday) {
+  OPT.noD1 = true;
+  OPT.noNotify = true;
+}
 
 /** 运行环境标识：GitHub Actions runner 里 GITHUB_ACTIONS=true */
 const RUNNER = process.env.GITHUB_ACTIONS ? 'github' : 'local';
@@ -123,7 +153,7 @@ async function run() {
     : nowBjt();
 
   // 第一遍：本地时钟粗筛（还没行情，marketDate 未知）
-  let ss = sessionState({ cfg, now, force: OPT.force });
+  let ss = sessionState({ cfg, now, force: OPT.force, intraday: OPT.intraday, segMinutes: OPT.segMinutes });
   log(`[时段] ${ss.reason}`);
   if (!ss.ok) {
     // 非交易日静默跳过（不告警，这是正常情况；Q16 只要求「失败」告警）
@@ -140,12 +170,14 @@ async function run() {
   log(`      快照 ${snap.meta.valid} 只（交易日 ${snap.meta.marketDate}，${(snap.meta.elapsedMs / 1000).toFixed(1)}s）`);
 
   // 第二遍：用行情日期终筛（休市日行情时间戳不推进 → marketDate != today）
-  ss = sessionState({ cfg, now, marketDate: snap.meta.marketDate, force: OPT.force });
+  ss = sessionState({ cfg, now, marketDate: snap.meta.marketDate, force: OPT.force, intraday: OPT.intraday, segMinutes: OPT.segMinutes });
   log(`[时段] ${ss.reason}`);
   if (!ss.ok) { log('[结束] 跳过本次运行'); return { skipped: ss.reason }; }
 
   // 2. 初筛
-  const segFrom = cfg.session.observeFrom.replace(':', '');
+  // 尾盘段起点一律取 ss.segFrom：正式/观察 = 固定 1430，盘中 = 滚动窗口起点。
+  // 不要再回退到 cfg.session.observeFrom —— 那样盘中模式会去找不存在的 14:30 K 线 → 0 候选。
+  const segFrom = ss.segFrom || cfg.session.observeFrom.replace(':', '');
   const cutHHMM = ss.cutTime.replace(':', '');
   log('[2/4] 初筛过滤…');
   const { preFilter } = require('./lib/screen');
@@ -168,7 +200,8 @@ async function run() {
   for (const c of result.candidates) c.volRatioEst = estimateFullDayVolRatio(c.volRatio, ss.elapsed);
 
   return emitResult({
-    tradeDate: ss.tradeDate, mode: ss.mode, cutHHMM, segFrom, result, meta: snap.meta, _t0: t0,
+    tradeDate: ss.tradeDate, mode: ss.mode, cutHHMM, segFrom,
+    segMinutes: ss.segMinutes ?? null, result, meta: snap.meta, _t0: t0,
   });
 }
 
@@ -184,12 +217,15 @@ function map() {
 
 /** 落库 + 报告 + 通知（live 与 replay 共用） */
 async function emitResult(p) {
-  const { tradeDate, mode, cutHHMM, segFrom, result, meta } = p;
+  const { tradeDate, mode, cutHHMM, segFrom, segMinutes, result, meta } = p;
 
   // 落库
   let saved = null;
   if (!p.skipStore) {
-    saved = saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner: RUNNER });
+    saved = saveRun({
+      cfg, tradeDate, mode, cutHHMM, result, runner: RUNNER,
+      segFrom, segMinutes, stamp: OPT.stamp,
+    });
     log(`[落库] ${path.basename(saved.file)}（${saved.recordCount} 条 / 第 ${saved.runCount} 次运行）`);
 
     // 同步到 D1（网页 /api/tail/* 的数据源）；无 CF_* 凭据或 --no-d1 时跳过本地 JSON 仍保留
@@ -204,7 +240,7 @@ async function emitResult(p) {
   // 报告
   const reportDir = path.join(__dirname, cfg.store.reportDir);
   fs.mkdirSync(reportDir, { recursive: true });
-  const suffix = mode === 'observe' ? `-obs${cutHHMM}` : '';
+  const suffix = daySuffix(mode, cutHHMM, { stamp: OPT.stamp, segMinutes });
   const reportFile = path.join(reportDir, `eod-${tradeDate}${suffix}.html`);
   fs.writeFileSync(reportFile, buildHTML({
     cfg, tradeDate, mode, cutHHMM, segFrom, result, meta, runner: RUNNER,

@@ -221,27 +221,46 @@ function barAt(rows, hhmm) {
   return rows.find((r) => r.t === hhmm) || null;
 }
 
+/** 起点 K 线的时间容差（分钟）：缺失时最多向前回退这么多，超过仍判数据不足 */
+const SEG_START_LAG_MIN = 3;
+
+/** 'HHMM' -> 当日分钟数 */
+function hhmmToMinOfDay(hhmm) {
+  const s = String(hhmm);
+  return (+s.slice(0, 2)) * 60 + (+s.slice(2, 4));
+}
+
 /**
  * 计算尾盘段指标（FR-04 的核心）。
  *
  * 段区间 segFrom → cut：
- *   - cut 通常取 '1450'（固定口径）；观察模式下取「当前时点」对应的最后一条，
- *     并在报告里标注口径未固定。
+ *   - cut 通常取 '1450'（固定口径）；观察模式取「当前时点」；盘中模式（--intraday）
+ *     取「当前已成交的最后一分钟」，且 segFrom 变成「cut 往前 segMinutes 分钟」的滚动窗口。
  *   - 起点用 segFrom 那根 K 线的**收盘价**（不是开盘价）：尾盘动能衡量的是
  *     「14:30 那一刻之后涨了多少」，用收盘价才能和 cut 端的收盘价同口径。
  *
  * @returns {object|null} 数据不足（起点或终点缺失）返回 null，调用方记为 data_gap
  */
 function tailMetrics(rows, code, cutHHMM, segFrom) {
-  const p0 = barAt(rows, segFrom);
+  // 起点：优先精确命中 segFrom；缺失时向前回退，但**回退幅度不得超过 SEG_START_LAG_MIN**。
+  // 为什么允许回退：分时接口偶有一两分钟无数据，此时把整只票判为 data_gap 是过度惩罚，
+  // 而起点差 1–3 分钟对「段涨幅」的影响远小于被整只丢掉。正式口径下 14:30 通常存在，
+  // 故行为不变（有则精确命中）；盘中模式的滚动起点才真正依赖这条容错。
+  let p0 = barAt(rows, segFrom);
+  if (!p0) {
+    const back = barAtOrBefore(rows, segFrom);
+    const lag = back ? hhmmToMinOfDay(segFrom) - hhmmToMinOfDay(back.t) : Infinity;
+    if (back && lag >= 0 && lag <= SEG_START_LAG_MIN) p0 = back;
+  }
   const p1 = barAtOrBefore(rows, cutHHMM);
-  if (!p0 || !p1 || p1.t < segFrom || !(p0.price > 0)) return null;
+  if (!p0 || !p1 || p1.t < p0.t || !(p0.price > 0)) return null;
 
   const lot = volLotSize(code);
   const segPct = ((p1.price - p0.price) / p0.price) * 100;
 
   // 段内明细：上涨分钟占比 + 最大回撤（判断是「一路走高」还是「尾盘一根拉起来」）
-  const win = rows.filter((r) => r.t >= segFrom && r.t <= cutHHMM);
+  // 窗口起点用 p0.t（实际命中的那根），而不是请求的 segFrom —— 两者在发生回退时不同。
+  const win = rows.filter((r) => r.t >= p0.t && r.t <= cutHHMM);
   let up = 0;
   let down = 0;
   let peak = -Infinity;
@@ -262,6 +281,7 @@ function tailMetrics(rows, code, cutHHMM, segFrom) {
 
   return {
     segFrom,
+    segFromUsed: p0.t,   // 实际命中的起点（回退过则与 segFrom 不同，报告/存档用来看真实口径）
     cut: p1.t,
     p0: p0.price,
     p1: p1.price,

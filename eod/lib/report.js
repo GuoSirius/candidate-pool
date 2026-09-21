@@ -110,9 +110,14 @@ const CSS = `  :root {
 function buildHTML(m) {
   const { cfg, tradeDate, mode, cutHHMM, segFrom, result, meta, runner } = m;
   const { candidates, groups, top, stats } = result;
+  // 三种口径必须在报告顶部一眼可辨：盘中模式的「尾盘段」是滚动窗口近似，
+  // 若标签写得像正式结果，复盘时会把近似值当基准（口径混淆）。
   const modeLabel = mode === 'observe'
     ? b(`观察模式（口径 ${cutHHMM}，未固定）`, `observe mode (cut ${cutHHMM}, not final)`)
-    : b(`固定口径 ${cutHHMM}`, `fixed cut ${cutHHMM}`);
+    : mode === 'intraday'
+      ? b(`盘中模式（口径 ${cutHHMM}，尾盘段=最近窗口近似 · 非正式结果）`,
+        `intraday mode (cut ${cutHHMM}, rolling-window approximation — NOT final)`)
+      : b(`固定口径 ${cutHHMM}`, `fixed cut ${cutHHMM}`);
 
   // ---- 核心结论 ----
   const bestGroup = groups[0];
@@ -233,7 +238,7 @@ function buildHTML(m) {
 
   <div class="disclaimer">${b('本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。尾盘候选按 14:50 快照口径筛选，实际 14:50—15:00 之间价格仍会波动，需自行确认可成交性与流动性。',
     'This report is programmatic observation output for personal research only and is not investment advice. Tail candidates are screened on the 14:50 snapshot; prices still move between 14:50 and 15:00 — verify tradability and liquidity yourself.')}</div>
-  <div class="footer">candidate-pool · eod tail screener v${cfg.version} · ${mode === 'observe' ? b('观察模式', 'observe mode') : b('固定口径', 'fixed cut')} ${cutHHMM}</div>
+  <div class="footer">candidate-pool · eod tail screener v${cfg.version} · ${mode === 'observe' ? b('观察模式', 'observe mode') : mode === 'intraday' ? b('盘中模式', 'intraday mode') : b('固定口径', 'fixed cut')} ${cutHHMM}</div>
 </div>
 <script>
 (function () {
