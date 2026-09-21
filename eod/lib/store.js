@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const { now: nowBJ } = require('../../time');
+const paths = require('../../paths');
 
 /** 候选对象 -> 存档记录（压缩字段：分时明细不落盘，只留尾盘段汇总） */
 function toRecord(c) {
@@ -94,7 +95,7 @@ function daySuffix(mode, cutHHMM, { stamp = false, segMinutes = null } = {}) {
  * 若写进正式文件会把当天的正式结果覆盖成假的 14:50 口径。
  */
 function dayFile(cfg, tradeDate, mode, cutHHMM, opts) {
-  return path.join(__dirname, '..', cfg.store.dataDir, `eod-${tradeDate}${daySuffix(mode, cutHHMM, opts)}.json`);
+  return path.join(paths.eodDir(), cfg.store.dataDir, `eod-${tradeDate}${daySuffix(mode, cutHHMM, opts)}.json`);
 }
 
 /** 读取某交易日的正式存档（无则 null） */
@@ -113,7 +114,7 @@ function loadDay(cfg, tradeDate) {
  * @returns {{file:string, recordCount:number, runCount:number, replacedFill:number}}
  */
 function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null, segMinutes = null, stamp = false }) {
-  const dir = path.join(__dirname, '..', cfg.store.dataDir);
+  const dir = path.join(paths.eodDir(), cfg.store.dataDir);
   fs.mkdirSync(dir, { recursive: true });
   const file = dayFile(cfg, tradeDate, mode, cutHHMM, { stamp, segMinutes });
 

@@ -21,11 +21,15 @@ const path = require('path');
 const https = require('https');
 const tls = require('tls');
 const { URL } = require('url');
+const paths = require('./paths');
 
-const CFG_PATH = path.join(__dirname, 'notify_config.json');
+// 配置位置跟随工作目录（见 paths.js）：默认 <仓库根>/notify_config.json，
+// 重定位后为 <HOME>/notify_config.json。
+function cfgPath() { return paths.notifyConfigFile(); }
 
 function loadCfg() {
   const cfg = {};
+  const CFG_PATH = cfgPath();
   if (fs.existsSync(CFG_PATH)) {
     try { Object.assign(cfg, JSON.parse(fs.readFileSync(CFG_PATH, 'utf8'))); } catch (e) { /* 损坏则忽略 */ }
   }
@@ -227,6 +231,6 @@ if (require.main === module) {
     const c = loadCfg();
     console.log('wechat 配置:', !!(c.wechat && (c.wechat.key || c.wechat.token)));
     console.log('email  配置:', !!(c.email && c.email.sender && c.email.auth_code));
-    console.log('notify_config.json 路径:', CFG_PATH);
+    console.log('notify_config.json 路径:', cfgPath());
   }
 }

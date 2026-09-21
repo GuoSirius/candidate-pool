@@ -25,7 +25,11 @@ process.emit = function (type, ...args) {
 
 const { DatabaseSync } = require('node:sqlite');
 
-const DEFAULT_FILE = path.join(__dirname, 'local.db');
+const paths = require('../paths');
+
+// 本地库文件跟随工作目录（见 paths.js）：默认 <仓库根>/db/local.db。
+// 注意 SCHEMA_FILE 是**代码资产**，永远跟包走，不随工作目录移动。
+const DEFAULT_FILE = paths.localDb();
 const SCHEMA_FILE = path.join(__dirname, 'schema.sql');
 
 function applySchema(db) {

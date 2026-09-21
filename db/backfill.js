@@ -10,8 +10,10 @@ const path = require('path');
 const { normalizeSnap } = require('./normalize');
 const { persistSnap } = require('./persist');
 const { resolveTargets } = require('./clients');
+const paths = require('../paths');
 
-const DATA = path.join(__dirname, '..', 'data');
+// 快照目录跟随工作目录（见 paths.js）：默认 <仓库根>/data
+const DATA = paths.dataDir();
 const isDry = process.argv.includes('--dry');
 
 function listSnaps() {

@@ -23,6 +23,13 @@
  * 推送: 实时运行结束后自动把结果推送到 notify_config.json 配置的渠道
  *       （个人微信 Server酱/PushPlus + 163 邮箱）。可用 --no-notify 关闭。
  *
+ * 工作目录（相对路径的落点，统一由 paths.js 解析）：
+ *   默认 = 本仓库根（与历史行为一致）。**装成 npm 包 / 从别处调用时必须重定位**，
+ *   否则产物会写进 node_modules 里那个包目录。两种覆盖方式：
+ *     --cwd <dir>                  或    CANDIDATE_POOL_HOME=<dir>
+ *   HOME 下保持相同布局：candidates.json / data/ / reports/ / notify_config.json
+ *   （尾盘相关的 eod/data、eod/reports 同理）。`--paths` 可打印实际解析结果。
+ *
  * 数据源: 腾讯公开行情接口（无需任何第三方 CLI / 内置技能）：
  *   - 实时报价 / 总市值 / 流通市值 / 52周高 / 换手率： qt.gtimg.cn
  *   - 日K线(前复权) / 分时：                  web.ifzq.gtimg.cn/appstock/app
@@ -36,11 +43,13 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const { now: nowStr, dayjs } = require('./time');
+// 工作目录解析：产物/配置的落点走 paths，代码资产（本文件等）仍锚在包内。
+// 默认 HOME = 包根（与历史 __dirname 行为一致）；可用 CANDIDATE_POOL_HOME / --cwd 重定位。
+const paths = require('./paths');
 
 // ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
 const QT_QUOTE = 'https://qt.gtimg.cn/q=';
 const IFZQ = 'https://web.ifzq.gtimg.cn/appstock/app';
-const CANDIDATES_PATH = path.join(__dirname, 'candidates.json');
 
 // 日K线故障转移链。腾讯的 WAF 是【按接口路径】限流的：高频拉取会让
 // web.ifzq.gtimg.cn 的 fqkline 路径返回 HTTP 501 拦截页，而同主机的其他路径、
@@ -95,6 +104,8 @@ function parseArgs(argv) {
     else if (a === '--dump') o.dump = argv[++i];
     else if (a === '--no-notify') o.noNotify = true;
     else if (a === '--print-anchor') o.printAnchor = true;
+    else if (a === '--paths') o.paths = true;
+    else if (a === '--cwd') { i++; }   // 由 paths.js 统一解析，这里只吃掉它的值
     else if (a === '-h' || a === '--help') { o.help = true; }
   }
   return o;
@@ -175,10 +186,18 @@ function httpGet(url, { json = true, retries = 4, timeout = 15000 } = {}) {
   });
 }
 
-// 候选源：本目录 candidates.json 配置的可编辑观察池（替代 westock ranking CompScore）
+// 候选源：HOME 下 candidates.json 配置的可编辑观察池（替代 westock ranking CompScore）
 function loadUniverse(limit) {
-  if (!fs.existsSync(CANDIDATES_PATH)) throw new Error(`未找到候选观察池 ${CANDIDATES_PATH}，请创建该文件（见 candidates.example.json）`);
-  const cfg = JSON.parse(fs.readFileSync(CANDIDATES_PATH, 'utf8'));
+  const file = paths.candidatesFile();
+  if (!fs.existsSync(file)) {
+    throw new Error(
+      `未找到候选观察池 ${file}\n`
+      + `  当前工作目录：${paths.home()}（来源 ${paths.homeSource()}）\n`
+      + `  请在该目录创建 candidates.json（结构见仓库内 candidates.json / candidates.example.json），`
+      + `或设置 CANDIDATE_POOL_HOME / --cwd 指向已有工作目录。`,
+    );
+  }
+  const cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
   const list = (cfg.stocks || []).map(s => ({ code: String(s.code), name: String(s.name || s.code), sector: String(s.sector || '未分类') }));
   if (!list.length) throw new Error('candidates.json 的 stocks 为空，请配置候选观察池');
   return (limit && limit > 0) ? list.slice(0, limit) : list;
@@ -326,6 +345,19 @@ async function main() {
     log('     node gen_candidates.js --offline --snapshot data/snapshot-YYYYMMDD.json [--out file.html]');
     log('     node gen_candidates.js --date YYYY-MM-DD --dump data/snapshot-YYYYMMDD.json   # 在线抓取后导出快照');
     log('     node gen_candidates.js --no-notify   # 实时运行但跳过微信/邮件推送');
+    log('     node gen_candidates.js --paths        # 打印实际使用的工作目录与各产物落点');
+    log('  工作目录（决定快照/报告/配置读写的位置）：');
+    log('     默认 = 本仓库根；可用 --cwd <dir> 或环境变量 CANDIDATE_POOL_HOME 重定位。');
+    return;
+  }
+  // --paths：仅打印路径解析结果，便于确认「文件到底写到哪去了」
+  if (args.paths) {
+    const d = paths.describe();
+    log(`工作目录: ${d.home}   (来源 ${d.source}${d.relocated ? '' : '，即包/仓库根'})`);
+    log('  工作区（随工作目录移动）:');
+    for (const [k, v] of Object.entries(d.workspace)) log(`    ${k.padEnd(14)} ${v}`);
+    log('  代码资产（永远跟随程序）:');
+    for (const [k, v] of Object.entries(d.codeAssets)) log(`    ${k.padEnd(14)} ${v}`);
     return;
   }
   // --print-anchor：仅解析并输出目标锚定日（北京时间推算，时区安全），不发起任何网络请求。
@@ -340,7 +372,7 @@ async function main() {
   const anchor = args.date || lastClosedTradingDay(now);
   const target = nextTradingDay(anchor);
   let limit = args.limit || 0; // 0 = 不限制，筛查观察池全部标的
-  const outPath = args.out || path.join(__dirname, 'reports', `stock_list_${anchor.replace(/-/g, '')}.html`);
+  const outPath = args.out || path.join(paths.reportsDir(), `stock_list_${anchor.replace(/-/g, '')}.html`);
 
   log(`[1/8] 锚定日 ${anchor}（面向 ${target} 交易日），候选上限 ${limit}`);
 
@@ -497,7 +529,8 @@ async function main() {
 
   // ---- 7-8. 分类 + 生成 HTML（抽取为 classifyAndBuild，离线模式复用）----
   // 实时模式：写出「当日日期」命名的快照（覆盖式写入，每天一份），并推送通知
-  const snapshotPath = args.dump || path.join(__dirname, 'data', `snapshot-${anchor}.json`);
+  const snapshotPath = args.dump || path.join(paths.dataDir(), `snapshot-${anchor}.json`);
+  paths.ensureDir(path.dirname(snapshotPath));   // --dump 指向新目录时也要能写出去
   const snap = {
     anchor, target, limit, topN,
     breadth, breadthIsAnchor, overview,
@@ -531,7 +564,7 @@ async function sendNotify({ anchor, target, breadth, build }) {
     `报告文件：reports/stock_list_${anchor.replace(/-/g, '')}.html`,
     `（HTML 报告已作为附件发送，或前往 GitHub 仓库按日期查看。）`,
   ].join('\n');
-  const htmlPath = path.join(__dirname, 'reports', `stock_list_${anchor.replace(/-/g, '')}.html`);
+  const htmlPath = path.join(paths.reportsDir(), `stock_list_${anchor.replace(/-/g, '')}.html`);
   const res = await notifyMod.notify({ title, content, htmlPath });
   for (const [ch, [ok, info]] of res) {
     log(`[notify] ${ch}: ${ok ? 'OK' : '失败 ' + JSON.stringify(info)}`);
@@ -929,8 +962,8 @@ function classifyAndBuild(m) {
 async function runOffline(args) {
   let snapPath = args.snapshot;
   if (!snapPath) {
-    // 未指定 --snapshot 时，自动取 data/ 下日期最新的一份快照（与 daily-screen.yml 离线兜底同口径）
-    const dir = path.join(__dirname, 'data');
+    // 未指定 --snapshot 时，自动取 HOME/data 下日期最新的一份快照（与 daily-screen.yml 离线兜底同口径）
+    const dir = paths.dataDir();
     if (fs.existsSync(dir)) {
       const files = fs.readdirSync(dir)
         .filter(f => /^snapshot-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
@@ -943,7 +976,7 @@ async function runOffline(args) {
   const validSectors = snap.sectors || [];
   const { anchor, target, limit } = snap;
   const topN = snap.topN, breadth = snap.breadth, breadthIsAnchor = snap.breadthIsAnchor, overview = snap.overview;
-  const outPath = args.out || path.join(__dirname, 'reports', `stock_list_${anchor.replace(/-/g, '')}.html`);
+  const outPath = args.out || path.join(paths.reportsDir(), `stock_list_${anchor.replace(/-/g, '')}.html`);
   log(`[offline] 从快照 ${snapPath} 载入 ${stocks.length} 只，锚定 ${anchor}（面向 ${target}）`);
   classifyAndBuild({ anchor, target, limit, stocks, validSectors, topN, breadth, breadthIsAnchor, overview, outPath, quiet: args.quiet });
 }

@@ -16,13 +16,13 @@
  */
 
 const fs = require('fs');
-const path = require('path');
+const paths = require('../../paths');
 
-const MAP_PATH = path.join(__dirname, '..', 'data', 'industry-map.json');
+// 缓存位置跟随工作目录（见 paths.js）：默认 <仓库根>/eod/data/industry-map.json
 const UNKNOWN = '未分类';
 
 /** 读取行业映射；文件缺失 / 损坏一律返回空表（不抛错，让主流程降级为「未分类」） */
-function loadIndustryMap(file = MAP_PATH) {
+function loadIndustryMap(file = paths.industryMapFile()) {
   try {
     const j = JSON.parse(fs.readFileSync(file, 'utf8'));
     const stocks = j && j.stocks && typeof j.stocks === 'object' ? j.stocks : {};
@@ -71,4 +71,4 @@ function computeSectorStats(stocks, map) {
   return new Map(rows.map((r) => [r.sector, r]));
 }
 
-module.exports = { loadIndustryMap, sectorOf, listedOf, computeSectorStats, MAP_PATH, UNKNOWN };
+module.exports = { loadIndustryMap, sectorOf, listedOf, computeSectorStats, mapPath: paths.industryMapFile, UNKNOWN };

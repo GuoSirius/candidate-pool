@@ -22,8 +22,10 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const { now } = require('./time');
+const paths = require('./paths');
 
-const OUT = path.join(__dirname, 'candidates.json');
+// 输出跟随工作目录（见 paths.js）：默认 <仓库根>/candidates.json
+const OUT = paths.candidatesFile();
 const BATCH = 60;          // 每批查询只数
 const DEFAULT_MIN_CAP = 15; // 总市值下限（亿）
 

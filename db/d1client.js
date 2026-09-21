@@ -5,7 +5,9 @@
 //   2) db/.env —— 由 dotenv 加载，默认**不覆盖**上面已存在的值
 // 仅在真正写入时才校验凭据；dry-run 不调用本模块。
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
+const paths = require('../paths');
+// 凭据文件跟随工作目录（见 paths.js）：默认 <仓库根>/db/.env
+require('dotenv').config({ path: paths.dbEnvFile(), quiet: true });
 
 function cfg() {
   const ACCOUNT_ID = process.env.CF_ACCOUNT_ID;

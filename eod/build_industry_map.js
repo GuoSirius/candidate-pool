@@ -23,8 +23,10 @@ const fs = require('fs');
 const path = require('path');
 const { httpGet } = require('./lib/http');
 const { now } = require('../time');
+const paths = require('../paths');
 
-const OUT = path.join(__dirname, 'data', 'industry-map.json');
+// 输出位置跟随工作目录（见 paths.js）：默认 <仓库根>/eod/data/industry-map.json
+const OUT = paths.industryMapFile();
 
 // 沪深A股 + 科创板 + 创业板 + 北交所。与全市场快照的代码覆盖面对齐。
 const FS_ALL = 'm:1+t:2,m:1+t:23,m:0+t:6,m:0+t:80,m:0+t:81+s:2048';

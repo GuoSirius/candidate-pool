@@ -46,6 +46,7 @@ const { saveRun, loadDay, daySuffix } = require('./lib/store');
 const { syncTailRun } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
+const paths = require('../paths');
 
 // ---------- CLI ----------
 const argv = process.argv.slice(2);
@@ -64,6 +65,7 @@ const OPT = {
   json: argv.includes('--json'),
   noD1: argv.includes('--no-d1'),
   replay: argOf('--replay'),
+  paths: argv.includes('--paths'),
 };
 
 /**
@@ -133,6 +135,17 @@ async function runReplay(file) {
 // ---------- 主流程 ----------
 async function run() {
   const t0 = Date.now();
+
+  // --paths：仅打印路径解析结果，便于确认「归档与报告到底写到哪去了」，不抓行情
+  if (OPT.paths) {
+    const d = paths.describe();
+    log(`工作目录: ${d.home}   (来源 ${d.source}${d.relocated ? '' : '，即包/仓库根'})`);
+    log('  工作区（随工作目录移动）:');
+    for (const [k, v] of Object.entries(d.workspace)) log(`    ${k.padEnd(14)} ${v}`);
+    log('  代码资产（永远跟随程序）:');
+    for (const [k, v] of Object.entries(d.codeAssets)) log(`    ${k.padEnd(14)} ${v}`);
+    return { paths: d };
+  }
 
   // 离线回放不依赖任何行情与时段（ Sundays 也要能重建报告）
   if (OPT.replay) return runReplay(OPT.replay);
@@ -238,7 +251,7 @@ async function emitResult(p) {
   }
 
   // 报告
-  const reportDir = path.join(__dirname, cfg.store.reportDir);
+  const reportDir = path.join(paths.eodDir(), cfg.store.reportDir);
   fs.mkdirSync(reportDir, { recursive: true });
   const suffix = daySuffix(mode, cutHHMM, { stamp: OPT.stamp, segMinutes });
   const reportFile = path.join(reportDir, `eod-${tradeDate}${suffix}.html`);
