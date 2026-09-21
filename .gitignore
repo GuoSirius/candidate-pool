@@ -8,8 +8,9 @@ reports/_*.html
 data/_*.json
 
 # 尾盘选股运行产物（行业映射缓存之外的日度数据与报告，不入库）
-eod/data/eod-*.json
-eod/reports/
+eod/data/_*.json
+eod/reports/_*.html
+!eod/data/industry_mapping.json
 
 # 推送凭据（含 163 授权码 / 微信 key，切勿提交）
 notify_config.json
