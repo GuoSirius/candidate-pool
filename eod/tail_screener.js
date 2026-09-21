@@ -25,6 +25,11 @@
  *   node eod/tail_screener.js --no-notify              # 不推送（测试用）
  *   node eod/tail_screener.js --replay data/eod-2026-09-18.json
  *                                                      # 离线回放：从存档重建报告，不抓行情
+ *   node eod/tail_screener.js --resync data/eod-2026-09-21.json
+ *                                                      # 把存档**重新同步到 D1**（不抓行情、不改本地
+ *                                                      #   归档、不推送）。落库链路修好后用它补历史；
+ *                                                      #   可传多份；会先清掉 mode 非 formal/observe
+ *                                                      #   的遗留行，再按 d1Mode() 翻译后 UPSERT。
  *   node eod/tail_screener.js --json                   # stdout 输出机器可读摘要
  *   node eod/tail_screener.js --paths                  # 打印工作目录与归档/报告落点，不抓行情
  *   node eod/tail_screener.js --init                   # 补齐工作目录（首次运行会自动执行）
@@ -46,7 +51,7 @@ const { sessionState, estimateFullDayVolRatio, nowBjt } = require('./lib/trading
 const market = require('./lib/market');
 const { buildCandidates } = require('./lib/screen');
 const { saveRun, loadDay, daySuffix } = require('./lib/store');
-const { syncTailRun } = require('./lib/store_d1');
+const { syncTailRun, cleanupLegacyModes, d1Mode } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
 const paths = require('../paths');
@@ -59,6 +64,11 @@ function argOf(flag) {
   const i = argv.indexOf(flag);
   return i >= 0 ? argv[i + 1] : null;
 }
+function argsOf(flag) {
+  const out = [];
+  argv.forEach((v, i) => { if (v === flag && argv[i + 1]) out.push(argv[i + 1]); });
+  return out;
+}
 const OPT = {
   now: argOf('--now'),
   force: argv.includes('--force'),
@@ -70,6 +80,7 @@ const OPT = {
   json: argv.includes('--json'),
   noD1: argv.includes('--no-d1'),
   replay: argOf('--replay'),
+  resync: argsOf('--resync'),
   paths: argv.includes('--paths'),
 };
 
@@ -137,6 +148,45 @@ async function runReplay(file) {
   });
 }
 
+// ---------- 补发：把本地存档重新同步到 D1 ----------
+/**
+ * 落库一侧修好之后，用存档把历史数据补进 D1（不抓行情、不写本地 JSON、不推送）。
+ * 时序上 D1 只是网页的数据源，本地 JSON 始终是权威归档，所以「重发」是安全的：
+ * 用同一份存档再推一次，结果应当与当初成功时一致（UPSERT 幂等）。
+ *
+ * 补发前会先清掉 mode 不是 formal/observe 的遗留行 —— 2026-09-21 的 14:50 运行曾被
+ * 以本地叫法 `cut` 写进去，不清掉的话同一天会出现 `cut` + `formal` 两条同义记录。
+ */
+async function runResync(files) {
+  log(`[补发] 目标 ${files.length} 份存档`);
+  const clean = await cleanupLegacyModes();
+  if (clean.skipped) log(`[补发] 清理遗留口径：跳过（${clean.reason}）`);
+  else log(`[补发] 清理遗留口径：tail_run 删 ${clean.tail_run} 行 / tail_pick 删 ${clean.tail_pick} 行`);
+
+  const report = [];
+  for (const f of files) {
+    const base = path.basename(f);
+    try {
+      const doc = JSON.parse(fs.readFileSync(f, 'utf8'));
+      if (!doc.records || !doc.tradeDate || !doc.mode) {
+        throw new Error('存档格式不对：缺少 records / tradeDate / mode');
+      }
+      const res = await syncTailRun(doc);
+      if (res.skipped) log(`[补发] ${base} → 跳过：${res.reason}`);
+      else if (res.error) log(`[补发] ${base} → 失败：${res.error}`);
+      else {
+        log(`[补发] ${base} → D1 ${d1Mode(doc.mode)}（${doc.tradeDate}）：`
+          + `${res.picks} 条候选 + 1 行运行记录`);
+      }
+      report.push({ file: base, tradeDate: doc.tradeDate, mode: d1Mode(doc.mode), ...res });
+    } catch (e) {
+      log(`[补发] ${base} → 失败：${e.message || e}`);
+      report.push({ file: base, error: e.message || String(e) });
+    }
+  }
+  return { resync: report };
+}
+
 // ---------- 主流程 ----------
 async function run() {
   const t0 = Date.now();
@@ -160,6 +210,9 @@ async function run() {
 
   // 离线回放不依赖任何行情与时段（ Sundays 也要能重建报告）
   if (OPT.replay) return runReplay(OPT.replay);
+
+  // 补发到 D1 同样不依赖行情与时段（可在任何时刻手动补历史）
+  if (OPT.resync.length) return runResync(OPT.resync);
 
   // --wait：GitHub Actions 的 cron 有 1–5 分钟级延迟，故由程序内等到 14:50 再跑，
   // 保证「分时尾盘段完整 + 口径固定」。（计划任务本地触发时不需要它，但加了也无害）
