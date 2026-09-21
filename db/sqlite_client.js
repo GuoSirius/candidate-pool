@@ -39,9 +39,11 @@ function createClient(file) {
   if (dir && !fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
   const db = new DatabaseSync(f);
-  // 仅当缺少核心表时建表（schema.sql 已含 IF NOT EXISTS，重复执行安全）
-  const has = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='run_batch'").get();
-  if (!has) applySchema(db);
+  // 每次打开都应用 schema.sql：它是唯一真相源，且全部 IF NOT EXISTS，重复执行安全（毫秒级）。
+  // 反面教训（2026-09-21 线上四页 500）：原实现是「仅当缺 run_batch 表时才建表」——
+  // 于是库早已存在的机器上，后续新增的 tail_run / tail_pick 永远不会被创建，
+  // 本地库结构永久停在旧版本，直到某个接口查询时才炸。不要再加任何「缺某表才建」的条件。
+  applySchema(db);
 
   const isRead = (sql) => /^\s*(SELECT|WITH|PRAGMA|EXPLAIN|VALUES)\b/i.test(sql.trim());
 

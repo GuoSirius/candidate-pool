@@ -6,36 +6,34 @@
  * 供网页端 /api/tail/* 读取。复用 db/d1client（与 backfill 同一套 HTTP API）。
  *
  * - 无 CF_* 凭据时静默跳过（本地开发 / 测试不污染远端）。
- * - 自带 ensureTables：首次运行自动建表（与 db/schema.sql 等价的 CREATE TABLE IF NOT EXISTS），
- *   因此即便没手动跑 `wrangler d1 execute`，第一次带凭据的 EOD 运行也会把表建好。
+ * - 自带 ensureTables：**自愈兜底**。DDL 不再复制到这里，统一从 db/ddl.js
+ *   （= db/schema.sql，唯一真相源）取；先探一次 sqlite_master，缺表才整份重放。
+ *   因此即便没人跑过 `npm run db:migrate`，第一次带凭据的 EOD 运行也能把表建好。
+ *   （2026-09-21 事故：此处原先硬编码了第二份 DDL，与 schema.sql 各写一份无人对齐，
+ *     加上本地/远程都没有可靠的应用路径 → 线上根本没有 tail_run / tail_pick。）
  * - tail_pick 的 fill_json 用「空值保护」：传入空 {} 时不覆盖已回填的 fill，避免
  *   同日「EOD 重跑」把 P5 收盘回填的结果清掉（实际时序上 EOD 早于 P5，本保护是双保险）。
  */
 const d1 = require('../../db/d1client');
+const ddl = require('../../db/ddl');
 
 let _tablesReady = false;
+/**
+ * 建表兜底（自愈）。DDL 不再硬编码在这里 —— 统一从 db/ddl.js 取，
+ * 也就是 db/schema.sql（唯一真相源）。先花 1 次请求探 sqlite_master：
+ * 已就绪就直接返回，缺表才整份重放（schema.sql 全 IF NOT EXISTS，可重复执行）。
+ */
 async function ensureTables(client) {
   if (_tablesReady) return;
-  const stmts = [
-    `CREATE TABLE IF NOT EXISTS tail_run (
-      trade_date TEXT NOT NULL, mode TEXT NOT NULL, cut_at TEXT, updated_at TEXT,
-      run_at TEXT, candidate_count INTEGER, group_count INTEGER, pre_pass_count INTEGER,
-      snapshot_count INTEGER, runner TEXT, runs_json TEXT, stats_json TEXT,
-      PRIMARY KEY (trade_date, mode))`,
-    `CREATE TABLE IF NOT EXISTS tail_pick (
-      trade_date TEXT NOT NULL, mode TEXT NOT NULL, code TEXT NOT NULL, name TEXT, sector TEXT,
-      board TEXT, board_label TEXT, price REAL, prev_close REAL, high REAL, chg_pct REAL,
-      turnover REAL, vol_ratio REAL, vol_ratio_est REAL, float_cap_yi REAL, avg_price REAL,
-      group_rank INTEGER, best_in_group INTEGER, group_size INTEGER, total REAL,
-      sector_median_chg REAL, sector_rank INTEGER, sector_total INTEGER, tail_seg_pct REAL,
-      tail_up_ratio REAL, tail_max_drawdown_pct REAL, tail_price_vs_avg_pct REAL,
-      tail_avg_at_cut REAL, tail_p0 REAL, tail_p1 REAL, tail_bars TEXT, score_json TEXT, fill_json TEXT,
-      PRIMARY KEY (trade_date, mode, code))`,
-    'CREATE INDEX IF NOT EXISTS idx_tail_pick_date ON tail_pick(trade_date)',
-    'CREATE INDEX IF NOT EXISTS idx_tail_pick_mode ON tail_pick(mode)',
-    'CREATE INDEX IF NOT EXISTS idx_tail_pick_code ON tail_pick(code)',
-  ];
-  await client.batch(stmts.map((sql) => ({ sql })));
+  try {
+    const rows = await client.query(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tail_run','tail_pick')",
+    );
+    if (Array.isArray(rows) && rows.length >= 2) { _tablesReady = true; return; }
+  } catch (_) {
+    // 探测失败（权限 / 网络抖动）时不要直接放弃，交给下面的整份重放兜底
+  }
+  await client.batch(ddl.loadStatements().map((sql) => ({ sql })));
   _tablesReady = true;
 }
 

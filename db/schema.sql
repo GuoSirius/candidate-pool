@@ -210,3 +210,16 @@ CREATE INDEX IF NOT EXISTS idx_group_rel_gid ON pick_group_rel(group_id);
 CREATE INDEX IF NOT EXISTS idx_tail_pick_date ON tail_pick(trade_date);
 CREATE INDEX IF NOT EXISTS idx_tail_pick_mode ON tail_pick(mode);
 CREATE INDEX IF NOT EXISTS idx_tail_pick_code ON tail_pick(code);
+
+-- ---------------------------------------------------------------------------
+-- 结构同步元信息（由 db/migrate.js 维护，业务代码不读它）。
+--   key = 'schema_hash'  → 已应用到本库的 schema.sql 指纹（用于核对两端是否同一版本）
+--   key = 'mig:<文件名>' → 已执行过的增量迁移（db/migrations/*.sql，只跑一次）
+-- 用途：跑 `npm run db:migrate` 后一眼看出「本地/线上各自同步到哪一版」，避免再出现
+-- 「代码已引用新表、库里没有」这种只在运行时才暴露的问题。
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS schema_meta (
+  key        TEXT PRIMARY KEY,
+  value      TEXT,
+  updated_at TEXT
+);
