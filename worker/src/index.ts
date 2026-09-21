@@ -8,7 +8,7 @@ import type { Context } from 'hono';
 import { ok, okCached, fail, BizCode } from './lib/response.js';
 import { guardWrite } from './lib/auth.js';
 import { BizError, invalid } from './lib/errors.js';
-import type { Bindings, NoteType } from './types.js';
+import type { Bindings, NoteType, TailMode } from './types.js';
 import {
   listRuns,
   getRunByAnchor,
@@ -19,6 +19,10 @@ import {
   getStats,
   rankStocks,
   RANK_SORT_KEYS,
+  listTailRuns,
+  getTailRun,
+  tailReview,
+  tailDiff,
 } from './lib/db.js';
 import {
   getGroupDetail,
@@ -114,6 +118,10 @@ app.get('/', (c) =>
       'GET /api/stock-base?q=&group=',
       'GET /api/stats?from=&to=',
       'GET /api/stock-rank?sort=recent|first|picks|high|secondary|conditional|excluded|n1|n2|n3|ln1|ln2|ln3|code&order=desc|asc&limit=',
+      'GET /api/tail/runs?limit=30&mode=formal|observe',
+      'GET /api/tail/run?date=YYYY-MM-DD&mode=formal|observe',
+      'GET /api/tail/review?from=&to=&mode=formal|observe',
+      'GET /api/tail/diff?date=YYYY-MM-DD',
       'GET /api/groups',
       'GET /api/groups/:id',
       'GET /api/notes',
@@ -190,6 +198,52 @@ app.get('/api/stats', async (c) => {
   const data = await getStats(c.env.DB, { from: from ?? null, to: to ?? null });
   // 同 stock-rank：纯派生数据，按 URL（含 from/to）缓存 5 分钟
   return okCached(c, data, 300);
+});
+
+// ---------------------------------------------------------------------------
+// 尾盘选股（EOD Tail Screener）读接口
+// ---------------------------------------------------------------------------
+
+app.get('/api/tail/runs', async (c) => {
+  const raw = Number(c.req.query('limit')) || 30;
+  const limit = Math.min(Math.max(raw, 1), 100);
+  const mode = c.req.query('mode') as TailMode | undefined;
+  if (mode && mode !== 'formal' && mode !== 'observe') {
+    return fail(c, `mode 只能为 formal / observe，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
+  }
+  const data = await listTailRuns(c.env.DB, limit, mode);
+  return ok(c, data);
+});
+
+app.get('/api/tail/run', async (c) => {
+  const date = c.req.query('date');
+  const mode = (c.req.query('mode') as TailMode) || 'formal';
+  if (!date) return fail(c, 'date 必填（YYYY-MM-DD）', BizCode.ERR_INVALID_PARAM);
+  if (mode !== 'formal' && mode !== 'observe') {
+    return fail(c, `mode 只能为 formal / observe，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
+  }
+  const data = await getTailRun(c.env.DB, date, mode);
+  if (!data) return fail(c, `未找到 ${date}（${mode}）的尾盘运行`, BizCode.ERR_NOT_FOUND);
+  return ok(c, data);
+});
+
+app.get('/api/tail/review', async (c) => {
+  const from = c.req.query('from');
+  const to = c.req.query('to');
+  const mode = (c.req.query('mode') as TailMode) || 'formal';
+  if (mode !== 'formal' && mode !== 'observe') {
+    return fail(c, `mode 只能为 formal / observe，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
+  }
+  const data = await tailReview(c.env.DB, { from: from ?? null, to: to ?? null, mode });
+  // 纯派生数据，按 URL（含 from/to）缓存 5 分钟
+  return okCached(c, data, 300);
+});
+
+app.get('/api/tail/diff', async (c) => {
+  const date = c.req.query('date');
+  if (!date) return fail(c, 'date 必填（YYYY-MM-DD）', BizCode.ERR_INVALID_PARAM);
+  const data = await tailDiff(c.env.DB, date);
+  return ok(c, data);
 });
 
 // ---------------------------------------------------------------------------

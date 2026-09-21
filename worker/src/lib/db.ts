@@ -11,6 +11,16 @@ import type {
   TimelinePoint,
   StatsResult,
   StockRankRow,
+  TailRun,
+  TailPick,
+  TailPickRow,
+  TailRunDetail,
+  TailReviewResult,
+  TailReviewSummary,
+  TailDiffResult,
+  TailDiffRow,
+  TailFill,
+  TailMode,
 } from '../types.js';
 
 const RUN_COLS =
@@ -67,7 +77,7 @@ export async function getPicks(db: D1Database, runId: number, tier?: string): Pr
  * 用 (后价 - 入选价) / 入选价 算涨幅 %。缺数据返回 null。
  * N 表示相对锚定日之后的第 N 个筛选周期/交易日。
  */
-function computePerf(
+export function computePerf(
   prices: Array<{ date: string; close: number }>,
   anchorDate: string,
   basePrice: number,
@@ -496,4 +506,215 @@ export async function rankStocks(
   });
 
   return rows.slice(0, limit);
+}
+
+// ===========================================================================
+// 尾盘选股（EOD Tail Screener）读接口
+// ---------------------------------------------------------------------------
+// tail_run / tail_pick 由 EOD 脚本（eod/lib/store_d1.js）写入 D1，本模块只负责读取。
+// N1~N10 复盘：优先用 tail_pick.fill_json（P5 收盘回填已算好，零额外读），
+// 缺回填时回退到 price_daily 现算 —— 两条路径口径一致（都走 computePerf）。
+// ===========================================================================
+
+function safeParse<T>(v: unknown): T | null {
+  if (v == null) return null;
+  if (typeof v !== 'string') return v as T;
+  try { return JSON.parse(v) as T; } catch { return null; }
+}
+
+const TAIL_RUN_COLS =
+  'trade_date, mode, cut_at, updated_at, run_at, candidate_count, group_count, pre_pass_count, snapshot_count, runner, runs_json, stats_json';
+
+function mapTailRun(r: Record<string, unknown>): TailRun {
+  return {
+    trade_date: r.trade_date as string,
+    mode: r.mode as TailMode,
+    cut_at: (r.cut_at as string) ?? null,
+    updated_at: (r.updated_at as string) ?? null,
+    run_at: (r.run_at as string) ?? null,
+    candidate_count: (r.candidate_count as number) ?? null,
+    group_count: (r.group_count as number) ?? null,
+    pre_pass_count: (r.pre_pass_count as number) ?? null,
+    snapshot_count: (r.snapshot_count as number) ?? null,
+    runner: (r.runner as string) ?? null,
+    runs: safeParse(r.runs_json),
+    stats: safeParse(r.stats_json),
+  };
+}
+
+function mapTailPick(r: Record<string, unknown>): TailPick {
+  const fill = safeParse<TailFill>(r.fill_json);
+  return {
+    trade_date: r.trade_date as string,
+    mode: r.mode as TailMode,
+    code: r.code as string,
+    name: (r.name as string) ?? null,
+    sector: (r.sector as string) ?? null,
+    board: (r.board as string) ?? null,
+    board_label: (r.board_label as string) ?? null,
+    price: (r.price as number) ?? null,
+    prev_close: (r.prev_close as number) ?? null,
+    high: (r.high as number) ?? null,
+    chg_pct: (r.chg_pct as number) ?? null,
+    turnover: (r.turnover as number) ?? null,
+    vol_ratio: (r.vol_ratio as number) ?? null,
+    vol_ratio_est: (r.vol_ratio_est as number) ?? null,
+    float_cap_yi: (r.float_cap_yi as number) ?? null,
+    avg_price: (r.avg_price as number) ?? null,
+    group_rank: (r.group_rank as number) ?? null,
+    best_in_group: (r.best_in_group as number) ?? null,
+    group_size: (r.group_size as number) ?? null,
+    total: (r.total as number) ?? null,
+    sector_median_chg: (r.sector_median_chg as number) ?? null,
+    sector_rank: (r.sector_rank as number) ?? null,
+    sector_total: (r.sector_total as number) ?? null,
+    tail_seg_pct: (r.tail_seg_pct as number) ?? null,
+    tail_up_ratio: (r.tail_up_ratio as number) ?? null,
+    tail_max_drawdown_pct: (r.tail_max_drawdown_pct as number) ?? null,
+    tail_price_vs_avg_pct: (r.tail_price_vs_avg_pct as number) ?? null,
+    tail_avg_at_cut: (r.tail_avg_at_cut as number) ?? null,
+    tail_p0: (r.tail_p0 as number) ?? null,
+    tail_p1: (r.tail_p1 as number) ?? null,
+    tail_bars: safeParse<number[]>(r.tail_bars),
+    score: safeParse<Record<string, number>>(r.score_json),
+    fill,
+  };
+}
+
+/** fill_json 已回填（任一 N 值有效）则直接转 Perf，否则返回 null（交给 price_daily 现算）。 */
+function fillToPerf(fill: TailFill | null): Perf | null {
+  if (!fill) return null;
+  const { n1, n2, n3, n5, n7, n9, n10 } = fill;
+  if (n1 == null && n2 == null && n3 == null && n5 == null && n7 == null && n9 == null && n10 == null) return null;
+  return { n1, n2, n3, n5, n7, n9, n10 };
+}
+
+/** 已回填优先；否则用尾盘入选价（price，14:50 截点价）作基准，从 price_daily 现算 N1~N10。 */
+function perfOf(pick: TailPick, priceMap: Map<string, Array<{ date: string; close: number }>>): Perf | null {
+  const fromFill = fillToPerf(pick.fill);
+  if (fromFill) return fromFill;
+  if (pick.price == null) return null;
+  return computePerf(priceMap.get(pick.code) ?? [], pick.trade_date, pick.price);
+}
+
+/** 取多只票从某日期起的全段日线（按 code 分块，D1 绑定参数上限 100，取 90 留余量）。 */
+async function fetchTailPrices(
+  db: D1Database,
+  codes: string[],
+  fromDate: string,
+): Promise<Map<string, Array<{ date: string; close: number }>>> {
+  const map = new Map<string, Array<{ date: string; close: number }>>();
+  if (!codes.length) return map;
+  const CHUNK = 90;
+  for (let i = 0; i < codes.length; i += CHUNK) {
+    const chunk = codes.slice(i, i + CHUNK);
+    const ph = chunk.map(() => '?').join(',');
+    const rows = await allRows<{ code: string; date: string; close: number }>(
+      db,
+      `SELECT code, date, close FROM price_daily WHERE code IN (${ph}) AND date >= ? ORDER BY code, date ASC`,
+      [...chunk, fromDate],
+    );
+    for (const r of rows) {
+      const arr = map.get(r.code);
+      if (arr) arr.push({ date: r.date, close: r.close });
+      else map.set(r.code, [{ date: r.date, close: r.close }]);
+    }
+  }
+  return map;
+}
+
+export async function listTailRuns(db: D1Database, limit: number, mode?: TailMode): Promise<TailRun[]> {
+  const where = mode ? 'WHERE mode = ?' : '';
+  const params: unknown[] = mode ? [mode] : [];
+  const rows = await allRows<Record<string, unknown>>(
+    db,
+    `SELECT ${TAIL_RUN_COLS} FROM tail_run ${where} ORDER BY trade_date DESC, mode DESC LIMIT ?`,
+    [...params, limit],
+  );
+  return rows.map(mapTailRun);
+}
+
+export async function getTailRun(db: D1Database, tradeDate: string, mode: TailMode): Promise<TailRunDetail | null> {
+  const r = await firstRow<Record<string, unknown>>(
+    db,
+    `SELECT ${TAIL_RUN_COLS} FROM tail_run WHERE trade_date = ? AND mode = ?`,
+    [tradeDate, mode],
+  );
+  if (!r) return null;
+  const picks = await allRows<Record<string, unknown>>(
+    db,
+    'SELECT * FROM tail_pick WHERE trade_date = ? AND mode = ? ORDER BY total DESC',
+    [tradeDate, mode],
+  );
+  const mapped = picks.map(mapTailPick);
+  const needCodes = Array.from(new Set(mapped.filter((p) => !fillToPerf(p.fill)).map((p) => p.code)));
+  const priceMap = await fetchTailPrices(db, needCodes, tradeDate);
+  return {
+    run: mapTailRun(r),
+    picks: mapped.map((p) => ({ ...p, perf: perfOf(p, priceMap) })),
+  };
+}
+
+export async function tailReview(
+  db: D1Database,
+  opts: { from?: string | null; to?: string | null; mode: TailMode },
+): Promise<TailReviewResult> {
+  const where = ['mode = ?'];
+  const params: unknown[] = [opts.mode];
+  if (opts.from) { where.push('trade_date >= ?'); params.push(opts.from); }
+  if (opts.to) { where.push('trade_date <= ?'); params.push(opts.to); }
+  const picks = await allRows<Record<string, unknown>>(
+    db,
+    `SELECT * FROM tail_pick WHERE ${where.join(' AND ')} ORDER BY trade_date DESC, total DESC`,
+    params,
+  );
+  const mapped = picks.map(mapTailPick);
+  const needCodes = Array.from(new Set(mapped.filter((p) => !fillToPerf(p.fill)).map((p) => p.code)));
+  const priceMap = await fetchTailPrices(db, needCodes, opts.from ?? '1970-01-01');
+  const rows: TailPickRow[] = mapped.map((p) => ({ ...p, perf: perfOf(p, priceMap) }));
+
+  const summary: TailReviewSummary = {
+    picks: rows.length,
+    n1: horizonStat(rows.map((r) => r.perf), 'n1'),
+    n2: horizonStat(rows.map((r) => r.perf), 'n2'),
+    n3: horizonStat(rows.map((r) => r.perf), 'n3'),
+    n5: horizonStat(rows.map((r) => r.perf), 'n5'),
+    n7: horizonStat(rows.map((r) => r.perf), 'n7'),
+    n9: horizonStat(rows.map((r) => r.perf), 'n9'),
+    n10: horizonStat(rows.map((r) => r.perf), 'n10'),
+  };
+  return { rows, summary, range: { from: opts.from ?? null, to: opts.to ?? null, mode: opts.mode } };
+}
+
+export async function tailDiff(db: D1Database, tradeDate: string): Promise<TailDiffResult> {
+  const [observe, formal] = await Promise.all([
+    allRows<Record<string, unknown>>(db, 'SELECT * FROM tail_pick WHERE trade_date = ? AND mode = ? ORDER BY total DESC', [tradeDate, 'observe']),
+    allRows<Record<string, unknown>>(db, 'SELECT * FROM tail_pick WHERE trade_date = ? AND mode = ? ORDER BY total DESC', [tradeDate, 'formal']),
+  ]);
+  const oMapped = observe.map(mapTailPick);
+  const fMapped = formal.map(mapTailPick);
+  const oMap = new Map(oMapped.map((p) => [p.code, p]));
+  const fMap = new Map(fMapped.map((p) => [p.code, p]));
+  const needCodes = Array.from(new Set([...oMapped, ...fMapped].filter((p) => !fillToPerf(p.fill)).map((p) => p.code)));
+  const priceMap = await fetchTailPrices(db, needCodes, tradeDate);
+  const oRows = oMapped.map((p) => ({ ...p, perf: perfOf(p, priceMap) }));
+  const fRows = fMapped.map((p) => ({ ...p, perf: perfOf(p, priceMap) }));
+  const codes = Array.from(new Set([...oMap.keys(), ...fMap.keys()]));
+  const diff: TailDiffRow[] = codes.map((code) => {
+    const o = oMap.get(code);
+    const f = fMap.get(code);
+    const base = f ?? o;
+    return {
+      code,
+      name: base?.name ?? null,
+      sector: base?.sector ?? null,
+      inObserve: !!o,
+      inFormal: !!f,
+      observeTotal: o?.total ?? null,
+      formalTotal: f?.total ?? null,
+      totalDelta: o && f && o.total != null && f.total != null ? Math.round((f.total - o.total) * 10) / 10 : null,
+      perf: base ? perfOf(base, priceMap) : null,
+    };
+  });
+  return { tradeDate, observe: oRows, formal: fRows, diff };
 }
