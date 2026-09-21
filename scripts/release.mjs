@@ -178,20 +178,41 @@ async function main() {
   // ⑤ 同步子包版本
   syncSubPackages(newVersion);
 
-  // ⑥ 提交 + 打 tag + 推送（发布阶段）
+  // ⑥ Release 说明预览 —— CI 用的是**同一个脚本**，所以这里看到什么，GitHub Release 就是什么。
+  //    刻意放在打 tag 之前：说明为空能在发版前发现（否则 CI 会安静地建出一个空 Release）。
+  console.log('\n── Release 说明预览（取自 CHANGELOG.md，CI 复用同一脚本生成）──\n');
+  let notes = '';
+  try {
+    notes = sh(`node scripts/release-notes.mjs --tag v${newVersion} --install`);
+  } catch { /* 生成失败当空处理，下面统一告警 */ }
+  console.log(notes || '(空)');
+  if (!notes || notes.includes('无变更记录') || notes.length < 80) {
+    console.log(`\n⚠ Release 说明看起来是空的 —— CI 建出的 Release 也会是空的。`);
+    console.log(`  多半是 changelogen 没写出 \`## v${newVersion}\` 段落；可稍后用`);
+    console.log(`  \`npm run release:notes -- --tag v${newVersion} --source git\` 核对 git 兜底分支。`);
+  }
+
+  // ⑦ 提交 + 打 tag + 推送（本机到此为止，发布动作在 CI）
   run('git add package.json worker/package.json web/package.json CHANGELOG.md');
   execSync(`git commit -m ${JSON.stringify(`chore(release): v${newVersion}`)}`, { stdio: 'inherit' });
   run(`git tag v${newVersion}`);
   const branch = sh('git rev-parse --abbrev-ref HEAD');
   run(`git push origin ${branch}`);
   run('git push origin --tags');
-  console.log(`\n✅ 已发布 v${newVersion} 并推送 (branch=${branch})`);
-  // 本机**不执行** npm publish：tag 推送即触发 .github/workflows/release.yml，
-  // 由 CI 完成「版本校验 → 离线自测 → 打包体检 → npm publish → 建 GitHub Release」。
-  console.log('   ↳ tag 已触发 GitHub Actions，npm 发布与 Release 说明在云端完成：');
-  console.log(`      https://github.com/GuoSirius/candidate-pool/actions`);
 
-  // ⑦ 部署阶段：Worker + Pages（Cloudflare）
+  const REPO = (() => {
+    const m = String((pkg.repository && pkg.repository.url) || '').match(/github\.com[/:]([^/]+\/[^/.]+)/);
+    return m ? m[1] : 'GuoSirius/candidate-pool';
+  })();
+  console.log(`\n✅ 本机部分完成：v${newVersion} 已提交并推送 (branch=${branch})`);
+  console.log('\n接下来由 GitHub Actions 自动完成（**本机不执行 npm publish**）：');
+  console.log('  版本校验 → 离线自测 → 打包体检 → npm publish → 建 GitHub Release');
+  console.log(`  · 运行日志 : https://github.com/${REPO}/actions/workflows/release.yml`);
+  console.log(`  · npm      : https://www.npmjs.com/package/${pkg.name}/v/${newVersion}`);
+  console.log(`  · Release  : https://github.com/${REPO}/releases/tag/v${newVersion}`);
+  console.log('  约 1~2 分钟。若 Actions 标红，最常见原因是仓库尚未配置 Secret `NPM_TOKEN`。');
+
+  // ⑧ 部署阶段：Worker + Pages（Cloudflare）
   console.log('\n🚀 开始部署到 Cloudflare ...');
   run('npm run deploy --prefix worker');
   run('npm run deploy --prefix web');
