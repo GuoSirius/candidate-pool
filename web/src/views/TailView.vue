@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
-import type { TailRun, TailRunDetail, TailPick, TailMode } from '../api/types';
+import type { TailRun, TailRunDetail, TailPick, TailPickRow, TailMode } from '../api/types';
 import { fmtNum, fmtPct, fmtCap, perfClass } from '../utils/format';
 import { useColumnSort, type SortValue } from '../utils/sort';
 import PageHeader from '../components/PageHeader.vue';
@@ -83,7 +83,7 @@ const filteredPicks = computed(() => {
 });
 
 type PickSortKey =
-  | 'code' | 'name' | 'sector' | 'total' | 'chg_pct'
+  | 'code' | 'name' | 'sector' | 'total' | 'chg_pct' | 'tail_seg_pct'
   | 'vol_ratio' | 'turnover' | 'float_cap_yi' | 'sector_median_chg';
 
 const {
@@ -94,7 +94,7 @@ const {
   sortRows: sortPickRows,
 } = useColumnSort<PickSortKey>({
   initialKey: null,
-  numericKeys: ['total', 'chg_pct', 'vol_ratio', 'turnover', 'float_cap_yi', 'sector_median_chg'],
+  numericKeys: ['total', 'chg_pct', 'tail_seg_pct', 'vol_ratio', 'turnover', 'float_cap_yi', 'sector_median_chg'],
 });
 
 function pickSortValue(p: TailPick, k: PickSortKey): SortValue {
@@ -141,6 +141,45 @@ function scorePct(p: TailPick, key: string): number {
   const max = scoreMax.value[key] || 1;
   return Math.round((scoreVal(p, key) / max) * 100);
 }
+
+/**
+ * 「拉升不连贯」阈值：尾盘段内上涨分钟占比低于它 → 那段涨幅是靠少数几分钟拉出来的。
+ * 与 eod/tail.config.js 的 score.tailUpRatioWarn 同值（前端拿不到配置，改一处要同步）。
+ */
+const TAIL_UP_RATIO_WARN = 0.55;
+function isChoppy(p: TailPick): boolean {
+  return p.tail_up_ratio != null && p.tail_up_ratio < TAIL_UP_RATIO_WARN;
+}
+
+/** 分行业明细：对齐 eod/lib/report.js 的分组列表（每组展示前 3 只、行业按组内最优总分降序）。 */
+const GROUP_SHOW = 3;
+const GROUP_PREVIEW = 8;
+const showAllGroups = ref(false);
+
+const groupCards = computed(() => {
+  const map = new Map<string, TailPickRow[]>();
+  for (const p of filteredPicks.value) {
+    const k = p.sector ?? '未分类';
+    const arr = map.get(k);
+    if (arr) arr.push(p); else map.set(k, [p]);
+  }
+  return [...map.entries()]
+    .map(([sector, list]) => {
+      const sorted = [...list].sort((a, b) => (b.total ?? -1) - (a.total ?? -1));
+      return {
+        sector,
+        size: sorted.length,
+        shown: sorted.slice(0, GROUP_SHOW),
+        bestTotal: sorted[0].total ?? -1,
+        medianChg: sorted[0].sector_median_chg ?? null,
+      };
+    })
+    .sort((a, b) => b.bestTotal - a.bestTotal);
+});
+
+const visibleGroups = computed(() =>
+  showAllGroups.value ? groupCards.value : groupCards.value.slice(0, GROUP_PREVIEW),
+);
 
 // —— 漏斗（来自 run.stats）——
 const funnel = computed(() => {
@@ -293,18 +332,22 @@ onMounted(loadRuns);
     <!-- 候选表（宽表：11 逻辑列 → 移动端横向滚动，不翻转） -->
     <section class="table-wrap" v-if="!loading && pagedPicks.length">
       <table class="grid">
+        <!-- 14 列，与下面 th 一一对应（此前 11 个 col 对 12 个 th，总分列被撑到 19%） -->
         <colgroup>
           <col style="width: 3.5%" />
           <col style="width: 7%" />
           <col style="width: 7%" />
           <col style="width: 5.5%" />
-          <col style="width: 19%" />
+          <col style="width: 5.5%" />
+          <col style="width: 9%" />
+          <col style="width: 15%" />
+          <col style="width: 6%" />
+          <col style="width: 6%" />
+          <col style="width: 5.5%" />
+          <col style="width: 6%" />
+          <col style="width: 7%" />
           <col style="width: 6.5%" />
-          <col style="width: 6%" />
-          <col style="width: 6%" />
-          <col style="width: 7%" />
-          <col style="width: 7%" />
-          <col style="width: 15.5%" />
+          <col style="width: 10%" />
         </colgroup>
         <thead>
           <tr>
@@ -313,8 +356,10 @@ onMounted(loadRuns);
             <th :class="{ sortable: true, sorted: pickSortKey === 'name' }"><button class="th-btn" @click="togglePickSort('name')">名称<span class="arrow">{{ pickArrow('name') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'sector' }"><button class="th-btn" @click="togglePickSort('sector')">板块<span class="arrow">{{ pickArrow('sector') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'total' }"><button class="th-btn" @click="togglePickSort('total')">总分<span class="arrow">{{ pickArrow('total') }}</span></button></th>
+            <th>标记</th>
             <th>分项得分<span class="thsub">自身 65 · 环境 35</span></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'chg_pct' }"><button class="th-btn" @click="togglePickSort('chg_pct')">涨跌幅<span class="arrow">{{ pickArrow('chg_pct') }}</span></button></th>
+            <th :class="{ sortable: true, sorted: pickSortKey === 'tail_seg_pct' }"><button class="th-btn" @click="togglePickSort('tail_seg_pct')">尾盘段<span class="arrow">{{ pickArrow('tail_seg_pct') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'vol_ratio' }"><button class="th-btn" @click="togglePickSort('vol_ratio')">量比<span class="arrow">{{ pickArrow('vol_ratio') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'turnover' }"><button class="th-btn" @click="togglePickSort('turnover')">换手率<span class="arrow">{{ pickArrow('turnover') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'float_cap_yi' }"><button class="th-btn" @click="togglePickSort('float_cap_yi')">流通市值<span class="arrow">{{ pickArrow('float_cap_yi') }}</span></button></th>
@@ -332,6 +377,14 @@ onMounted(loadRuns);
             <td class="name" data-label="名称">{{ p.name ?? '—' }}</td>
             <td class="sector" data-label="板块">{{ p.sector ?? '—' }}</td>
             <td class="num total" data-label="总分">{{ fmtNum(p.total) }}</td>
+            <td class="flags" data-label="标记">
+              <span v-if="p.best_in_group" class="fl best" title="同行业内总分最高">组内最优</span>
+              <span v-if="isChoppy(p)" class="fl warn" title="尾盘段内上涨分钟占比低于 55%，涨幅靠少数几分钟拉出来">拉升不连贯</span>
+              <span v-if="p.group_rank || p.group_size" class="fl grp" title="同行业候选数中的总分排名">
+                组内 {{ p.group_rank ?? '—' }}/{{ p.group_size ?? '—' }}
+              </span>
+              <span v-if="!p.best_in_group && !isChoppy(p) && !p.group_rank" class="muted">—</span>
+            </td>
             <td class="scores" data-label="分项得分">
               <div class="scgrp" v-for="g in SCORE_GROUPS" :key="g.key" :class="'g-' + g.cls">
                 <div class="scgcap"><span>{{ g.label }}</span><span>{{ g.max }}</span></div>
@@ -343,6 +396,7 @@ onMounted(loadRuns);
               </div>
             </td>
             <td class="num" data-label="涨跌幅" :class="perfClass(p.chg_pct)">{{ fmtPct(p.chg_pct) }}</td>
+            <td class="num" data-label="尾盘段" :class="perfClass(p.tail_seg_pct)">{{ fmtPct(p.tail_seg_pct, 2) }}</td>
             <td class="num" data-label="量比">{{ fmtNum(p.vol_ratio) }}</td>
             <td class="num" data-label="换手率">{{ fmtPct(p.turnover) }}</td>
             <td class="num" data-label="流通市值">{{ fmtCap((p.float_cap_yi ?? 0) * 1e8) }}</td>
@@ -370,6 +424,67 @@ onMounted(loadRuns);
     <p v-else-if="loading" class="hint">加载候选列表…</p>
     <p v-else-if="!error && detail && search.trim() && filteredPicks.length === 0" class="hint">无匹配「{{ search }}」的标的。</p>
     <p v-else-if="!error && detail" class="hint">该运行暂无候选记录。</p>
+
+    <!-- 分行业明细：对齐 eod/lib/report.js 的分组列表 —— 行业按组内最优总分降序，组内按总分降序 -->
+    <section class="glist" v-if="!loading && groupCards.length">
+      <div class="glist-head">
+        <div>
+          <h3 class="sec-title">分行业明细</h3>
+          <p class="gsub">
+            共 {{ groupCards.length }} 个行业 / {{ filteredPicks.length }} 只候选；行业按组内最优总分降序，组内按总分降序，每组展示前 {{ GROUP_SHOW }} 只。
+            跟随上方搜索，不受主表排序与分页影响。
+          </p>
+        </div>
+        <button
+          v-if="groupCards.length > GROUP_PREVIEW"
+          class="pg-btn"
+          type="button"
+          @click="showAllGroups = !showAllGroups"
+        >
+          {{ showAllGroups ? `只看前 ${GROUP_PREVIEW} 个行业` : `展开全部 ${groupCards.length} 个行业` }}
+        </button>
+      </div>
+      <div class="gcards">
+        <div class="gcard" v-for="g in visibleGroups" :key="g.sector">
+          <div class="ghead">
+            <b>{{ g.sector }}</b>
+            <span class="gmeta">
+              组内 {{ g.size }} 只 · 展示 {{ g.shown.length }} · 行业中位
+              <i :class="perfClass(g.medianChg)">{{ fmtPct(g.medianChg, 2) }}</i>
+            </span>
+          </div>
+          <table class="gtbl">
+            <thead>
+              <tr>
+                <th class="ctr">#</th>
+                <th>代码</th>
+                <th>名称</th>
+                <th class="num">涨跌幅</th>
+                <th class="num">尾盘段</th>
+                <th class="num">量比</th>
+                <th class="num">总分</th>
+                <th>标记</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(p, i) in g.shown" :key="p.code">
+                <td class="ctr idx">{{ i + 1 }}</td>
+                <td class="code">{{ p.code.replace(/^[a-z]+/, '') }}</td>
+                <td class="name" :title="p.name ?? ''">{{ p.name ?? '—' }}</td>
+                <td class="num" :class="perfClass(p.chg_pct)">{{ fmtPct(p.chg_pct) }}</td>
+                <td class="num" :class="perfClass(p.tail_seg_pct)">{{ fmtPct(p.tail_seg_pct, 2) }}</td>
+                <td class="num">{{ fmtNum(p.vol_ratio) }}</td>
+                <td class="num total">{{ fmtNum(p.total) }}</td>
+                <td class="flags">
+                  <span v-if="i === 0" class="fl best">组内最优</span>
+                  <span v-if="isChoppy(p)" class="fl warn">拉升不连贯</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -426,7 +541,7 @@ onMounted(loadRuns);
 
 /* 宽表：移动端不翻转，横向滚动 */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
-.grid { width: 100%; min-width: 920px; border-collapse: collapse; font-size: 12.5px; }
+.grid { width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 12.5px; }
 .grid th, .grid td { padding: 8px 7px; text-align: left; overflow-wrap: anywhere; vertical-align: top; }
 .grid thead th { background: var(--surface); color: var(--muted); font-weight: 600; line-height: 1.3; white-space: nowrap; }
 .grid thead th .thsub { display: block; font-size: 10px; font-weight: 400; color: var(--muted); }
@@ -461,6 +576,34 @@ onMounted(loadRuns);
 .scbar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
 .scbar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 .scv { font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* 标记列：组内最优 / 拉升不连贯 / 组内排名（阈值与 report 一致，鼠标悬停有解释） */
+.flags { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.fl { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; white-space: nowrap; line-height: 1.5; }
+.fl.best { background: rgba(248, 81, 73, 0.16); color: #ff7b72; }
+.fl.warn { background: rgba(210, 153, 34, 0.16); color: #d29922; }
+.fl.grp { background: var(--bg); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* 分行业明细：对齐 report 的分组卡片列表 */
+.glist { display: flex; flex-direction: column; gap: 12px; }
+.glist-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.glist .sec-title { margin: 0; }
+.gsub { margin: 4px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+.gcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
+.gcard { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.ghead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.ghead b { font-size: 13px; }
+.gmeta { font-size: 11.5px; color: var(--muted); }
+.gtbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.gtbl th { padding: 4px 6px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.gtbl td { padding: 4px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.gtbl tbody tr:last-child td { border-bottom: none; }
+.gtbl .ctr { text-align: center; }
+.gtbl .idx { color: var(--muted); font-size: 11px; }
+.gtbl .code { color: var(--accent); font-variant-numeric: tabular-nums; }
+.gtbl .name { font-weight: 500; max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+.gtbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+.gtbl .total { font-weight: 700; }
 
 /* 复盘 N 列：7 个检查点小芯片，红涨绿跌 */
 .ncols { display: flex; flex-wrap: wrap; gap: 3px; }
