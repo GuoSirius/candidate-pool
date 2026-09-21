@@ -8,11 +8,13 @@
  * 根 package.json 为 CommonJS，故用 .cjs + module.exports。
  */
 module.exports = {
-  // 仓库信息会展示在 CHANGELOG 顶部链接
-  repo: {
-    provider: 'github',
-    repo: 'GuoSirius/candidate-pool',
-  },
+  // ⚠️ 这里**不要**手写 `repo`。changelogen 内部是：
+  //     if (!config.repo) config.repo = await resolveRepoConfig(cwd)   // 未配置才推断
+  // 一旦给了值它就跳过推断 —— 而链接是用 `config.repo.domain` 拼的，
+  // 写成 { provider, repo } 这种**缺 domain** 的对象会生成 81 个
+  // `https://undefined/GuoSirius/...` 死链（本项目踩过，已修）。
+  // 留空即可：changelogen 会从 package.json 的 repository 字段 / git remote 推断出
+  // { provider: 'github', repo: 'GuoSirius/candidate-pool', domain: 'github.com' }。
   types: {
     feat: { title: '🚀 新功能 (Features)', semver: 'minor' },
     fix: { title: '🐛 缺陷修复 (Bug Fixes)', semver: 'patch' },
