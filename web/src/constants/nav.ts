@@ -94,6 +94,25 @@ export function findNavItem(path: string): NavItem | null {
   return prefix ?? null;
 }
 
+/** 当前参与高亮判定的路径：个股详情页回落到 `?from=` 的来源路径。 */
+function navMatchPath(path: string, from: string): string {
+  if (path.startsWith('/stock/') && from) return from.split('?')[0];
+  return path;
+}
+
+/**
+ * 当前**唯一**应当高亮的导航项（不在导航里的页面 → null）。
+ *
+ * 为什么必须收敛成「唯一」：NAV_GROUPS 里存在父子关系的项（如 `/tail` 与 `/tail/history`）。
+ * 若按「path 以 item.to 开头即高亮」判断，站在 `/tail/history` 时 `/tail` 也会命中 →
+ * **两个菜单项同时点亮**（2026-09-21 用户截图反馈「左侧菜单同时高亮了多个」）。
+ * 这里复用 findNavItem 的「精确优先、其次最长前缀」规则先算出唯一归属项，
+ * 再让各项与它比对 key —— 从结构上排除「多个同时高亮」，以后再加子路由也不会复发。
+ */
+export function activeNavItem(path: string, from: string): NavItem | null {
+  return findNavItem(navMatchPath(path, from));
+}
+
 /**
  * 判断某个导航项当前是否高亮。
  *
@@ -102,12 +121,6 @@ export function findNavItem(path: string): NavItem | null {
  * 这样用户在详情页也不会失去「我在哪」的位置感（此前这里是完全无高亮的）。
  */
 export function isNavActive(item: NavItem, path: string, from: string): boolean {
-  if (item.to === '/') return path === '/';
-  if (path === item.to || path.startsWith(item.to + '/')) return true;
-  if (path.startsWith('/stock/') && from) {
-    const [fromPath] = from.split('?');
-    if (item.to === '/') return fromPath === '/';
-    return fromPath === item.to || fromPath.startsWith(item.to + '/');
-  }
-  return false;
+  const active = activeNavItem(path, from);
+  return active !== null && active.key === item.key;
 }
