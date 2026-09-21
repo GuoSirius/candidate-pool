@@ -5,6 +5,10 @@ import StockView from '../views/StockView.vue';
 import StatsView from '../views/StatsView.vue';
 import AllStocksView from '../views/AllStocksView.vue';
 import MineView from '../views/MineView.vue';
+import TailView from '../views/TailView.vue';
+import TailHistoryView from '../views/TailHistoryView.vue';
+import TailReviewView from '../views/TailReviewView.vue';
+import TailDiffView from '../views/TailDiffView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,6 +18,10 @@ const router = createRouter({
     { path: '/stats', name: 'stats', component: StatsView },
     { path: '/mine', name: 'mine', component: MineView },
     { path: '/rules', name: 'rules', component: RulesView },
+    { path: '/tail', name: 'tail', component: TailView },
+    { path: '/tail/history', name: 'tail-history', component: TailHistoryView },
+    { path: '/tail/review', name: 'tail-review', component: TailReviewView },
+    { path: '/tail/diff', name: 'tail-diff', component: TailDiffView },
     { path: '/stock/:code', name: 'stock', component: StockView, props: true },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

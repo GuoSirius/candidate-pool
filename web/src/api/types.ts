@@ -233,3 +233,146 @@ export const TIER_LABELS: Record<Tier, string> = {
 };
 
 export const TIER_ORDER: Tier[] = ['high', 'secondary', 'conditional', 'excluded'];
+
+// ---------------------------------------------------------------------------
+// 尾盘选股（EOD Tail Screener）镜像类型：与 worker/src/types.ts 保持一致
+// ---------------------------------------------------------------------------
+
+/** 尾盘口径：formal = 收盘后固定口径；observe = 盘中观察口径。 */
+export type TailMode = 'formal' | 'observe';
+
+/** 尾盘运行批次（解析自 tail_run 的 runs_json / stats_json）。 */
+export interface TailRun {
+  trade_date: string;
+  mode: TailMode;
+  cut_at: string | null;
+  updated_at: string | null;
+  run_at: string | null;
+  candidate_count: number | null;
+  group_count: number | null;
+  pre_pass_count: number | null;
+  snapshot_count: number | null;
+  runner: string | null;
+  /** 当日多次运行历史（解析自 runs_json） */
+  runs: unknown[] | null;
+  /** 初筛 / 漏斗统计（解析自 stats_json） */
+  stats: TailRunStats | null;
+}
+
+/** 漏斗与统计（stats_json 结构，宽松类型）。 */
+export interface TailRunStats {
+  snapshotCount?: number;
+  prePassCount?: number;
+  preByReason?: Record<string, number>;
+  minuteDropped?: number;
+  tailByReason?: Record<string, number>;
+  candidateCount?: number;
+  groupCount?: number;
+  [k: string]: unknown;
+}
+
+/** 收盘回填表现（解析自 tail_pick.fill_json）。 */
+export interface TailFill {
+  close: number | null;
+  n1: number | null;
+  n2: number | null;
+  n3: number | null;
+  n5: number | null;
+  n7: number | null;
+  n9: number | null;
+  n10: number | null;
+  filledAt: string | null;
+}
+
+/** 尾盘候选记录（tail_pick，与 worker 字段对齐；score / bars / fill 已解析）。 */
+export interface TailPick {
+  trade_date: string;
+  mode: TailMode;
+  code: string;
+  name: string | null;
+  sector: string | null;
+  board: string | null;
+  board_label: string | null;
+  price: number | null;
+  prev_close: number | null;
+  high: number | null;
+  chg_pct: number | null;
+  turnover: number | null;
+  vol_ratio: number | null;
+  vol_ratio_est: number | null;
+  float_cap_yi: number | null;
+  avg_price: number | null;
+  group_rank: number | null;
+  best_in_group: number | null;
+  group_size: number | null;
+  total: number | null;
+  sector_median_chg: number | null;
+  sector_rank: number | null;
+  sector_total: number | null;
+  tail_seg_pct: number | null;
+  tail_up_ratio: number | null;
+  tail_max_drawdown_pct: number | null;
+  tail_price_vs_avg_pct: number | null;
+  tail_avg_at_cut: number | null;
+  tail_p0: number | null;
+  tail_p1: number | null;
+  /** 尾盘段分钟序列（解析自 tail_bars） */
+  tail_bars: number[] | null;
+  /** 六项子分（解析自 score_json）：尾盘动能 / 量能 / 位置 / 均线 / 板块 / 换手适中度（已乘权重） */
+  score: Record<string, number> | null;
+  /** 收盘回填表现（解析自 fill_json） */
+  fill: TailFill | null;
+}
+
+/** 尾盘候选 + N1~N10 复盘表现。 */
+export interface TailPickRow extends TailPick {
+  perf: Perf | null;
+}
+
+/** /api/tail/run 返回：运行批次 + 当日候选（带表现）。 */
+export interface TailRunDetail {
+  run: TailRun;
+  picks: TailPickRow[];
+}
+
+/** /api/tail/review 的区间汇总（各周期胜率 / 均值）。 */
+export interface TailReviewSummary {
+  picks: number;
+  n1: HorizonStat;
+  n2: HorizonStat;
+  n3: HorizonStat;
+  n5: HorizonStat;
+  n7: HorizonStat;
+  n9: HorizonStat;
+  n10: HorizonStat;
+}
+
+/** /api/tail/review 返回：候选明细 + 区间汇总。 */
+export interface TailReviewResult {
+  rows: TailPickRow[];
+  summary: TailReviewSummary;
+  range: { from: string | null; to: string | null; mode: TailMode };
+}
+
+/** /api/tail/diff 单只票对照行。 */
+export interface TailDiffRow {
+  code: string;
+  name: string | null;
+  sector: string | null;
+  inObserve: boolean;
+  inFormal: boolean;
+  observeTotal: number | null;
+  formalTotal: number | null;
+  /** 总分差（formal - observe）；仅当两端都有时有效 */
+  totalDelta: number | null;
+  /** 复盘表现（优先 formal，否则 observe） */
+  perf: Perf | null;
+}
+
+/** /api/tail/diff 返回：某交易日观察口径 vs 固定口径的对照。 */
+export interface TailDiffResult {
+  tradeDate: string;
+  observe: TailPickRow[];
+  formal: TailPickRow[];
+  diff: TailDiffRow[];
+}

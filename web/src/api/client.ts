@@ -15,6 +15,11 @@ import type {
   Tier,
   StatsResult,
   StockRankRow,
+  TailMode,
+  TailRun,
+  TailRunDetail,
+  TailReviewResult,
+  TailDiffResult,
 } from './types';
 import { writeToken } from '../utils/writeToken';
 
@@ -137,6 +142,37 @@ export const api = {
   /** 全部入选股票汇总（入选次数 + 各档数量 + 首次/最近入选日）。 */
   getStockRank(): Promise<StockRankRow[]> {
     return request<StockRankRow[]>('/api/stock-rank?limit=5000');
+  },
+
+  // -------------------------------------------------------------------------
+  // 尾盘选股（EOD Tail Screener）读接口
+  // -------------------------------------------------------------------------
+
+  /** 尾盘运行批次列表（按交易日倒序）；mode 可选 formal / observe。 */
+  getTailRuns(limit = 30, mode?: TailMode): Promise<TailRun[]> {
+    const params = new URLSearchParams();
+    params.set('limit', String(limit));
+    if (mode) params.set('mode', mode);
+    return request<TailRun[]>(`/api/tail/runs?${params.toString()}`);
+  },
+
+  /** 某交易日某口径的尾盘候选（运行批次 + 候选明细，带 N1~N10 表现）。 */
+  getTailRun(date: string, mode: TailMode): Promise<TailRunDetail> {
+    return request<TailRunDetail>(`/api/tail/run?date=${encodeURIComponent(date)}&mode=${mode}`);
+  },
+
+  /** 尾盘复盘：区间内候选的 N1~N10 命中率 / 均值 + 明细。 */
+  getTailReview(from: string | null, to: string | null, mode: TailMode): Promise<TailReviewResult> {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    params.set('mode', mode);
+    return request<TailReviewResult>(`/api/tail/review?${params.toString()}`);
+  },
+
+  /** 尾盘对照：某交易日观察口径 vs 固定口径。 */
+  getTailDiff(date: string): Promise<TailDiffResult> {
+    return request<TailDiffResult>(`/api/tail/diff?date=${encodeURIComponent(date)}`);
   },
 
   // -------------------------------------------------------------------------

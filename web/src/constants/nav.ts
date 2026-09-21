@@ -50,9 +50,10 @@ export const NAV_GROUPS: NavGroup[] = [
     key: 'tail',
     label: '盘中选股',
     items: [
-      { key: 'tail', label: '尾盘候选', to: '/tail', icon: 'clock', soon: true },
-      { key: 'tail-history', label: '尾盘记录', to: '/tail/history', icon: 'history', soon: true },
-      { key: 'tail-review', label: '尾盘复盘', to: '/tail/review', icon: 'target', soon: true },
+      { key: 'tail', label: '尾盘候选', to: '/tail', icon: 'clock' },
+      { key: 'tail-history', label: '尾盘记录', to: '/tail/history', icon: 'history' },
+      { key: 'tail-review', label: '尾盘复盘', to: '/tail/review', icon: 'target' },
+      { key: 'tail-diff', label: '口径对照', to: '/tail/diff', icon: 'diff' },
     ],
   },
   {
