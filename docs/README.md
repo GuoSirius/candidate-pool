@@ -29,4 +29,4 @@
 | [eod-tail-screener/04-待确认.md](eod-tail-screener/04-待确认.md) | 尾盘选股：需你拍板的开放问题（确认后才进入开发） |
 | [notes-groups/01-方案.md](notes-groups/01-方案.md) | 评论/分组：需求、接口清单、写鉴权方案、前端交互、边界 |
 | [npm-publish/02-方案.md](npm-publish/02-方案.md) | 独立发布：两种运行模式差异、边界清单、全量打包 / 只发尾盘 / npx github 三方案对比、落地顺序、已完成的可重定位层 |
-| [npm-publish/03-计划.md](npm-publish/03-计划.md) | 独立发布实施计划：方案 A 交付物、NPM_TOKEN 配置、发布链路、三道闸、踩坑、验证清单、遗留项 |
+| [npm-publish/03-计划.md](npm-publish/03-计划.md) | 独立发布实施计划：方案 A 交付物、首次运行脚手架、发布链路、部署已解耦、向后兼容四条保票、npx 不 pin 版本、三道闸、踩坑、验证清单 |

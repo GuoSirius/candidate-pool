@@ -57,9 +57,24 @@ npx tail-screener --help          # 尾盘选股（= eod/tail_screener.js）
 ```
 
 装包运行时默认工作目录是**当前目录**（而非包目录），因此产物落在你执行命令的地方；
-`CANDIDATE_POOL_HOME` / `--cwd` 可覆盖。⚠️ 首次在**空目录**运行需要自行准备
-`candidates.json`（观察池）、`notify_config.json`（推送凭据）、`db/.env`（D1 凭据）——
-自动脚手架尚未实现，详见 [docs/npm-publish/03-计划.md](docs/npm-publish/03-计划.md) §9。
+`CANDIDATE_POOL_HOME` / `--cwd` 可覆盖。
+
+**首次运行会自动补齐工作目录**（幂等，已有文件一个字节都不动）：
+
+| 自动创建 | 说明 |
+|---|---|
+| `data/` `reports/` `eod/data/` `eod/reports/` `db/` | 产物目录 |
+| `candidates.json` | 观察池，来自包内示例模板（52 只 / 26 个行业），**请按自己的口径替换**（推荐 `npx candidate-pool` 后跑 `node build_universe.js`） |
+
+**不会**自动创建 `notify_config.json`（推送凭据）与 `db/.env`（D1 凭据）—— 占位值会让程序从
+「未配置 → 跳过」变成「配了假值 → 真的去发」。它们只以 `cp` 命令的形式提示：
+
+```bash
+npx candidate-pool --init         # 只做初始化 + 打印可选配置的复制命令，不联网
+npx candidate-pool --paths        # 只看落点（纯诊断，不产生任何写入）
+```
+
+> 定时任务与临时使用一律用 `npx candidate-pool`，**不固定版本**——阈值与口径的调整发布即生效。
 
 ### 发布（一条命令，npm publish 与 Release 在云端完成）
 
@@ -68,7 +83,10 @@ npm run release
 ```
 
 一条命令跑完：类型门禁 → 未提交检测 → 选 patch/minor/major → changelogen 写版本号与 CHANGELOG
-→ **打印 Release 说明预览**（CI 用的是同一个脚本，所见即所得）→ 提交 → 打 tag → push → 部署。
+→ **打印 Release 说明预览**（CI 用的是同一个脚本，所见即所得）→ 提交 → 打 tag → push。
+
+**不含部署**（已与发版解耦，见 [docs/npm-publish/03-计划.md](docs/npm-publish/03-计划.md) §5）；
+需要上线前端与接口时单独 `npm run deploy`。
 
 本机到此为止。tag 推送即触发 `.github/workflows/release.yml` 接力：
 **版本一致性校验 → 离线自测 → 打包体检 → `npm publish`（需仓库 Secret `NPM_TOKEN`）→ 建 GitHub Release**，
@@ -700,7 +718,7 @@ npm run deploy -- --api https://api.example.com   # 改调外部 Worker（跨源
 > npx wrangler pages deploy dist --project-name candidate-pool-web --branch main
 > ```
 
-## 发布流程（版本 + Changelog + 类型门禁 + 提交校验 + 部署）
+## 发布流程（版本 + Changelog + 类型门禁 + 提交校验 + npm 发布 + Release）
 
 统一在**仓库根目录**执行 `npm run release`，一条命令串起全流程。**发布前请先 `npm install` / `npm run setup`**（会自动 `prepare → husky` 安装 Git 钩子）。
 
@@ -711,20 +729,23 @@ npm run deploy -- --api https://api.example.com   # 改调外部 Worker（跨源
 | ③ 选版本 | ↑/↓ 选 patch / minor / major，只显示「当前版本 + 三档新版本号」（CHANGELOG 由 changelogen 在选定后生成，不在选择界面刷屏） | release 脚本交互 |
 | ④ 版本 + Changelog | `changelogen --<type> --bump` 写版本号 + 增量中文 `CHANGELOG.md` | release 脚本 |
 | ⑤ 版本同步 | 把新版本号同步进 `worker/`、`web/` 的 `package.json`，避免漂移 | release 脚本 |
-| ⑥ 提交 + 打 tag + 推送 | `chore(release): vX.Y.Z` 提交、`git tag vX.Y.Z`、`push` + `push --tags` | release 脚本 |
-| ⑦ 部署 | `npm run deploy --prefix worker`（Worker）+ `npm run deploy --prefix web`（Pages，含构建） | release 脚本 |
+| ⑥ Release 说明预览 | 与 CI 同一个脚本，为空当场告警（否则 CI 会安静地建出空 Release） | release 脚本 |
+| ⑦ 提交 + 打 tag + 推送 | `chore(release): vX.Y.Z` 提交、`git tag vX.Y.Z`、`push` + `push --tags` | release 脚本 |
+| ⑧ npm 发布 + 建 Release | 版本校验 → 离线自测 → 打包体检 → `npm publish --provenance` → GitHub Release | **GitHub Actions**（tag 触发，见 `.github/workflows/release.yml`） |
 
-> 约定式提交（commitlint）通过 husky 的 `commit-msg` 钩子**对所有提交强制校验**——包括上面的 ② 与 ⑥ 提交，不符合 `feat/fix/...` 规范会被拒绝。类型门禁通过 husky 的 `pre-commit` 钩子执行（仅当三个包的 `node_modules` 都已安装时，否则跳过并提示）。
+> **部署不在其中**（`npm run deploy` 单独执行）：tag 推上去就不可回滚，而部署失败发生在其后，会留下「版本已发布、站点还是旧的」的中间态。理由见 [docs/npm-publish/03-计划.md](docs/npm-publish/03-计划.md) §5。
+
+> 约定式提交（commitlint）通过 husky 的 `commit-msg` 钩子**对所有提交强制校验**——包括上面的 ② 与 ⑦ 提交，不符合 `feat/fix/...` 规范会被拒绝。类型门禁通过 husky 的 `pre-commit` 钩子执行（仅当三个包的 `node_modules` 都已安装时，否则跳过并提示）。
 
 ```bash
 # 日常：本地提交会自动过 commitlint + typecheck 钩子
 git commit -m "feat(api): 新增 N2/N7/N9 涨幅口径"
 
-# 发布（交互式选版本 → 自动 changelog + 部署）
+# 发布（交互式选版本 → changelog → 打 tag → CI 发布 npm 与 GitHub Release）
 npm run release
 ```
 
-> 版本号以根 `package.json` 为准（当前 `1.0.0`），后续每次发布在此基础上递增；`worker` / `web` 与之保持同步。
+> 版本号以根 `package.json` 为准（当前 `1.1.0`），后续每次发布在此基础上递增；`worker` / `web` 与之保持同步。
 
 ---
 
