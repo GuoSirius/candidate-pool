@@ -1,0 +1,133 @@
+{
+ "version": 1,
+ "tradeDate": "2026-09-21",
+ "mode": "observe",
+ "cutAt": "1431",
+ "updatedAt": "2026-09-21 14:31:42",
+ "runs": [
+  {
+   "at": "2026-09-21 14:31:42",
+   "mode": "observe",
+   "cutAt": "1431",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 2,
+   "groupCount": 2,
+   "prePassCount": 516,
+   "snapshotCount": 6165,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6165,
+  "prePassCount": 516,
+  "preByReason": {
+   "当日涨幅不在区间": 3435,
+   "停牌或已退市（无成交）": 332,
+   "ST / 退市风险股": 481,
+   "量比不足": 813,
+   "换手率不在区间": 476,
+   "流通市值不在区间": 104,
+   "股价过低": 8
+  },
+  "minuteDropped": 514,
+  "tailByReason": {
+   "尾盘段涨幅不足": 513,
+   "现价低于当日均价": 89,
+   "距日内高点回落过多": 177,
+   "关键字段缺失或分时数据不可用": 6
+  },
+  "candidateCount": 2,
+  "groupCount": 2
+ },
+ "records": {
+  "sz002042": {
+   "code": "sz002042",
+   "name": "华孚时尚",
+   "sector": "纺织制造",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 4.09,
+   "prevClose": 3.84,
+   "high": 4.11,
+   "chgPct": 6.51,
+   "turnover": 3.66,
+   "volRatio": 3.31,
+   "volRatioEst": 3.7649289099526064,
+   "floatCapYi": 69.56,
+   "avgPrice": 3.9888821994752774,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 1.2345679012345634,
+    "upRatio": 1,
+    "maxDrawdownPct": 0,
+    "priceVsAvgPct": 2.7856876931421803,
+    "avgAtCut": 3.9888821994752774,
+    "p0": 4.05,
+    "p1": 4.1,
+    "bars": 2,
+    "segFrom": "1430",
+    "cut": "1431"
+   },
+   "score": {
+    "tailMomentum": 18.51851851851845,
+    "volume": 20,
+    "position": 12.566909975668935,
+    "avgLine": 10,
+    "sector": 15,
+    "turnoverFit": 10
+   },
+   "total": 86.08542849418738,
+   "sectorMedianChg": 4.19,
+   "sectorRank": 50,
+   "sectorTotal": 92,
+   "fill": {}
+  },
+  "sz300420": {
+   "code": "sz300420",
+   "name": "五洋自控",
+   "sector": "通用设备",
+   "board": "gem",
+   "boardLabel": "创业板",
+   "price": 7.73,
+   "prevClose": 7.54,
+   "high": 7.75,
+   "chgPct": 2.52,
+   "turnover": 4.59,
+   "volRatio": 1.24,
+   "volRatioEst": 1.41042654028436,
+   "floatCapYi": 86.29,
+   "avgPrice": 7.595175823743541,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.5208333333333338,
+    "upRatio": 1,
+    "maxDrawdownPct": 0,
+    "priceVsAvgPct": 1.6434665786964509,
+    "avgAtCut": 7.595175823743541,
+    "p0": 7.68,
+    "p1": 7.72,
+    "bars": 2,
+    "segFrom": "1430",
+    "cut": "1431"
+   },
+   "score": {
+    "tailMomentum": 7.812500000000007,
+    "volume": 0.4444444444444448,
+    "position": 11.129032258064482,
+    "avgLine": 10,
+    "sector": 15,
+    "turnoverFit": 10
+   },
+   "total": 54.385976702508934,
+   "sectorMedianChg": 3.98,
+   "sectorRank": 56,
+   "sectorTotal": 92,
+   "fill": {}
+  }
+ }
+}
