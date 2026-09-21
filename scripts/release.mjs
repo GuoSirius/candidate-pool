@@ -186,6 +186,10 @@ async function main() {
   run(`git push origin ${branch}`);
   run('git push origin --tags');
   console.log(`\n✅ 已发布 v${newVersion} 并推送 (branch=${branch})`);
+  // 本机**不执行** npm publish：tag 推送即触发 .github/workflows/release.yml，
+  // 由 CI 完成「版本校验 → 离线自测 → 打包体检 → npm publish → 建 GitHub Release」。
+  console.log('   ↳ tag 已触发 GitHub Actions，npm 发布与 Release 说明在云端完成：');
+  console.log(`      https://github.com/GuoSirius/candidate-pool/actions`);
 
   // ⑦ 部署阶段：Worker + Pages（Cloudflare）
   console.log('\n🚀 开始部署到 Cloudflare ...');

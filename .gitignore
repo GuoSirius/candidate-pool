@@ -30,3 +30,7 @@ db/local.db*
 .wrangler/
 .dev.vars
 .dev.vars.*
+
+# 发布临时产物（release-notes.md 由 CI 生成；*.tgz 来自本地 npm pack）
+release-notes.md
+*.tgz
