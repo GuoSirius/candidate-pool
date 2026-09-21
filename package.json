@@ -15,6 +15,7 @@
     "db:migrate:local": "node db/migrate.js --local",
     "db:migrate:both": "node db/migrate.js --both",
     "db:migrate:dry": "node db/migrate.js --dry-run",
+    "db:selftest": "node db/diff_selftest.js",
     "db:sync": "node db/backfill.js --both",
     "db:verify": "node db/verify_sync.js",
     "db:local": "node db/backfill.js --local",
