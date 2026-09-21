@@ -13,6 +13,9 @@
  *   自动 notes 只列**有 PR 的**变更，而本仓库直接推 main、不走 PR —— 结果会只剩一行
  *   compare 链接，看不到逐条提交。需求是「每个版本的所有提交变化都可见」。
  *
+ * **支持「打 tag 前预览」**：tag 尚不存在时自动以 HEAD 代替（见 revOf），
+ * 这样 `npm run release` 能在推 tag 之前先把说明打出来给人过目。
+ *
  * 用法：
  *   node scripts/release-notes.mjs --tag v1.2.0 --out release-notes.md --install
  *   node scripts/release-notes.mjs                      # 取 HEAD 上的精确 tag，打到 stdout
@@ -58,11 +61,26 @@ function resolveTag() {
   }
 }
 
-/** 上一版 tag：`<tag>^` 的最近祖先 tag；没有更早的 tag 时返回 null（首个版本） */
+/**
+ * 把 tag 解析成一个**确实存在的** revision。
+ * tag 还没创建时（`npm run release` 在推 tag 前预览说明）回退到 HEAD —— 否则
+ * `git describe <tag>^` 会失败，脚注会误报「首次发布 / 0 个提交」。
+ */
+function revOf(tag) {
+  try {
+    git(['rev-parse', '--verify', '--quiet', `${tag}^{commit}`], true);
+    return tag;
+  } catch {
+    return 'HEAD';
+  }
+}
+
+/** 上一版 tag：从 tag 的父提交往前找最近的 tag；没有更早的 tag 时返回 null（首个版本） */
 function resolvePrev(tag) {
   if (OPT.prev) return OPT.prev;
+  const pending = revOf(tag) === 'HEAD'; // 预览场景：tag 还没建，从 HEAD 起算
   try {
-    return git(['describe', '--tags', '--abbrev=0', `${tag}^`], true);
+    return git(['describe', '--tags', '--abbrev=0', pending ? 'HEAD' : `${tag}^`], true);
   } catch {
     return null;
   }
@@ -139,12 +157,13 @@ function parseCommit(line) {
   };
 }
 
-function notesFromGit(tag, prev, repo) {
-  const range = prev ? `${prev}..${tag}` : tag;
-  const raw = git(['log', range, '--pretty=format:%H\x1f%s']);
-  const commits = raw ? raw.split('\n').filter(Boolean).map(parseCommit) : [];
-  const link = (sha) => (repo ? `[\`${sha.slice(0, 8)}\`](${repo}/commit/${sha})` : `\`${sha.slice(0, 8)}\``);
+function commitsInRange(prev, rev) {
+  const raw = git(['log', prev ? `${prev}..${rev}` : rev, '--pretty=format:%H\x1f%s']);
+  return raw ? raw.split('\n').filter(Boolean).map(parseCommit) : [];
+}
 
+function notesFromGit(commits, repo) {
+  const link = (sha) => (repo ? `[\`${sha.slice(0, 8)}\`](${repo}/commit/${sha})` : `\`${sha.slice(0, 8)}\``);
   const L = [];
   for (const title of [...GROUPS.map(([, t]) => t), OTHER]) {
     const list = commits.filter((c) => c.group === title);
@@ -154,13 +173,14 @@ function notesFromGit(tag, prev, repo) {
     L.push('');
   }
   if (!commits.length) L.push('_本版无新增提交（可能是空发布，或 tag 指向了已发布过的提交）。_', '');
-  return { body: L.join('\n').trim(), count: commits.length };
+  return L.join('\n').trim();
 }
 
 // ---------- 组装 ----------
 function build() {
   const tag = resolveTag();
   const version = tag.replace(/^v/, '');
+  const rev = revOf(tag);
   const prev = resolvePrev(tag);
   const repo = repoUrl();
 
@@ -170,18 +190,18 @@ function build() {
   if (OPT.source !== 'git' && existsSync(changelogPath)) {
     body = extractChangelogSection(readFileSync(changelogPath, 'utf8'), version);
   }
+  let commits = null;
   if (!body) {
     source = 'git';
-    body = notesFromGit(tag, prev, repo).body;
+    commits = commitsInRange(prev, rev);
+    body = notesFromGit(commits, repo);
   }
   if (!body) body = '_本版无变更记录。_';
 
-  const total = (() => {
-    try {
-      const raw = git(['log', prev ? `${prev}..${tag}` : tag, '--pretty=format:%H'], true);
-      return raw ? raw.split('\n').filter(Boolean).length : 0;
-    } catch { return 0; }
-  })();
+  if (!commits) {
+    try { commits = commitsInRange(prev, rev); } catch { commits = []; }
+  }
+  const total = commits.length;
 
   const L = [body, '', '---', ''];
   if (prev && repo) L.push(`**完整变更**：[${prev}...${tag}](${repo}/compare/${prev}...${tag}) ｜ 共 **${total}** 个提交`);
@@ -196,11 +216,12 @@ function build() {
   }
   if (repo) L.push('', `**CHANGELOG**：[完整变更日志](${repo}/blob/main/CHANGELOG.md)`);
 
-  return { tag, prev, source, total, body: L.join('\n').trim() + '\n' };
+  return { tag, prev, source, total, pending: rev === 'HEAD', body: L.join('\n').trim() + '\n' };
 }
 
-const { tag, prev, source, total, body } = build();
-const info = `[release-notes] ${tag}（上一版 ${prev || '—'}，来源 ${source}，${total} 个提交，${body.split('\n').length} 行）`;
+const { tag, prev, source, total, pending, body } = build();
+const info = `[release-notes] ${tag}（上一版 ${prev || '—'}，来源 ${source}，${total} 个提交`
+  + `${pending ? '，tag 尚未创建：按 HEAD 统计' : ''}，${body.split('\n').length} 行）`;
 if (OPT.out) {
   writeFileSync(OPT.out, body);
   process.stderr.write(`${info} → ${OPT.out}\n`);
