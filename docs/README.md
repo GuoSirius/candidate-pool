@@ -8,6 +8,7 @@
 |------|------|
 | `docs/eod-tail-screener/` | 尾盘选股（收盘前 10 分钟）新功能：需求 / 方案 / 计划 |
 | `docs/notes-groups/` | 评论（备注）与分组管理：可写能力方案 |
+| `docs/npm-publish/` | 独立发布（npm 包 / 免拉代码运行）：三方案对比与落地顺序 |
 
 ## 命名规范
 
@@ -27,3 +28,4 @@
 | [eod-tail-screener/03-计划.md](eod-tail-screener/03-计划.md) | 尾盘选股：分阶段交付物与验证清单 |
 | [eod-tail-screener/04-待确认.md](eod-tail-screener/04-待确认.md) | 尾盘选股：需你拍板的开放问题（确认后才进入开发） |
 | [notes-groups/01-方案.md](notes-groups/01-方案.md) | 评论/分组：需求、接口清单、写鉴权方案、前端交互、边界 |
+| [npm-publish/02-方案.md](npm-publish/02-方案.md) | 独立发布：两种运行模式差异、边界清单、全量打包 / 只发尾盘 / npx github 三方案对比、落地顺序、已完成的可重定位层 |

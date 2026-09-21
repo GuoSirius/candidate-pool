@@ -20,6 +20,35 @@
 - 运行脚本的 Node 路径可用 `CANDIDATE_NODE` 环境变量指定（旧变量名 `WESTOCK_NODE` 仍兼容）。
 - **离线模式** 完全不发网络请求，从已提交的快照重建报告，任何机器 / CI 上都能跑。
 
+## 工作目录（产物与配置的落点）
+
+默认就是**本仓库根**——即「拉代码运行」的行为与历史完全一致，无需任何配置。
+
+如果你把本仓库当作一个工具从**别处调用**（例如当作依赖装进 `node_modules`、或 `npx github:...`），
+那么代码目录 ≠ 你的工作目录，产物会写进包目录（重装即丢）。此时显式指定工作目录：
+
+```bash
+# 环境变量（推荐：所有脚本都认，含 db/*.js）
+CANDIDATE_POOL_HOME=/your/workdir node gen_candidates.js
+
+# 或命令行（仅两个入口脚本）
+node gen_candidates.js --cwd /your/workdir
+node eod/tail_screener.js --cwd /your/workdir
+```
+
+工作目录下保持相同布局（相对路径不变，只是换了根）：`candidates.json`、`data/`、`reports/`、
+`notify_config.json`、`eod/data/`、`eod/reports/`、`db/local.db`、`db/.env`。
+而 `db/schema.sql`、`db/migrations/` 属于**代码资产**，永远跟程序走、不随工作目录移动。
+
+想知道「文件到底写到哪去了」：
+
+```bash
+npm run paths                 # = gen_candidates.js --paths
+node eod/tail_screener.js --paths
+```
+
+会打印解析出的工作目录、来源（env / argv / 包根）与全部落点。回归自测：`npm run paths:selftest`。
+
 ---
 
 ## 数据存储与入库（本地 SQLite 开发 + Cloudflare D1 生产）
