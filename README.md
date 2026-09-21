@@ -61,23 +61,26 @@ npx tail-screener --help          # 尾盘选股（= eod/tail_screener.js）
 `candidates.json`（观察池）、`notify_config.json`（推送凭据）、`db/.env`（D1 凭据）——
 自动脚手架尚未实现，详见 [docs/npm-publish/03-计划.md](docs/npm-publish/03-计划.md) §9。
 
-### 发布（本机只打 tag，npm 发布在 CI）
+### 发布（一条命令，npm publish 与 Release 在云端完成）
 
 ```bash
-npm run release                   # 交互式：选版本 → 写 CHANGELOG → 提交 → 打 tag → push
+npm run release
 ```
 
-tag 推送后由 `.github/workflows/release.yml` 接力：**版本一致性校验 → 离线自测 → 打包体检 →
-`npm publish`（需仓库 Secret `NPM_TOKEN`）→ 建 GitHub Release**。
-Release 说明取自 `CHANGELOG.md` 的本版本段落，取不到则用 `git log` 按同一套 type 分组兜底，
-保证每个版本的**全部提交**都可见。**本机不执行 `npm publish`。**
+一条命令跑完：类型门禁 → 未提交检测 → 选 patch/minor/major → changelogen 写版本号与 CHANGELOG
+→ **打印 Release 说明预览**（CI 用的是同一个脚本，所见即所得）→ 提交 → 打 tag → push → 部署。
 
-发布前自查（都不发网络请求）：
+本机到此为止。tag 推送即触发 `.github/workflows/release.yml` 接力：
+**版本一致性校验 → 离线自测 → 打包体检 → `npm publish`（需仓库 Secret `NPM_TOKEN`）→ 建 GitHub Release**，
+收尾会把「运行日志 / npm 页面 / Release 页面」三条链接打出来。**本机不执行 `npm publish`。**
+
+`npm run release:notes` 是上面那步预览的**独立入口**：只生成说明文本、**不发布任何东西**，
+用于发版前核对或事后排障（它也支持「tag 还没创建」的预览场景，会自动按 HEAD 统计）。
 
 ```bash
+npm run release:notes -- --tag v1.2.0                # 预览说明（默认打到 stdout）
+npm run release:notes -- --tag v1.2.0 --source git   # 强制走 git 兜底分支，便于比对
 npm run verify:pack                                  # 打包体检：敏感文件守门 + 必需文件 + 体积红线
-npm run release:notes -- --tag v1.1.0                # 预览 Release 说明（默认打到 stdout）
-npm run release:notes -- --tag v1.1.0 --source git   # 强制走 git 兜底分支比对
 ```
 
 ---
