@@ -485,7 +485,28 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 ### 第 2 步：触发
 
 - **手动**：`Actions → Daily A-Share Screening → Run workflow`。`mode` 默认 `live`，另可填 `date` 回填指定锚定日。
-- **定时**：`cron 35 7 * * 1-5`（北京时间 15:35，周一至周五），**走实时抓取**。
+- **定时**：`cron 30 7 * * 1-5`（北京时间 **15:30**，周一至周五），**走实时抓取**。
+
+### 全部工作流一览
+
+仓库共有 **5 个**工作流，其中 3 个是交易日定时任务。**GitHub cron 只负责「触发」**（普遍延迟 1–5 分钟），真实取数时点由程序内的时段守卫决定：
+
+| 工作流 | cron（UTC） | 北京时间 | 取数时点 | 写 D1 | 推送微信/邮件 |
+|--------|-------------|----------|----------|-------|---------------|
+| `tail-observe.yml` | `20 6 * * 1-5` | 14:20 触发 | **14:30**（程序内等窗口） | ✅ | ❌ 静默（本机观察任务负责推） |
+| `tail-screen.yml` | `40 6 * * 1-5` | 14:40 触发 | **14:50**（`--wait` 等窗口） | ✅ | ✅ |
+| `daily-screen.yml` | `30 7 * * 1-5` | 15:30 | 15:30 | ✅（结构同步 + 入库） | ✅ |
+| `refresh-industry-map.yml` | `0 3 1 * *` | 每月 1 日 11:00 | 月更行业映射并提交 `main` | ❌ | ❌ |
+| `release.yml` | —（tag 触发） | — | npm 发布 + GitHub Release | ❌ | ❌ |
+
+> ⚠️ 尾盘的**观察口径必须等窗口**：`tail.config.js` 的 `session.observeFrom = '14:30'` 会让 14:30 之前的启动被静默跳过，
+> 所以 `tail-observe.yml` 里有一段「Wait for observe window」在 Runner 内等到 14:30 整再跑 —— 没有它，14:20 启动会空跑 0 候选。
+>
+> ⚠️ 尾盘工作流**必须显式传** `CF_ACCOUNT_ID` / `CF_D1_DATABASE_ID` / `CF_API_TOKEN`（见上表 Secrets 分组 B），
+> 否则落库步骤缺凭据会**静默跳过**，结果不进 D1（报告照常生成，很容易误判为「跑成功了」）。
+
+本地 WorkBuddy 计划任务与 GitHub Actions 的完整对应关系（含「谁负责推送」）见
+[docs/ops/01-方案.md](docs/ops/01-方案.md)。
 
 ### 输出与提交
 

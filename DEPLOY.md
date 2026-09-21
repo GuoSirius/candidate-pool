@@ -12,8 +12,9 @@
 |----|------|------|----------|
 | 前端 | Vue3 + Vite PWA 静态资源 | Cloudflare Pages | `npm run deploy`（根目录，等价于 `cd web && npm run deploy`） |
 | API | Pages Functions（`/api/*`、`/health`） | 同一个 Pages 项目 | 同上（`wrangler pages deploy` 自动带上 `web/functions/`） |
-| 数据 | D1 库 `candidate-pool` | Cloudflare D1 | `wrangler d1 execute` 建表 + `node db/backfill.js` 灌数 |
-| 生成 | 每日报告 / 快照 | `daily-artifacts` 分支 | GitHub Actions 定时（工作日 15:35） |
+| 数据 | D1 库 `candidate-pool` | Cloudflare D1 | `npm run db:migrate:both` 建表 + `node db/backfill.js` 灌数 |
+| 生成（初筛） | 每日报告 / 快照 | `daily-artifacts` 分支 | GitHub Actions 定时（工作日 15:30） |
+| 生成（尾盘） | 尾盘报告 / 候选 | `daily-artifacts` 分支 | GitHub Actions 定时（14:20 观察、14:40 正式） |
 
 > ⛔ **`worker/` 目录不是发布产物，不需要单独部署。** 它只提供两样东西：
 > ① 被 Pages Functions 复用的 API 代码（`worker/src/lib/*`、`types.ts`、`pages.ts`）；② 本地开发用的 dev 后端（`npm run dev`）。
@@ -87,14 +88,17 @@ npx wrangler d1 info candidate-pool
 
 > 两处必须指向**同一个库**，否则 Pages 版与 Worker 版读到的数据不一致。
 
-**⑤ 建表（7 张表 + 9 个索引）**
+**⑤ 建表（10 张表 + 12 个索引）**
 
 ```bash
-cd worker
-npx wrangler d1 execute candidate-pool --remote --file=../db/schema.sql
+cd ..
+npm run db:migrate:both      # 推荐：按差异补两端（远程 D1 + 本地 db/local.db）
+# 只同步远程：  npm run db:migrate
 ```
 
-> **`--remote` 不能省**：`wrangler d1 execute` 默认跑 local 模式，会去读 `wrangler.toml` 的 binding 而报错。
+> 兜底：`cd worker && npx wrangler d1 execute candidate-pool --remote --file=../db/schema.sql`
+> —— **只对新库有效**（已存在的表补不上新增字段），且 **`--remote` 不能省**（默认跑 local，会因读不到 binding 而报错）。
+> 结构变更的完整口径（差异驱动、需人工介入的边界）见 [README · 结构变更一键同步](./README.md#表--列--索引结构变更一键同步npm-run-dbmigrate)。
 
 **⑥ 配入库凭据并灌历史数据**
 
@@ -150,7 +154,16 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | 推送 | `NOTIFY_MAIL_SENDER` / `NOTIFY_MAIL_AUTH` / `NOTIFY_MAIL_RECEIVER` / `NOTIFY_MAIL_HOST` / `NOTIFY_MAIL_PORT` | 163 邮箱推送 |
 | 入库 | `CF_ACCOUNT_ID` / `CF_D1_DATABASE_ID` / `CF_API_TOKEN` | 每日自动同步 D1（未配则安全跳过） |
 
-配完即为全自动：工作日 15:35 实时抓取 → 提交 `daily-artifacts` → 同步 D1 → 微信/邮件通知。
+配完即为全自动（均为北京时间）：
+
+| 时点 | 工作流 | 动作 |
+|------|--------|------|
+| 工作日 14:20 → 14:30 | `tail-observe.yml` | 观察口径 `eod-<日>-obs.json`（静默，不推送） |
+| 工作日 14:40 → 14:50 | `tail-screen.yml` | 正式口径 `eod-<日>.json` + 微信/邮件 |
+| 工作日 15:30 | `daily-screen.yml` | 次日候选初筛 → 同步 D1 → 微信/邮件 |
+| 每月 1 日 11:00 | `refresh-industry-map.yml` | 刷新行业映射并提交 `main` |
+
+产物提交 `daily-artifacts` 分支；D1 落库依赖分组「入库」的三个 `CF_*` Secrets，未配则安全跳过。完整拓扑见 [docs/ops/01-方案.md](./docs/ops/01-方案.md)。
 
 ---
 
