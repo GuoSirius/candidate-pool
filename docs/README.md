@@ -34,7 +34,8 @@
 | [eod-tail-screener/01-需求.md](eod-tail-screener/01-需求.md) | 尾盘选股：目标、功能 / 非功能需求、验收标准 |
 | [eod-tail-screener/02-方案.md](eod-tail-screener/02-方案.md) | 尾盘选股：数据链路、筛选规则、同类比较、调度、存储、风险 |
 | [eod-tail-screener/03-计划.md](eod-tail-screener/03-计划.md) | 尾盘选股：分阶段交付物与验证清单 |
-| [eod-tail-screener/04-待确认.md](eod-tail-screener/04-待确认.md) | 尾盘选股：需你拍板的开放问题（确认后才进入开发） |
+| [eod-tail-screener/04-待确认.md](eod-tail-screener/04-待确认.md) | 尾盘选股：需你拍板的开放问题（**已全部关闭**；Q2/Q3/Q14 的最终选择与建议不同） |
+| [eod-tail-screener/05-复盘.md](eod-tail-screener/05-复盘.md) | 尾盘选股：**上线后复盘** —— 实际落地 vs 原设计的差异、口径速查入口、落库事故结论、GitHub cron 实测延迟、尚未实施项 |
 | [notes-groups/01-方案.md](notes-groups/01-方案.md) | 评论/分组：需求、接口清单、写鉴权方案、前端交互、边界 |
 | [npm-publish/02-方案.md](npm-publish/02-方案.md) | 独立发布：两种运行模式差异、边界清单、全量打包 / 只发尾盘 / npx github 三方案对比、落地顺序、已完成的可重定位层 |
 | [npm-publish/03-计划.md](npm-publish/03-计划.md) | 独立发布实施计划：方案 A 交付物、首次运行脚手架、发布链路、部署已解耦、向后兼容四条保票、npx 不 pin 版本、三道闸、踩坑、验证清单 |
