@@ -36,6 +36,12 @@ body {
   #app { padding: 0; }
 }
 
+/* 窄屏表格兜底：表头禁止逐字换行（此前中文表头在窄屏被压成一字一行）。
+   翻转成卡片的视图 thead 已隐藏、不受影响；保留表格形态的视图配合各自的横向滚动使用 */
+@media (max-width: 820px) {
+  .grid thead th { white-space: nowrap; }
+}
+
 a { color: var(--accent); }
 
 ::-webkit-scrollbar { height: 8px; width: 8px; }

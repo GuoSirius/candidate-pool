@@ -211,4 +211,11 @@ function groupOf(h: Horizon): string {
 
 .legend { color: var(--muted); font-size: 12px; margin: 10px 0 0; line-height: 1.75; }
 .legend.head { margin: 0 0 12px; background: rgba(31,111,235,0.08); border: 1px solid rgba(31,111,235,0.25); border-radius: 8px; padding: 8px 10px; }
+
+/* 窄屏：释义表格保留形态 + 区块内横向滚动；表头不逐字换行（正文列正常折行） */
+@media (max-width: 820px) {
+  .block { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .grid { min-width: 560px; }
+  .grid th { white-space: nowrap; }
+}
 </style>

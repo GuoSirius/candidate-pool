@@ -103,23 +103,25 @@ onMounted(load);
             <div v-if="expanded === g.id" class="gbody">
               <p v-if="detailLoading" class="state">加载成员中…</p>
               <p v-else-if="!groupDetail || !groupDetail.members.length" class="state">该分组暂无成员。</p>
-              <table v-else class="grid">
-                <thead>
-                  <tr><th>代码</th><th>名称</th><th>行业</th><th>组内备注</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="m in groupDetail.members" :key="m.code">
-                    <td class="mono">{{ m.code.replace(/^[a-z]+/, '') }}</td>
-                    <td>
-                      <a href="#" @click.prevent="openStock(router, route, m.code)">
-                        {{ m.name || m.code }}
-                      </a>
-                    </td>
-                    <td>{{ m.sector || '—' }}</td>
-                    <td class="wrap">{{ m.note || '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-else-if="groupDetail && groupDetail.members.length" class="table-wrap">
+                <table class="grid">
+                  <thead>
+                    <tr><th>代码</th><th>名称</th><th>行业</th><th>组内备注</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="m in groupDetail.members" :key="m.code">
+                      <td class="mono">{{ m.code.replace(/^[a-z]+/, '') }}</td>
+                      <td>
+                        <a href="#" @click.prevent="openStock(router, route, m.code)">
+                          {{ m.name || m.code }}
+                        </a>
+                      </td>
+                      <td>{{ m.sector || '—' }}</td>
+                      <td class="wrap">{{ m.note || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -130,41 +132,43 @@ onMounted(load);
         <p v-if="!notes.length" class="state">
           还没有备注。在个股详情页底部写下评论或备忘后，会汇总到这里。
         </p>
-        <table v-else class="grid">
-          <thead>
-            <tr>
-              <th v-for="col in [
-                { key: 'created_at', label: '时间' },
-                { key: 'code', label: '代码' },
-                { key: 'name', label: '名称' },
-                { key: 'sector', label: '行业' },
-                { key: 'type', label: '类型' },
-                { key: 'content', label: '内容' },
-                { key: 'anchor_date', label: '锚定日' },
-              ]" :key="col.key" :class="{ sorted: sortKey === col.key }">
-                <button type="button" class="th-btn" @click="toggle(col.key)">
-                  {{ col.label }}
-                  <span v-if="sortKey === col.key" class="arrow">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="n in sortedNotes" :key="n.id">
-              <td class="mono">{{ (n.created_at || '').slice(0, 16) || '—' }}</td>
-              <td class="mono">{{ n.code.replace(/^[a-z]+/, '') }}</td>
-              <td>
-                <a href="#" @click.prevent="openStock(router, route, n.code)">
-                  {{ n.name || n.code }}
-                </a>
-              </td>
-              <td>{{ n.sector || '—' }}</td>
-              <td>{{ NOTE_TYPE_LABEL[n.type || 'comment'] || n.type || '—' }}</td>
-              <td class="wrap">{{ n.content }}</td>
-              <td class="mono">{{ n.anchor_date || '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="table-wrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th v-for="col in [
+                  { key: 'created_at', label: '时间' },
+                  { key: 'code', label: '代码' },
+                  { key: 'name', label: '名称' },
+                  { key: 'sector', label: '行业' },
+                  { key: 'type', label: '类型' },
+                  { key: 'content', label: '内容' },
+                  { key: 'anchor_date', label: '锚定日' },
+                ]" :key="col.key" :class="{ sorted: sortKey === col.key }">
+                  <button type="button" class="th-btn" @click="toggle(col.key)">
+                    {{ col.label }}
+                    <span v-if="sortKey === col.key" class="arrow">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="n in sortedNotes" :key="n.id">
+                <td class="mono">{{ (n.created_at || '').slice(0, 16) || '—' }}</td>
+                <td class="mono">{{ n.code.replace(/^[a-z]+/, '') }}</td>
+                <td>
+                  <a href="#" @click.prevent="openStock(router, route, n.code)">
+                    {{ n.name || n.code }}
+                  </a>
+                </td>
+                <td>{{ n.sector || '—' }}</td>
+                <td>{{ NOTE_TYPE_LABEL[n.type || 'comment'] || n.type || '—' }}</td>
+                <td class="wrap">{{ n.content }}</td>
+                <td class="mono">{{ n.anchor_date || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </template>
   </div>
@@ -191,4 +195,13 @@ onMounted(load);
 .gdesc { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gchev { margin-left: auto; color: var(--muted); font-size: 12px; flex: none; }
 .gbody { padding: 4px 14px 12px; border-top: 1px solid var(--border, #ddd); }
+.table-wrap { border: 1px solid var(--border, #ddd); border-radius: 10px; overflow: hidden; }
+
+/* 窄屏：备注 7 列 / 分组成员 4 列，保留表格形态 + 容器内横向滚动；表头不逐字换行 */
+@media (max-width: 820px) {
+  .table-wrap, .gbody { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 0; }
+  .table-wrap .grid { min-width: 640px; }
+  .gbody .grid { min-width: 480px; }
+  .grid thead th { white-space: nowrap; }
+}
 </style>

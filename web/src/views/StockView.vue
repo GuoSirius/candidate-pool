@@ -616,4 +616,11 @@ select:disabled, .inp:disabled, textarea:disabled { opacity: 0.55; cursor: not-a
 
 .hint { color: var(--muted); padding: 20px 0; text-align: center; }
 .error { color: #ff7b72; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); padding: 10px 12px; border-radius: 8px; }
+
+/* 窄屏：入选记录 13 列，翻转卡片会过高，保留表格形态 + 容器内横向滚动；表头不逐字换行 */
+@media (max-width: 820px) {
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 0; }
+  .grid { min-width: 700px; }
+  .grid thead th { white-space: nowrap; }
+}
 </style>

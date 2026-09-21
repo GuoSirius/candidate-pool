@@ -490,5 +490,13 @@ onMounted(load);
 .timeline { margin-top: 14px; }
 
 .hint { color: var(--muted); padding: 20px 0; text-align: center; }
+
+/* 窄屏：列多（各档命中率 11 列、锚定日明细 10 列），翻转卡片会过高，
+   保留表格形态 + 容器内横向滚动；表头不逐字换行 */
+@media (max-width: 820px) {
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 0; }
+  .grid { min-width: 720px; }
+  .grid thead th { white-space: nowrap; }
+}
 .error { color: #ff7b72; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); padding: 10px 12px; border-radius: 8px; }
 </style>

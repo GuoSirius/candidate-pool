@@ -587,28 +587,45 @@ onBeforeUnmount(writeState);
 .hint { color: var(--muted); padding: 20px 0; text-align: center; }
 .error { color: #ff7b72; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); padding: 10px 12px; border-radius: 8px; }
 
-/* 窄屏：表格翻转成卡片 */
+/* 窄屏：表格翻转成紧凑卡片——6 列网格按语义分行（身份 / 板块 / 次数 / N 列 / 日期），不再一字段一行 */
 @media (max-width: 820px) {
   .table-wrap { border: none; border-radius: 0; }
   /* 表格容器在窄屏去掉了边框，分页条自己补一个卡片外观 */
   .pager { border: 1px solid var(--border); border-radius: 12px; justify-content: space-between; }
   .pg-size { flex-basis: 100%; }
-  .grid, .grid tbody, .grid tr, .grid td { display: block; width: 100%; }
+  .grid, .grid tbody { display: block; width: 100%; }
   .grid thead { display: none; }
   .grid tr {
-    border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px;
-    padding: 8px 4px; background: var(--surface);
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px 4px; align-items: end;
+    width: 100%; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px;
+    padding: 12px; background: var(--surface);
   }
   .grid tbody tr:hover { background: var(--surface); }
-  .grid td {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-    padding: 6px 12px; border: none; text-align: left;
-  }
+  .grid td { display: block; width: auto; padding: 0 2px; border: none; text-align: left; }
+  /* 数值小格：标签缩小置顶、值在下（.grid td.num 基础样式的右对齐在此关掉） */
   .grid td::before {
-    content: attr(data-label); color: var(--muted); font-size: 12px; font-weight: 600;
-    flex: 0 0 auto; margin-right: 8px;
+    content: attr(data-label); display: block; margin: 0 0 2px;
+    color: var(--muted); font-size: 11px; font-weight: 600; line-height: 1.2;
   }
   .grid td.num { text-align: left; }
+  /* 身份行 / 板块行：标签内联（label value），一行排开 */
+  .grid td.idx, .grid td.code, .grid td.name, .grid td.sector {
+    display: flex; align-items: baseline; gap: 6px;
+    white-space: nowrap; overflow: hidden;
+  }
+  .grid td.idx::before, .grid td.code::before, .grid td.name::before, .grid td.sector::before {
+    display: inline; margin: 0; flex: none;
+  }
+  .grid td.idx    { grid-column: 1 / 2; grid-row: 1; }
+  .grid td.code   { grid-column: 2 / 4; grid-row: 1; }
+  .grid td.name   { grid-column: 4 / 7; grid-row: 1; }
+  .grid td.sector { grid-column: 1 / 7; grid-row: 2; }
+  /* 次数行：入选次数占 2 列，四档各占 1 列（自动流动成一行） */
+  .grid td.strong { grid-column: span 2; }
+  /* N 列行：3 个周期各占 2 列 */
+  .grid td.perf { grid-column: span 2; }
+  /* 日期行：两个日期各占 3 列 */
+  .grid td.mono { grid-column: span 3; }
   .search-input { flex-basis: 100%; }
   .tier-filter { flex-basis: 100%; }
   .tier-select { flex: 1; }
