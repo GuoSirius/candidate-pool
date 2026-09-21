@@ -19,8 +19,10 @@
  *   否则网页拿到 `cut` 会 400「mode 只能为 formal / observe」，记录页也会把它兜底显示成「观察」。
  *   （2026-09-21 事故：当天 14:50 的正式运行就是这样写进去的。）
  */
+const path = require('path');
 const d1 = require('../../db/d1client');
 const ddl = require('../../db/ddl');
+const clients = require('../../db/clients');
 
 /**
  * 本地内部口径 → D1/API 口径。`cut` 是本地对「14:50 固定口径」的旧叫法，对外一律叫 `formal`。
@@ -33,24 +35,26 @@ function d1Mode(mode) {
   return m;
 }
 
-let _tablesReady = false;
+// 已确认「tail_run / tail_pick 就绪」的客户端集合。用 WeakSet 而不是一个布尔量：
+// 尾盘现在可能同时写远程 D1 与本地 db/local.db（--both），两边的就绪状态必须各自记。
+const _tablesReady = new WeakSet();
 /**
  * 建表兜底（自愈）。DDL 不再硬编码在这里 —— 统一从 db/ddl.js 取，
  * 也就是 db/schema.sql（唯一真相源）。先花 1 次请求探 sqlite_master：
  * 已就绪就直接返回，缺表才整份重放（schema.sql 全 IF NOT EXISTS，可重复执行）。
  */
 async function ensureTables(client) {
-  if (_tablesReady) return;
+  if (_tablesReady.has(client)) return;
   try {
     const rows = await client.query(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tail_run','tail_pick')",
     );
-    if (Array.isArray(rows) && rows.length >= 2) { _tablesReady = true; return; }
+    if (Array.isArray(rows) && rows.length >= 2) { _tablesReady.add(client); return; }
   } catch (_) {
     // 探测失败（权限 / 网络抖动）时不要直接放弃，交给下面的整份重放兜底
   }
   await client.batch(ddl.loadStatements().map((sql) => ({ sql })));
-  _tablesReady = true;
+  _tablesReady.add(client);
 }
 
 // ---------------------------------------------------------------------------
@@ -109,22 +113,64 @@ function b1(v) { return v ? 1 : 0; }
 function toParams(cols, row) { return cols.map((c) => (row[c] === undefined ? null : row[c])); }
 
 /**
- * 把一次 EOD 运行结果同步到 Cloudflare D1。
- * @param {object} doc 与 store.saveRun 返回 doc 同构：{ tradeDate, mode, cutAt, updatedAt, runs, stats, records }
- * @returns {{skipped?:boolean, reason?:string, run?:number, picks?:number, error?:string}}
+ * 写入目标解析：**本地运行默认两边都写，GitHub Actions 默认只写远程**。
+ *
+ * | 场景                    | 远程 D1 | 本地 db/local.db |
+ * |-------------------------|---------|------------------|
+ * | 本机跑（默认）          | 写      | 写               |
+ * | GitHub Actions（默认）  | 写      | 不写             |
+ * | 显式 `--local`          | 不写    | 写               |
+ * | 显式 `--both`           | 写      | 写               |
+ *
+ * 为什么本地默认要补写本地库：尾盘原先**只**写远程 D1，于是 db/local.db 的
+ * tail_run / tail_pick 永远是 0 行（`db/clients.js` 的注释里记着同一个毛病：
+ * 「本机日常任务与 CI 都走远程，于是 db/local.db 永远停在旧数据上」）。
+ * 本机跑一次就顺手把本地库补齐，复盘 / 离线查询才用得上。
+ * GitHub runner 上没有有意义的 db/local.db（每次都是全新容器），所以只写远程。
  */
-async function syncTailRun(doc) {
-  if (!d1.cfg()) {
-    return { skipped: true, reason: '未配置 CF_* 凭据，跳过 D1 同步（本地 JSON 仍保留归档）' };
+function targetArgv(argv) {
+  if (argv.includes('--local') || argv.includes('--both')) return argv;
+  return process.env.GITHUB_ACTIONS ? argv : [...argv, '--both'];
+}
+
+/** 目标的中文名，用于日志（远程显示 D1，本地带上文件名）。 */
+function targetLabel(t) {
+  return t.name === 'remote' ? 'D1' : `本地 ${path.basename(t.file || 'local.db')}`;
+}
+
+/**
+ * 把一次 EOD 运行结果同步到**数据源**（远程 D1 / 本地 db/local.db）。
+ * 写入目标见 targetArgv()（本地默认两边、CI 只远程；`--local` / `--both` 可覆盖）。
+ *
+ * @param {object} doc 与 store.saveRun 返回 doc 同构：{ tradeDate, mode, cutAt, updatedAt, runs, stats, records }
+ * @param {{argv?: string[]}} [opts] argv 默认 process.argv
+ * @returns {{skipped?:boolean, reason?:string, run?:number, picks?:number, error?:string,
+ *            results?: Array<{name:string, ok:boolean, file?:string, error?:string}>, notes?: string[]}}
+ */
+async function syncTailRun(doc, { argv = process.argv } = {}) {
+  let built;
+  try { built = buildStatements(doc); } catch (e) { return { error: e.message || String(e) }; }
+
+  const { targets, notes } = clients.resolveTargets(targetArgv(argv));
+  if (!targets.length) {
+    return { skipped: true, reason: notes.join('；') || '没有可写入的目标' };
   }
-  try {
-    await ensureTables(d1);
-    const { runStmt, pickStmts } = buildStatements(doc);
-    await d1.batch([runStmt, ...pickStmts]);
-    return { run: 1, picks: pickStmts.length };
-  } catch (e) {
-    return { error: e.message || String(e) };
+
+  const results = [];
+  for (const t of targets) {
+    try {
+      await ensureTables(t.client);
+      await t.client.batch([built.runStmt, ...built.pickStmts]);
+      results.push({ name: t.name, ok: true, file: t.file });
+    } catch (e) {
+      results.push({ name: t.name, ok: false, file: t.file, error: e.message || String(e) });
+    }
   }
+  // 一端成功就算成功（另一端失败只影响那一端；本地 JSON 归档始终在）
+  if (!results.some((r) => r.ok)) {
+    return { error: results.map((r) => `${targetLabel(r)}: ${r.error || '未知错误'}`).join('；'), results };
+  }
+  return { run: 1, picks: built.pickStmts.length, results, notes };
 }
 
 /**
@@ -172,50 +218,76 @@ function buildStatements(doc) {
 
 /**
  * 收盘回填（P5）：把已算好的 N1~N10 表现写进某交易日的 tail_pick.fill_json。
- * 与 store.applyFill 不同，这里直接命中 D1（若凭据在），并保留本地 JSON 由 P5 脚本负责。
+ * 与 store.applyFill 不同，这里写数据库（远程 D1 / 本地 db/local.db，目标同 syncTailRun），
+ * 本地 JSON 归档由 P5 脚本负责。
  * @param {string} tradeDate
  * @param {string} mode
  * @param {Record<string, object>} patch code -> { close, n1..n10, filledAt }
+ * @param {{argv?: string[]}} [opts]
  */
-async function applyTailFill(tradeDate, mode, patch) {
-  if (!d1.cfg()) return { skipped: true, reason: '未配置 CF_* 凭据，跳过 D1 回填' };
-  try {
-    await ensureTables(d1);
-    const stmts = Object.entries(patch).map(([code, fill]) => ({
-      sql: `UPDATE tail_pick SET fill_json = ? WHERE trade_date = ? AND mode = ? AND code = ?`,
-      params: [j(fill), tradeDate, d1Mode(mode), code],
-    }));
-    if (!stmts.length) return { updated: 0 };
-    await d1.batch(stmts);
-    return { updated: stmts.length };
-  } catch (e) {
-    return { error: e.message || String(e) };
+async function applyTailFill(tradeDate, mode, patch, { argv = process.argv } = {}) {
+  if (!Object.keys(patch || {}).length) return { updated: 0 };
+  let filled;
+  try { filled = d1Mode(mode); } catch (e) { return { error: e.message || String(e) }; }
+
+  const { targets, notes } = clients.resolveTargets(targetArgv(argv));
+  if (!targets.length) return { skipped: true, reason: notes.join('；') || '没有可写入的目标' };
+
+  const stmts = Object.entries(patch).map(([code, fill]) => ({
+    sql: `UPDATE tail_pick SET fill_json = ? WHERE trade_date = ? AND mode = ? AND code = ?`,
+    params: [j(fill), tradeDate, filled, code],
+  }));
+
+  const results = [];
+  for (const t of targets) {
+    try {
+      await ensureTables(t.client);
+      await t.client.batch(stmts);
+      results.push({ name: t.name, ok: true, file: t.file, updated: stmts.length });
+    } catch (e) {
+      results.push({ name: t.name, ok: false, file: t.file, error: e.message || String(e) });
+    }
   }
+  if (!results.some((r) => r.ok)) {
+    return { error: results.map((r) => `${targetLabel(r)}: ${r.error || '未知错误'}`).join('；'), results };
+  }
+  return { updated: stmts.length, results, notes };
 }
 
 /**
  * 清理历史遗留口径行：本地旧叫法 `cut` 曾被直接写进 D1（2026-09-21 的 14:50 正式运行），
  * 而 D1 / 网页 API 只认 formal / observe。补发前先删掉，否则同一天会出现
  * 「cut + formal」两条同义运行，记录页里那一天会重复一行。
- * @returns {Promise<Record<string, number|string>>} 表名 -> 删除行数
+ * 与 syncTailRun 同样作用于所有写入目标。
+ * @param {{argv?: string[]}} [opts]
+ * @returns {{results: Array<{name:string, file?:string, deleted?:Record<string,number|string>, error?:string}>, notes?:string[]}}
  */
-async function cleanupLegacyModes() {
-  if (!d1.cfg()) return { skipped: true, reason: '未配置 CF_* 凭据，跳过遗留口径清理' };
-  const res = {};
-  for (const t of ['tail_run', 'tail_pick']) {
+async function cleanupLegacyModes({ argv = process.argv } = {}) {
+  const { targets, notes } = clients.resolveTargets(targetArgv(argv));
+  if (!targets.length) return { skipped: true, reason: notes.join('；') || '没有可写入的目标' };
+
+  const results = [];
+  for (const t of targets) {
+    const deleted = {};
     try {
-      const r = await d1.exec(`DELETE FROM ${t} WHERE mode NOT IN ('formal','observe')`);
-      res[t] = (r && r.meta && r.meta.changes) || 0;
+      for (const tbl of ['tail_run', 'tail_pick']) {
+        const r = await t.client.exec(`DELETE FROM ${tbl} WHERE mode NOT IN ('formal','observe')`);
+        const n = r && r.meta && r.meta.changes;
+        // 远程 D1 会回报 meta.changes；本地 node:sqlite 的 exec 不回传，退回 'ok'
+        deleted[tbl] = n == null ? 'ok' : n;
+      }
+      results.push({ name: t.name, file: t.file, deleted });
     } catch (e) {
-      res[t] = `失败：${e.message || e}`;
+      results.push({ name: t.name, file: t.file, error: e.message || String(e) });
     }
   }
-  return res;
+  return { results, notes };
 }
 
 // d1Mode / SQL / COLS 仅为自测（eod/lib/trading.selftest.js 第 9 节）导出，
 // 业务代码不要用它们拼 SQL —— 走 syncTailRun / applyTailFill。
 module.exports = {
   syncTailRun, applyTailFill, ensureTables, d1Mode, cleanupLegacyModes, buildStatements,
+  targetArgv, targetLabel,
   SQL: { RUN_Q, PICK_Q }, COLS: { RUN_COLS, PICK_COLS },
 };

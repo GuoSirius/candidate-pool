@@ -13,7 +13,9 @@
  *   node eod/tail_screener.js                          # 正常运行（受时段限制）
  *   node eod/tail_screener.js --intraday               # 盘中模式：14:30 前也可跑，段=最近 20 分钟
  *   node eod/tail_screener.js --intraday --stamp        # 盘中模式并在文件名里保留时点
- *                                                      #   默认**不带时点**（一天一个文件，多次运行靠 runs[] 留痕）；
+ *   node eod/tail_screener.js --stamp                   # （观察 / 盘中通用）文件名带时点（+ 窗口）
+ *                                                      #   观察与盘中默认**不带时点**（一天一个文件，
+ *                                                      #   多次运行靠 runs[] 留痕，时点另存 doc.cutAt）；
  *                                                      #   要对比不同窗口/不同时刻的完整 records 时才加 --stamp。
  *   node eod/tail_screener.js --intraday --seg-minutes 30
  *                                                      # 盘中模式的段长改用 30 分钟（默认 20）
@@ -51,7 +53,7 @@ const { sessionState, estimateFullDayVolRatio, nowBjt } = require('./lib/trading
 const market = require('./lib/market');
 const { buildCandidates } = require('./lib/screen');
 const { saveRun, loadDay, daySuffix } = require('./lib/store');
-const { syncTailRun, cleanupLegacyModes, d1Mode } = require('./lib/store_d1');
+const { syncTailRun, cleanupLegacyModes, d1Mode, targetLabel } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
 const paths = require('../paths');
@@ -161,7 +163,12 @@ async function runResync(files) {
   log(`[补发] 目标 ${files.length} 份存档`);
   const clean = await cleanupLegacyModes();
   if (clean.skipped) log(`[补发] 清理遗留口径：跳过（${clean.reason}）`);
-  else log(`[补发] 清理遗留口径：tail_run 删 ${clean.tail_run} 行 / tail_pick 删 ${clean.tail_pick} 行`);
+  else {
+    for (const r of clean.results) {
+      if (r.error) log(`[补发] 清理遗留口径 ${targetLabel(r)}：失败 ${r.error}`);
+      else log(`[补发] 清理遗留口径 ${targetLabel(r)}：tail_run 删 ${r.deleted.tail_run} / tail_pick 删 ${r.deleted.tail_pick}`);
+    }
+  }
 
   const report = [];
   for (const f of files) {
@@ -175,8 +182,9 @@ async function runResync(files) {
       if (res.skipped) log(`[补发] ${base} → 跳过：${res.reason}`);
       else if (res.error) log(`[补发] ${base} → 失败：${res.error}`);
       else {
-        log(`[补发] ${base} → D1 ${d1Mode(doc.mode)}（${doc.tradeDate}）：`
-          + `${res.picks} 条候选 + 1 行运行记录`);
+        const dst = res.results.map((r) => `${targetLabel(r)}${r.ok ? '' : `(失败 ${r.error})`}`).join(' + ');
+        log(`[补发] ${base} → ${d1Mode(doc.mode)}（${doc.tradeDate}）：`
+          + `${res.picks} 条候选 + 1 行运行记录 → ${dst}`);
       }
       report.push({ file: base, tradeDate: doc.tradeDate, mode: d1Mode(doc.mode), ...res });
     } catch (e) {
@@ -305,12 +313,19 @@ async function emitResult(p) {
     });
     log(`[落库] ${path.basename(saved.file)}（${saved.recordCount} 条 / 第 ${saved.runCount} 次运行）`);
 
-    // 同步到 D1（网页 /api/tail/* 的数据源）；无 CF_* 凭据或 --no-d1 时跳过本地 JSON 仍保留
+    // 同步到数据源（网页 /api/tail/* 读 D1；本地 db/local.db 供离线复盘）。
+    // 目标见 store_d1.js::targetArgv()：**本机跑默认两边都写，GitHub Actions 只写远程**；
+    // `--local` / `--both` 可显式覆盖。--no-d1（盘中模式强制）则完全不写库。
     if (saved.doc && !OPT.noD1) {
       const d1res = await syncTailRun(saved.doc);
-      if (d1res.skipped) log(`[D1] 跳过：${d1res.reason}`);
-      else if (d1res.error) log(`[D1] 同步失败（不影响本地归档）：${d1res.error}`);
-      else log(`[D1] 已同步 ${d1res.picks} 条候选 + 1 行运行记录`);
+      if (d1res.skipped) log(`[库] 跳过：${d1res.reason}`);
+      else if (d1res.error) log(`[库] 同步失败（不影响本地归档）：${d1res.error}`);
+      else {
+        for (const r of d1res.results) {
+          log(`[库] ${targetLabel(r)}：已同步 ${d1res.picks} 条候选 + 1 行运行记录`);
+        }
+        for (const n of d1res.notes || []) log(`[库] ${n}`);
+      }
     }
   }
 
