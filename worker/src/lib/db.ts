@@ -525,10 +525,29 @@ function safeParse<T>(v: unknown): T | null {
 const TAIL_RUN_COLS =
   'trade_date, mode, cut_at, updated_at, run_at, candidate_count, group_count, pre_pass_count, snapshot_count, runner, runs_json, stats_json';
 
+/**
+ * 口径别名：本地脚本内部把「14:50 固定口径」叫 `cut`（eod/lib/trading.js 的 `mode`，文件名分桶也按它走），
+ * 而 D1 与网页 API 的统一口径只有 formal / observe（见 db/schema.sql、types.ts 的 TailMode）。
+ * 2026-09-21 当天的正式运行因此被写成 `cut`（同日已修 eod/lib/store_d1.js 的落库翻译）；
+ * 读取时两种写法一并匹配、返回前归一到 `formal`，历史行才不会「在记录页显示成观察」或请求直接 10003。
+ */
+const MODE_ALIAS: Record<TailMode, string[]> = { formal: ['formal', 'cut'], observe: ['observe'] };
+
+/** 口径匹配片段（`mode = ?` 的别名展开），返回 SQL 片段与绑定参数。 */
+function modeMatch(mode: TailMode): { sql: string; params: string[] } {
+  const list = MODE_ALIAS[mode];
+  return { sql: `mode IN (${list.map(() => '?').join(',')})`, params: list };
+}
+
+/** D1 里的口径值 → 对外统一口径（历史 `cut` 归一为 `formal`） */
+function toTailMode(v: unknown): TailMode {
+  return v === 'observe' ? 'observe' : 'formal';
+}
+
 function mapTailRun(r: Record<string, unknown>): TailRun {
   return {
     trade_date: r.trade_date as string,
-    mode: r.mode as TailMode,
+    mode: toTailMode(r.mode),
     cut_at: (r.cut_at as string) ?? null,
     updated_at: (r.updated_at as string) ?? null,
     run_at: (r.run_at as string) ?? null,
@@ -546,7 +565,7 @@ function mapTailPick(r: Record<string, unknown>): TailPick {
   const fill = safeParse<TailFill>(r.fill_json);
   return {
     trade_date: r.trade_date as string,
-    mode: r.mode as TailMode,
+    mode: toTailMode(r.mode),
     code: r.code as string,
     name: (r.name as string) ?? null,
     sector: (r.sector as string) ?? null,
@@ -624,8 +643,9 @@ async function fetchTailPrices(
 }
 
 export async function listTailRuns(db: D1Database, limit: number, mode?: TailMode): Promise<TailRun[]> {
-  const where = mode ? 'WHERE mode = ?' : '';
-  const params: unknown[] = mode ? [mode] : [];
+  const mm = mode ? modeMatch(mode) : null;
+  const where = mm ? `WHERE ${mm.sql}` : '';
+  const params: unknown[] = mm ? [...mm.params] : [];
   const rows = await allRows<Record<string, unknown>>(
     db,
     `SELECT ${TAIL_RUN_COLS} FROM tail_run ${where} ORDER BY trade_date DESC, mode DESC LIMIT ?`,
@@ -635,16 +655,17 @@ export async function listTailRuns(db: D1Database, limit: number, mode?: TailMod
 }
 
 export async function getTailRun(db: D1Database, tradeDate: string, mode: TailMode): Promise<TailRunDetail | null> {
+  const mm = modeMatch(mode);
   const r = await firstRow<Record<string, unknown>>(
     db,
-    `SELECT ${TAIL_RUN_COLS} FROM tail_run WHERE trade_date = ? AND mode = ?`,
-    [tradeDate, mode],
+    `SELECT ${TAIL_RUN_COLS} FROM tail_run WHERE trade_date = ? AND ${mm.sql}`,
+    [tradeDate, ...mm.params],
   );
   if (!r) return null;
   const picks = await allRows<Record<string, unknown>>(
     db,
-    'SELECT * FROM tail_pick WHERE trade_date = ? AND mode = ? ORDER BY total DESC',
-    [tradeDate, mode],
+    `SELECT * FROM tail_pick WHERE trade_date = ? AND ${mm.sql} ORDER BY total DESC`,
+    [tradeDate, ...mm.params],
   );
   const mapped = picks.map(mapTailPick);
   const needCodes = Array.from(new Set(mapped.filter((p) => !fillToPerf(p.fill)).map((p) => p.code)));
@@ -659,8 +680,9 @@ export async function tailReview(
   db: D1Database,
   opts: { from?: string | null; to?: string | null; mode: TailMode },
 ): Promise<TailReviewResult> {
-  const where = ['mode = ?'];
-  const params: unknown[] = [opts.mode];
+  const mm = modeMatch(opts.mode);
+  const where = [mm.sql];
+  const params: unknown[] = [...mm.params];
   if (opts.from) { where.push('trade_date >= ?'); params.push(opts.from); }
   if (opts.to) { where.push('trade_date <= ?'); params.push(opts.to); }
   const picks = await allRows<Record<string, unknown>>(
@@ -687,9 +709,11 @@ export async function tailReview(
 }
 
 export async function tailDiff(db: D1Database, tradeDate: string): Promise<TailDiffResult> {
+  const oMatch = modeMatch('observe');
+  const fMatch = modeMatch('formal');
   const [observe, formal] = await Promise.all([
-    allRows<Record<string, unknown>>(db, 'SELECT * FROM tail_pick WHERE trade_date = ? AND mode = ? ORDER BY total DESC', [tradeDate, 'observe']),
-    allRows<Record<string, unknown>>(db, 'SELECT * FROM tail_pick WHERE trade_date = ? AND mode = ? ORDER BY total DESC', [tradeDate, 'formal']),
+    allRows<Record<string, unknown>>(db, `SELECT * FROM tail_pick WHERE trade_date = ? AND ${oMatch.sql} ORDER BY total DESC`, [tradeDate, ...oMatch.params]),
+    allRows<Record<string, unknown>>(db, `SELECT * FROM tail_pick WHERE trade_date = ? AND ${fMatch.sql} ORDER BY total DESC`, [tradeDate, ...fMatch.params]),
   ]);
   const oMapped = observe.map(mapTailPick);
   const fMapped = formal.map(mapTailPick);

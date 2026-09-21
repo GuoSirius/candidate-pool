@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { TailRun } from '../api/types';
-import { fmtNum } from '../utils/format';
+import { fmtNum, tailModeLabel } from '../utils/format';
 import PageHeader from '../components/PageHeader.vue';
 
 const router = useRouter();
@@ -77,7 +77,7 @@ onMounted(async () => {
           <tr v-for="r in rows" :key="`${r.trade_date}|${r.mode}`" @click="open(r)">
             <td class="date" data-label="交易日">{{ r.trade_date }}</td>
             <td class="ctr" data-label="口径">
-              <span class="mode" :class="r.mode">{{ r.mode === 'formal' ? '正式' : '观察' }}</span>
+              <span class="mode" :class="r.mode">{{ tailModeLabel(r.mode) }}</span>
             </td>
             <td class="num" data-label="候选">{{ fmtNum(r.candidate_count, 0) }}</td>
             <td class="num" data-label="行业组">{{ fmtNum(r.group_count, 0) }}</td>

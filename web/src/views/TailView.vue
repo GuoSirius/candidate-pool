@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { TailRun, TailRunDetail, TailPick, TailPickRow, TailMode } from '../api/types';
-import { fmtNum, fmtPct, fmtCap, perfClass } from '../utils/format';
+import { fmtNum, fmtPct, fmtCap, perfClass, tailModeLabel } from '../utils/format';
 import { useColumnSort, type SortValue } from '../utils/sort';
 import PageHeader from '../components/PageHeader.vue';
 
@@ -261,7 +261,7 @@ onMounted(loadRuns);
         <span class="lbl">交易日 / 口径</span>
         <select v-model="selected" @change="onComboChange">
           <option v-for="c in combos" :key="comboKey(c.date, c.mode)" :value="comboKey(c.date, c.mode)">
-            {{ c.date }} · {{ c.mode === 'formal' ? '正式' : '观察' }}
+            {{ c.date }} · {{ tailModeLabel(c.mode) }}
             （{{ (runs.find((r) => r.trade_date === c.date && r.mode === c.mode)?.candidate_count ?? 0) }} 只）
           </option>
         </select>
