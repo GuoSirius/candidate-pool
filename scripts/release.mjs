@@ -3,7 +3,13 @@
  * 交互式发布脚本 —— 根目录 npm run release 调用。
  *
  * 完整链路：未提交检测 → 类型门禁 → 选版本 → changelogen 写版本号 + CHANGELOG →
- *           同步子包版本 → 提交 → 打 tag → 推送 → 部署(Worker + Pages)。
+ *           同步子包版本 → 预览 Release 说明 → 提交 → 打 tag → 推送。
+ *
+ * **本机到此为止，且不执行 npm publish**：tag 推送即触发 .github/workflows/release.yml，
+ * 由 CI 完成「版本一致性校验 → 离线自测 → 打包体检 → npm publish → 建 GitHub Release」。
+ *
+ * **不含部署**：Cloudflare（Pages + Worker 共用一份 API）已退出本脚本，
+ * 需要发布前端/接口时单独跑 `npm run deploy`。理由见本节末尾注释。
  *
  * 依赖：根 package.json 需有 scripts: typecheck / release；
  *       worker、web 各自有 deploy；changelogen / husky / commitlint 已装(devDep)。
@@ -212,11 +218,14 @@ async function main() {
   console.log(`  · Release  : https://github.com/${REPO}/releases/tag/v${newVersion}`);
   console.log('  约 1~2 分钟。若 Actions 标红，最常见原因是仓库尚未配置 Secret `NPM_TOKEN`。');
 
-  // ⑧ 部署阶段：Worker + Pages（Cloudflare）
-  console.log('\n🚀 开始部署到 Cloudflare ...');
-  run('npm run deploy --prefix worker');
-  run('npm run deploy --prefix web');
-  console.log(`\n🎉 全部完成：v${newVersion} 已发布并部署。`);
+  // 为什么不再在这里 deploy：
+  //   1. 部署与「发版」是两件事 —— tag 一旦推上去就无法回滚，而部署失败在那之后发生，
+  //      结果是一个「版本已发布、站点却还是旧的」的中间态，很容易误判成发布失败。
+  //   2. 网页的静态资源与 API 现在由同一个 Pages 项目承载（独立 Worker 已退出发布流程），
+  //      发不发版都可能需要单独部署；把它绑死在 release 里会让纯粹的发版动作带上副作用。
+  //   需要上线时单独执行：npm run deploy
+  console.log('\nℹ 部署已从本脚本移除（与发版解耦）。需要上线前端/接口时单独执行：');
+  console.log('    npm run deploy');
 }
 
 main().catch((e) => {
