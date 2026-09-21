@@ -16,13 +16,14 @@
  */
 
 const fs = require('fs');
+const path = require('path');
 const paths = require('../../paths');
 
 // 缓存位置跟随工作目录（见 paths.js）：默认 <仓库根>/eod/data/industry-map.json
 const UNKNOWN = '未分类';
 
-/** 读取行业映射；文件缺失 / 损坏一律返回空表（不抛错，让主流程降级为「未分类」） */
-function loadIndustryMap(file = paths.industryMapFile()) {
+/** 读取单个映射文件；缺失 / 损坏一律返回空表（不抛错） */
+function readMap(file) {
   try {
     const j = JSON.parse(fs.readFileSync(file, 'utf8'));
     const stocks = j && j.stocks && typeof j.stocks === 'object' ? j.stocks : {};
@@ -30,6 +31,27 @@ function loadIndustryMap(file = paths.industryMapFile()) {
   } catch (e) {
     return { generatedAt: null, source: null, count: 0, stocks: {}, error: String((e && e.message) || e) };
   }
+}
+
+/**
+ * 读取行业映射；文件缺失 / 损坏一律降级（不抛错，让主流程记为「未分类」）。
+ *
+ * 兜底顺序：工作目录 → **包内自带的那份**。
+ * 为什么需要第二级：行业映射虽是「数据」，却是由 refresh-industry-map 工作流生成的
+ * **派生缓存**（一年只变几次），不是用户资产；npm 包把它一起发出去当种子。
+ * 否则 `npx candidate-pool` 在一个空目录里跑，映射读不到 → 全市场塌成单一「未分类」，
+ * 板块内补涨（R07）、板块统计、板块分组会**静默失效**（不报错，只是结果变差）。
+ * 用户若要刷新，`node eod/build_industry_map.js` 会写到工作目录并从此优先。
+ */
+function loadIndustryMap(file = paths.industryMapFile()) {
+  const primary = readMap(file);
+  if (primary.count > 0) return primary;
+
+  const seed = paths.codeAsset('eod', 'data', 'industry-map.json');
+  if (path.resolve(file) === path.resolve(seed)) return primary;
+
+  const fromSeed = readMap(seed);
+  return fromSeed.count > 0 ? { ...fromSeed, seedFallback: true } : primary;
 }
 
 /** 取某只票的行业；查不到返回 null（由调用方决定记为「未分类」还是 data_gap） */
