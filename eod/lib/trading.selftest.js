@@ -14,7 +14,10 @@
  */
 
 const { dayjs } = require('../../time');
-const { sessionState, clampToTradedMinute, fmtMin } = require('./trading');
+const { sessionState, clampToTradedMinute, backTradedMinutes, fmtMin } = require('./trading');
+// 端到端那一节要用真实的 tailMetrics + 合成分时（不联网）：只有它才能证明
+// 「起点 K 线真的存在」，而不是只证明字符串算对了。
+const { tailMetrics } = require('./market');
 
 const cfg = require('../tail.config');
 const TZ = 'Asia/Shanghai';
@@ -60,9 +63,35 @@ const i0935 = run({ now: at('09:35'), intraday: true });
 check('09:35 → segFrom 不早于开盘 09:30', i0935.segFrom === '0930', i0935.segFrom);
 check('09:35 → cut=09:35', i0935.cutTime === '09:35', i0935.cutTime);
 
+// 跨午休：13:10 的「最近 20 分钟」**不是** 12:50（午休里没有 K 线），
+// 而是 11:20→11:30 + 13:00→13:10。曾经这里写的是墙钟减法 `cut - 20`，
+// 结果起点落进午休、tailMetrics 取不到起点 K 线 → 下午开盘后 20 分钟内跑盘中模式
+// 静默 0 候选。下面的断言把这个坑钉死。
 const i1310 = run({ now: at('13:10'), intraday: true });
 check('13:10 → cut=13:10', i1310.cutTime === '13:10', i1310.cutTime);
-check('13:10 → segFrom=1250', i1310.segFrom === '1250', i1310.segFrom);
+check('13:10 → segFrom=1120（跨午休，不是 1250）', i1310.segFrom === '1120', i1310.segFrom);
+
+const i1300 = run({ now: at('13:00'), intraday: true });
+check('13:00（刚开盘）→ segFrom=1110（退到上午）', i1300.segFrom === '1110', i1300.segFrom);
+
+const i1305 = run({ now: at('13:05'), intraday: true });
+check('13:05 → segFrom=1115', i1305.segFrom === '1115', i1305.segFrom);
+
+const i1329s30 = run({ now: at('13:29'), intraday: true, segMinutes: 30 });
+check('13:29 + seg=30 → segFrom=1129（下午 29 分 + 上午 1 分）', i1329s30.segFrom === '1129', i1329s30.segFrom);
+
+const i1400 = run({ now: at('14:00'), intraday: true });
+check('14:00（下午盘中）→ segFrom=1340（不跨午休）', i1400.segFrom === '1340', i1400.segFrom);
+
+// --seg-minutes 的显式覆盖必须真生效（不只是记在元数据里）
+const i1335s40 = run({ now: at('13:35'), intraday: true, segMinutes: 40 });
+check('13:35 + seg=40 → segFrom=1125（下午 35 分 + 上午 5 分）', i1335s40.segFrom === '1125', i1335s40.segFrom);
+check('13:35 默认 seg=20 → segFrom=1315（对照：同一时刻窗口更短，确实被参数改变了）',
+  run({ now: at('13:35'), intraday: true }).segFrom === '1315',
+  run({ now: at('13:35'), intraday: true }).segFrom);
+check('segMinutes 会随返回值带出（供存档 / 文件命名）', i1329s30.segMinutes === 30, String(i1329s30.segMinutes));
+check('正式/观察口径 segMinutes 为 undefined（不是滚动窗口）',
+  run({ now: at('14:35') }).segMinutes === undefined, String(run({ now: at('14:35') }).segMinutes));
 
 console.log('\n[3] 盘中模式不夺权：14:30 之后仍走观察/正式口径');
 const o1435 = run({ now: at('14:35') });
@@ -103,6 +132,47 @@ check('clampToTradedMinute: 13:00 → 13:00', clampToTradedMinute(13 * 60) === 1
 check('clampToTradedMinute: 15:30 → 15:00', clampToTradedMinute(15 * 60 + 30) === 15 * 60);
 check('clampToTradedMinute: 08:00 → 09:30', clampToTradedMinute(8 * 60) === 9 * 60 + 30);
 check('fmtMin: 555 → 09:15', fmtMin(555) === '09:15');
+// backTradedMinutes：起点必须落在**已成交**分钟上（午休区间内一律非法）
+const inLunch = (hhmm) => {
+  const m = (+hhmm.slice(0, 2)) * 60 + (+hhmm.slice(2, 4));
+  return m > 11 * 60 + 30 && m < 13 * 60;
+};
+check('backTradedMinutes: 13:10 退 20 → 11:20', backTradedMinutes(13 * 60 + 10, 20) === 11 * 60 + 20);
+check('backTradedMinutes: 13:10 退 30 → 11:10', backTradedMinutes(13 * 60 + 10, 30) === 11 * 60 + 10);
+check('backTradedMinutes: 14:00 退 20 → 13:40', backTradedMinutes(14 * 60, 20) === 13 * 60 + 40);
+check('backTradedMinutes: 11:20 退 20 → 11:00', backTradedMinutes(11 * 60 + 20, 20) === 11 * 60);
+check('backTradedMinutes: 09:35 退 20 → 09:30（不早于开盘）', backTradedMinutes(9 * 60 + 35, 20) === 9 * 60 + 30);
+check('backTradedMinutes: 12:30（午休）退 20 → 11:10', backTradedMinutes(12 * 60 + 30, 20) === 11 * 60 + 10);
+// 全时段扫描：任何 cut / 任何窗口，起点都不得落进午休
+let lunchHits = 0;
+for (let cut = 9 * 60 + 30; cut <= 15 * 60; cut++) {
+  for (const n of [1, 5, 20, 30, 60, 120]) {
+    const f = backTradedMinutes(cut, n);
+    if (inLunch(fmtMin(f).replace(':', ''))) lunchHits++;
+  }
+}
+check('backTradedMinutes: 全天 × 各窗口长度扫描，起点均不落午休', lunchHits === 0, `${lunchHits} 处落入午休`);
+
+console.log('\n[8] 端到端：下午刚开盘时起点 K 线必须真的存在（历史 bug：静默 0 候选）');
+// 造一天的合法分时：09:30–11:30 + 13:00–15:00（午休无 K 线，与真实接口一致）
+function mkMinuteRows() {
+  const rows = [];
+  let p = 10;
+  const push = (m) => {
+    p = +(p * 1.0005).toFixed(3);
+    rows.push({ t: `${String(Math.floor(m / 60)).padStart(2, '0')}${String(m % 60).padStart(2, '0')}`, price: p, cumVol: 1000, cumAmt: p * 1000 });
+  };
+  for (let m = 9 * 60 + 30; m <= 11 * 60 + 30; m++) push(m);
+  for (let m = 13 * 60; m <= 15 * 60; m++) push(m);
+  return rows;
+}
+const rows = mkMinuteRows();
+for (const t of ['09:40', '10:30', '11:20', '11:45', '12:30', '13:00', '13:05', '13:10', '13:29', '14:00']) {
+  const ss = run({ now: at(t), intraday: true });
+  const tm = tailMetrics(rows, 'sz000001', ss.cutTime.replace(':', ''), ss.segFrom);
+  check(`${t} → segFrom=${ss.segFrom} 能算出段指标`, tm !== null && tm.segPct !== undefined,
+    tm ? `segPct=${tm.segPct.toFixed(2)}% bars=${tm.bars}` : 'null（会被判 data_gap 剔除）');
+}
 
 console.log(failed ? `\n自我检查失败：${failed} 项` : '\n全部通过');
 process.exit(failed ? 1 : 0);

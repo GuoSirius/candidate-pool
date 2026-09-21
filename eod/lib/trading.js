@@ -64,6 +64,42 @@ function clampToTradedMinute(M) {
   return close;
 }
 
+/**
+ * 从 cut 往前退 n 个「**已成交**分钟」，返回起点 'HHMM'。
+ * 与 clampToTradedMinute 是一对：那个夹的是窗口**终点**，这个退的是窗口**起点**。
+ *
+ * 为什么不能用 `cut - n` 直接算：A 股午休 11:30–13:00 **没有任何 K 线**，
+ * 13:10 的「最近 20 分钟」按墙钟算是 12:50 —— 落在午休里，取不到起点 K 线，
+ * tailMetrics 便返回 null → **整只票被记为 data_gap 剔除**。
+ * 实测（合成全天分时）：13:10 时 segFrom=1250，起点缺失、回退到 1130 滞后 80 分钟
+ * （远超 market.js 的 SEG_START_LAG_MIN=3）→ 下午开盘后 20 分钟内跑盘中模式**静默 0 候选**。
+ * 正确口径是 11:20 → 11:30 + 13:00 → 13:10（正好 20 个已成交分钟），
+ * 这样窗口长度恒为 n，tailSegMinPct=0.5 / tailMomentumFullPct=2.0 的标定才始终成立。
+ *
+ * 上午用尽仍不足 n 时停在开盘 09:30（等价于原来的 Math.max(earliest, cut - n)）。
+ */
+function backTradedMinutes(cut, n) {
+  const open = 9 * 60 + 30;
+  const noon = 11 * 60 + 30;
+  const noonEnd = 13 * 60;
+  let m = clampToTradedMinute(cut);
+  let remain = Math.max(0, Math.round(n));
+  while (remain > 0) {
+    if (m <= noon) {                                  // 上午段
+      const step = Math.min(remain, m - open);
+      if (step <= 0) return open;                     // 已退到开盘
+      m -= step; remain -= step;
+    } else if (m < noonEnd) {                         // 午休（clamp 后理论上不会进来）
+      m = noon;
+    } else {                                          // 下午段
+      const step = Math.min(remain, m - noonEnd);
+      m -= step; remain -= step;
+      if (remain > 0) m = noon;                       // 下午退尽 → 跨过午休，从 11:30 继续
+    }
+  }
+  return Math.max(open, m);
+}
+
 /** 'YYYYMMDDHHmmss' | 'YYYYMMDD' -> 'YYYY-MM-DD'；无法识别返回 null */
 function stampToDate(stamp) {
   const s = String(stamp || '');
@@ -159,11 +195,13 @@ function sessionState({ cfg, now = null, marketDate = null, force = false, intra
     if (intraday && ic.enabled !== false) {
       const segMin = Math.max(1, Math.round(segMinutes || ic.segMinutes || 20));
       const cut = clampToTradedMinute(M);
-      const from = Math.max(earliest, cut - segMin);
+      // 起点按「已成交分钟」往回数（跨过午休），**不要**写成 Math.max(earliest, cut - segMin)：
+      // 墙钟减法会让下午刚开盘时的起点落进午休区，取不到起点 K 线 → 整只票 data_gap。
+      const from = backTradedMinutes(cut, segMin);
       return {
         ...base, ok: true, mode: 'intraday', tradeDate: today,
         reason: `盘中模式：未到 ${s.observeFrom}，按当前时点 ${fmtMin(cut)} 取数，`
-          + `尾盘段用最近 ${segMin} 分钟（${fmtMin(from)}→${fmtMin(cut)}）近似，口径未固定`,
+          + `尾盘段用最近 ${segMin} 个成交分钟（${fmtMin(from)}→${fmtMin(cut)}）近似，口径未固定`,
         cutTime: fmtMin(cut), cutMinutes: cut,
         segFrom: fmtMin(from).replace(':', ''),
         segMinutes: segMin,
@@ -207,7 +245,7 @@ function estimateFullDayVolRatio(volRatio, elapsed) {
 }
 
 module.exports = {
-  nowBjt, hhmmToMin, minOfDay, fmtMin, clampToTradedMinute,
+  nowBjt, hhmmToMin, minOfDay, fmtMin, clampToTradedMinute, backTradedMinutes,
   stampToDate,
   elapsedTradingMinutes, sessionState, estimateFullDayVolRatio,
   TOTAL_TRADING_MINUTES, TZ,
