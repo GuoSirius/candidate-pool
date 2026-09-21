@@ -7,8 +7,9 @@
  *      文件内 records 以 code 为键，天然不会出现重复记录；
  *      同日多次运行的历史（几次、各跑出几只候选）记在 runs[] 里留痕，
  *      最多保留 keepRunHistory 条。
- *   2. 观察模式（14:30~14:50）另存 `eod-<交易日>-obs<HHMM>.json`，
- *      不污染正式口径；同一时点的观察文件互相覆盖（同口径幂等）。
+ *   2. 观察模式（14:30~14:50）另存 `eod-<交易日>-obs.json`，
+ *      不污染正式口径；同一天多次观察互相覆盖（同口径幂等），
+ *      「跑了几次 / 各自什么时点」看 runs[]（文件名带时点的 `-obs<HHMM>` 仅在 --stamp 时用）。
  *   3. 收盘后回填（P5）写进每条 record 的 `fill` 字段（当日收盘价 / 次日表现），
  *      重新跑筛选会覆盖 records 但**保留旧 fill**——只要 code 还在候选里。
  *   4. 全部零依赖：Node 内置 fs/path + 项目 time.js。
@@ -66,19 +67,25 @@ function toRecord(c) {
 /**
  * 文件名后缀（不含扩展名）。
  *   正式  (cut)      → ''
- *   观察  (observe)  → '-obs<HHMM>'                 ← 由定时任务在固定时点触发，一天至多 1~2 个
+ *   观察  (observe)  → '-obs'                       ← **一天一个文件**，多次观察靠 runs[] 留痕
+ *                      '-obs<HHMM>'（stamp=true）
  *   盘中  (intraday) → '-intraday'                  ← **一天一个文件**，多次运行靠 runs[] 留痕
  *                      '-intraday<HHMM>-w<分钟>'（stamp=true）
  *
- * 为什么盘中默认不按时点建文件：盘中模式是「随手看一眼」，一天可能跑十几次，
- * 按时点命名会一天生成十几个 JSON + 十几个 HTML，目录很快失控；而它的口径本身
- * 随窗口滚动，不同时刻的结果**本来就不可横向比较**，逐个留档没有复盘价值。
- * 真正需要留痕的是「跑了几次、每次什么口径、多少候选」—— 那正是 runs[] 的职责。
+ * 观察 / 盘中都默认**一天一个文件、不按时点命名**，理由相同：
+ *   两者的「尾盘段」都是**相对窗口**（观察 = 14:30→当前时点，盘中 = 滚动 segMinutes 分钟），
+ *   不同时刻的结果**本来就不可横向比较**，逐个留档没有复盘价值；而盘中一天可能跑十几次，
+ *   按时点命名会让目录失控（十几个 JSON + 十几个 HTML）。
+ *   真正需要留痕的是「跑了几次、每次什么口径、多少候选」—— 那正是 runs[] 的职责；
+ *   时点也没丢，存档里有 doc.cutAt，D1 侧有 tail_run.cut_at。
+ *   还有一条：D1 对 (trade_date, mode) 是 UPSERT，一个交易日只有一行观察，
+ *   文件名若不跟着「一天一个」，就会出现「磁盘 N 份 vs 库里 1 行」这种两源粒度不一致
+ *   （曾按 `-obs<HHMM>` 命名，副作用是文件名取决于启动分钟，文档 / --replay 无法写死）。
  * 需要完整保留某一次时显式加 --stamp；stamp 模式下连窗口长度一起写进文件名，
  * 因为「对比 20 分钟 vs 30 分钟窗口」正是 stamp 的主要用途（同名会互相覆盖）。
  */
 function daySuffix(mode, cutHHMM, { stamp = false, segMinutes = null } = {}) {
-  if (mode === 'observe') return `-obs${cutHHMM}`;
+  if (mode === 'observe') return stamp ? `-obs${cutHHMM}` : '-obs';
   if (mode === 'intraday') {
     if (!stamp) return '-intraday';
     return `-intraday${cutHHMM}${segMinutes ? `-w${segMinutes}` : ''}`;
@@ -89,10 +96,11 @@ function daySuffix(mode, cutHHMM, { stamp = false, segMinutes = null } = {}) {
 /**
  * 存档文件名（数据 JSON）。
  *   正式  (cut)      → eod-<日>.json            ← 唯一被 D1 同步 / 复盘引用的口径
- *   观察  (observe)  → eod-<日>-obs<HHMM>.json
+ *   观察  (observe)  → eod-<日>-obs.json        （--stamp 时带时点）
  *   盘中  (intraday) → eod-<日>-intraday.json   （--stamp 时带时点与窗口）
- * 盘中必须另存：它的「尾盘段」是滚动窗口近似，与正式口径不是一回事，
- * 若写进正式文件会把当天的正式结果覆盖成假的 14:50 口径。
+ * 观察 / 盘中必须另存：它们的尾盘段不是 14:30→14:50 的固定口径
+ * （观察是 14:30→当前时点，盘中是滚动窗口），若写进正式文件会把当天的正式结果
+ * 覆盖成假的 14:50 口径。
  */
 function dayFile(cfg, tradeDate, mode, cutHHMM, opts) {
   return path.join(paths.eodDir(), cfg.store.dataDir, `eod-${tradeDate}${daySuffix(mode, cutHHMM, opts)}.json`);

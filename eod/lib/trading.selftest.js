@@ -252,5 +252,32 @@ console.log('\n[10] 落库 SQL：列数 / 占位符数 / 参数数 必须三者�
   check('口径已翻译：buildStatements 里没有 cut', !JSON.stringify(built.runStmt.params).includes('cut'));
 }
 
+console.log('\n[11] 落库文件名：观察 / 盘中默认一天一个（不带时点），--stamp 才带');
+// 历史做法：观察模式按 `-obs<HHMM>` 命名 → 文件名取决于启动分钟（同一天 14:30 与 14:32 两次
+// 观察会落成两个文件），文档 / --replay 无法写死，且与 D1「(trade_date, mode) 一天一行」的
+// 粒度对不上。现与盘中统一：默认一天一个，多次运行靠 runs[] 留痕，时点另存 doc.cutAt。
+// 放在本套自检里，是因为 `npm run tail:selftest` 就是尾盘的唯一自检入口（无 store.selftest.js）。
+{
+  const { daySuffix, dayFile } = require('./store');
+  const cfg = { store: { dataDir: 'data' } };
+
+  check('正式 → 无后缀', daySuffix('cut', '1450') === '');
+  check('观察 → -obs（不含时点）', daySuffix('observe', '1431') === '-obs');
+  check('观察 + --stamp → -obs1431', daySuffix('observe', '1431', { stamp: true }) === '-obs1431');
+  check('盘中 → -intraday（不含时点）', daySuffix('intraday', '1310') === '-intraday');
+  check('盘中 + --stamp → 带时点与窗口', daySuffix('intraday', '1310', { stamp: true, segMinutes: 20 }) === '-intraday1310-w20');
+
+  // 核心不变量：默认文件名与运行时点无关（同一天任意时刻 → 同一个文件）
+  const pathA = dayFile(cfg, '2026-09-21', 'observe', '1431');
+  const pathB = dayFile(cfg, '2026-09-21', 'observe', '1445');
+  check('观察：不同时点落到同一文件（一天一个）', pathA === pathB && pathA.endsWith('eod-2026-09-21-obs.json'), pathA);
+  check('盘中：不同时点落到同一文件（一天一个）',
+    dayFile(cfg, '2026-09-21', 'intraday', '1030') === dayFile(cfg, '2026-09-21', 'intraday', '1400'));
+  check('观察 / 盘中 / 正式三者互不覆盖',
+    new Set([pathA, dayFile(cfg, '2026-09-21', 'intraday', '1431'), dayFile(cfg, '2026-09-21', 'cut', '1450')]).size === 3);
+  check('--stamp 让观察按时点分文件（显式要求才分）',
+    dayFile(cfg, '2026-09-21', 'observe', '1431', { stamp: true }) !== dayFile(cfg, '2026-09-21', 'observe', '1445', { stamp: true }));
+}
+
 console.log(failed ? `\n自我检查失败：${failed} 项` : '\n全部通过');
 process.exit(failed ? 1 : 0);
