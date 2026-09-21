@@ -26,12 +26,15 @@
  *   node eod/tail_screener.js --replay data/eod-2026-09-18.json
  *                                                      # 离线回放：从存档重建报告，不抓行情
  *   node eod/tail_screener.js --json                   # stdout 输出机器可读摘要
+ *   node eod/tail_screener.js --paths                  # 打印工作目录与归档/报告落点，不抓行情
+ *   node eod/tail_screener.js --init                   # 补齐工作目录（首次运行会自动执行）
  *
  * 时段守卫（默认保留，别去掉）：
  *   不加参数时，14:30 之前一律「未到尾盘观察时点」→ 跳过且不产出任何文件。
  *   这是为定时任务设计的护栏（避免上午空跑推送 0 候选）。要盘中随手看一眼，
- *   用 --intraday：它**自动**关闭 D1 同步与推送，并另存 eod-<日>-intraday<HHMM>.json，
- *   绝不覆盖当天的正式口径文件。
+ *   用 --intraday：它**自动**关闭 D1 同步与推送，并另存 eod-<日>-intraday.json，
+ *   绝不覆盖当天的正式口径文件（默认一天一个文件，多次运行记在 runs[]；
+ *   要完整对比某一时刻的 records 时再加 --stamp）。
  * ---------------------------------------------------------------------------
  */
 
@@ -47,6 +50,8 @@ const { syncTailRun } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
 const paths = require('../paths');
+// 首次运行脚手架：空工作目录时补齐目录（尾盘不依赖 candidates.json，但归档/报告目录要存在）
+const scaffold = require('../scaffold');
 
 // ---------- CLI ----------
 const argv = process.argv.slice(2);
@@ -146,6 +151,12 @@ async function run() {
     for (const [k, v] of Object.entries(d.codeAssets)) log(`    ${k.padEnd(14)} ${v}`);
     return { paths: d };
   }
+
+  // 首次运行脚手架（放在 --paths 之后：纯诊断入口不应产生写入）
+  //   --init  仅做初始化然后退出
+  //   无参数  静默补齐后**继续正常运行**
+  if (argv.includes('--init')) { scaffold.autoInit({ log, init: true }); return { init: true }; }
+  scaffold.autoInit({ log });
 
   // 离线回放不依赖任何行情与时段（ Sundays 也要能重建报告）
   if (OPT.replay) return runReplay(OPT.replay);

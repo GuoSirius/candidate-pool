@@ -46,6 +46,8 @@ const { now: nowStr, dayjs } = require('./time');
 // 工作目录解析：产物/配置的落点走 paths，代码资产（本文件等）仍锚在包内。
 // 默认 HOME = 包根（与历史 __dirname 行为一致）；可用 CANDIDATE_POOL_HOME / --cwd 重定位。
 const paths = require('./paths');
+// 首次运行脚手架：空工作目录时补齐目录与观察池（已存在则完全不动作）
+const scaffold = require('./scaffold');
 
 // ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
 const QT_QUOTE = 'https://qt.gtimg.cn/q=';
@@ -346,6 +348,7 @@ async function main() {
     log('     node gen_candidates.js --date YYYY-MM-DD --dump data/snapshot-YYYYMMDD.json   # 在线抓取后导出快照');
     log('     node gen_candidates.js --no-notify   # 实时运行但跳过微信/邮件推送');
     log('     node gen_candidates.js --paths        # 打印实际使用的工作目录与各产物落点');
+    log('     node gen_candidates.js --init         # 补齐工作目录（首次运行时自动执行，此为显式确认）');
     log('  工作目录（决定快照/报告/配置读写的位置）：');
     log('     默认 = 本仓库根；可用 --cwd <dir> 或环境变量 CANDIDATE_POOL_HOME 重定位。');
     return;
@@ -360,6 +363,13 @@ async function main() {
     for (const [k, v] of Object.entries(d.codeAssets)) log(`    ${k.padEnd(14)} ${v}`);
     return;
   }
+  // 首次运行脚手架：空工作目录（npm 包 / npx 场景）补齐目录与观察池，
+  // 已有仓库里什么都不缺 → 完全静默。放在 --paths / --print-anchor 之后，
+  // 因为那两个是纯诊断入口，不应产生任何写入。
+  //   --init  仅做初始化然后退出（显式确认环境，不去联网跑一遍）
+  //   无参数  静默补齐后**继续正常运行**
+  if (process.argv.includes('--init')) { scaffold.autoInit({ log, init: true }); return; }
+  scaffold.autoInit({ log });
   // --print-anchor：仅解析并输出目标锚定日（北京时间推算，时区安全），不发起任何网络请求。
   // 供 CI / 本地定时任务判断「今日快照是否已存在」，避免重复生成造成两端数据分歧。
   if (args.printAnchor) {

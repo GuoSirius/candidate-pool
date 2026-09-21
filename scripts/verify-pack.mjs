@@ -28,15 +28,22 @@ const FORBIDDEN = [
 ];
 
 // 必须入包：缺任何一个，装了也用不了。
+// 注意后四项是「首次运行脚手架」的依赖 —— 少了它们的后果不是报错，而是
+// 空目录首跑直接失败（缺模板）或全市场塌成单一「未分类」（缺行业映射种子）。
 const REQUIRED = [
   'package.json',
   'bin/candidate-pool.js',
   'bin/tail-screener.js',
   'paths.js',
+  'scaffold.js',
   'gen_candidates.js',
   'eod/tail_screener.js',
   'eod/lib/sector.js',
   'db/schema.sql',
+  'candidates.example.json',
+  'notify_config.example.json',
+  'db/.env.example',
+  'eod/data/industry-map.json',
 ];
 
 // 体积红线：超过它通常是误把 data/ 或 node_modules 打进来了
