@@ -131,7 +131,70 @@ CREATE TABLE IF NOT EXISTS stock_note (
 );
 
 -- ---------------------------------------------------------------------------
--- 索引：加速按票 / 按日 / 按梯队 / 按组 的查询。
+-- 尾盘选股：运行批次（一个交易日 × 一种口径一行）。
+-- mode = 'formal'（14:50 固定口径）/ 'observe'（14:30~14:50 观察口径）。
+-- runs_json / stats_json 分别存当日多次运行历史与初筛漏斗统计（JSON）。
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tail_run (
+  trade_date      TEXT NOT NULL,                   -- 交易日（YYYY-MM-DD）
+  mode            TEXT NOT NULL,                   -- formal | observe
+  cut_at          TEXT,                            -- 截断时点 HHMM（如 1450）
+  updated_at      TEXT,                            -- 最近落库时间（北京时间）
+  run_at          TEXT,                            -- 最近一次运行时刻（runs[] 末条 at）
+  candidate_count INTEGER,                         -- 候选数
+  group_count     INTEGER,                         -- 行业组数
+  pre_pass_count  INTEGER,                         -- 初筛通过数
+  snapshot_count  INTEGER,                         -- 全市场快照数
+  runner          TEXT,                            -- local | github
+  runs_json       TEXT,                            -- 当日多次运行历史（JSON 数组）
+  stats_json      TEXT,                            -- 初筛/漏斗统计（JSON）
+  PRIMARY KEY (trade_date, mode)
+);
+
+-- ---------------------------------------------------------------------------
+-- 尾盘选股：候选记录（一个交易日 × 一种口径 × 一只票一行）。
+-- 字段对应 eod/lib/store.js 的 toRecord；六项打分存 score_json，尾盘段存 tail_*，
+-- 收盘回填的 N1~N10 表现存 fill_json（P5 脚本写入，缺失时由 worker 从 price_daily 现算）。
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tail_pick (
+  trade_date      TEXT NOT NULL,                   -- 交易日（YYYY-MM-DD）
+  mode            TEXT NOT NULL,                   -- formal | observe
+  code            TEXT NOT NULL,                   -- 股票代码（sh/sz/bj 前缀）
+  name            TEXT,                            -- 名称
+  sector          TEXT,                            -- 行业（东财/申万）
+  board           TEXT,                            -- 板块代码（sh/sz/bj）
+  board_label     TEXT,                            -- 板块中文名
+  price           REAL,                            -- 入选价（14:50 截点价，元）
+  prev_close      REAL,                            -- 昨收
+  high            REAL,                            -- 当日最高
+  chg_pct         REAL,                            -- 当日涨幅 %
+  turnover        REAL,                            -- 换手率 %
+  vol_ratio       REAL,                            -- 量比
+  vol_ratio_est   REAL,                            -- 收盘预估量比（参考值）
+  float_cap_yi    REAL,                            -- 流通市值（亿）
+  avg_price       REAL,                            -- 均价
+  group_rank      INTEGER,                         -- 组内排名
+  best_in_group   INTEGER,                         -- 0/1：组内最佳
+  group_size      INTEGER,                         -- 同组数量
+  total           REAL,                            -- 总分（0~100）
+  sector_median_chg REAL,                          -- 行业当日涨幅中位数 %
+  sector_rank     INTEGER,                         -- 行业内涨幅排名
+  sector_total    INTEGER,                         -- 行业总数
+  tail_seg_pct    REAL,                            -- 尾盘段（14:30→14:50）涨幅 %
+  tail_up_ratio   REAL,                            -- 段内上涨分钟占比
+  tail_max_drawdown_pct REAL,                      -- 段内最大回撤 %
+  tail_price_vs_avg_pct REAL,                      -- 现价相对均价超出 %
+  tail_avg_at_cut REAL,                            -- 截点时刻均价
+  tail_p0         REAL,                            -- 段起点价
+  tail_p1         REAL,                            -- 段终点价
+  tail_bars       TEXT,                            -- 尾盘段分钟序列（JSON 数组）
+  score_json      TEXT,                            -- 六项子分（JSON）
+  fill_json       TEXT,                            -- 收盘回填：{close,n1..n10,filled_at}（JSON）
+  PRIMARY KEY (trade_date, mode, code)
+);
+
+-- ---------------------------------------------------------------------------
+-- 索引：加速按交易日 / 按口径 / 按票 的查询。
 -- ---------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_pick_code ON pick_record(code);
 CREATE INDEX IF NOT EXISTS idx_pick_date ON pick_record(anchor_date);
@@ -142,3 +205,8 @@ CREATE INDEX IF NOT EXISTS idx_price_date ON price_daily(date);
 CREATE INDEX IF NOT EXISTS idx_note_code  ON stock_note(code);
 CREATE INDEX IF NOT EXISTS idx_group_rel_code ON pick_group_rel(code);
 CREATE INDEX IF NOT EXISTS idx_group_rel_gid ON pick_group_rel(group_id);
+
+-- 尾盘选股索引
+CREATE INDEX IF NOT EXISTS idx_tail_pick_date ON tail_pick(trade_date);
+CREATE INDEX IF NOT EXISTS idx_tail_pick_mode ON tail_pick(mode);
+CREATE INDEX IF NOT EXISTS idx_tail_pick_code ON tail_pick(code);

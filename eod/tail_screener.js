@@ -28,6 +28,7 @@ const { sessionState, estimateFullDayVolRatio, nowBjt } = require('./lib/trading
 const market = require('./lib/market');
 const { buildCandidates } = require('./lib/screen');
 const { saveRun, loadDay } = require('./lib/store');
+const { syncTailRun } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
 
@@ -43,6 +44,7 @@ const OPT = {
   wait: argv.includes('--wait'),
   noNotify: argv.includes('--no-notify'),
   json: argv.includes('--json'),
+  noD1: argv.includes('--no-d1'),
   replay: argOf('--replay'),
 };
 
@@ -189,6 +191,14 @@ async function emitResult(p) {
   if (!p.skipStore) {
     saved = saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner: RUNNER });
     log(`[落库] ${path.basename(saved.file)}（${saved.recordCount} 条 / 第 ${saved.runCount} 次运行）`);
+
+    // 同步到 D1（网页 /api/tail/* 的数据源）；无 CF_* 凭据或 --no-d1 时跳过本地 JSON 仍保留
+    if (saved.doc && !OPT.noD1) {
+      const d1res = await syncTailRun(saved.doc);
+      if (d1res.skipped) log(`[D1] 跳过：${d1res.reason}`);
+      else if (d1res.error) log(`[D1] 同步失败（不影响本地归档）：${d1res.error}`);
+      else log(`[D1] 已同步 ${d1res.picks} 条候选 + 1 行运行记录`);
+    }
   }
 
   // 报告

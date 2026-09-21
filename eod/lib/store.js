@@ -122,7 +122,7 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner }) {
     records,
   };
   fs.writeFileSync(file, JSON.stringify(doc, null, 1), 'utf8');
-  return { file, recordCount: Object.keys(records).length, runCount: runs.length, replacedFill };
+  return { file, doc, recordCount: Object.keys(records).length, runCount: runs.length, replacedFill };
 }
 
 /**
