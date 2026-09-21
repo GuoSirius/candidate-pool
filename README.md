@@ -49,6 +49,37 @@ node eod/tail_screener.js --paths
 
 会打印解析出的工作目录、来源（env / argv / 包根）与全部落点。回归自测：`npm run paths:selftest`。
 
+### 作为 npm 包运行（免拉代码）
+
+```bash
+npx candidate-pool --help         # 次日候选池初筛（= gen_candidates.js）
+npx tail-screener --help          # 尾盘选股（= eod/tail_screener.js）
+```
+
+装包运行时默认工作目录是**当前目录**（而非包目录），因此产物落在你执行命令的地方；
+`CANDIDATE_POOL_HOME` / `--cwd` 可覆盖。⚠️ 首次在**空目录**运行需要自行准备
+`candidates.json`（观察池）、`notify_config.json`（推送凭据）、`db/.env`（D1 凭据）——
+自动脚手架尚未实现，详见 [docs/npm-publish/03-计划.md](docs/npm-publish/03-计划.md) §9。
+
+### 发布（本机只打 tag，npm 发布在 CI）
+
+```bash
+npm run release                   # 交互式：选版本 → 写 CHANGELOG → 提交 → 打 tag → push
+```
+
+tag 推送后由 `.github/workflows/release.yml` 接力：**版本一致性校验 → 离线自测 → 打包体检 →
+`npm publish`（需仓库 Secret `NPM_TOKEN`）→ 建 GitHub Release**。
+Release 说明取自 `CHANGELOG.md` 的本版本段落，取不到则用 `git log` 按同一套 type 分组兜底，
+保证每个版本的**全部提交**都可见。**本机不执行 `npm publish`。**
+
+发布前自查（都不发网络请求）：
+
+```bash
+npm run verify:pack                                  # 打包体检：敏感文件守门 + 必需文件 + 体积红线
+npm run release:notes -- --tag v1.1.0                # 预览 Release 说明（默认打到 stdout）
+npm run release:notes -- --tag v1.1.0 --source git   # 强制走 git 兜底分支比对
+```
+
 ---
 
 ## 数据存储与入库（本地 SQLite 开发 + Cloudflare D1 生产）
