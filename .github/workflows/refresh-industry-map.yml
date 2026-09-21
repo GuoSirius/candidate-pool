@@ -1,0 +1,51 @@
+name: Refresh Industry Map (月更)
+
+# 行业归属缓存（eod/data/industry-map.json）的月度刷新。
+# 为什么放在 GitHub 而非本地：
+#   - 抓全市场映射必须走东财 clist（~60 页），**东财对高频请求会封 IP**；
+#     放在托管 Runner 上跑，封禁风险全部留在云端，本机不再跑该脚本。
+#   - 行业归属/上市日期几乎不变，**月更足够**。
+# 为什么提交到 main（而非 daily-artifacts）：
+#   - main 是唯一事实来源；本地需要时 `git pull` 即可拿到最新映射，无需额外 fetch 分支。
+#   - 尾盘两个工作流（tail-screen / tail-observe）直接用 checkout 出来的 main 副本。
+#
+# 前置：仓库需允许 Actions 写 main（Settings → Actions → General →
+#   Workflow permissions = Read and write；且 main 未被分支保护拦 push）。
+#   Secrets 无需额外配置——脚本只访问公开的东财接口，不写 D1。
+
+on:
+  schedule:
+    - cron: "0 3 1 * *"   # 每月 1 日 03:00 UTC = 11:00 北京时间
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies (dayjs)
+        run: npm ci
+
+      # 脚本自带安全闸：解析 < 3000 只则判定抓取不完整，**不覆盖**既有文件并以非 0 退出。
+      - name: Refresh industry map cache
+        run: node eod/build_industry_map.js
+
+      - name: Commit updated cache to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add eod/data/industry-map.json
+          if git diff --cached --quiet; then
+            echo "行业映射无变化，跳过提交"
+          else
+            git commit -m "chore: 月度刷新行业映射 $(date -u +%Y-%m-%d)"
+            git pull --rebase --autostash origin main
+            git push origin HEAD:main
+          fi

@@ -1,0 +1,109 @@
+name: EOD Tail Observe (观察口径)
+
+# 尾盘选股「观察模式」：14:30–14:50 之间的盘中预览口径（cut 取运行时点，非固定 14:50）。
+# 与 tail-screen.yml（14:40 触发 + --wait 等到 14:50 的正式口径）配对：
+#   - 观察口径 14:30 → 本文件（14:20 触发 + 等窗口后再跑）
+#   - 正式口径 14:50 → tail-screen.yml
+#
+# 通知策略：本工作流**静默**（--no-notify）。观察口径的推送由「本地观察任务(14:30)」负责，
+#   避免同一口径双推。若希望本机不开机时也收到观察推送，去掉下方 --no-notify 即可。
+#
+# 时点说明：GitHub schedule cron 有 1–5 分钟触发延迟，cron 设 06:20 UTC（=14:20 北京）。
+#   注意 tail_screener.js 的时段门（tail.config.js: session.observeFrom = '14:30'）
+#   在 14:30 之前直接判定「未到尾盘观察时点」并静默跳过 —— 所以 14:20 启动不会出结果，
+#   必须由下方「Wait for observe window」步骤在 Runner 内等到 14:30 整再启动。
+
+on:
+  schedule:
+    - cron: "20 6 * * 1-5"   # 周一至周五 06:20 UTC = 14:20 北京时间（程序内等到 14:30 再跑）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies (dayjs)
+        run: npm ci
+
+      # 行业映射：直接用 checkout 出来的 main 副本（由 refresh-industry-map.yml 月更到 main）。
+
+      # 14:20 触发（cron 另有 1–5 分钟延迟），而观察口径要求 ≥14:30 才允许运行，
+      # 故在此等到 14:30 整再启动；否则 sessionState 会判「未到尾盘观察时点」并静默跳过。
+      - name: Wait for observe window (等到 14:30 北京)
+        run: |
+          target=$(date -u -d "today 06:30" +%s)   # 06:30 UTC = 14:30 北京时间
+          now=$(date -u +%s)
+          if [ "$now" -lt "$target" ]; then
+            echo "当前 $(date -u +%H:%M) UTC，等待 $(( (target - now + 59) / 60 )) 分钟后到 14:30 北京"
+            sleep $(( target - now + 5 ))
+          else
+            echo "已过 14:30 北京，直接启动"
+          fi
+
+      - name: Run tail screening (观察口径，静默)
+        id: obs
+        continue-on-error: true
+        env:
+          # D1 凭据：先把观察口径同步到 D1（网页 /api/tail/* 的数据源）
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: node eod/tail_screener.js --no-notify
+
+      - name: Commit artifacts to daily-artifacts branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin daily-artifacts --depth 1 || true
+          if git rev-parse --verify origin/daily-artifacts >/dev/null 2>&1; then
+            BASE=origin/daily-artifacts
+          else
+            BASE=$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "init artifacts branch")
+          fi
+          git worktree add --detach _artifacts "$BASE"
+          mkdir -p _artifacts/eod/reports _artifacts/eod/data
+          cp -r eod/reports/. _artifacts/eod/reports/ 2>/dev/null || true
+          cp -r eod/data/. _artifacts/eod/data/ 2>/dev/null || true
+          cd _artifacts
+          git add -A eod
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore: 尾盘观察 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin HEAD:refs/heads/daily-artifacts
+          fi
+          cd ..
+          git worktree remove _artifacts --force
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tail-observe-report
+          path: |
+            eod/reports/
+            eod/data/eod-*-obs*.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Report failure (标红 + 微信告警)
+        if: ${{ steps.obs.outcome == 'failure' }}
+        env:
+          NOTIFY_WX_PROVIDER: ${{ secrets.NOTIFY_WX_PROVIDER }}
+          NOTIFY_WX_KEY: ${{ secrets.NOTIFY_WX_KEY }}
+          NOTIFY_WX_TOKEN: ${{ secrets.NOTIFY_WX_TOKEN }}
+        run: |
+          echo "::warning::尾盘观察口径失败，请查看日志"
+          node notify.js --send \
+            "⚠️ 尾盘观察失败（GitHub Actions）" \
+            "今日尾盘「观察口径」在 GitHub Runner 上执行失败，**本次没有观察预览**。
+
+          常见原因：腾讯行情接口被拦（WAF / 超时）。
+          运行记录：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
