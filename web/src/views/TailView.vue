@@ -444,45 +444,47 @@ onMounted(loadRuns);
           {{ showAllGroups ? `只看前 ${GROUP_PREVIEW} 个行业` : `展开全部 ${groupCards.length} 个行业` }}
         </button>
       </div>
-      <div class="gcards">
-        <div class="gcard" v-for="g in visibleGroups" :key="g.sector">
-          <div class="ghead">
-            <b>{{ g.sector }}</b>
-            <span class="gmeta">
-              组内 {{ g.size }} 只 · 展示 {{ g.shown.length }} · 行业中位
-              <i :class="perfClass(g.medianChg)">{{ fmtPct(g.medianChg, 2) }}</i>
-            </span>
-          </div>
-          <table class="gtbl">
-            <thead>
-              <tr>
-                <th class="ctr">#</th>
-                <th>代码</th>
-                <th>名称</th>
-                <th class="num">涨跌幅</th>
-                <th class="num">尾盘段</th>
-                <th class="num">量比</th>
-                <th class="num">总分</th>
-                <th>标记</th>
+      <div class="table-wrap">
+        <table class="gtbl">
+          <thead>
+            <tr>
+              <th class="ctr">#</th>
+              <th>代码</th>
+              <th>名称</th>
+              <th class="num">涨跌幅</th>
+              <th class="num">尾盘段</th>
+              <th class="num">量比</th>
+              <th class="num">总分</th>
+              <th>标记</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="g in visibleGroups" :key="g.sector">
+              <tr class="grow">
+                <td colspan="8">
+                  <b>{{ g.sector }}</b>
+                  <span class="gmeta">
+                    组内 {{ g.size }} 只 · 展示 {{ g.shown.length }} · 行业中位涨幅
+                    <i :class="perfClass(g.medianChg)">{{ fmtPct(g.medianChg, 2) }}</i>
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody>
               <tr v-for="(p, i) in g.shown" :key="p.code">
                 <td class="ctr idx">{{ i + 1 }}</td>
                 <td class="code">{{ p.code.replace(/^[a-z]+/, '') }}</td>
-                <td class="name" :title="p.name ?? ''">{{ p.name ?? '—' }}</td>
+                <td class="name">{{ p.name ?? '—' }}</td>
                 <td class="num" :class="perfClass(p.chg_pct)">{{ fmtPct(p.chg_pct) }}</td>
                 <td class="num" :class="perfClass(p.tail_seg_pct)">{{ fmtPct(p.tail_seg_pct, 2) }}</td>
                 <td class="num">{{ fmtNum(p.vol_ratio) }}</td>
                 <td class="num total">{{ fmtNum(p.total) }}</td>
                 <td class="flags">
-                  <span v-if="i === 0" class="fl best">组内最优</span>
-                  <span v-if="isChoppy(p)" class="fl warn">拉升不连贯</span>
+                  <span v-if="i === 0" class="fl best" title="同行业内总分最高">组内最优</span>
+                  <span v-if="isChoppy(p)" class="fl warn" title="尾盘段内上涨分钟占比低于 55%">拉升不连贯</span>
                 </td>
               </tr>
-            </tbody>
-          </table>
-        </div>
+            </template>
+          </tbody>
+        </table>
       </div>
     </section>
   </div>
@@ -584,26 +586,24 @@ onMounted(loadRuns);
 .fl.warn { background: rgba(210, 153, 34, 0.16); color: #d29922; }
 .fl.grp { background: var(--bg); color: var(--muted); font-variant-numeric: tabular-nums; }
 
-/* 分行业明细：对齐 report 的分组卡片列表 */
-.glist { display: flex; flex-direction: column; gap: 12px; }
+/* 分行业明细：一张连续表 —— 每个行业一个分组行（colspan 满行）+ 组内前 N 只 */
+.glist { display: flex; flex-direction: column; gap: 10px; }
 .glist-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .glist .sec-title { margin: 0; }
 .gsub { margin: 4px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
-.gcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
-.gcard { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
-.ghead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
-.ghead b { font-size: 13px; }
-.gmeta { font-size: 11.5px; color: var(--muted); }
-.gtbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-.gtbl th { padding: 4px 6px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
-.gtbl td { padding: 4px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.gtbl { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 12px; }
+.gtbl th { padding: 6px 7px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.gtbl td { padding: 6px 7px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .gtbl tbody tr:last-child td { border-bottom: none; }
 .gtbl .ctr { text-align: center; }
 .gtbl .idx { color: var(--muted); font-size: 11px; }
 .gtbl .code { color: var(--accent); font-variant-numeric: tabular-nums; }
-.gtbl .name { font-weight: 500; max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+.gtbl .name { font-weight: 500; }
 .gtbl .num { text-align: right; font-variant-numeric: tabular-nums; }
 .gtbl .total { font-weight: 700; }
+.gtbl tr.grow td { background: var(--surface-2); padding: 5px 7px; }
+.gtbl tr.grow b { font-size: 12.5px; }
+.gtbl tr.grow .gmeta { margin-left: 8px; font-size: 11px; color: var(--muted); }
 
 /* 复盘 N 列：7 个检查点小芯片，红涨绿跌 */
 .ncols { display: flex; flex-wrap: wrap; gap: 3px; }
