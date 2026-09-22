@@ -135,7 +135,7 @@ const CSS = `  :root, :root[data-theme="light"] {
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px 16px; }
-  .container { max-width: 1040px; margin: 0 auto; }
+  .container { max-width: 1280px; margin: 0 auto; }
   .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
   h1 { font-size: 1.55rem; font-weight: 700; margin-bottom: 6px; }
   h2 { font-size: 1.15rem; font-weight: 600; margin: 30px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
