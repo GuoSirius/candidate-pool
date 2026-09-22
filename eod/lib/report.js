@@ -90,7 +90,9 @@ function rowHtml(c, i, cfg, withBreakdown) {
     <td>${num(tail.segPct, 2)}%</td>
     <td>${num(c.volRatio)}</td>
     <td>${num(c.turnover, 1)}%</td>
+    <td>${num(c.price, 2)}</td>
     <td>${yi(c.floatCapYi)}</td>
+    <td>${yi(c.totalCapYi)}</td>
     ${cells}
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap">${tagBits.join('') || '—'}</td>
@@ -249,7 +251,8 @@ function buildHTML(m) {
   // 第一行列宽靠 colspan 自动对齐到下面的子分列，不需要额外配 colgroup。
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
-    <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('流通值', 'Float cap')}</th>
+    <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('价格', 'Price')}</th>
+    <th rowspan="2">${b('流通值', 'Float cap')}</th><th rowspan="2">${b('总市值', 'Total cap')}</th>
     ${scoreHeadTop()}
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标记', 'Flags')}</th></tr>
     <tr>${scoreHeadSub()}</tr>`;
@@ -282,8 +285,9 @@ function buildHTML(m) {
     <label class="bd-toggle"><input type="checkbox" id="bdToggle"${cfg.report.showScoreBreakdown ? ' checked' : ''}> ${b('分项得分', 'Breakdown')}</label>
   </div>`;
   // 分组分隔行：默认隐藏，「按行业」视图由前端插入到各组行首（含行业中位涨幅与组内数量）
+  // colspan = 基础 10 列（# 标的 行业 涨幅 尾盘段 量比 换手 价格 流通值 总市值）+ 分项 6 列 + 总分/标记 2 列
   const sepRows = groups.map((g) =>
-    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${8 + SCORE_COLS.length + 2}">${
+    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${10 + SCORE_COLS.length + 2}">${
       b(esc(g.sector), esc(g.sector))} · ${b('中位涨幅', 'median')} ${pct(g.best.sectorMedianChg)} · ${b(`组内 ${g.size} 只`, `${g.size} picked`)}</td></tr>`).join('');
   const candRows = listed.map((c, i) => rowHtml(c, i, cfg, true)).join('');
 

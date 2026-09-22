@@ -37,6 +37,7 @@ function toRecord(c) {
     volRatio: c.volRatio,
     volRatioEst: c.volRatioEst ?? null,
     floatCapYi: c.floatCapYi,
+    totalCapYi: c.totalCapYi,
     avgPrice: c.avgPrice,
     groupRank: c.groupRank,
     bestInGroup: c.bestInGroup,
