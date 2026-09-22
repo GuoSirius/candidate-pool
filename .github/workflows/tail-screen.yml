@@ -7,8 +7,9 @@ name: EOD Tail Screening
 # 由 tail_screener.js --wait 在 Runner 内等到 14:50 再开始抓取。
 
 on:
-  schedule:
-    - cron: "40 6 * * 1-5"   # 周一至周五 06:40 UTC = 14:40 北京时间
+  # 由本地准点 dispatch 触发器（scripts/trigger-github-dispatch.mjs --workflow screen --input wait=true）
+  # 在 14:40 北京触发，GitHub 收到即执行，无调度队列延迟。
+  # （已删除 GitHub schedule cron；否则会与本地 dispatch 双触发导致重复通知）
   workflow_dispatch:
     inputs:
       wait:

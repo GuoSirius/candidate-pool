@@ -14,8 +14,9 @@ name: EOD Tail Observe (观察口径)
 #   必须由下方「Wait for observe window」步骤在 Runner 内等到 14:30 整再启动。
 
 on:
-  schedule:
-    - cron: "20 6 * * 1-5"   # 周一至周五 06:20 UTC = 14:20 北京时间（程序内等到 14:30 再跑）
+  # 由本地准点 dispatch 触发器（scripts/trigger-github-dispatch.mjs --workflow observe）
+  # 在 14:20 北京触发，GitHub 收到即执行，无调度队列延迟。
+  # （已删除 GitHub schedule cron —— 公开仓库调度延迟 ~6.5h 会落到晚间，且与本地 dispatch 双触发）
   workflow_dispatch:
 
 permissions:

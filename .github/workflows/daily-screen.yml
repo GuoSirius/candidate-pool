@@ -4,11 +4,11 @@ name: Daily A-Share Screening
 # 因此实时模式可直接跑在 GitHub 托管 Runner 上，不再需要 self-hosted runner。
 
 on:
-  # 每个交易日 15:30（北京时间 = UTC 07:30，周一至周五）自动触发，走实时抓取。
+  # 每个交易日 15:30（北京时间，周一至周五）由本地准点 dispatch 触发器触发，走实时抓取。
+  # 触发命令：scripts/trigger-github-dispatch.mjs --workflow daily --input mode=live
   # 为何 15:30 可行：gen_candidates.js 的 lastClosedTradingDay() 以「hour < 15」为界判「未收盘」，
   # 15:30 已过界，锚定日仍是【当日】而非前一交易日；此时 A 股已收盘 30 分钟，日线收盘数据已定稿。
-  schedule:
-    - cron: "30 7 * * 1-5"
+  # （已删除 GitHub schedule cron；公开仓库调度延迟 ~6.5h 会落到晚间，且会与本地 dispatch 双触发）
   workflow_dispatch:
     inputs:
       mode:

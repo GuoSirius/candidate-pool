@@ -18,6 +18,9 @@ notify_config.json
 # Cloudflare D1 凭据（含 account_id / database_id / API token，切勿提交）
 db/.env
 
+# 本地触发 GitHub dispatch 的 token 兜底文件（切勿提交）
+.github/dispatch-token
+
 # 本地数据库文件（若改成本地 sqlite 调试，勿入库）
 *.sqlite
 *.sqlite3
