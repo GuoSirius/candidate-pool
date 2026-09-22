@@ -48,6 +48,9 @@ const { now: nowStr, dayjs } = require('./time');
 const paths = require('./paths');
 // 首次运行脚手架：空工作目录时补齐目录与观察池（已存在则完全不动作）
 const scaffold = require('./scaffold');
+// 规则引擎纯函数（R01/R07/R05/行业中位数/成交量单位/时区锚定）统一走 rules.js，
+// 单测见 rules.test.js，避免与 gen_candidates 内联实现漂移导致双份真相。
+const { lastClosedTradingDay, nextTradingDay, calcTurnover, computeSectors, calcR01, isLaggard, verifyR05 } = require('./rules');
 
 // ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
 const QT_QUOTE = 'https://qt.gtimg.cn/q=';
@@ -65,16 +68,7 @@ const KLINE_ENDPOINTS = [
   { name: 'web.ifzq/kline(不复权)', qfq: false, url: (c) => `https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param=${c},day,,,260` },
 ];
 
-// ---------- R01 门槛常量 ----------
-const G = {
-  VOL_RATIO_MIN: 1.5,   // C1 量 ≥ 近5日均量 150%
-  CHG_MIN: 3.0,         // C3 涨幅下限
-  CHG_MAX: 8.0,         // C3 涨幅上限
-  TURN_MIN: 3.0,        // C4 换手 ≥ 3%
-  CAP_MIN: 20,          // C5 市值下限（亿）
-  CAP_MAX: 500,         // C5 市值上限（亿）
-  HIGH52_ZONE: 0.9,     // C6 收盘 < 0.9×52周高 视为未进入高位区
-};
+// R01 门槛常量 G 已迁移至 rules.js（单一真相源，受 rules.test.js 守护）
 
 // 并发太高会触发腾讯接口反爬拦截（盘中尤其敏感）。6 并发下 377 只约 10~15s，
 // 兼顾速度与稳定；可用环境变量 CANDIDATE_CONCURRENCY 覆盖。
@@ -90,9 +84,7 @@ function log(...a) { process.stderr.write(a.join(' ') + '\n'); }
 // 交易日相关的小工具统一用 dayjs（北京时间），不用原生 Date：
 // 原生 Date 的 getDay()/getHours() 读的是「机器本地时区」，换台时区不是 +8 的机器
 // 就会把「15:00 前算盘中 / 周末顺延」判错；dayjs.tz 走显式时区，结果与机器设置无关。
-function ymd(d) {
-  return dayjs.isDayjs(d) ? d.format('YYYY-MM-DD') : dayjs.tz(d).format('YYYY-MM-DD');
-}
+// ymd 已随 lastClosedTradingDay/nextTradingDay 迁入 rules.js
 function parseArgs(argv) {
   const o = { date: null, limit: 0, out: null, quiet: false, offline: false, snapshot: null, dump: null, noNotify: false };
   for (let i = 0; i < argv.length; i++) {
@@ -112,26 +104,7 @@ function parseArgs(argv) {
   }
   return o;
 }
-function isWeekendD(d) { const g = d.day(); return g === 0 || g === 6; }
-/** dateStr（YYYY-MM-DD）之后的下一个交易日（仅剔除周末，不含节假日日历）。 */
-function nextTradingDay(dateStr) {
-  let d = dayjs.tz(dateStr + ' 00:00:00').add(1, 'day');
-  while (isWeekendD(d)) d = d.add(1, 'day');
-  return ymd(d);
-}
-/** 最近一个「已收盘」的交易日：周六 → 周五，周日 → 周五，交易日 15:00 前 → 前一交易日。 */
-function lastClosedTradingDay(nowD) {
-  const d = dayjs.isDayjs(nowD) ? nowD : dayjs.tz(nowD);
-  const day = d.day();
-  const hour = d.hour();
-  let back = 0;
-  if (day === 6) back = 1;        // 周六 -> 周五
-  else if (day === 0) back = 2;   // 周日 -> 周五
-  else if (hour < 15) back = 1;   // 交易日盘中 -> 前一交易日
-  let x = d.subtract(back, 'day');
-  while (isWeekendD(x)) x = x.subtract(1, 'day');
-  return ymd(x);
-}
+// isWeekendD / nextTradingDay / lastClosedTradingDay 已迁入 rules.js（受 rules.test.js 守护）
 
 // ---------- HTTP 工具（腾讯公开行情接口，无需任何第三方 CLI）----------
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -269,23 +242,7 @@ async function fetchQuote(code) {
   return q;
 }
 
-// K 线成交量单位（2026-08 实测）：
-//   主板/创业板 -> “手”(1手=100股)；科创板 sh688/sh689 -> 直接就是“股”。
-//   例：金山办公 sh688111 于 2026-08-10 vol=9902896，按“手”折算成交额 2600 亿（荒谬），
-//       按“股”折算 26.01 亿、换手 2.13%（合理）。
-function volLotSize(code) {
-  return /^sh68[89]/.test(String(code)) ? 1 : 100;
-}
-
-// 锚定日换手率 %：成交股数 / 流通股本 ×100
-// 报价里的 idx38 只反映“此刻”，盘前恒为 0 且与历史锚定日口径不符，故一律按 K 线量能推算。
-function calcTurnover(vol, circShares, code) {
-  if (!vol || !circShares) return null;
-  let t = (vol * volLotSize(code)) / circShares * 100;
-  // 兜底：若单位判定失误会整整差 100 倍。A 股单日换手率极少超过 100%，此时自动纠偏。
-  if (t > 100) t = t / 100;
-  return t;
-}
+// volLotSize / calcTurnover 已迁入 rules.js（受 rules.test.js 守护）
 
 // 分时（最新交易日），返回 [{ time, price, vol, amt }]
 async function fetchMinute(code) {
@@ -298,25 +255,7 @@ async function fetchMinute(code) {
   }).filter(r => r.time && !isNaN(r.price));
 }
 
-// R07 行业涨幅：观察池内同行业个股当日涨幅中位数（无需外部板块接口）
-function computeSectors(stocks) {
-  const bySector = {};
-  for (const s of stocks) {
-    const name = (s.sector || '未分类');
-    if (!bySector[name]) bySector[name] = { chgs: [], codes: [] };
-    bySector[name].chgs.push(s.r01 && s.r01.chg != null ? s.r01.chg : 0);
-    bySector[name].codes.push(s.code);
-  }
-  const list = Object.entries(bySector).map(([name, v]) => {
-    const sorted = v.chgs.slice().sort((a, b) => a - b);
-    const mid = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : 0;
-    return { code: name, name, pct: mid };
-  });
-  list.sort((a, b) => b.pct - a.pct);
-  const topN = Math.max(1, Math.round(list.length * 0.1));
-  list.forEach((s, i) => { s.rank = i + 1; s.inTop10 = i < topN; s.total = list.length; s.topN = topN; s.members = null; });
-  return list;
-}
+// computeSectors 已迁入 rules.js（受 rules.test.js 守护）
 async function mapLimit(items, limit, fn) {
   const res = new Array(items.length);
   let i = 0;
@@ -445,46 +384,7 @@ async function main() {
   log(`[3/8] 计算 R01 量能验证突破 ...`);
   for (const s of stocks) {
     const k = s.kline;
-    const r01 = { ok: false, gates: {}, core: 0, capOk: false, highZoneOk: true, mktCapYi: null, circCapYi: null, error: k.error || null };
-    if (k && k.today && k.hist) {
-      const t = k.today, hist = k.hist;
-      // C1 量能倍数（不含当日）
-      if (hist.length >= 5) {
-        const ma5 = hist.slice(0, 5).reduce((a, r) => a + r.vol, 0) / 5;
-        r01.volRatio = t.vol / ma5;
-        r01.gates.C1 = t.vol >= G.VOL_RATIO_MIN * ma5;
-      }
-      // C2 突破前10日高（不含当日）
-      if (hist.length >= 10) {
-        const h10 = Math.max(...hist.slice(0, 10).map(r => r.high));
-        r01.prior10High = h10;
-        r01.gates.C2 = t.close > h10;
-      }
-      // C3 涨幅 3%-8%
-      if (hist.length >= 1) {
-        const prev = hist[0].close;
-        r01.chg = (t.close / prev - 1) * 100;
-        r01.gates.C3 = r01.chg >= G.CHG_MIN && r01.chg <= G.CHG_MAX;
-      }
-      // C4 换手
-      r01.turn = t.turn;
-      r01.gates.C4 = t.turn >= G.TURN_MIN;
-      r01.close = t.close;
-      // C5 市值
-      if (s.quote && s.quote.total_market_cap) {
-        r01.mktCapYi = +s.quote.total_market_cap / 1e8;
-        r01.circCapYi = +s.quote.circulating_market_cap / 1e8;
-        r01.capOk = r01.mktCapYi >= G.CAP_MIN && r01.mktCapYi <= G.CAP_MAX;
-      }
-      // C6 52周高位区
-      if (s.quote && s.quote.high_52week && t.close) {
-        r01.high52 = +s.quote.high_52week;
-        r01.highZoneOk = t.close < G.HIGH52_ZONE * r01.high52;
-      }
-      r01.core = ['C1', 'C2', 'C3', 'C4'].filter(g => r01.gates[g]).length;
-      r01.ok = r01.gates.C1 && r01.gates.C2 && r01.gates.C3 && r01.gates.C4 && r01.capOk && r01.highZoneOk;
-    }
-    s.r01 = r01;
+    s.r01 = calcR01(k && k.today, k && k.hist, s.quote, k && k.error);
   }
 
   // ---- 4. R07 行业涨幅 + 补涨映射（基于观察池内同行业个股涨幅中位数）----
@@ -495,7 +395,7 @@ async function main() {
   for (const s of stocks) {
     const sec = sectorByName[s.sector || '未分类'];
     if (sec) {
-      const laggard = sec.inTop10 && (s.r01.chg != null) && (s.r01.chg < 0.5 * sec.pct);
+      const laggard = isLaggard(s.r01.chg, sec);
       s.r07 = { sectorName: sec.name, sectorPct: sec.pct, sectorRank: sec.rank, inTop10: sec.inTop10, laggard: !!laggard, total: sec.total, topN: sec.topN };
     } else {
       s.r07 = { sectorName: s.sector || '未分类', sectorPct: null, sectorRank: null, inTop10: false, laggard: false, total: validSectors.length, topN, unmatched: true };
@@ -506,29 +406,9 @@ async function main() {
   log(`[5/8] 核验 R05 尾盘异动（依赖分时数据）...`);
   for (const s of stocks) {
     const m = s.minute;
-    const r05 = { available: false, lateGain: null, lateVolShare: null, fullDayGain: s.r01.chg, gates: {}, verdict: '', note: '' };
     let dayBars = [];
     if (Array.isArray(m)) dayBars = m.filter(b => b.date === anchor);
-    if (dayBars.length === 0) {
-      r05.verdict = 'gap';
-      r05.note = `分时接口未回溯至锚定日 ${anchor}（仅保留最近约 5 个交易日），R05 三项核心门槛中依赖分时数据的两项无法验证，故判定为数据缺口，不编造信号。`;
-    } else {
-      r05.available = true;
-      const late = dayBars.filter(b => b.time >= '1430');
-      const p1430 = dayBars.find(b => b.time >= '1430') || dayBars[0];
-      const p1500 = dayBars[dayBars.length - 1];
-      if (p1430 && p1500 && p1430.price) r05.lateGain = (p1500.price / p1430.price - 1) * 100;
-      const lateVol = late.reduce((a, b) => a + (b.vol || 0), 0);
-      const dayVol = dayBars.reduce((a, b) => a + (b.vol || 0), 0);
-      r05.lateVolShare = dayVol ? lateVol / dayVol : 0;
-      r05.gates.lateGain = r05.lateGain != null && r05.lateGain >= 2;
-      r05.gates.lateVol = r05.lateVolShare >= 0.20;
-      r05.gates.fullDay = r05.fullDayGain != null && r05.fullDayGain < 7;
-      // 净流入需 L2，分时数据不含 -> 不可得
-      if (r05.gates.lateGain && r05.gates.lateVol && r05.gates.fullDay) r05.verdict = 'partial';
-      else r05.verdict = 'no';
-    }
-    s.r05 = r05;
+    s.r05 = verifyR05(dayBars, s.r01.chg, anchor);
   }
 
   // ---- 6. 市场宽度 + 画像（无全市场公开源，标记为暂不可用）----
