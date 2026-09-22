@@ -2,6 +2,60 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v2.1.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.0.0...v2.1.0)
+
+### 🚀 新功能 (Features)
+
+- 尾盘与候选池报告新增暗黑主题切换（默认暗色） ([a7fcfed](https://github.com/GuoSirius/candidate-pool/commit/a7fcfed))
+- 尾盘报告改为单表双视图与行业筛选 ([327a87b](https://github.com/GuoSirius/candidate-pool/commit/327a87b))
+- 主报告合并判定矩阵单表与档位筛选 ([9598f02](https://github.com/GuoSirius/candidate-pool/commit/9598f02))
+- Tail 尾盘页双列表改为视图切换 ([5abf0dd](https://github.com/GuoSirius/candidate-pool/commit/5abf0dd))
+- 新增盘后/盘中报告查看页（下拉选择 + iframe 预览） ([62d68a6](https://github.com/GuoSirius/candidate-pool/commit/62d68a6))
+- 尾盘盘中版(intraday)口径入库并全链路可查 ([dab6bc1](https://github.com/GuoSirius/candidate-pool/commit/dab6bc1))
+- Tail 行业筛选条两视图常驻并过滤候选表 ([0dce6e9](https://github.com/GuoSirius/candidate-pool/commit/0dce6e9))
+- 尾盘报告加价格与总市值列 ([d5ca96f](https://github.com/GuoSirius/candidate-pool/commit/d5ca96f))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- Gen_candidates.js html 输出增加转义（安全红线） ([8a2d0e0](https://github.com/GuoSirius/candidate-pool/commit/8a2d0e0))
+- Tail 分行业视图空态误显与行业多选筛选 ([c745a80](https://github.com/GuoSirius/candidate-pool/commit/c745a80))
+
+### ♻️ 代码重构 (Refactors)
+
+- 抽出规则引擎纯函数 rules.js 并补 node:test 单测 ([bcda401](https://github.com/GuoSirius/candidate-pool/commit/bcda401))
+- Gen_candidates 改用 rules.js 消除规则逻辑双写 ([d23b028](https://github.com/GuoSirius/candidate-pool/commit/d23b028))
+
+### 📚 文档 (Documentation)
+
+- **web:** 补充导航高亮、序号列样式、分页汇总、尾盘阈值同步等硬约定 ([37ff9b0](https://github.com/GuoSirius/candidate-pool/commit/37ff9b0))
+- 新增本地定时任务便携重建与对齐文档 ([715e31f](https://github.com/GuoSirius/candidate-pool/commit/715e31f))
+- 新增代码审查标准流程与 pr 模板 ([f5c793c](https://github.com/GuoSirius/candidate-pool/commit/f5c793c))
+
+### 📦 杂项维护 (Chores)
+
+- Update gitignore ([b183cc6](https://github.com/GuoSirius/candidate-pool/commit/b183cc6))
+- 归档 0922 尾盘异动快照与报告 ([3102bed](https://github.com/GuoSirius/candidate-pool/commit/3102bed))
+- 归档 0921 快照重取数据 ([5d63937](https://github.com/GuoSirius/candidate-pool/commit/5d63937))
+- 历史报告批量重渲染为新版式 ([3a88595](https://github.com/GuoSirius/candidate-pool/commit/3a88595))
+- 归档 0922 盘中运行数据 ([761cfdd](https://github.com/GuoSirius/candidate-pool/commit/761cfdd))
+- 尾盘观察 2026-09-22 ([a0fd69f](https://github.com/GuoSirius/candidate-pool/commit/a0fd69f))
+- 尾盘选股 2026-09-22 ([e15db04](https://github.com/GuoSirius/candidate-pool/commit/e15db04))
+
+### 🎨 代码格式 (Style)
+
+- 尾盘报告容器加宽至 1280px 消除横向滚动 ([7c02776](https://github.com/GuoSirius/candidate-pool/commit/7c02776))
+
+### ⚙️ 持续集成 (CI)
+
+- **workflow:** 本地准点 dispatch 触发 GitHub Actions，移除 schedule 延迟 ([0c05587](https://github.com/GuoSirius/candidate-pool/commit/0c05587))
+- **workflow:** 恢复 GitHub 原生定时并配置 timezone/concurrency/timeout ([deca2f5](https://github.com/GuoSirius/candidate-pool/commit/deca2f5))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v2.0.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v1.1.0...v2.0.0)
