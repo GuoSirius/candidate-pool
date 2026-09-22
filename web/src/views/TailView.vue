@@ -73,13 +73,40 @@ const SCORE_KEYS = SCORE_GROUPS.flatMap((g) => g.keys);
 /** 复盘口径只算这 7 个检查点（N4/N6/N8 不落库）。 */
 const N_KEYS = ['n1', 'n2', 'n3', 'n5', 'n7', 'n9', 'n10'] as const;
 
-const filteredPicks = computed(() => {
+/** 仅搜索过滤（行业筛选前的基准集）：行业 chips 的清单与数量按它统计。 */
+const searchPicks = computed(() => {
   const q = search.value.trim().toLowerCase();
   const src = detail.value?.picks ?? [];
   if (!q) return src;
   return src.filter((p) =>
     `${p.code} ${(p.name ?? '')} ${(p.sector ?? '')}`.toLowerCase().includes(q),
   );
+});
+
+/** 视图模式：候选表（搜索/排序/分页）或 分行业（分组连续表，跟随搜索、组内全量展示）。 */
+const view = ref<'table' | 'sector'>('table');
+const GROUP_PREVIEW = 8;
+const showAllGroups = ref(false);
+
+/**
+ * 行业多选筛选：候选表 / 分行业两个视图共用。
+ * 空 = 全部显示；非空 = 只看选中行业（chips 行常驻，选中时分组列表直接全量展开）。
+ */
+const selSectors = ref<string[]>([]);
+function toggleSector(s: string): void {
+  const i = selSectors.value.indexOf(s);
+  if (i >= 0) selSectors.value.splice(i, 1);
+  else selSectors.value.push(s);
+}
+function clearSectors(): void {
+  selSectors.value = [];
+}
+
+/** 搜索 + 行业多选共同作用的候选集（候选表、分项得分归一、分组列表共用）。 */
+const filteredPicks = computed(() => {
+  if (!selSectors.value.length) return searchPicks.value;
+  const set = new Set(selSectors.value);
+  return searchPicks.value.filter((p) => set.has(p.sector ?? '未分类'));
 });
 
 type PickSortKey =
@@ -151,25 +178,10 @@ function isChoppy(p: TailPick): boolean {
   return p.tail_up_ratio != null && p.tail_up_ratio < TAIL_UP_RATIO_WARN;
 }
 
-/** 视图模式：候选表（搜索/排序/分页）或 分行业（分组连续表，跟随搜索、组内全量展示）。 */
-const view = ref<'table' | 'sector'>('table');
-const GROUP_PREVIEW = 8;
-const showAllGroups = ref(false);
-
-/** 分行业视图的行业多选：空 = 全部显示；非空 = 只看选中的行业（选中时不再做组数折叠）。 */
-const selSectors = ref<string[]>([]);
-function toggleSector(s: string): void {
-  const i = selSectors.value.indexOf(s);
-  if (i >= 0) selSectors.value.splice(i, 1);
-  else selSectors.value.push(s);
-}
-function clearSectors(): void {
-  selSectors.value = [];
-}
-
-const groupCards = computed(() => {
+/** 分组构建：行业按组内最优总分降序，组内按总分降序全量。 */
+function buildGroups(picks: TailPickRow[]) {
   const map = new Map<string, TailPickRow[]>();
-  for (const p of filteredPicks.value) {
+  for (const p of picks) {
     const k = p.sector ?? '未分类';
     const arr = map.get(k);
     if (arr) arr.push(p); else map.set(k, [p]);
@@ -186,29 +198,21 @@ const groupCards = computed(() => {
       };
     })
     .sort((a, b) => b.bestTotal - a.bestTotal);
-});
+}
 
-/** 行业 chips：按组内最优总分的展示顺序排列，带组内候选数。 */
+/** 行业 chips（常驻两视图）：按「仅搜索」基准集统计，选中行业后 chips 仍在、数量不变。 */
 const sectorChips = computed(() =>
-  groupCards.value.map((g) => ({ sector: g.sector, size: g.size })),
+  buildGroups(searchPicks.value).map((g) => ({ sector: g.sector, size: g.size })),
 );
 
-/** 应用行业多选后的分组列表。 */
-const filteredGroups = computed(() => {
-  if (!selSectors.value.length) return groupCards.value;
-  const set = new Set(selSectors.value);
-  return groupCards.value.filter((g) => set.has(g.sector));
-});
-/** 筛选后剩余候选数（gsub 汇总用）。 */
-const filteredGroupCount = computed(() =>
-  filteredGroups.value.reduce((n, g) => n + g.size, 0),
-);
+/** 分行业视图的分组列表（已应用行业多选 + 搜索）。 */
+const groupCards = computed(() => buildGroups(filteredPicks.value));
 
 const visibleGroups = computed(() =>
   // 有行业选中 = 用户点名要看这几个行业，直接全量展开；否则维持「前 N 个 + 展开」
   selSectors.value.length || showAllGroups.value
-    ? filteredGroups.value
-    : filteredGroups.value.slice(0, GROUP_PREVIEW),
+    ? groupCards.value
+    : groupCards.value.slice(0, GROUP_PREVIEW),
 );
 
 // —— 漏斗（来自 run.stats）——
@@ -336,7 +340,7 @@ onMounted(loadRuns);
     </section>
 
     <!-- 筛选 + 搜索 + 每页条数 -->
-    <section class="filters" v-if="detail && filteredPicks.length">
+    <section class="filters" v-if="detail && searchPicks.length">
       <div class="viewseg" role="tablist" aria-label="列表视图切换">
         <button type="button" class="segbtn" :class="{ active: view === 'table' }" @click="view = 'table'">候选表</button>
         <button type="button" class="segbtn" :class="{ active: view === 'sector' }" @click="view = 'sector'">分行业</button>
@@ -360,6 +364,24 @@ onMounted(loadRuns);
       <button v-if="pickSortKey" class="clear-sort" type="button" @click="clearPickSort">
         已按「{{ pickSortKey }}」{{ pickSortDir === 'desc' ? '降序' : '升序' }} · 点此恢复默认（按总分）
       </button>
+    </section>
+
+    <!-- 行业筛选条：候选表 / 分行业两视图常驻；多选叠加，「全部」清空 -->
+    <section class="sector-bar" v-if="detail && searchPicks.length && sectorChips.length > 1">
+      <button
+        type="button"
+        class="chip"
+        :class="{ active: !selSectors.length }"
+        @click="clearSectors"
+      >全部</button>
+      <button
+        v-for="c in sectorChips"
+        :key="c.sector"
+        type="button"
+        class="chip"
+        :class="{ active: selSectors.includes(c.sector) }"
+        @click="toggleSector(c.sector)"
+      >{{ c.sector }}<i>{{ c.size }}</i></button>
     </section>
 
     <p class="legend" v-if="detail">
@@ -460,45 +482,30 @@ onMounted(loadRuns);
 
     <!-- 空态提示（独立判断：此前挂在分页的 v-else 链上，分行业视图会误显示「暂无候选」） -->
     <p v-if="loading" class="hint">加载候选列表…</p>
-    <p v-else-if="!error && detail && search.trim() && filteredPicks.length === 0" class="hint">无匹配「{{ search }}」的标的。</p>
-    <p v-else-if="!error && detail && view === 'table' && !filteredPicks.length" class="hint">该运行暂无候选记录。</p>
+    <p v-else-if="!error && detail && searchPicks.length > 0 && filteredPicks.length === 0" class="hint">
+      当前搜索 / 行业筛选下无候选，可点上方「全部」清除行业筛选。
+    </p>
+    <p v-else-if="!error && detail && view === 'table' && !searchPicks.length" class="hint">该运行暂无候选记录。</p>
 
     <!-- 分行业明细（视图切换的「分行业」档）：行业按组内最优总分降序，组内按总分降序全量展示 -->
-    <section class="glist" v-if="!loading && view === 'sector' && filteredGroups.length">
+    <section class="glist" v-if="!loading && view === 'sector' && groupCards.length">
       <div class="glist-head">
         <div>
           <h3 class="sec-title">分行业明细</h3>
           <p class="gsub">
             共 {{ groupCards.length }} 个行业 / {{ filteredPicks.length }} 只候选；行业按组内最优总分降序，组内按总分降序全量展示。
             跟随上方搜索与行业筛选，不受主表排序与分页影响。
-            <template v-if="selSectors.length">（已选 {{ selSectors.length }} 个行业，{{ filteredGroupCount }} 只）</template>
+            <template v-if="selSectors.length">（已选 {{ selSectors.length }} 个行业）</template>
           </p>
         </div>
         <button
-          v-if="!selSectors.length && filteredGroups.length > GROUP_PREVIEW"
+          v-if="!selSectors.length && groupCards.length > GROUP_PREVIEW"
           class="pg-btn"
           type="button"
           @click="showAllGroups = !showAllGroups"
         >
-          {{ showAllGroups ? `只看前 ${GROUP_PREVIEW} 个行业` : `展开全部 ${filteredGroups.length} 个行业` }}
+          {{ showAllGroups ? `只看前 ${GROUP_PREVIEW} 个行业` : `展开全部 ${groupCards.length} 个行业` }}
         </button>
-      </div>
-      <!-- 行业多选：点击选中只看该行业（可叠加），再点取消；「全部」一键清空 -->
-      <div class="chips" v-if="groupCards.length > 1">
-        <button
-          type="button"
-          class="chip"
-          :class="{ active: !selSectors.length }"
-          @click="clearSectors"
-        >全部</button>
-        <button
-          v-for="c in sectorChips"
-          :key="c.sector"
-          type="button"
-          class="chip"
-          :class="{ active: selSectors.includes(c.sector) }"
-          @click="toggleSector(c.sector)"
-        >{{ c.sector }}<i>{{ c.size }}</i></button>
       </div>
       <div class="table-wrap">
         <table class="gtbl">
@@ -667,8 +674,8 @@ onMounted(loadRuns);
 .gtbl tr.grow b { font-size: 12.5px; }
 .gtbl tr.grow .gmeta { margin-left: 8px; font-size: 11px; color: var(--muted); }
 
-/* 行业多选 chips：横向流式排布；选中 = 强调底色，「全部」= 复位 */
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* 行业筛选条：候选表 / 分行业两视图常驻，横向流式排布；选中 = 强调底色，「全部」= 复位 */
+.sector-bar { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   border: 1px solid var(--border); background: var(--surface); color: var(--muted);
   font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; cursor: pointer;
