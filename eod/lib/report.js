@@ -82,7 +82,7 @@ function rowHtml(c, i, cfg, withBreakdown) {
   const cells = withBreakdown
     ? SCORE_COLS.map(([k], idx) => `<td class="${SCORE_CELL_CLS[idx]}">${num(c.score ? c.score[k] : null, 1)}</td>`).join('')
     : '';
-  return `<tr>
+  return `<tr data-sector="${esc(c.sector)}">
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -198,7 +198,21 @@ const CSS = `  :root, :root[data-theme="light"] {
   :root[data-theme="dark"] td.sc-self { background: var(--sc-self-bg); }
   :root[data-theme="dark"] td.sc-ctx { background: var(--sc-ctx-bg); }
   :root[data-theme="dark"] .score-note { background: var(--callout-bg); color: var(--note-fg); }
-  :root[data-theme="dark"] .disclaimer { background: var(--disc-bg); border-color: var(--disc-border); color: var(--disc-fg); }`;
+  :root[data-theme="dark"] .disclaimer { background: var(--disc-bg); border-color: var(--disc-border); color: var(--disc-fg); }
+  /* 候选明细工具条：视图切换 / 行业筛选 / 分项开关（单表双视图，替代原 TOP 表 + 分行业卡片双列表） */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0 0 12px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; flex: none; }
+  .segbtn { border: 0; background: var(--btn-bg); color: var(--btn-fg); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 6px 16px; cursor: pointer; white-space: nowrap; }
+  .segbtn + .segbtn { border-left: 1px solid var(--border); }
+  .segbtn.active { background: var(--accent); color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font: inherit; font-size: 0.8rem; padding: 3px 11px; border-radius: 999px; cursor: pointer; }
+  .chip i { font-style: normal; color: var(--muted); margin-left: 3px; }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.active i { color: inherit; opacity: 0.85; }
+  .bd-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); cursor: pointer; white-space: nowrap; flex: none; }
+  tr.sector-row td { background: var(--th-bg); color: var(--accent); font-weight: 700; font-size: 0.88rem; }
+  table.hide-bd th.grp, table.hide-bd th.grp-sub, table.hide-bd td.sc-self, table.hide-bd td.sc-ctx { display: none; }`;
 
 /**
  * @param {object} m { cfg, tradeDate, mode, cutHHMM, segFrom, result, meta, runner }
@@ -231,8 +245,6 @@ function buildHTML(m) {
       `Funnel: snapshot ${stats.snapshotCount} → pre-filter pass ${stats.prePassCount} → after tail checks ${stats.candidateCount}.`),
   ];
 
-  // ---- TOP N 表 ----
-  const topRows = top.map((c, i) => rowHtml(c, i, cfg, true)).join('');
   // 两级表头：第一行把六个子分切成「个股自身 65 / 环境与质量 35」两块，
   // 第一行列宽靠 colspan 自动对齐到下面的子分列，不需要额外配 colgroup。
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
@@ -243,28 +255,37 @@ function buildHTML(m) {
     <tr>${scoreHeadSub()}</tr>`;
 
   // 读分说明：不解释这一步，用户只会看到一堆等宽数字，不知道哪几个该当真。
-  const scoreNote = `<p class="score-note">${b(
+  const scoreNote = `<p class="score-note" id="scoreNote">${b(
     `六维分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 65 分</b>（尾盘动能 30 + 量能 20 + 位置 15）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 35 分</b>（板块 15 + 均价线 10 + 换手 10）—— 板块与流动性给的背景分，靠它撑起来的高分不可信。`,
     `<b class='sn-self'>The stock itself — 65 pts</b> (tail momentum 30 + volume 20 + position 15): evidence this name moved on its own — <b>this is the group to read first</b>. <b class='sn-ctx'>Context &amp; quality — 35 pts</b> (sector 15 + VWAP 10 + turnover 10): background handed over by the sector and by liquidity; a high total carried by this group alone is not trustworthy.`)}</p>`;
 
-  // ---- 分组卡片 ----
-  const groupCards = groups.map((g) => {
-    const rows = g.shown.map((c, i) => rowHtml(c, i, cfg, false)).join('');
-    return `<div class="card">
-      <div class="group-head">
-        <h3>${esc(g.sector)}</h3>
-        <span class="g-meta">${b(`组内 ${g.size} 只（展示 ${g.shown.length}）`, `${g.size} picked, showing ${g.shown.length}`)}
-          · ${b('行业中位涨幅', 'industry median')} ${pct(g.best.sectorMedianChg)}</span>
-      </div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>${b('标的', 'Name')}</th><th>${b('行业', 'Industry')}</th>
-          <th>${b('涨幅', 'Chg')}</th><th>${b('尾盘段', 'Tail seg')}</th><th>${b('量比', 'Vol ratio')}</th>
-          <th>${b('换手', 'Turnover')}</th><th>${b('流通值', 'Float cap')}</th>
-          <th>${b('总分', 'Total')}</th><th>${b('标记', 'Flags')}</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>
-    </div>`;
-  }).join('');
+  // ---- 候选明细（单表双视图）：TOP 表与分行业卡片本是同一批候选的两种组织方式，
+  // 双列表翻页滚动成本高，故合并为一张表：默认按总分排序，「按行业」视图由前端
+  // 把行重排进分组分隔行之下；行业 chips 做筛选；分项 6 列可用开关收起。
+  // 展示上限沿用 report.maxRows（总量控制），列表为 top 之外的全量候选。----
+  const listed = candidates.slice(0, cfg.report.maxRows);
+  const truncated = candidates.length - listed.length;
+  const chipCounts = {};
+  for (const c of listed) { const k = c.sector || '未分类'; chipCounts[k] = (chipCounts[k] || 0) + 1; }
+  const chipOrder = groups.map((g) => g.sector).filter((s) => chipCounts[s]);
+  for (const k of Object.keys(chipCounts)) if (!chipOrder.includes(k)) chipOrder.push(k);
+  const chipsHtml = [`<button type="button" class="chip active" data-filter="">${b(`全部 ${listed.length}`, `All ${listed.length}`)}</button>`]
+    .concat(chipOrder.map((s) =>
+      `<button type="button" class="chip" data-filter="${esc(s)}">${b(esc(s), esc(s))}<i>${chipCounts[s]}</i></button>`))
+    .join('');
+  const toolbar = `<div class="toolbar">
+    <div class="seg" role="tablist">
+      <button type="button" id="viewScore" class="segbtn active">${b('按总分', 'By score')}</button>
+      <button type="button" id="viewSector" class="segbtn">${b('按行业', 'By industry')}</button>
+    </div>
+    <div class="chips" id="chips">${chipsHtml}</div>
+    <label class="bd-toggle"><input type="checkbox" id="bdToggle"${cfg.report.showScoreBreakdown ? ' checked' : ''}> ${b('分项得分', 'Breakdown')}</label>
+  </div>`;
+  // 分组分隔行：默认隐藏，「按行业」视图由前端插入到各组行首（含行业中位涨幅与组内数量）
+  const sepRows = groups.map((g) =>
+    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${8 + SCORE_COLS.length + 2}">${
+      b(esc(g.sector), esc(g.sector))} · ${b('中位涨幅', 'median')} ${pct(g.best.sectorMedianChg)} · ${b(`组内 ${g.size} 只`, `${g.size} picked`)}</td></tr>`).join('');
+  const candRows = listed.map((c, i) => rowHtml(c, i, cfg, true)).join('');
 
   // ---- 淘汰漏斗 ----
   const funnelRows = Object.entries(stats.preByReason)
@@ -319,13 +340,12 @@ function buildHTML(m) {
     <ul>${conclusion.map((c) => `<li>${c}</li>`).join('')}</ul>
   </div>
 
-  <h2>${b(`TOP ${top.length} 候选（分项得分：个股自身 65 + 环境质量 35）`,
-    `Top ${top.length} Candidates (breakdown: stock 65 + context 35)`)}</h2>
-  ${top.length ? `${scoreNote}<div class="table-wrap"><table><thead>${topHead}</thead><tbody>${topRows}</tbody></table></div>`
+  <h2>${b(`候选明细（${listed.length} 只）`, `Candidates (${listed.length})`)}</h2>
+  ${listed.length ? `${scoreNote}${toolbar}
+  <div class="table-wrap"><table id="candTable"><thead>${topHead}</thead>
+    <tbody id="candBody">${candRows}${sepRows}</tbody></table></div>
+  ${truncated > 0 ? `<p class="src">${b(`另有 ${truncated} 只超出展示上限（report.maxRows）未列出。`, `${truncated} more candidates not listed (report.maxRows cap).`)}</p>` : ''}`
     : `<div class="card">${b('本时段无满足全部门槛的候选。', 'No candidate passed all gates in this window.')}</div>`}
-
-  <h2>${b('分行业明细', 'By Industry')}</h2>
-  ${groupCards || `<div class="card">${b('无分组数据。', 'No group data.')}</div>`}
 
   <h2>${b('淘汰漏斗', 'Rejection Funnel')}</h2>
   <div class="card">
@@ -383,6 +403,64 @@ function buildHTML(m) {
   }
   btn.addEventListener('click', function () { lang = (lang === 'zh') ? 'en' : 'zh'; apply(lang); });
   apply(lang);
+
+  // 候选明细：视图切换（总分/行业）+ 行业 chips 筛选 + 分项列开关。
+  // 行都在服务端渲染好，「按行业」只是把行重排进各分组分隔行之下，不重新请求/重建 DOM。
+  var tbody = document.getElementById('candBody');
+  if (tbody) {
+    var candRows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-sector]'));
+    var sepOrder = [];
+    Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-sep]'), function (tr) { sepOrder.push(tr); });
+    var candView = 'score', candFilter = '';
+    var viewScoreBtn = document.getElementById('viewScore');
+    var viewSectorBtn = document.getElementById('viewSector');
+    function renderCand() {
+      var frag = document.createDocumentFragment();
+      if (candView === 'score') {
+        candRows.forEach(function (tr) {
+          if (!candFilter || tr.getAttribute('data-sector') === candFilter) frag.appendChild(tr);
+        });
+      } else {
+        sepOrder.forEach(function (sep) {
+          var sec = sep.getAttribute('data-sep');
+          if (candFilter && sec !== candFilter) return;
+          sep.hidden = false; frag.appendChild(sep);
+          candRows.forEach(function (tr) {
+            if (tr.getAttribute('data-sector') === sec) frag.appendChild(tr);
+          });
+        });
+      }
+      while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+      tbody.appendChild(frag);
+    }
+    function setView(v) {
+      candView = v;
+      viewScoreBtn.classList.toggle('active', v === 'score');
+      viewSectorBtn.classList.toggle('active', v === 'sector');
+      renderCand();
+    }
+    viewScoreBtn.addEventListener('click', function () { setView('score'); });
+    viewSectorBtn.addEventListener('click', function () { setView('sector'); });
+    document.getElementById('chips').addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip) return;
+      candFilter = chip.getAttribute('data-filter') || '';
+      Array.prototype.forEach.call(document.querySelectorAll('#chips .chip'), function (c) {
+        c.classList.toggle('active', (c.getAttribute('data-filter') || '') === candFilter);
+      });
+      renderCand();
+    });
+    var bdToggle = document.getElementById('bdToggle');
+    var scoreNote = document.getElementById('scoreNote');
+    function applyBd() {
+      var on = bdToggle.checked;
+      document.getElementById('candTable').classList.toggle('hide-bd', !on);
+      if (scoreNote) scoreNote.style.display = on ? '' : 'none';
+    }
+    bdToggle.addEventListener('change', applyBd);
+    applyBd();
+    renderCand();
+  }
 })();
 </script>
 </body>
