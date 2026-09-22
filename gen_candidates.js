@@ -584,7 +584,10 @@ async function sendNotify({ anchor, target, breadth, build }) {
 // ===========================================================================
 // HTML 生成
 // ===========================================================================
-function b(zh, en) { return `<span data-zh="${zh}" data-en="${en}">${zh}</span>`; }
+// 输出编码：所有外部数据（股票名/行业/动态字符串）写入 HTML 前必须转义，
+// 防 API 名含 " < > 破坏结构或被注入。b() 与所有数据注入点统一走 esc()。
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function b(zh, en) { return `<span data-zh="${esc(zh)}" data-en="${esc(en)}">${esc(zh)}</span>`; }
 function num(n, d = 2) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(d); }
 function pct(n) { return (n == null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%'; }
 function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + ' 亿'; }
@@ -600,7 +603,7 @@ function buildHTML(m) {
 
   // 核心结论
   const best = [...universe].sort((a, b) => (b.r01.core || 0) - (a.r01.core || 0))[0];
-  const bestStr = best && best.r01.core ? `${best.name}（${best.code.replace(/^[sh|sz]/, '')}），四项中达成 ${best.r01.core} 项${best.r01.capOk ? '，市值达标' : ''}` : '无';
+  const bestStr = best && best.r01.core ? `${esc(best.name)}（${best.code.replace(/^[sh|sz]/, '')}），四项中达成 ${best.r01.core} 项${best.r01.capOk ? '，市值达标' : ''}` : '无';
   const conclusion = [
     `<b>${b('R01 ' + (r01Triggers ? `硬触发 ${r01Triggers} 只` : '零硬触发'), 'R01 ' + (r01Triggers ? `${r01Triggers} hard trigger(s)` : 'zero hard triggers'))}。</b>` +
       (r01Triggers ? '' : `${universe.length} 只标的无一满足全部门槛。最接近者为 ${bestStr}。`),
