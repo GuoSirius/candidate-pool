@@ -239,7 +239,7 @@ export const TIER_ORDER: Tier[] = ['high', 'secondary', 'conditional', 'excluded
 // ---------------------------------------------------------------------------
 
 /** 尾盘口径：formal = 收盘后固定口径；observe = 盘中观察口径。 */
-export type TailMode = 'formal' | 'observe';
+export type TailMode = 'formal' | 'observe' | 'intraday';
 
 /** 尾盘运行批次（解析自 tail_run 的 runs_json / stats_json）。 */
 export interface TailRun {

@@ -106,6 +106,7 @@ onMounted(async () => {
 .mode { font-size: 11px; padding: 1px 8px; border-radius: 999px; }
 .mode.formal { background: rgba(255,123,114,0.15); color: #ff7b72; }
 .mode.observe { background: rgba(121,192,255,0.15); color: #79c0ff; }
+.mode.intraday { background: rgba(210,153,34,0.16); color: #d29922; }
 
 .ghost-btn { color: var(--accent); text-decoration: none; font-size: 13px; }
 .ghost-btn:hover { text-decoration: underline; }

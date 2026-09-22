@@ -28,6 +28,7 @@ export function fmtCap(v: number | null | undefined): string {
 export function tailModeLabel(m: string | null | undefined): string {
   if (m === 'formal') return '正式';
   if (m === 'observe') return '观察';
+  if (m === 'intraday') return '盘中';
   return m ? String(m) : '—';
 }
 

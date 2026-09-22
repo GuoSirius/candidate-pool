@@ -16,7 +16,7 @@
  * - **口径必须翻译**：本地脚本内部把「14:50 固定口径」叫 `cut`（eod/lib/trading.js 的
  *   `mode`，也是文件名分桶依据 —— daySuffix('cut') === ''），而 D1 / 网页 API 只有
  *   formal / observe（db/schema.sql、worker/src/types.ts）。落库前统一走 d1Mode()，
- *   否则网页拿到 `cut` 会 400「mode 只能为 formal / observe」，记录页也会把它兜底显示成「观察」。
+ *   否则网页拿到 `cut` 会 400「mode 只能为 formal / observe / intraday」，记录页也会把它兜底显示成「观察」。
  *   （2026-09-21 事故：当天 14:50 的正式运行就是这样写进去的。）
  */
 const path = require('path');
@@ -26,12 +26,13 @@ const clients = require('../../db/clients');
 
 /**
  * 本地内部口径 → D1/API 口径。`cut` 是本地对「14:50 固定口径」的旧叫法，对外一律叫 `formal`。
- * 未知口径直接抛错（宁可在同步这一步报出来，也不要往 D1 写第三种口径）。
+ * `intraday`（盘中滚动窗口近似）自 2026-09-22 起也合法入库（mode='intraday'），供报告查看页列出。
+ * 未知口径直接抛错（宁可在同步这一步报出来，也不要往 D1 写第四种口径）。
  */
-const D1_MODE = { cut: 'formal', formal: 'formal', observe: 'observe' };
+const D1_MODE = { cut: 'formal', formal: 'formal', observe: 'observe', intraday: 'intraday' };
 function d1Mode(mode) {
   const m = D1_MODE[mode];
-  if (!m) throw new Error(`未知尾盘口径「${mode}」：D1 只接受 formal / observe`);
+  if (!m) throw new Error(`未知尾盘口径「${mode}」：D1 只接受 formal / observe / intraday`);
   return m;
 }
 
@@ -256,8 +257,9 @@ async function applyTailFill(tradeDate, mode, patch, { argv = process.argv } = {
 
 /**
  * 清理历史遗留口径行：本地旧叫法 `cut` 曾被直接写进 D1（2026-09-21 的 14:50 正式运行），
- * 而 D1 / 网页 API 只认 formal / observe。补发前先删掉，否则同一天会出现
+ * 而 D1 / 网页 API 只认 formal / observe / intraday。补发前先删掉，否则同一天会出现
  * 「cut + formal」两条同义运行，记录页里那一天会重复一行。
+ * （2026-09-22 起 intraday 也是合法口径，不能一刀切删掉非 formal/observe 的行。）
  * 与 syncTailRun 同样作用于所有写入目标。
  * @param {{argv?: string[]}} [opts]
  * @returns {{results: Array<{name:string, file?:string, deleted?:Record<string,number|string>, error?:string}>, notes?:string[]}}
@@ -271,7 +273,7 @@ async function cleanupLegacyModes({ argv = process.argv } = {}) {
     const deleted = {};
     try {
       for (const tbl of ['tail_run', 'tail_pick']) {
-        const r = await t.client.exec(`DELETE FROM ${tbl} WHERE mode NOT IN ('formal','observe')`);
+        const r = await t.client.exec(`DELETE FROM ${tbl} WHERE mode NOT IN ('formal','observe','intraday')`);
         const n = r && r.meta && r.meta.changes;
         // 远程 D1 会回报 meta.changes；本地 node:sqlite 的 exec 不回传，退回 'ok'
         deleted[tbl] = n == null ? 'ok' : n;

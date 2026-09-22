@@ -6,9 +6,9 @@
  *   1. 从 Worker 接口拿「有哪些报告」（盘后 = runs 的 anchor_date；盘中 = tail runs 的日期+口径）；
  *   2. 映射成 GitHub Pages 文件 URL，下拉选择后用 iframe 内嵌展示。
  *
- * 盘中报告有三份口径文件：eod-<date>.html（正式）、-obs（观察）、-intraday（盘中），
- * 但库里只存 formal / observe 两个口径 —— 盘中版（-intraday）不入库，
- * 所以对每个交易日发一个 HEAD 探测文件是否存在，存在才补进下拉（GitHub Pages 带 CORS *，HEAD 可行）。
+ * 盘中报告有三份口径文件：eod-<date>.html（正式）、-obs（观察）、-intraday（盘中）。
+ * 2026-09-22 起盘中运行也入库（tail_run.mode='intraday'），三种口径都能从
+ * /api/tail/runs 直接列出，不再需要前端探测文件是否存在。
  */
 import { ref, computed, onMounted, watch } from 'vue';
 import { api, ApiError } from '../api/client';
@@ -36,16 +36,6 @@ const selected = ref('');
 
 const current = computed(() => entries.value.find((e) => e.key === selected.value) ?? null);
 
-/** HEAD 探测文件是否存在（网络异常视为不存在，不打断主流程）。 */
-async function exists(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, { method: 'HEAD' });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 async function load(): Promise<void> {
   loading.value = true;
   error.value = '';
@@ -68,22 +58,13 @@ async function load(): Promise<void> {
         const key = `${r.trade_date}|${r.mode}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        const suffix = r.mode === 'observe' ? '-obs' : '';
+        const suffix = r.mode === 'observe' ? '-obs' : r.mode === 'intraday' ? '-intraday' : '';
         entries.value.push({
           key,
           label: `${r.trade_date}（${tailModeLabel(r.mode)}）`,
           url: `${REPORTS_BASE}/eod/reports/eod-${r.trade_date}${suffix}.html`,
         });
       }
-      // 盘中版不入库：按交易日探测 -intraday 文件，存在才补进下拉
-      const dates = [...new Set(runs.map((r) => r.trade_date))];
-      const intraday = await Promise.all(
-        dates.map(async (d) => {
-          const url = `${REPORTS_BASE}/eod/reports/eod-${d}-intraday.html`;
-          return (await exists(url)) ? { key: `${d}|intraday`, label: `${d}（盘中）`, url } : null;
-        }),
-      );
-      for (const e of intraday) if (e) entries.value.push(e);
     }
     // 日期倒序，同日内 正式 → 观察 → 盘中
     const order: Record<string, number> = { formal: 0, observe: 1, intraday: 2 };

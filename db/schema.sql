@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS stock_note (
 
 -- ---------------------------------------------------------------------------
 -- 尾盘选股：运行批次（一个交易日 × 一种口径一行）。
--- mode = 'formal'（14:50 固定口径）/ 'observe'（14:30~14:50 观察口径）。
+-- mode = 'formal'（14:50 固定口径）/ 'observe'（14:30~14:50 观察口径）/ 'intraday'（盘中滚动窗口近似）。
 -- runs_json / stats_json 分别存当日多次运行历史与初筛漏斗统计（JSON）。
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tail_run (
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS tail_run (
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tail_pick (
   trade_date      TEXT NOT NULL,                   -- 交易日（YYYY-MM-DD）
-  mode            TEXT NOT NULL,                   -- formal | observe
+  mode            TEXT NOT NULL,                   -- formal | observe | intraday
   code            TEXT NOT NULL,                   -- 股票代码（sh/sz/bj 前缀）
   name            TEXT,                            -- 名称
   sector          TEXT,                            -- 行业（东财/申万）

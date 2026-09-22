@@ -200,7 +200,7 @@ export interface StockRankRow {
 // 尾盘选股（EOD Tail Screener）相关类型
 // ---------------------------------------------------------------------------
 
-export type TailMode = 'formal' | 'observe';
+export type TailMode = 'formal' | 'observe' | 'intraday';
 
 /** 尾盘运行批次（与 db/schema.sql 的 tail_run 对应；runs_json / stats_json 已解析）。 */
 export interface TailRun {

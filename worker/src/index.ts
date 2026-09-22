@@ -118,9 +118,9 @@ app.get('/', (c) =>
       'GET /api/stock-base?q=&group=',
       'GET /api/stats?from=&to=',
       'GET /api/stock-rank?sort=recent|first|picks|high|secondary|conditional|excluded|n1|n2|n3|ln1|ln2|ln3|code&order=desc|asc&limit=',
-      'GET /api/tail/runs?limit=30&mode=formal|observe',
-      'GET /api/tail/run?date=YYYY-MM-DD&mode=formal|observe',
-      'GET /api/tail/review?from=&to=&mode=formal|observe',
+      'GET /api/tail/runs?limit=30&mode=formal|observe|intraday',
+      'GET /api/tail/run?date=YYYY-MM-DD&mode=formal|observe|intraday',
+      'GET /api/tail/review?from=&to=&mode=formal|observe|intraday',
       'GET /api/tail/diff?date=YYYY-MM-DD',
       'GET /api/groups',
       'GET /api/groups/:id',
@@ -208,8 +208,8 @@ app.get('/api/tail/runs', async (c) => {
   const raw = Number(c.req.query('limit')) || 30;
   const limit = Math.min(Math.max(raw, 1), 100);
   const mode = c.req.query('mode') as TailMode | undefined;
-  if (mode && mode !== 'formal' && mode !== 'observe') {
-    return fail(c, `mode 只能为 formal / observe，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
+  if (mode && mode !== 'formal' && mode !== 'observe' && mode !== 'intraday') {
+    return fail(c, `mode 只能为 formal / observe / intraday，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
   }
   const data = await listTailRuns(c.env.DB, limit, mode);
   return ok(c, data);
@@ -219,8 +219,8 @@ app.get('/api/tail/run', async (c) => {
   const date = c.req.query('date');
   const mode = (c.req.query('mode') as TailMode) || 'formal';
   if (!date) return fail(c, 'date 必填（YYYY-MM-DD）', BizCode.ERR_INVALID_PARAM);
-  if (mode !== 'formal' && mode !== 'observe') {
-    return fail(c, `mode 只能为 formal / observe，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
+  if (mode !== 'formal' && mode !== 'observe' && mode !== 'intraday') {
+    return fail(c, `mode 只能为 formal / observe / intraday，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
   }
   const data = await getTailRun(c.env.DB, date, mode);
   if (!data) return fail(c, `未找到 ${date}（${mode}）的尾盘运行`, BizCode.ERR_NOT_FOUND);
@@ -231,8 +231,8 @@ app.get('/api/tail/review', async (c) => {
   const from = c.req.query('from');
   const to = c.req.query('to');
   const mode = (c.req.query('mode') as TailMode) || 'formal';
-  if (mode !== 'formal' && mode !== 'observe') {
-    return fail(c, `mode 只能为 formal / observe，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
+  if (mode !== 'formal' && mode !== 'observe' && mode !== 'intraday') {
+    return fail(c, `mode 只能为 formal / observe / intraday，收到 ${mode}`, BizCode.ERR_INVALID_PARAM);
   }
   const data = await tailReview(c.env.DB, { from: from ?? null, to: to ?? null, mode });
   // 纯派生数据，按 URL（含 from/to）缓存 5 分钟

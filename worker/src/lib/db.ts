@@ -527,11 +527,16 @@ const TAIL_RUN_COLS =
 
 /**
  * 口径别名：本地脚本内部把「14:50 固定口径」叫 `cut`（eod/lib/trading.js 的 `mode`，文件名分桶也按它走），
- * 而 D1 与网页 API 的统一口径只有 formal / observe（见 db/schema.sql、types.ts 的 TailMode）。
+ * 而 D1 与网页 API 的统一口径是 formal / observe / intraday（见 db/schema.sql、types.ts 的 TailMode）。
  * 2026-09-21 当天的正式运行因此被写成 `cut`（同日已修 eod/lib/store_d1.js 的落库翻译）；
  * 读取时两种写法一并匹配、返回前归一到 `formal`，历史行才不会「在记录页显示成观察」或请求直接 10003。
+ * 2026-09-22 起盘中滚动窗口口径 `intraday` 也合法入库（eod/tail_screener.js --intraday 直写）。
  */
-const MODE_ALIAS: Record<TailMode, string[]> = { formal: ['formal', 'cut'], observe: ['observe'] };
+const MODE_ALIAS: Record<TailMode, string[]> = {
+  formal: ['formal', 'cut'],
+  observe: ['observe'],
+  intraday: ['intraday'],
+};
 
 /** 口径匹配片段（`mode = ?` 的别名展开），返回 SQL 片段与绑定参数。 */
 function modeMatch(mode: TailMode): { sql: string; params: string[] } {
@@ -541,7 +546,9 @@ function modeMatch(mode: TailMode): { sql: string; params: string[] } {
 
 /** D1 里的口径值 → 对外统一口径（历史 `cut` 归一为 `formal`） */
 function toTailMode(v: unknown): TailMode {
-  return v === 'observe' ? 'observe' : 'formal';
+  if (v === 'observe') return 'observe';
+  if (v === 'intraday') return 'intraday';
+  return 'formal';
 }
 
 function mapTailRun(r: Record<string, unknown>): TailRun {

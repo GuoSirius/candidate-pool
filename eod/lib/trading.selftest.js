@@ -184,9 +184,10 @@ console.log('\n[9] 落库口径：内部口径必须翻译成 D1/API 的 formal 
   check('cut → formal（14:50 固定口径的旧叫法）', d1Mode('cut') === 'formal', d1Mode('cut'));
   check('formal → formal（幂等，重跑不会写成别的）', d1Mode('formal') === 'formal');
   check('observe → observe', d1Mode('observe') === 'observe');
+  check('intraday → intraday（2026-09-22 起盘中版合法入库）', d1Mode('intraday') === 'intraday');
   let threw = false;
-  try { d1Mode('intraday'); } catch (_) { threw = true; }
-  check('未知口径直接抛错（绝不往 D1 写第三种口径）', threw);
+  try { d1Mode('bogus'); } catch (_) { threw = true; }
+  check('未知口径直接抛错（绝不往 D1 写第四种口径）', threw);
 }
 
 console.log('\n[10] 落库 SQL：列数 / 占位符数 / 参数数 必须三者一致，且列清单对齐 schema.sql');
