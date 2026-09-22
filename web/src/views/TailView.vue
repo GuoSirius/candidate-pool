@@ -151,8 +151,8 @@ function isChoppy(p: TailPick): boolean {
   return p.tail_up_ratio != null && p.tail_up_ratio < TAIL_UP_RATIO_WARN;
 }
 
-/** 分行业明细：对齐 eod/lib/report.js 的分组列表（每组展示前 3 只、行业按组内最优总分降序）。 */
-const GROUP_SHOW = 3;
+/** 视图模式：候选表（搜索/排序/分页）或 分行业（分组连续表，跟随搜索、组内全量展示）。 */
+const view = ref<'table' | 'sector'>('table');
 const GROUP_PREVIEW = 8;
 const showAllGroups = ref(false);
 
@@ -169,7 +169,7 @@ const groupCards = computed(() => {
       return {
         sector,
         size: sorted.length,
-        shown: sorted.slice(0, GROUP_SHOW),
+        shown: sorted,
         bestTotal: sorted[0].total ?? -1,
         medianChg: sorted[0].sector_median_chg ?? null,
       };
@@ -304,6 +304,10 @@ onMounted(loadRuns);
 
     <!-- 筛选 + 搜索 + 每页条数 -->
     <section class="filters" v-if="detail && filteredPicks.length">
+      <div class="viewseg" role="tablist" aria-label="列表视图切换">
+        <button type="button" class="segbtn" :class="{ active: view === 'table' }" @click="view = 'table'">候选表</button>
+        <button type="button" class="segbtn" :class="{ active: view === 'sector' }" @click="view = 'sector'">分行业</button>
+      </div>
       <input
         class="search-input"
         type="search"
@@ -330,7 +334,7 @@ onMounted(loadRuns);
     </p>
 
     <!-- 候选表（宽表：11 逻辑列 → 移动端横向滚动，不翻转） -->
-    <section class="table-wrap" v-if="!loading && pagedPicks.length">
+    <section class="table-wrap" v-if="!loading && view === 'table' && pagedPicks.length">
       <table class="grid">
         <!-- 14 列，与下面 th 一一对应（此前 11 个 col 对 12 个 th，总分列被撑到 19%） -->
         <colgroup>
@@ -414,8 +418,8 @@ onMounted(loadRuns);
       </table>
     </section>
 
-    <!-- 分页 -->
-    <div class="pager" v-if="!loading && totalPages > 1">
+    <!-- 分页（仅候选表视图） -->
+    <div class="pager" v-if="!loading && view === 'table' && totalPages > 1">
       <button class="pg-btn" :disabled="page <= 1" @click="page--">← 上一页</button>
       <span class="pg-info">第 {{ page }} / {{ totalPages }} 页 · 共 {{ filteredPicks.length }} 只</span>
       <button class="pg-btn" :disabled="page >= totalPages" @click="page++">下一页 →</button>
@@ -425,13 +429,13 @@ onMounted(loadRuns);
     <p v-else-if="!error && detail && search.trim() && filteredPicks.length === 0" class="hint">无匹配「{{ search }}」的标的。</p>
     <p v-else-if="!error && detail" class="hint">该运行暂无候选记录。</p>
 
-    <!-- 分行业明细：对齐 eod/lib/report.js 的分组列表 —— 行业按组内最优总分降序，组内按总分降序 -->
-    <section class="glist" v-if="!loading && groupCards.length">
+    <!-- 分行业明细（视图切换的「分行业」档）：行业按组内最优总分降序，组内按总分降序全量展示 -->
+    <section class="glist" v-if="!loading && view === 'sector' && groupCards.length">
       <div class="glist-head">
         <div>
           <h3 class="sec-title">分行业明细</h3>
           <p class="gsub">
-            共 {{ groupCards.length }} 个行业 / {{ filteredPicks.length }} 只候选；行业按组内最优总分降序，组内按总分降序，每组展示前 {{ GROUP_SHOW }} 只。
+            共 {{ groupCards.length }} 个行业 / {{ filteredPicks.length }} 只候选；行业按组内最优总分降序，组内按总分降序全量展示。
             跟随上方搜索，不受主表排序与分页影响。
           </p>
         </div>
@@ -536,6 +540,12 @@ onMounted(loadRuns);
 .ps-select select:focus { outline: none; border-color: var(--accent); }
 .clear-sort { background: none; border: none; padding: 0; font: inherit; font-size: 12.5px; color: var(--accent); cursor: pointer; }
 .clear-sort:hover { text-decoration: underline; }
+
+/* 视图切换：候选表 / 分行业（与 eod 报告单表双视图同一套交互） */
+.viewseg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; flex: none; }
+.segbtn { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 16px; cursor: pointer; white-space: nowrap; }
+.segbtn + .segbtn { border-left: 1px solid var(--border); }
+.segbtn.active { background: var(--accent); color: #fff; }
 
 .legend { color: var(--muted); font-size: 12px; line-height: 1.75; margin: 0; }
 .legend .lg-self { color: var(--accent); }
