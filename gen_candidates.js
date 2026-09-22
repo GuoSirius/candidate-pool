@@ -497,14 +497,30 @@ function buildHTML(m) {
            'Under rule discipline, no name clearing all gates means an empty high-priority tier. Result: ' + secondary.length + ' secondary, ' + conditional.length + ' conditional, ' + excluded.length + ' excluded.')}`,
   ];
 
-  // R01 矩阵
-  let r01Rows = '';
+  // R01 + R07 全量判定矩阵（单表）：两张全量表本是同一批标的，合并后行数减半；
+  // 每行带档位标记，配合顶部 chips 按档位筛选，避免「全量 377 行平铺找不到重点」。
+  const tierOf = new Map();
+  high.forEach(s => tierOf.set(s.code, 'high'));
+  secondary.forEach(s => tierOf.set(s.code, 'secondary'));
+  conditional.forEach(s => tierOf.set(s.code, 'conditional'));
+  excluded.forEach(s => tierOf.set(s.code, 'excluded'));
+  const TIER_LABEL = {
+    high: b('重点关注', 'high'), secondary: b('次级关注', 'secondary'),
+    conditional: b('条件观察', 'conditional'), excluded: b('排除', 'excluded'),
+  };
+  const tierCount = { high: high.length, secondary: secondary.length, conditional: conditional.length, excluded: excluded.length };
+  const tierChips = [`<button type="button" class="chip active" data-tier="">${b(`全部 ${universe.length}`, `All ${universe.length}`)}</button>`]
+    .concat(Object.keys(tierCount).map(k =>
+      `<button type="button" class="chip" data-tier="${k}">${TIER_LABEL[k]}<i>${tierCount[k]}</i></button>`)).join('');
+  let matrixRows = '';
   for (const s of universe) {
-    const r = s.r01;
+    const r = s.r01, x = s.r07 || {};
+    const tier = tierOf.get(s.code) || 'excluded';
     const cls = r.ok ? ' class="hit"' : '';
-    r01Rows += `<tr${cls}>` +
+    matrixRows += `<tr data-tier="${tier}"${cls}>` +
       `<td>${s.code.replace(/^[sh|sz]/, '')}</td>` +
       `<td>${b(s.name, s.name)}</td>` +
+      `<td><span class="tag tier-${tier}">${TIER_LABEL[tier]}</span></td>` +
       `<td>${num(r.close)}</td>` +
       `<td class="${r.chg >= 0 ? 'up' : 'down'}">${pct(r.chg)}</td>` +
       `<td>${num(r.turn)}%</td>` +
@@ -513,20 +529,10 @@ function buildHTML(m) {
       gateCell(r.gates.C1) + gateCell(r.gates.C2) + gateCell(r.gates.C3) + gateCell(r.gates.C4) +
       `<td><b>${r.core != null ? r.core + ' / 4' : '—'}</b></td>` +
       `<td>${r.mktCapYi != null ? yi(r.mktCapYi) : '—'}</td>` +
-      `</tr>`;
-  }
-
-  // R07 表
-  let r07Rows = '';
-  for (const s of universe) {
-    const x = s.r07 || {};
-    r07Rows += `<tr>` +
-      `<td>${s.code.replace(/^[sh|sz]/, '')}</td>` +
-      `<td>${b(s.name, s.name)}</td>` +
       `<td>${x.sectorName ? b(x.sectorName, x.sectorName) : '—'}</td>` +
       `<td>${pct(x.sectorPct)}</td>` +
       `<td>${x.sectorRank ? x.sectorRank + '/' + x.total : '—'}</td>` +
-      `<td>${x.inTop10 ? '<span class="yes">★强势</span>' : '<span class="no">—</span>'}</td>` +
+      `<td>${x.inTop10 ? '<span class="yes">★</span>' : '<span class="no">—</span>'}</td>` +
       `<td>${x.laggard ? '<span class="yes">补涨</span>' : '<span class="no">领涨</span>'}</td>` +
       `</tr>`;
   }
@@ -706,7 +712,18 @@ function buildHTML(m) {
   :root[data-theme="dark"] .note { background: var(--note-bg); }
   :root[data-theme="dark"] tr.hit { background: var(--hit-bg); }
   :root[data-theme="dark"] th { background: var(--th-bg); }
-  :root[data-theme="dark"] .disclaimer { background: var(--disc-bg); border-color: var(--disc-border); color: var(--disc-fg); }`;
+  :root[data-theme="dark"] .disclaimer { background: var(--disc-bg); border-color: var(--disc-border); color: var(--disc-fg); }
+  /* R01+R07 合并矩阵工具条：档位 chips 筛选（与 eod 报告同款交互） */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0 0 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font: inherit; font-size: 0.8rem; padding: 3px 11px; border-radius: 999px; cursor: pointer; }
+  .chip i { font-style: normal; color: var(--muted); margin-left: 3px; }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.active i { color: inherit; opacity: 0.85; }
+  .tag.tier-high { background: var(--tag-pass-bg); color: var(--red); }
+  .tag.tier-secondary { background: var(--tag-bg); color: var(--blue); }
+  .tag.tier-conditional { background: var(--tag-gap-bg); color: var(--amber); }
+  .tag.tier-excluded { background: var(--tag-fail-bg); color: var(--slate); }`;
 
   return `<!DOCTYPE html>
 <html lang="zh-CN" data-theme="dark">
@@ -745,31 +762,21 @@ function buildHTML(m) {
     <p class="src">${b('数据来源：腾讯公开行情接口（web.ifzq.gtimg.cn 日线/分时、qt.gtimg.cn 报价/市值/52周高/换手），数据时点 ' + anchor + ' 收盘。', 'Source: Tencent public market-data endpoints (web.ifzq.gtimg.cn for daily/minute, qt.gtimg.cn for quote/cap/52w-high/turnover). Data timestamp: ' + anchor + ' close.')}</p>
   </div>
 
-  <h2>${b('R01 量能验证突破 — 全量判定明细', 'R01 Volume-Confirmed Breakout — Full Evaluation Matrix')}</h2>
+  <h2>${b('R01 + R07 全量判定矩阵', 'R01 + R07 Full Evaluation Matrix')}</h2>
   <div class="card">
-    <p class="body-text" style="margin-bottom:12px">${b('四项门槛：C1 当日量 ≥ 近 5 日均量 150% ｜ C2 收盘突破近 10 日最高价 ｜ C3 涨幅 3%–8% ｜ C4 换手率 ≥ 3%。红色为达成。', 'Four gates: C1 volume at 150%+ of the 5-day average | C2 close above the prior 10-day high | C3 gain 3%–8% | C4 turnover 3%+. Red marks a pass.')}</p>
-    <div class="table-wrap"><table>
+    <p class="body-text" style="margin-bottom:12px">${b('四项门槛：C1 当日量 ≥ 近 5 日均量 150% ｜ C2 收盘突破近 10 日最高价 ｜ C3 涨幅 3%–8% ｜ C4 换手率 ≥ 3%。红色为达成。R07：所属行业居前 10% 且个股涨幅 < 行业涨幅一半记为补涨。点上方档位 chips 可只看某一档。', 'Four gates: C1 volume at 150%+ of the 5-day average | C2 close above the prior 10-day high | C3 gain 3%–8% | C4 turnover 3%+. Red marks a pass. R07 laggard: sector in the top 10% and gain below half the sector median. Use the tier chips above to focus on one tier.')}</p>
+    <div class="toolbar"><div class="chips" id="tierChips">${tierChips}</div></div>
+    <div class="table-wrap"><table id="matrixTable">
       <thead><tr>
-        <th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('收盘', 'Close')}</th>
-        <th>${b('涨幅', 'Chg')}</th><th>${b('换手', 'Turn.')}</th><th>${b('量能/5日', 'Vol/5d')}</th>
-        <th>${b('前10日高', 'Prior 10d high')}</th>
+        <th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('档位', 'Tier')}</th>
+        <th>${b('收盘', 'Close')}</th><th>${b('涨幅', 'Chg')}</th><th>${b('换手', 'Turn.')}</th>
+        <th>${b('量能/5日', 'Vol/5d')}</th><th>${b('前10日高', 'Prior 10d high')}</th>
         <th>C1</th><th>C2</th><th>C3</th><th>C4</th>
         <th>${b('达成', 'Score')}</th><th>${b('总市值', 'Mkt cap')}</th>
+        <th>${b('所属行业', 'Sector')}</th><th>${b('行业涨幅', 'Sector chg')}</th>
+        <th>${b('行业排名', 'Rank')}</th><th>${b('强势', 'Strong?')}</th><th>${b('角色', 'Role')}</th>
       </tr></thead>
-      <tbody>${r01Rows}</tbody>
-    </table></div>
-  </div>
-
-  <h2>${b('R07 板块内补涨 — 行业归属与强弱', 'R07 Intra-Sector Laggard — Sector Mapping & Strength')}</h2>
-  <div class="card">
-    <p class="body-text" style="margin-bottom:12px">${b(`行业口径为观察池内行业分组（共 ${m.sectors ? m.sectors.length : '—'} 个，前 10% = 前 ${m.topN} 名）。补涨判定：所属行业居前 10% 且 个股涨幅 < 行业涨幅的一半。`, `Sector universe is the watchlist's industry groups (${m.sectors ? m.sectors.length : '—'} sectors, top 10% = top ${m.topN}). Laggard test: the stock's sector is in the top 10% and its gain is below half the sector's gain.`)}</p>
-    <div class="table-wrap"><table>
-      <thead><tr>
-        <th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('所属行业', 'Sector')}</th>
-        <th>${b('行业涨幅', 'Sector chg')}</th><th>${b('行业排名', 'Sector rank')}</th>
-        <th>${b('强势板块', 'Strong?')}</th><th>${b('角色', 'Role')}</th>
-      </tr></thead>
-      <tbody>${r07Rows}</tbody>
+      <tbody>${matrixRows}</tbody>
     </table></div>
   </div>
 
@@ -784,10 +791,12 @@ function buildHTML(m) {
 
   <h2>${b('排除说明', 'Exclusions')}</h2>
   <div class="card">
+    <details><summary>${b(`排除明细（${excluded.length} 条，点击展开）`, `Exclusion details (${excluded.length}, click to expand)`)}</summary>
     <div class="table-wrap"><table>
       <thead><tr><th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('排除原因', 'Reason')}</th></tr></thead>
       <tbody>${exRows}</tbody>
     </table></div>
+    </details>
   </div>
 
   <h2>${b('R05 尾盘异动核验', 'R05 Late-Session Capital Surge')}</h2>
@@ -848,6 +857,23 @@ function buildHTML(m) {
   }
   btn.addEventListener('click', function () { lang = (lang === 'zh') ? 'en' : 'zh'; apply(lang); });
   apply(lang);
+
+  // R01+R07 矩阵：档位 chips 筛选（display 切换，不重排——全量行顺序保持观察池原序）
+  var matrixBody = document.querySelector('#matrixTable tbody');
+  var tierChips = document.getElementById('tierChips');
+  if (matrixBody && tierChips) {
+    tierChips.addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip) return;
+      var tier = chip.getAttribute('data-tier') || '';
+      Array.prototype.forEach.call(tierChips.querySelectorAll('.chip'), function (c) {
+        c.classList.toggle('active', (c.getAttribute('data-tier') || '') === tier);
+      });
+      Array.prototype.forEach.call(matrixBody.querySelectorAll('tr[data-tier]'), function (tr) {
+        tr.style.display = (!tier || tr.getAttribute('data-tier') === tier) ? '' : 'none';
+      });
+    });
+  }
 })();
 </script>
 </body>
