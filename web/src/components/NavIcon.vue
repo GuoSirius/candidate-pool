@@ -1,7 +1,7 @@
 <script lang="ts">
 // 图标名联合类型在这里定义（唯一来源），nav.ts 只引用类型、不重复维护字符串。
 export const ICON_NAMES = [
-  'list', 'grid', 'chart', 'clock', 'history', 'target', 'tag', 'book', 'menu', 'more', 'diff',
+  'list', 'grid', 'chart', 'clock', 'history', 'target', 'tag', 'book', 'menu', 'more', 'diff', 'doc',
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];
 </script>
@@ -54,6 +54,9 @@ defineProps<{ name: IconName }>();
       <circle cx="12.2" cy="8" r="1.2" fill="currentColor" stroke="none" />
     </g>
     <g v-else-if="name === 'diff'"><path d="M6 3.5L2.5 8l3.5 4.5M10 3.5L13.5 8l-3.5 4.5" /></g>
+    <g v-else-if="name === 'doc'">
+      <path d="M4.5 2.5h5.2l2.8 2.8v8.2h-8z" /><path d="M9.5 2.8V5.5h2.8M6.3 8.4h3.4M6.3 10.9h3.4" />
+    </g>
   </svg>
 </template>
 

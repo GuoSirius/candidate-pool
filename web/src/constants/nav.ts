@@ -44,6 +44,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'runs', label: '候选列表', tabLabel: '候选', to: '/', icon: 'list', inTabbar: true },
       { key: 'stocks', label: '全部标的', tabLabel: '标的', to: '/stocks', icon: 'grid', inTabbar: true },
       { key: 'stats', label: '复盘统计', tabLabel: '统计', to: '/stats', icon: 'chart', inTabbar: true },
+      { key: 'reports', label: '报告查看', to: '/reports', icon: 'doc' },
     ],
   },
   {
@@ -53,6 +54,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'tail', label: '尾盘候选', to: '/tail', icon: 'clock' },
       { key: 'tail-history', label: '尾盘记录', to: '/tail/history', icon: 'history' },
       { key: 'tail-review', label: '尾盘复盘', to: '/tail/review', icon: 'target' },
+      { key: 'tail-reports', label: '报告查看', to: '/tail/reports', icon: 'doc' },
       { key: 'tail-diff', label: '口径对照', to: '/tail/diff', icon: 'diff' },
     ],
   },
