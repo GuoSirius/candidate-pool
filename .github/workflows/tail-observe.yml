@@ -8,23 +8,32 @@ name: EOD Tail Observe (观察口径)
 # 通知策略：本工作流**静默**（--no-notify）。观察口径的推送由「本地观察任务(14:30)」负责，
 #   避免同一口径双推。若希望本机不开机时也收到观察推送，去掉下方 --no-notify 即可。
 #
-# 时点说明：GitHub schedule cron 有 1–5 分钟触发延迟，cron 设 06:20 UTC（=14:20 北京）。
+# 时点说明：GitHub schedule cron 有 1–5 分钟触发延迟，cron 设 20 14 + timezone Asia/Shanghai（=14:20 北京）。
 #   注意 tail_screener.js 的时段门（tail.config.js: session.observeFrom = '14:30'）
 #   在 14:30 之前直接判定「未到尾盘观察时点」并静默跳过 —— 所以 14:20 启动不会出结果，
 #   必须由下方「Wait for observe window」步骤在 Runner 内等到 14:30 整再启动。
 
 on:
-  # 由本地准点 dispatch 触发器（scripts/trigger-github-dispatch.mjs --workflow observe）
-  # 在 14:20 北京触发，GitHub 收到即执行，无调度队列延迟。
-  # （已删除 GitHub schedule cron —— 公开仓库调度延迟 ~6.5h 会落到晚间，且与本地 dispatch 双触发）
+  # GitHub 原生定时 + timezone（IANA 时区名，cron 直接写北京时间）：
+  # 20 14 Asia/Shanghai = 14:20 北京，等价旧 UTC 写法 20 6；分钟避开整点/半点，降低调度排队概率。
+  # 观察口径要求 >=14:30 才允许运行，仍由下方「Wait for observe window」步骤等到 14:30 再启动。
+  schedule:
+    - cron: "20 14 * * 1-5"
+      timezone: "Asia/Shanghai"
   workflow_dispatch:
 
 permissions:
   contents: write
 
+# 同一工作流同时最多一个运行实例：调度延迟导致重叠触发时排队而非并行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   observe:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

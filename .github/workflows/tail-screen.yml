@@ -7,9 +7,12 @@ name: EOD Tail Screening
 # 由 tail_screener.js --wait 在 Runner 内等到 14:50 再开始抓取。
 
 on:
-  # 由本地准点 dispatch 触发器（scripts/trigger-github-dispatch.mjs --workflow screen --input wait=true）
-  # 在 14:40 北京触发，GitHub 收到即执行，无调度队列延迟。
-  # （已删除 GitHub schedule cron；否则会与本地 dispatch 双触发导致重复通知）
+  # GitHub 原生定时 + timezone（IANA 时区名，cron 直接写北京时间）：
+  # 40 14 Asia/Shanghai = 14:40 北京，等价旧 UTC 写法 40 6；分钟避开整点/半点，降低调度排队概率。
+  # 程序内 --wait 等到 14:50 再抓取，勿把 cron 直接设到 14:50（调度延迟会顶破口径边界）。
+  schedule:
+    - cron: "40 14 * * 1-5"
+      timezone: "Asia/Shanghai"
   workflow_dispatch:
     inputs:
       wait:
@@ -24,9 +27,15 @@ on:
 permissions:
   contents: write
 
+# 同一工作流同时最多一个运行实例：调度延迟导致重叠触发时排队而非并行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   tail:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

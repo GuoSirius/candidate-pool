@@ -4,11 +4,12 @@ name: Daily A-Share Screening
 # 因此实时模式可直接跑在 GitHub 托管 Runner 上，不再需要 self-hosted runner。
 
 on:
-  # 每个交易日 15:30（北京时间，周一至周五）由本地准点 dispatch 触发器触发，走实时抓取。
-  # 触发命令：scripts/trigger-github-dispatch.mjs --workflow daily --input mode=live
-  # 为何 15:30 可行：gen_candidates.js 的 lastClosedTradingDay() 以「hour < 15」为界判「未收盘」，
-  # 15:30 已过界，锚定日仍是【当日】而非前一交易日；此时 A 股已收盘 30 分钟，日线收盘数据已定稿。
-  # （已删除 GitHub schedule cron；公开仓库调度延迟 ~6.5h 会落到晚间，且会与本地 dispatch 双触发）
+  # GitHub 原生定时 + timezone（IANA 时区名，cron 直接写北京时间）：
+  # 37 15 Asia/Shanghai = 15:37 北京（从 15:30 移出半点高峰分钟；仍满足 lastClosedTradingDay
+  # 的「hour >= 15」边界，锚定日为当日，数据口径不变）。等价旧 UTC 写法 30 7。
+  schedule:
+    - cron: "37 15 * * 1-5"
+      timezone: "Asia/Shanghai"
   workflow_dispatch:
     inputs:
       mode:
@@ -28,9 +29,15 @@ on:
 permissions:
   contents: write
 
+# 同一工作流同时最多一个运行实例：调度延迟导致重叠触发时排队而非并行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   screen:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     # CF_* 提到 job 级：`if: env.X != ''` 只能可靠读到 workflow / job 级 env。
     # 原先把这三个写在各个 step 自己的 env 里、又用同一步骤的 if 去判它，
     # 而「step 自身 env 在 if 求值时是否已生效」官方没有保证（见 Contexts 可用性表），
