@@ -1,0 +1,135 @@
+{
+ "version": 1,
+ "tradeDate": "2026-09-23",
+ "mode": "cut",
+ "cutAt": "1450",
+ "updatedAt": "2026-09-23 14:51:05",
+ "runs": [
+  {
+   "at": "2026-09-23 14:51:05",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 2,
+   "groupCount": 2,
+   "prePassCount": 196,
+   "snapshotCount": 6167,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6167,
+  "prePassCount": 196,
+  "preByReason": {
+   "当日涨幅不在区间": 4890,
+   "停牌或已退市（无成交）": 331,
+   "ST / 退市风险股": 481,
+   "换手率不在区间": 52,
+   "量比不足": 181,
+   "股价过低": 2,
+   "流通市值不在区间": 34
+  },
+  "minuteDropped": 194,
+  "tailByReason": {
+   "尾盘段涨幅不足": 186,
+   "现价低于当日均价": 51,
+   "距日内高点回落过多": 121,
+   "关键字段缺失或分时数据不可用": 4
+  },
+  "candidateCount": 2,
+  "groupCount": 2
+ },
+ "records": {
+  "sz002099": {
+   "code": "sz002099",
+   "name": "海翔药业",
+   "sector": "化学制药",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 5.93,
+   "prevClose": 5.63,
+   "high": 5.95,
+   "chgPct": 5.33,
+   "turnover": 2.57,
+   "volRatio": 2.18,
+   "volRatioEst": 2.274782608695652,
+   "floatCapYi": 95.88,
+   "totalCapYi": 95.99,
+   "avgPrice": 5.7752509875960465,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.6779661016949159,
+    "upRatio": 0.5454545454545454,
+    "maxDrawdownPct": 0.5050505050505092,
+    "priceVsAvgPct": 2.8526727714137223,
+    "avgAtCut": 5.7752509875960465,
+    "p0": 5.9,
+    "p1": 5.94,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 10.169491525423739,
+    "volume": 10.88888888888889,
+    "position": 13.319327731092473,
+    "avgLine": 10,
+    "sector": 15,
+    "turnoverFit": 5.699999999999998
+   },
+   "total": 65.0777081454051,
+   "sectorMedianChg": 3.975,
+   "sectorRank": 39,
+   "sectorTotal": 61,
+   "fill": {}
+  },
+  "sz300539": {
+   "code": "sz300539",
+   "name": "横河精密",
+   "sector": "塑料",
+   "board": "gem",
+   "boardLabel": "创业板",
+   "price": 18.35,
+   "prevClose": 17.6,
+   "high": 18.5,
+   "chgPct": 4.26,
+   "turnover": 5.39,
+   "volRatio": 1.34,
+   "volRatioEst": 1.3982608695652174,
+   "floatCapYi": 40.09,
+   "totalCapYi": 49.3,
+   "avgPrice": 18.130498631024984,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.6593406593406648,
+    "upRatio": 0.5,
+    "maxDrawdownPct": 0.8658008658008665,
+    "priceVsAvgPct": 1.0452077068125343,
+    "avgAtCut": 18.130498631024984,
+    "p0": 18.2,
+    "p1": 18.32,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 9.890109890109972,
+    "volume": 1.555555555555557,
+    "position": 5.270270270270286,
+    "avgLine": 10,
+    "sector": 15,
+    "turnoverFit": 10
+   },
+   "total": 51.715935715935814,
+   "sectorMedianChg": 4.19,
+   "sectorRank": 33,
+   "sectorTotal": 61,
+   "fill": {}
+  }
+ }
+}
