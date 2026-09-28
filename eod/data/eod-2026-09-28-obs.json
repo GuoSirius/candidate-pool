@@ -1,0 +1,89 @@
+{
+ "version": 1,
+ "tradeDate": "2026-09-28",
+ "mode": "observe",
+ "cutAt": "1431",
+ "updatedAt": "2026-09-28 14:31:15",
+ "runs": [
+  {
+   "at": "2026-09-28 14:31:15",
+   "mode": "observe",
+   "cutAt": "1431",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 1,
+   "groupCount": 1,
+   "prePassCount": 92,
+   "snapshotCount": 6170,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6170,
+  "prePassCount": 92,
+  "preByReason": {
+   "当日涨幅不在区间": 5170,
+   "停牌或已退市（无成交）": 332,
+   "ST / 退市风险股": 480,
+   "换手率不在区间": 44,
+   "量比不足": 40,
+   "流通市值不在区间": 12
+  },
+  "minuteDropped": 91,
+  "tailByReason": {
+   "尾盘段涨幅不足": 90,
+   "距日内高点回落过多": 73,
+   "现价低于当日均价": 36,
+   "关键字段缺失或分时数据不可用": 5
+  },
+  "candidateCount": 1,
+  "groupCount": 1
+ },
+ "records": {
+  "sz300850": {
+   "code": "sz300850",
+   "name": "新强联",
+   "sector": "风电设备",
+   "board": "gem",
+   "boardLabel": "创业板",
+   "price": 30.78,
+   "prevClose": 29.25,
+   "high": 30.78,
+   "chgPct": 5.23,
+   "turnover": 5.61,
+   "volRatio": 1.41,
+   "volRatioEst": 1.6037914691943127,
+   "floatCapYi": 99.49,
+   "totalCapYi": 127.46,
+   "avgPrice": 28.998917275806345,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.7876599934361733,
+    "upRatio": 1,
+    "maxDrawdownPct": 0,
+    "priceVsAvgPct": 5.900505553085611,
+    "avgAtCut": 28.998917275806345,
+    "p0": 30.47,
+    "p1": 30.71,
+    "bars": 2,
+    "segFrom": "1430",
+    "cut": "1431"
+   },
+   "score": {
+    "tailMomentum": 11.8148999015426,
+    "volume": 2.333333333333333,
+    "position": 12.725795971409998,
+    "avgLine": 10,
+    "sector": 15,
+    "turnoverFit": 10
+   },
+   "total": 61.874029206285925,
+   "sectorMedianChg": 3.8,
+   "sectorRank": 21,
+   "sectorTotal": 49,
+   "fill": {}
+  }
+ }
+}
