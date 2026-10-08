@@ -1,0 +1,42 @@
+{
+ "version": 1,
+ "tradeDate": "2026-10-08",
+ "mode": "observe",
+ "cutAt": "1431",
+ "updatedAt": "2026-10-08 14:31:14",
+ "runs": [
+  {
+   "at": "2026-10-08 14:31:14",
+   "mode": "observe",
+   "cutAt": "1431",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 0,
+   "groupCount": 0,
+   "prePassCount": 147,
+   "snapshotCount": 6171,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6171,
+  "prePassCount": 147,
+  "preByReason": {
+   "换手率不在区间": 90,
+   "停牌或已退市（无成交）": 334,
+   "ST / 退市风险股": 479,
+   "当日涨幅不在区间": 5037,
+   "量比不足": 55,
+   "流通市值不在区间": 29
+  },
+  "minuteDropped": 147,
+  "tailByReason": {
+   "尾盘段涨幅不足": 145,
+   "现价低于当日均价": 101,
+   "距日内高点回落过多": 130
+  },
+  "candidateCount": 0,
+  "groupCount": 0
+ },
+ "records": {}
+}
