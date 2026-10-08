@@ -2,6 +2,40 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v2.1.1
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.1.0...v2.1.1)
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- **eod:** 行业映射新增新浪兜底源与防降级闸，修复 runner 上东财被封月更失败 ([244e879](https://github.com/GuoSirius/candidate-pool/commit/244e879))
+
+### 📦 杂项维护 (Chores)
+
+- 每日实时初筛 2026-09-22 ([7944ff2](https://github.com/GuoSirius/candidate-pool/commit/7944ff2))
+- 尾盘观察 2026-09-23 ([901dafc](https://github.com/GuoSirius/candidate-pool/commit/901dafc))
+- 尾盘选股 2026-09-23 ([ad60b3a](https://github.com/GuoSirius/candidate-pool/commit/ad60b3a))
+- 每日实时初筛 2026-09-23 ([f48a456](https://github.com/GuoSirius/candidate-pool/commit/f48a456))
+- 尾盘观察 2026-09-24 ([1f1d604](https://github.com/GuoSirius/candidate-pool/commit/1f1d604))
+- 尾盘选股 2026-09-24 ([e1a4bee](https://github.com/GuoSirius/candidate-pool/commit/e1a4bee))
+- 每日实时初筛 2026-09-24 ([3d01e09](https://github.com/GuoSirius/candidate-pool/commit/3d01e09))
+- 尾盘观察 2026-09-28 ([bc2ad4e](https://github.com/GuoSirius/candidate-pool/commit/bc2ad4e))
+- 尾盘选股 2026-09-28 ([c00a7a1](https://github.com/GuoSirius/candidate-pool/commit/c00a7a1))
+- 每日实时初筛 2026-09-28 ([08a4291](https://github.com/GuoSirius/candidate-pool/commit/08a4291))
+- 尾盘观察 2026-09-29 ([91a952e](https://github.com/GuoSirius/candidate-pool/commit/91a952e))
+- 尾盘选股 2026-09-29 ([380e3da](https://github.com/GuoSirius/candidate-pool/commit/380e3da))
+- 每日实时初筛 2026-09-29 ([edbfc55](https://github.com/GuoSirius/candidate-pool/commit/edbfc55))
+- 尾盘观察 2026-09-30 ([60cd5a3](https://github.com/GuoSirius/candidate-pool/commit/60cd5a3))
+- 尾盘选股 2026-09-30 ([02f5fc0](https://github.com/GuoSirius/candidate-pool/commit/02f5fc0))
+- 每日实时初筛 2026-09-30 ([05f384f](https://github.com/GuoSirius/candidate-pool/commit/05f384f))
+- 尾盘观察 2026-10-08 ([9a41a50](https://github.com/GuoSirius/candidate-pool/commit/9a41a50))
+- 尾盘选股 2026-10-08 ([9618588](https://github.com/GuoSirius/candidate-pool/commit/9618588))
+- 每日实时初筛 2026-10-08 ([72fdc6e](https://github.com/GuoSirius/candidate-pool/commit/72fdc6e))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v2.1.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.0.0...v2.1.0)
