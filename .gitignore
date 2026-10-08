@@ -38,3 +38,6 @@ db/local.db*
 # 发布临时产物（release-notes.md 由 CI 生成；*.tgz 来自本地 npm pack）
 release-notes.md
 *.tgz
+
+# 本地临时诊断目录
+.tmp/
