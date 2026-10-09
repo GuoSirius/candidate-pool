@@ -82,7 +82,7 @@ function rowHtml(c, i, cfg, withBreakdown) {
   const cells = withBreakdown
     ? SCORE_COLS.map(([k], idx) => `<td class="${SCORE_CELL_CLS[idx]}">${num(c.score ? c.score[k] : null, 1)}</td>`).join('')
     : '';
-  return `<tr data-sector="${esc(c.sector)}">
+  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}">
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -272,7 +272,15 @@ function buildHTML(m) {
   for (const c of listed) { const k = c.sector || '未分类'; chipCounts[k] = (chipCounts[k] || 0) + 1; }
   const chipOrder = groups.map((g) => g.sector).filter((s) => chipCounts[s]);
   for (const k of Object.keys(chipCounts)) if (!chipOrder.includes(k)) chipOrder.push(k);
+  // 「只看组内第一」/「组内前三」：跨行业挑更强用的伪过滤值（@best / @top3），
+  // 组内排名来自 groupAndRank 的 groupRank（组内按总分降序）。
+  const bestCount = listed.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
+  const top3Count = listed.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
   const chipsHtml = [`<button type="button" class="chip active" data-filter="">${b(`全部 ${listed.length}`, `All ${listed.length}`)}</button>`]
+    .concat([
+      `<button type="button" class="chip" data-filter="@best">${b('只看组内第一', 'Group #1 only')}<i>${bestCount}</i></button>`,
+      `<button type="button" class="chip" data-filter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
+    ])
     .concat(chipOrder.map((s) =>
       `<button type="button" class="chip" data-filter="${esc(s)}">${b(esc(s), esc(s))}<i>${chipCounts[s]}</i></button>`))
     .join('');
@@ -420,20 +428,47 @@ function buildHTML(m) {
     var viewSectorBtn = document.getElementById('viewSector');
     function renderCand() {
       var frag = document.createDocumentFragment();
+      var bestOnly = (candFilter === '@best');
+      var top3 = (candFilter === '@top3');
+      var ranked = bestOnly || top3; // 过滤视图下 # 列临时改显组内排名
+      // 行筛选：@best 只留组内第一；@top3 留组内排名 1-3；其余按行业 chip 过滤
+      function want(tr) {
+        if (bestOnly) return tr.hasAttribute('data-best');
+        if (top3) {
+          var g = parseInt(tr.getAttribute('data-grank'), 10);
+          return g >= 1 && g <= 3;
+        }
+        return !candFilter || tr.getAttribute('data-sector') === candFilter;
+      }
+      var shown = [];
       if (candView === 'score') {
         candRows.forEach(function (tr) {
-          if (!candFilter || tr.getAttribute('data-sector') === candFilter) frag.appendChild(tr);
+          if (want(tr)) { frag.appendChild(tr); shown.push(tr); }
         });
       } else {
         sepOrder.forEach(function (sep) {
           var sec = sep.getAttribute('data-sep');
-          if (candFilter && sec !== candFilter) return;
-          sep.hidden = false; frag.appendChild(sep);
+          if (!bestOnly && !top3 && candFilter && sec !== candFilter) return;
+          // 先收集该组本次要显示的行：空组（如组内第一被 maxRows 截断）不渲染分隔行
+          var groupRows = [];
           candRows.forEach(function (tr) {
-            if (tr.getAttribute('data-sector') === sec) frag.appendChild(tr);
+            if (tr.getAttribute('data-sector') === sec && want(tr)) groupRows.push(tr);
           });
+          if (!groupRows.length) return;
+          sep.hidden = false; frag.appendChild(sep);
+          groupRows.forEach(function (tr) { frag.appendChild(tr); shown.push(tr); });
         });
       }
+      // # 列：过滤视图显示组内排名（1/2/3…），切回时恢复原始序号
+      shown.forEach(function (tr) {
+        var cell = tr.cells[0];
+        if (ranked) {
+          if (!tr.dataset.idx) tr.dataset.idx = cell.textContent;
+          cell.textContent = tr.getAttribute('data-grank') || tr.dataset.idx;
+        } else if (tr.dataset.idx) {
+          cell.textContent = tr.dataset.idx;
+        }
+      });
       while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
       tbody.appendChild(frag);
     }
@@ -452,6 +487,8 @@ function buildHTML(m) {
       Array.prototype.forEach.call(document.querySelectorAll('#chips .chip'), function (c) {
         c.classList.toggle('active', (c.getAttribute('data-filter') || '') === candFilter);
       });
+      // 组内前三要求同组相邻：选中时自动切到「按行业」视图（用户仍可手动切回按总分）
+      if (candFilter === '@top3' && candView !== 'sector') { setView('sector'); return; }
       renderCand();
     });
     var bdToggle = document.getElementById('bdToggle');
