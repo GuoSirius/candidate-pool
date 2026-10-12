@@ -7,8 +7,12 @@ npm-debug.log*
 reports/_*.html
 data/_*.json
 
-# 尾盘选股运行产物（行业映射缓存之外的日度数据与报告，不入库）
+# 尾盘选股运行产物
+#   - 主存档 eod/data/eod-*.json（精简 records，**按约定提交 git**，网页/D1 不依赖）
+#   - 原始快照 eod/data/raw/（全市场 quotes + 分时 minutes，~6MB/日，体积大 → 不入库）
+#   - 报告 eod/reports/eod-*.html（提交 git，便于查看历史）
 eod/data/_*.json
+eod/data/raw/
 eod/reports/_*.html
 !eod/data/industry_mapping.json
 

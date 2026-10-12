@@ -49,10 +49,11 @@ const fs = require('fs');
 const path = require('path');
 
 const cfg = require('./tail.config');
-const { sessionState, estimateFullDayVolRatio, nowBjt } = require('./lib/trading');
+const { sessionState, estimateFullDayVolRatio, nowBjt, TZ } = require('./lib/trading');
+const { dayjs } = require('../time');
 const market = require('./lib/market');
 const { buildCandidates } = require('./lib/screen');
-const { saveRun, loadDay, daySuffix } = require('./lib/store');
+const { saveRun, loadDay, daySuffix, saveRaw, loadRaw } = require('./lib/store');
 const { syncTailRun, cleanupLegacyModes, d1Mode, targetLabel } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
@@ -116,7 +117,32 @@ function fail(msg, err) {
 async function runReplay(file) {
   const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (!doc.records || !doc.tradeDate) throw new Error('存档格式不对：缺少 records/tradeDate');
-  // 存档只存了压缩记录，重建 result 的最小形状即可满足报告渲染
+
+  // 自包含重算：优先用同口径的原始存档（eod/data/raw/，含 quotes+minutes）→ 不抓行情，
+  // 用当前代码重算。历史 bug（如 14:30 整点 0 分钟窗口）能凭原始数据纠正，
+  // 无需重新抓已取不到的接口。原始文件夹缺失则退化为「仅重渲染已存 records」。
+  const raw = loadRaw(cfg, doc.tradeDate, doc.mode || 'cut', doc.cutAt || '1450', { stamp: doc.stamp });
+  if (raw && raw.quotes && raw.minutes) {
+    const minutesMap = new Map(Object.entries(raw.minutes).map(([code, m]) => [code, {
+      rows: m.rows || [], date: m.date || null, error: m.error || null,
+    }]));
+    const now = dayjs.tz(`${doc.tradeDate} ${doc.cutAt || '1450'}`, TZ);
+    const ssRe = sessionState({ cfg, now, marketDate: doc.tradeDate });
+    const result = buildCandidates({
+      quotes: raw.quotes, minutes: minutesMap, cfg, map: map(),
+      tradeDate: doc.tradeDate, cutHHMM: doc.cutAt || '1450', segFrom: ssRe.segFrom,
+      makeTail: (rows, code, cut, seg) => market.tailMetrics(rows, code, cut, seg),
+    });
+    log(`[回放] 从原始存档离线重算（不抓行情）：${result.candidates.length} 候选 / 初筛 ${result.stats.prePassCount} 只`);
+    return emitResult({
+      tradeDate: doc.tradeDate, mode: doc.mode || 'cut', cutHHMM: doc.cutAt || '1450',
+      segFrom: ssRe.segFrom, segMinutes: ssRe.segMinutes ?? null, result,
+      meta: { slots: 0, batches: 0, failedBatches: 0, valid: raw.quotes.length, marketDate: doc.tradeDate, elapsedMs: 0, outlierDates: [] },
+      quotes: raw.quotes, minutes: minutesMap, _t0: Date.now(), skipRaw: true,
+    });
+  }
+
+  // 旧主存档（无原始数据 / 原始文件夹缺失）：仅重渲染已存的 records（渲染只读，不动存档）
   const candidates = Object.values(doc.records).map((r) => ({
     ...r,
     tail: r.tail || null,
@@ -286,6 +312,7 @@ async function run() {
   return emitResult({
     tradeDate: ss.tradeDate, mode: ss.mode, cutHHMM, segFrom,
     segMinutes: ss.segMinutes ?? null, result, meta: snap.meta, _t0: t0,
+    quotes: snap.quotes, minutes,
   });
 }
 
@@ -301,7 +328,7 @@ function map() {
 
 /** 落库 + 报告 + 通知（live 与 replay 共用） */
 async function emitResult(p) {
-  const { tradeDate, mode, cutHHMM, segFrom, segMinutes, result, meta } = p;
+  const { tradeDate, mode, cutHHMM, segFrom, segMinutes, result, meta, quotes, minutes, skipRaw } = p;
 
   // 落库
   let saved = null;
@@ -311,6 +338,13 @@ async function emitResult(p) {
       segFrom, segMinutes, stamp: OPT.stamp,
     });
     log(`[落库] ${path.basename(saved.file)}（${saved.recordCount} 条 / 第 ${saved.runCount} 次运行）`);
+
+    // 原始快照单独落 eod/data/raw/（供 --replay 离线重算，gitignore 不入库）；
+    // replay 离线路径已持有原始数据，不必重写 → skipRaw。
+    if (!skipRaw && quotes && minutes) {
+      const raw = saveRaw({ cfg, tradeDate, mode, cutHHMM, quotes, minutes, stamp: OPT.stamp, segMinutes });
+      if (raw) log(`[原始存档] ${path.basename(raw)}（供 --replay 离线重算，不进 git）`);
+    }
 
     // 同步到数据源（网页 /api/tail/* 读 D1；本地 db/local.db 供离线复盘）。
     // 目标见 store_d1.js::targetArgv()：**本机跑默认两边都写，GitHub Actions 只写远程**；

@@ -21,6 +21,15 @@ const path = require('path');
 const { now: nowBJ } = require('../../time');
 const paths = require('../../paths');
 
+/** Map<code,{rows,date,error}> → 纯对象（存档用，JSON 可序列化） */
+function minutesToObj(map) {
+  const o = {};
+  for (const [code, m] of map) {
+    o[code] = { rows: m.rows || null, date: m.date || null, error: m.error || null };
+  }
+  return o;
+}
+
 /** 候选对象 -> 存档记录（压缩字段：分时明细不落盘，只留尾盘段汇总） */
 function toRecord(c) {
   return {
@@ -171,9 +180,44 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null
     runs,
     stats: result.stats,
     records,
+    // 原始快照（quotes/minutes）不进主存档：体积大（全市场 ~6MB/日），
+    // 单独存 eod/data/raw/ 并 gitignore，仅供 --replay 离线重算（见 saveRaw）。
+    // 主存档保持精简 records，按原约定提交 git。
   };
   fs.writeFileSync(file, JSON.stringify(doc, null, 1), 'utf8');
   return { file, doc, recordCount: Object.keys(records).length, runCount: runs.length, replacedFill };
+}
+
+/**
+ * 原始数据存档（供 --replay 离线重算，无需重新抓行情）：
+ *   quotes = 全市场快照（初筛 preFilter + 板块强度统计用）
+ *   minutes = 初筛通过票的分时 K 线（Map<code,{rows,date,error}>）
+ * 与主存档同「交易日+口径」命名，落到 eod/data/raw/（.raw.json），
+ * 体积大（全市场 ~6MB/日）→ .gitignore 忽略、不进 git；换机器靠 D1 库。
+ * 主存档缺原始文件时，runReplay 退化为「仅重渲染已存 records」。
+ */
+function rawFile(cfg, tradeDate, mode, cutHHMM, opts) {
+  return path.join(paths.eodDir(), cfg.store.dataDir, 'raw', `eod-${tradeDate}${daySuffix(mode, cutHHMM, opts)}.raw.json`);
+}
+function saveRaw({ cfg, tradeDate, mode, cutHHMM, quotes, minutes, stamp = false, segMinutes = null }) {
+  if (!quotes || !minutes) return null;
+  const dir = path.join(paths.eodDir(), cfg.store.dataDir, 'raw');
+  fs.mkdirSync(dir, { recursive: true });
+  const doc = {
+    version: cfg.version,
+    tradeDate, mode, cutAt: cutHHMM, stamp,
+    savedAt: nowBJ(),
+    quotes,
+    minutes: minutesToObj(minutes),
+  };
+  const file = rawFile(cfg, tradeDate, mode, cutHHMM, { stamp, segMinutes });
+  fs.writeFileSync(file, JSON.stringify(doc), 'utf8');
+  return file;
+}
+function loadRaw(cfg, tradeDate, mode, cutHHMM, opts) {
+  const f = rawFile(cfg, tradeDate, mode, cutHHMM, opts);
+  if (!fs.existsSync(f)) return null;
+  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; }
 }
 
 /**
@@ -202,4 +246,4 @@ function applyFill(cfg, tradeDate, patch) {
   return { updated, missing };
 }
 
-module.exports = { saveRun, loadDay, applyFill, toRecord, dayFile, daySuffix };
+module.exports = { saveRun, loadDay, applyFill, toRecord, dayFile, daySuffix, saveRaw, loadRaw, rawFile };
