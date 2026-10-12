@@ -53,7 +53,7 @@ const { sessionState, estimateFullDayVolRatio, nowBjt, TZ } = require('./lib/tra
 const { dayjs } = require('../time');
 const market = require('./lib/market');
 const { buildCandidates } = require('./lib/screen');
-const { saveRun, loadDay, daySuffix, saveRaw, loadRaw } = require('./lib/store');
+const { saveRun, daySuffix, saveRaw, loadRaw } = require('./lib/store');
 const { syncTailRun, cleanupLegacyModes, d1Mode, targetLabel } = require('./lib/store_d1');
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
@@ -121,7 +121,11 @@ async function runReplay(file) {
   // 自包含重算：优先用同口径的原始存档（eod/data/raw/，含 quotes+minutes）→ 不抓行情，
   // 用当前代码重算。历史 bug（如 14:30 整点 0 分钟窗口）能凭原始数据纠正，
   // 无需重新抓已取不到的接口。原始文件夹缺失则退化为「仅重渲染已存 records」。
-  const raw = loadRaw(cfg, doc.tradeDate, doc.mode || 'cut', doc.cutAt || '1450', { stamp: doc.stamp });
+  // 原始文件按「交易日+口径(+stamp+窗口)」命名：stamp / segMinutes 从主存档找回，
+  // 否则 --stamp 的当天会找错 raw（把不带时点那份的窗口数据当本次口径重算）。
+  const lastRun = (doc.runs && doc.runs[doc.runs.length - 1]) || {};
+  const raw = loadRaw(cfg, doc.tradeDate, doc.mode || 'cut', doc.cutAt || '1450',
+    { stamp: doc.stamp, segMinutes: lastRun.segMinutes ?? null });
   if (raw && raw.quotes && raw.minutes) {
     const minutesMap = new Map(Object.entries(raw.minutes).map(([code, m]) => [code, {
       rows: m.rows || [], date: m.date || null, error: m.error || null,
@@ -139,6 +143,7 @@ async function runReplay(file) {
       segFrom: ssRe.segFrom, segMinutes: ssRe.segMinutes ?? null, result,
       meta: { slots: 0, batches: 0, failedBatches: 0, valid: raw.quotes.length, marketDate: doc.tradeDate, elapsedMs: 0, outlierDates: [] },
       quotes: raw.quotes, minutes: minutesMap, _t0: Date.now(), skipRaw: true,
+      stamp: doc.stamp || false,
     });
   }
 
@@ -167,11 +172,16 @@ async function runReplay(file) {
     stats: doc.stats || {},
     dropped: [],
   };
+  // 口径行用存档里真实记录的 segFrom（盘中/观察的滚动起点），不要回退到 cfg 默认 14:30 ——
+  // 否则旧盘中存档重渲染会显示错误的口径区间。
+  const recsRe = Object.values(doc.records);
+  const segFromRe = (recsRe[0] && recsRe[0].tail && recsRe[0].tail.segFrom) || lastRun.segFrom
+    || cfg.session.observeFrom.replace(':', '');
   return emitResult({
     tradeDate: doc.tradeDate, mode: doc.mode || 'cut', cutHHMM: doc.cutAt || '1450',
-    segFrom: cfg.session.observeFrom.replace(':', ''), result,
+    segFrom: segFromRe, result,
     meta: { slots: 0, batches: 0, failedBatches: 0, valid: candidates.length, marketDate: doc.tradeDate, elapsedMs: 0, outlierDates: [] },
-    skipStore: true,
+    skipStore: true, stamp: doc.stamp || false,
   });
 }
 
@@ -329,20 +339,23 @@ function map() {
 /** 落库 + 报告 + 通知（live 与 replay 共用） */
 async function emitResult(p) {
   const { tradeDate, mode, cutHHMM, segFrom, segMinutes, result, meta, quotes, minutes, skipRaw } = p;
+  // stamp：live 跑用 CLI 的 OPT.stamp；replay 时由 runReplay 传入存档里的 doc.stamp，
+  // 否则 replay 带 --stamp 的存档会把主存档/报告写到不带时点的文件名上（互相覆盖）。
+  const stamp = p.stamp ?? OPT.stamp;
 
   // 落库
   let saved = null;
   if (!p.skipStore) {
     saved = saveRun({
       cfg, tradeDate, mode, cutHHMM, result, runner: RUNNER,
-      segFrom, segMinutes, stamp: OPT.stamp,
+      segFrom, segMinutes, stamp,
     });
     log(`[落库] ${path.basename(saved.file)}（${saved.recordCount} 条 / 第 ${saved.runCount} 次运行）`);
 
     // 原始快照单独落 eod/data/raw/（供 --replay 离线重算，gitignore 不入库）；
     // replay 离线路径已持有原始数据，不必重写 → skipRaw。
     if (!skipRaw && quotes && minutes) {
-      const raw = saveRaw({ cfg, tradeDate, mode, cutHHMM, quotes, minutes, stamp: OPT.stamp, segMinutes });
+      const raw = saveRaw({ cfg, tradeDate, mode, cutHHMM, quotes, minutes, stamp, segMinutes });
       if (raw) log(`[原始存档] ${path.basename(raw)}（供 --replay 离线重算，不进 git）`);
     }
 
@@ -365,7 +378,7 @@ async function emitResult(p) {
   // 报告
   const reportDir = path.join(paths.eodDir(), cfg.store.reportDir);
   fs.mkdirSync(reportDir, { recursive: true });
-  const suffix = daySuffix(mode, cutHHMM, { stamp: OPT.stamp, segMinutes });
+  const suffix = daySuffix(mode, cutHHMM, { stamp, segMinutes });
   const reportFile = path.join(reportDir, `eod-${tradeDate}${suffix}.html`);
   fs.writeFileSync(reportFile, buildHTML({
     cfg, tradeDate, mode, cutHHMM, segFrom, result, meta, runner: RUNNER,

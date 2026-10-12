@@ -228,12 +228,12 @@ function sessionState({ cfg, now = null, marketDate = null, force = false, intra
   }
 
   // 14:30 ≤ now < 14:50 —— 观察模式
-  // 尾盘段本来是 [14:30, now]。但定时任务常卡在 14:30 整点触发 → now == segFrom，
-  // 窗口退化为 0 分钟 → segPct=0 → 全部撞「尾盘段涨幅不足」闸（实测 14:30 截断日 100% 0 候选）。
-  // 与盘中模式同理，给一个最小窗口：自然 [14:30, now] 不足 observeMinWindow 分钟时，
-  // 改取「now 往前 observeMinWindow 个成交分钟」的滚动窗口（复用 backTradedMinutes），
-  // 这样即便整点触发也有真实窗口；14:35 之后自然窗口已 ≥ 阈值，仍固定从 14:30 起算（语义不变）。
-  const obsMinWin = Math.max(1, Math.round(s.observeMinWindow || 5));
+  // 尾盘段取「now 往前 observeMinWindow（默认 20）个成交分钟」的**滚动窗口**（复用 backTradedMinutes）：
+  //   · 14:30 整点触发时自然窗口 [14:30, now] 退化为 0 分钟 → segPct=0 → 全部撞闸（2026-10-12 修复）；
+  //   · 更根本的：段涨幅门槛与满分都按 20 分钟标定，窗口不等长阈值即失真
+  //     （实测 20min→40 只 / 30min→87 只），故观察段一律与正式口径等长，
+  //     结果才可与 14:50 正式结果横向对比。自然窗口恒 < 20 → 14:30–14:49 恒为滚动。
+  const obsMinWin = Math.max(1, Math.round(s.observeMinWindow || 20));
   const obsCut = clampToTradedMinute(M);
   const naturalWin = M - hhmmToMin(s.observeFrom);
   const segFromObs = (naturalWin >= obsMinWin)
@@ -242,7 +242,7 @@ function sessionState({ cfg, now = null, marketDate = null, force = false, intra
   return {
     ...base, ok: true, mode: 'observe', tradeDate: today,
     reason: `观察模式：未到 ${s.cutAt}，按当前时点 ${d.format('HH:mm')} 取数（口径会变，结果仅供参考）`
-      + (segFromObs !== segFromDefault ? `；窗口不足 ${obsMinWin} 分钟，已用最近 ${obsMinWin} 分钟滚动窗口近似` : ''),
+      + (segFromObs !== segFromDefault ? `；尾盘段用最近 ${obsMinWin} 分钟滚动窗口（与正式口径等长，口径未固定）` : ''),
     cutTime: d.format('HH:mm'), cutMinutes: M,
     segFrom: segFromObs,
     elapsed: elapsedTradingMinutes(M),

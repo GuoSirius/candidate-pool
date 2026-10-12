@@ -176,6 +176,9 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null
     tradeDate,
     mode,
     cutAt: cutHHMM,
+    // 是否 --stamp 落盘（带时点文件名）：--replay 靠它找回对应的原始快照
+    // （--stamp 的当天可能同时存在带时点与不带时点的 raw 文件，缺此字段会找错）。
+    stamp: stamp || undefined,
     updatedAt: nowBJ(),
     runs,
     stats: result.stats,

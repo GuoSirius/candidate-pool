@@ -225,16 +225,16 @@ function buildHTML(m) {
   const { candidates, groups, top, stats } = result;
   // 三种口径必须在报告顶部一眼可辨：盘中模式的「尾盘段」是滚动窗口近似，
   // 若标签写得像正式结果，复盘时会把近似值当基准（口径混淆）。
-  // 观察模式若整点触发，窗口会退化为 0 分钟 → trading.js 已自动改用最近 N 分钟滚动近似
-  // （segFrom != 1430）。此时必须把「近似」写进标签，否则复盘会把滚动窗口当 14:30 正式尾盘
+  // 观察模式整点触发时自然窗口退化为 0 分钟 → trading.js 改用最近 observeMinWindow 分钟滚动窗口
+  // （segFrom != 1430）。此时必须把「非正式」写进标签，否则复盘会把滚动窗口当 14:30 正式尾盘
   // （口径混淆，与盘中模式同一条红线）。
   let modeLabel;
   if (mode === 'observe' && segFrom !== '1430') {
     const cutMin = (+cutHHMM.slice(0, 2)) * 60 + (+cutHHMM.slice(2, 4));
     const segMin = (+segFrom.slice(0, 2)) * 60 + (+segFrom.slice(2, 4));
     const win = cutMin - segMin;
-    modeLabel = b(`观察模式（窗口不足 ${win} 分钟，按最近 ${win} 分钟滚动近似 · 非正式）`,
-      `observe mode (window < threshold, rolling ${win}-min approximation — NOT final)`);
+    modeLabel = b(`观察模式（按最近 ${win} 分钟滚动窗口，与正式口径等长 · 非正式）`,
+      `observe mode (rolling ${win}-min window, same length as formal — NOT final)`);
   } else if (mode === 'observe') {
     modeLabel = b(`观察模式（口径 ${cutHHMM}，未固定）`, `observe mode (cut ${cutHHMM}, not final)`);
   } else if (mode === 'intraday') {

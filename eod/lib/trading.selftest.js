@@ -96,23 +96,21 @@ check('正式/观察口径 segMinutes 为 undefined（不是滚动窗口）',
 console.log('\n[3] 盘中模式不夺权：14:30 之后仍走观察/正式口径');
 const o1435 = run({ now: at('14:35') });
 check('14:35 无参数 → observe', o1435.mode === 'observe', o1435.mode);
-check('14:35 无参数 → segFrom=1430（固定起点）', o1435.segFrom === '1430', o1435.segFrom);
+check('14:35 无参数 → segFrom=1415（自然窗口 5 < 20 → 滚动）', o1435.segFrom === '1415', o1435.segFrom);
 const i1435 = run({ now: at('14:35'), intraday: true });
 check('14:35 加 --intraday → 仍 observe（开关无副作用）', i1435.mode === 'observe', i1435.mode);
-check('14:35 加 --intraday → 仍 observe 且 segFrom=1430', i1435.segFrom === '1430', i1435.segFrom);
+check('14:35 加 --intraday → 仍 observe 且 segFrom=1415', i1435.segFrom === '1415', i1435.segFrom);
 
-console.log('\n[3b] 观察模式整点触发：最小窗口兜底（2026-10-12 修复的 0 候选 bug）');
-// 14:30 整点：自然窗口 [14:30,14:30]=0 分钟 → 必须改用最近 observeMinWindow 分钟滚动窗口，
-// 否则 segPct=0 → 全部撞「尾盘段涨幅不足」闸（实测 14:30 截断日 100% 0 候选）。
+console.log('\n[3b] 观察模式滚动窗口（2026-10-12 修复的 0 候选 bug + 尺子对齐）');
+// 14:30 整点：自然窗口 [14:30,14:30]=0 分钟 → segPct=0 → 全部撞「尾盘段涨幅不足」闸
+// （实测 14:30 截断日 100% 0 候选）。且段涨幅门槛按 20 分钟标定，窗口不等长阈值即失真，
+// 故观察段一律用 observeMinWindow(=20) 滚动窗口 —— 与正式口径等长，结果才可横向对比。
 const o1430 = run({ now: at('14:30') });
 check('14:30 无参数 → observe', o1430.mode === 'observe', o1430.mode);
-check('14:30 整点 → segFrom 不是 1430（已切滚动窗口）', o1430.segFrom !== '1430', o1430.segFrom);
-check('14:30 整点 → segFrom=1425（observeMinWindow=5 滚动）', o1430.segFrom === '1425', o1430.segFrom);
-check('14:30 整点 → reason 提示滚动近似', /滚动/.test(o1430.reason), o1430.reason);
-const o1431 = run({ now: at('14:31') });
-check('14:31 → 自然窗口 1 分 < 5 → segFrom=1426（滚动）', o1431.segFrom === '1426', o1431.segFrom);
-// 14:35 之后自然窗口已 ≥ 5 分钟，回到固定 14:30 起点（语义不变，上面已断言 segFrom=1430）
-check('14:35 → 仍固定 segFrom=1430（自然窗口足够，不滚动）', run({ now: at('14:35') }).segFrom === '1430');
+check('14:30 整点 → segFrom=1410（滚动 20 分钟）', o1430.segFrom === '1410', o1430.segFrom);
+check('14:30 整点 → reason 提示滚动窗口', /滚动/.test(o1430.reason), o1430.reason);
+check('14:31 → segFrom=1411（滚动 20 分钟）', run({ now: at('14:31') }).segFrom === '1411');
+check('14:35 → segFrom=1415（自然窗口 5 < 20，仍滚动）', run({ now: at('14:35') }).segFrom === '1415');
 
 const c1455 = run({ now: at('14:55') });
 check('14:55 → cut', c1455.mode === 'cut', c1455.mode);
@@ -189,7 +187,7 @@ for (const t of ['09:40', '10:30', '11:20', '11:45', '12:30', '13:00', '13:05', 
 
 console.log('\n[8b] 观察模式整点：尾盘段必须能算出真实 segPct（0 候选 bug 的端到端证明）');
 // 修复前：14:30 整点 segFrom=cutTime=1430 → p0/p1 同根 → segPct=0 → 100% 撞闸。
-// 修复后：segFrom 自动退到 1425（滚动窗口），段指标非退化，segPct > 0。
+// 修复后：segFrom 退到 1410（滚动 20 分钟窗口），段指标非退化，segPct > 0。
 {
   const ss = run({ now: at('14:30') });
   const tm = tailMetrics(rows, 'sz000001', ss.cutTime.replace(':', ''), ss.segFrom);
@@ -302,6 +300,38 @@ console.log('\n[11] 落库文件名：观察 / 盘中默认一天一个（不带
     new Set([pathA, dayFile(cfg, '2026-09-21', 'intraday', '1431'), dayFile(cfg, '2026-09-21', 'cut', '1450')]).size === 3);
   check('--stamp 让观察按时点分文件（显式要求才分）',
     dayFile(cfg, '2026-09-21', 'observe', '1431', { stamp: true }) !== dayFile(cfg, '2026-09-21', 'observe', '1445', { stamp: true }));
+}
+
+console.log('\n[12] 原始快照存档（saveRaw/loadRaw）：与主存档同口径命名，replay 靠 doc.stamp/segMinutes 找回');
+{
+  const fs = require('fs');
+  const { saveRaw, loadRaw, rawFile } = require('./store');
+  const cfgRaw = { version: 1, store: { dataDir: 'data' } };
+  const D = '1970-01-01';   // 假日期，不与真实存档冲突；测完即删
+
+  const norm = (p) => String(p).replace(/\\/g, '/');   // Windows path.join 产生反斜杠
+  check('raw 命名：观察 → raw/eod-<日>-obs.raw.json',
+    norm(rawFile(cfgRaw, D, 'observe', '1430')).endsWith(`raw/eod-${D}-obs.raw.json`));
+  check('raw 命名：盘中 + stamp 带时点与窗口',
+    norm(rawFile(cfgRaw, D, 'intraday', '1310', { stamp: true, segMinutes: 20 })).endsWith(`raw/eod-${D}-intraday1310-w20.raw.json`));
+  check('saveRaw：缺 quotes/minutes 直接返回 null（不写文件）',
+    saveRaw({ cfg: cfgRaw, tradeDate: D, mode: 'cut', cutHHMM: '1450' }) === null);
+
+  const saved = saveRaw({
+    cfg: cfgRaw, tradeDate: D, mode: 'observe', cutHHMM: '1430',
+    quotes: [{ code: 'sh600000' }],
+    minutes: new Map([['sh600000', { rows: [[1, 2, 3, 4]], date: '19700101', error: null }]]),
+  });
+  try {
+    check('saveRaw 往返：loadRaw 读回 quotes/minutes', (() => {
+      const d = loadRaw(cfgRaw, D, 'observe', '1430');
+      return !!d && d.quotes.length === 1 && !!d.minutes.sh600000 && d.minutes.sh600000.rows.length === 1;
+    })());
+    check('loadRaw：stamp 不匹配 → null（--stamp 当天不会找错 raw）',
+      loadRaw(cfgRaw, D, 'observe', '1430', { stamp: true }) === null);
+  } finally {
+    if (saved) { try { fs.unlinkSync(saved); } catch (_) { /* 忽略 */ } }
+  }
 }
 
 console.log(failed ? `\n自我检查失败：${failed} 项` : '\n全部通过');
