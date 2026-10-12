@@ -2,6 +2,35 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v2.2.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.1.1...v2.2.0)
+
+### 🚀 新功能 (Features)
+
+- **eod:** 尾盘报告过滤新增「只看组内第一」与「组内前三」 ([b07bffa](https://github.com/GuoSirius/candidate-pool/commit/b07bffa))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- 修复观察模式整点触发尾盘段退化 0 分钟窗口导致 100% 0 候选 ([7eed01f](https://github.com/GuoSirius/candidate-pool/commit/7eed01f))
+- 用新逻辑重跑 2026-10-12 观察模式，纠正 0 候选存档（4 只） ([e4798e1](https://github.com/GuoSirius/candidate-pool/commit/e4798e1))
+- **eod:** 原始快照(quotes+minutes)单独存 eod/data/raw 供 --replay 离线重算 ([310e0ac](https://github.com/GuoSirius/candidate-pool/commit/310e0ac))
+- **eod:** 观察窗口 observeMinWindow 5→20（与正式口径等长），审计修复 replay 细节 ([8684db9](https://github.com/GuoSirius/candidate-pool/commit/8684db9))
+
+### 📦 杂项维护 (Chores)
+
+- 尾盘观察 2026-10-09 ([4d63d5d](https://github.com/GuoSirius/candidate-pool/commit/4d63d5d))
+- 尾盘选股 2026-10-09 ([c16b81d](https://github.com/GuoSirius/candidate-pool/commit/c16b81d))
+- **eod:** 用新过滤重建 10-09 三份尾盘报告 ([4511ca4](https://github.com/GuoSirius/candidate-pool/commit/4511ca4))
+- 每日实时初筛 2026-10-09 ([482d84c](https://github.com/GuoSirius/candidate-pool/commit/482d84c))
+- 尾盘观察 2026-10-12 ([c85600f](https://github.com/GuoSirius/candidate-pool/commit/c85600f))
+- 尾盘选股 2026-10-12 ([ccf7d1f](https://github.com/GuoSirius/candidate-pool/commit/ccf7d1f))
+- 每日实时初筛 2026-10-12 ([103593f](https://github.com/GuoSirius/candidate-pool/commit/103593f))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v2.1.1
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.1.0...v2.1.1)
