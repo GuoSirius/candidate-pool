@@ -101,6 +101,19 @@ const i1435 = run({ now: at('14:35'), intraday: true });
 check('14:35 加 --intraday → 仍 observe（开关无副作用）', i1435.mode === 'observe', i1435.mode);
 check('14:35 加 --intraday → 仍 observe 且 segFrom=1430', i1435.segFrom === '1430', i1435.segFrom);
 
+console.log('\n[3b] 观察模式整点触发：最小窗口兜底（2026-10-12 修复的 0 候选 bug）');
+// 14:30 整点：自然窗口 [14:30,14:30]=0 分钟 → 必须改用最近 observeMinWindow 分钟滚动窗口，
+// 否则 segPct=0 → 全部撞「尾盘段涨幅不足」闸（实测 14:30 截断日 100% 0 候选）。
+const o1430 = run({ now: at('14:30') });
+check('14:30 无参数 → observe', o1430.mode === 'observe', o1430.mode);
+check('14:30 整点 → segFrom 不是 1430（已切滚动窗口）', o1430.segFrom !== '1430', o1430.segFrom);
+check('14:30 整点 → segFrom=1425（observeMinWindow=5 滚动）', o1430.segFrom === '1425', o1430.segFrom);
+check('14:30 整点 → reason 提示滚动近似', /滚动/.test(o1430.reason), o1430.reason);
+const o1431 = run({ now: at('14:31') });
+check('14:31 → 自然窗口 1 分 < 5 → segFrom=1426（滚动）', o1431.segFrom === '1426', o1431.segFrom);
+// 14:35 之后自然窗口已 ≥ 5 分钟，回到固定 14:30 起点（语义不变，上面已断言 segFrom=1430）
+check('14:35 → 仍固定 segFrom=1430（自然窗口足够，不滚动）', run({ now: at('14:35') }).segFrom === '1430');
+
 const c1455 = run({ now: at('14:55') });
 check('14:55 → cut', c1455.mode === 'cut', c1455.mode);
 check('14:55 → cutTime=14:50', c1455.cutTime === '14:50', c1455.cutTime);
@@ -172,6 +185,17 @@ for (const t of ['09:40', '10:30', '11:20', '11:45', '12:30', '13:00', '13:05', 
   const tm = tailMetrics(rows, 'sz000001', ss.cutTime.replace(':', ''), ss.segFrom);
   check(`${t} → segFrom=${ss.segFrom} 能算出段指标`, tm !== null && tm.segPct !== undefined,
     tm ? `segPct=${tm.segPct.toFixed(2)}% bars=${tm.bars}` : 'null（会被判 data_gap 剔除）');
+}
+
+console.log('\n[8b] 观察模式整点：尾盘段必须能算出真实 segPct（0 候选 bug 的端到端证明）');
+// 修复前：14:30 整点 segFrom=cutTime=1430 → p0/p1 同根 → segPct=0 → 100% 撞闸。
+// 修复后：segFrom 自动退到 1425（滚动窗口），段指标非退化，segPct > 0。
+{
+  const ss = run({ now: at('14:30') });
+  const tm = tailMetrics(rows, 'sz000001', ss.cutTime.replace(':', ''), ss.segFrom);
+  check('14:30 observe → tailMetrics 非 null（起点 K 线存在）', tm !== null, tm ? '' : 'null');
+  check('14:30 observe → segPct > 0（不再是退化的 0 分钟窗口）', tm && tm.segPct > 0,
+    tm ? `segPct=${tm.segPct.toFixed(3)}% bars=${tm.bars} 窗口 ${ss.segFrom}→${ss.cutTime}` : 'null');
 }
 
 console.log('\n[9] 落库口径：内部口径必须翻译成 D1/API 的 formal / observe');
