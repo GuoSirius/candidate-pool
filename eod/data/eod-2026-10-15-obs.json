@@ -1,0 +1,89 @@
+{
+ "version": 1,
+ "tradeDate": "2026-10-15",
+ "mode": "observe",
+ "cutAt": "1431",
+ "updatedAt": "2026-10-15 14:31:15",
+ "runs": [
+  {
+   "at": "2026-10-15 14:31:15",
+   "mode": "observe",
+   "cutAt": "1431",
+   "segFrom": "1411",
+   "segMinutes": null,
+   "candidateCount": 1,
+   "groupCount": 1,
+   "prePassCount": 56,
+   "snapshotCount": 6174,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6174,
+  "prePassCount": 56,
+  "preByReason": {
+   "当日涨幅不在区间": 5253,
+   "停牌或已退市（无成交）": 329,
+   "ST / 退市风险股": 479,
+   "换手率不在区间": 24,
+   "量比不足": 23,
+   "流通市值不在区间": 10
+  },
+  "minuteDropped": 55,
+  "tailByReason": {
+   "尾盘段涨幅不足": 52,
+   "现价低于当日均价": 20,
+   "距日内高点回落过多": 49,
+   "关键字段缺失或分时数据不可用": 2
+  },
+  "candidateCount": 1,
+  "groupCount": 1
+ },
+ "records": {
+  "sz300633": {
+   "code": "sz300633",
+   "name": "开立医疗",
+   "sector": "医疗器械",
+   "board": "gem",
+   "boardLabel": "创业板",
+   "price": 19.45,
+   "prevClose": 18.55,
+   "high": 19.5,
+   "chgPct": 4.85,
+   "turnover": 2.91,
+   "volRatio": 2.23,
+   "volRatioEst": 2.5364928909952607,
+   "floatCapYi": 50.59,
+   "totalCapYi": 82.63,
+   "avgPrice": 19.0181045500813,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 2.5843881856540003,
+    "upRatio": 0.5789473684210527,
+    "maxDrawdownPct": 0.3611971104231181,
+    "priceVsAvgPct": 2.2709700053513027,
+    "avgAtCut": 19.0181045500813,
+    "p0": 18.96,
+    "p1": 19.45,
+    "bars": 21,
+    "segFrom": "1411",
+    "cut": "1431"
+   },
+   "score": {
+    "tailMomentum": 30,
+    "volume": 11.444444444444443,
+    "position": 12.4358974358974,
+    "avgLine": 10,
+    "sector": 15,
+    "turnoverFit": 9.100000000000001
+   },
+   "total": 87.98034188034185,
+   "sectorMedianChg": 4.685,
+   "sectorRank": 8,
+   "sectorTotal": 33,
+   "fill": {}
+  }
+ }
+}
