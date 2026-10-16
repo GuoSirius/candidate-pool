@@ -29,10 +29,14 @@ on:
 permissions:
   contents: write
 
-# 同一工作流同时最多一个运行实例：调度延迟导致重叠触发时排队而非并行
+# 同一工作流同时最多一个运行实例：调度延迟导致重叠触发时，取消旧实例、只保留最新一次。
+# ⚠️ group 必须按工作流隔离（不可共用 daily-screening）：daily-screen / tail-observe /
+# tail-screen 是三个互不相干的定时任务，共用 group 会互相取消（观察 14:30 跑时会把
+# 15:37 的初筛排队项取消掉）。防「同工作流重复执行」由本块完整覆盖，无需额外检查步骤
+# ——cancel-in-progress: true 时，旧实例仍在运行则新实例在启动前即被取消，永远跑不到步骤里。
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   screen:
@@ -43,10 +47,43 @@ jobs:
     # 而「step 自身 env 在 if 求值时是否已生效」官方没有保证（见 Contexts 可用性表），
     # 属于隐患 —— 一旦恒为假，结构同步与入库都会被静默跳过。
     env:
+      # Runner 默认 UTC；统一锁到北京时间，保证日志/脚本里的 date 口径一致
+      TZ: Asia/Shanghai
       CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
       CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
     steps:
+      # -----------------------------------------------------------------------
+      # 调试步骤：量化「计划触发 vs 实际启动」的延迟，并确认 Runner 时钟口径。
+      # GitHub schedule 存在真实排队延迟（实测可延迟数小时），若此处延迟为 0 而
+      # 产物时间仍异常，才需要继续查时区；此步骤是定位延迟源头的第一现场。
+      # -----------------------------------------------------------------------
+      - name: Debug time info (触发时刻 / Runner 时钟)
+        run: |
+          echo "GITHUB_EVENT_NAME = $GITHUB_EVENT_NAME"
+          echo "计划触发 (UTC)   = ${{ github.event.schedule || 'N/A（非 schedule 触发）' }}"
+          echo "实际启动 (UTC)   = $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo "实际启动 (上海)  = $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "Runner TZ env    = ${TZ:-<未设置>}"
+          echo "run_id=${{ github.run_id }} number=${{ github.run_number }} attempt=${{ github.run_attempt }}"
+          SCHED="${{ github.event.schedule }}"
+          if [ -n "$SCHED" ]; then
+            SCHED_TS=$(date -u -d "$SCHED" +%s 2>/dev/null || echo 0)
+            NOW_TS=$(date -u +%s)
+            if [ "$SCHED_TS" -gt 0 ]; then
+              echo "触发延迟         = $(( (NOW_TS - SCHED_TS) / 60 )) 分钟"
+            fi
+          fi
+
+      # Runner 镜像默认 UTC。job 级 env.TZ 已让 date 等工具按上海时间输出；
+      # timedatectl 在容器化 Runner 上通常无 systemd 而失败，仅作辅助尝试，失败不阻断。
+      - name: Set timezone (Asia/Shanghai)
+        run: |
+          sudo timedatectl set-timezone Asia/Shanghai \
+            || echo "::notice::timedatectl 不可用（容器环境无 systemd），时区由 env TZ 保证"
+          echo "TZ=Asia/Shanghai" >> "$GITHUB_ENV"
+          echo "Runner 本地时间  = $(date '+%Y-%m-%d %H:%M:%S %Z')"
+
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

@@ -14,17 +14,59 @@ name: Refresh Industry Map (月更)
 #   Secrets 无需额外配置——脚本只访问公开的东财接口，不写 D1。
 
 on:
+  # GitHub 原生定时 + timezone（IANA 时区名，cron 直接写北京时间）：
+  # 0 11 1 Asia/Shanghai = 每月 1 日 11:00 北京（等价旧 UTC 写法 0 3，触发时刻不变）。
   schedule:
-    - cron: "0 3 1 * *"   # 每月 1 日 03:00 UTC = 11:00 北京时间
+    - cron: "0 11 1 * *"
+      timezone: "Asia/Shanghai"
   workflow_dispatch:
 
 permissions:
   contents: write
 
+# 同一工作流同时最多一个运行实例：重叠触发时取消旧实例、只保留最新一次。
+# group 按工作流隔离（不可与其他定时任务共用，否则会互相取消）。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    # Runner 默认 UTC；统一锁到北京时间，保证日志/脚本里的 date 口径一致
+    env:
+      TZ: Asia/Shanghai
     steps:
+      # -----------------------------------------------------------------------
+      # 调试步骤：量化「计划触发 vs 实际启动」的延迟，并确认 Runner 时钟口径。
+      # GitHub schedule 存在真实排队延迟（实测可延迟数小时），此步骤是定位第一现场。
+      # -----------------------------------------------------------------------
+      - name: Debug time info (触发时刻 / Runner 时钟)
+        run: |
+          echo "GITHUB_EVENT_NAME = $GITHUB_EVENT_NAME"
+          echo "计划触发 (UTC)   = ${{ github.event.schedule || 'N/A（非 schedule 触发）' }}"
+          echo "实际启动 (UTC)   = $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo "实际启动 (上海)  = $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "Runner TZ env    = ${TZ:-<未设置>}"
+          echo "run_id=${{ github.run_id }} number=${{ github.run_number }} attempt=${{ github.run_attempt }}"
+          SCHED="${{ github.event.schedule }}"
+          if [ -n "$SCHED" ]; then
+            SCHED_TS=$(date -u -d "$SCHED" +%s 2>/dev/null || echo 0)
+            NOW_TS=$(date -u +%s)
+            if [ "$SCHED_TS" -gt 0 ]; then
+              echo "触发延迟         = $(( (NOW_TS - SCHED_TS) / 60 )) 分钟"
+            fi
+          fi
+
+      # Runner 镜像默认 UTC。job 级 env.TZ 已让 date 等工具按上海时间输出；
+      # timedatectl 在容器化 Runner 上通常无 systemd 而失败，仅作辅助尝试，失败不阻断。
+      - name: Set timezone (Asia/Shanghai)
+        run: |
+          sudo timedatectl set-timezone Asia/Shanghai \
+            || echo "::notice::timedatectl 不可用（容器环境无 systemd），时区由 env TZ 保证"
+          echo "TZ=Asia/Shanghai" >> "$GITHUB_ENV"
+          echo "Runner 本地时间  = $(date '+%Y-%m-%d %H:%M:%S %Z')"
+
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
