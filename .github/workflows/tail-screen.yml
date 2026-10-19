@@ -46,23 +46,26 @@ jobs:
     steps:
       # -----------------------------------------------------------------------
       # 调试步骤：量化「计划触发 vs 实际启动」的延迟，并确认 Runner 时钟口径。
-      # GitHub schedule 存在真实排队延迟（实测可延迟数小时），若此处延迟为 0 而
-      # 产物时间仍异常，才需要继续查时区；此步骤是定位延迟源头的第一现场。
       # -----------------------------------------------------------------------
       - name: Debug time info (触发时刻 / Runner 时钟)
         run: |
           echo "GITHUB_EVENT_NAME = $GITHUB_EVENT_NAME"
-          echo "计划触发 (UTC)   = ${{ github.event.schedule || 'N/A（非 schedule 触发）' }}"
+          CRON="${{ github.event.schedule || 'N/A（非 schedule 触发）' }}"
+          echo "计划 cron        = $CRON   （schedule 事件里 github.event.schedule 是 cron 表达式，不是时间戳）"
           echo "实际启动 (UTC)   = $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
           echo "实际启动 (上海)  = $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S %Z')"
           echo "Runner TZ env    = ${TZ:-<未设置>}"
           echo "run_id=${{ github.run_id }} number=${{ github.run_number }} attempt=${{ github.run_attempt }}"
-          SCHED="${{ github.event.schedule }}"
-          if [ -n "$SCHED" ]; then
-            SCHED_TS=$(date -u -d "$SCHED" +%s 2>/dev/null || echo 0)
+          # 计算「计划触发(上海) vs 实际启动」延迟：从 cron 解析 分/时（北京时间直写）。
+          # cron 字段非纯数字（如 */5）或解析失败则跳过延迟打印，不影响其他诊断。
+          CM=$(echo "$CRON" | cut -d' ' -f1)
+          CH=$(echo "$CRON" | cut -d' ' -f2)
+          if [ "$CM" -eq "$CM" ] 2>/dev/null && [ "$CH" -eq "$CH" ] 2>/dev/null; then
+            TARGET=$(TZ=Asia/Shanghai date -d "today ${CH}:${CM}" +%s 2>/dev/null)
             NOW_TS=$(date -u +%s)
-            if [ "$SCHED_TS" -gt 0 ]; then
-              echo "触发延迟         = $(( (NOW_TS - SCHED_TS) / 60 )) 分钟"
+            if [ -n "$TARGET" ]; then
+              echo "计划触发 (上海)  = $(TZ=Asia/Shanghai date -d @$TARGET '+%Y-%m-%d %H:%M:%S %Z')"
+              echo "触发延迟         = $(( (NOW_TS - TARGET) / 60 )) 分钟（正=晚于计划；>30 属 GitHub 调度排队）"
             fi
           fi
 
@@ -74,6 +77,22 @@ jobs:
             || echo "::notice::timedatectl 不可用（容器环境无 systemd），时区由 env TZ 保证"
           echo "TZ=Asia/Shanghai" >> "$GITHUB_ENV"
           echo "Runner 本地时间  = $(date '+%Y-%m-%d %H:%M:%S %Z')"
+
+      # 延迟护栏：GitHub 调度器常排队数小时（本次实测 ~5h）。若 Runner 启动已晚于
+      # 尾盘抓取窗口收盘时刻（15:00 北京），再抓就是「收盘后」数据，且会覆盖
+      # daily-artifacts 里本地准时任务写的正确结果 —— 故直接跳过。
+      # daily-screen（抓已收盘定型的次日候选）不受影响，不加护栏。
+      - name: Guard - skip if delayed past capture window
+        id: guard
+        run: |
+          NOW_BJ=$(TZ=Asia/Shanghai date +%H%M)
+          CAP=1500   # 15:00 北京 = 收盘
+          if [ "$NOW_BJ" -gt "$CAP" ]; then
+            echo "::warning::Runner 启动于 ${NOW_BJ} 北京，晚于尾盘抓取窗口（已收盘），跳过抓取以避免错误数据覆盖 daily-artifacts"
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          else
+            echo "启动于 ${NOW_BJ} 北京，在窗口内，正常执行"
+          fi
 
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,6 +107,7 @@ jobs:
 
       - name: Run tail screening (尾盘选股 + 报告 + 推送)
         id: live
+        if: ${{ env.SKIP != '1' }}
         continue-on-error: true
         env:
           # D1 凭据：尾盘结果由脚本内 syncTailRun 直接写入 Cloudflare D1（网页 /api/tail/* 的数据源）。
@@ -116,6 +136,7 @@ jobs:
       # 留档分支；报告也可在 Actions 页面直接下载。
       # ---------------------------------------------------------------------
       - name: Commit artifacts to daily-artifacts branch
+        if: ${{ env.SKIP != '1' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -141,6 +162,7 @@ jobs:
           git worktree remove _artifacts --force
 
       - name: Upload report artifact
+        if: ${{ env.SKIP != '1' }}
         uses: actions/upload-artifact@v4
         with:
           name: tail-report
@@ -151,7 +173,7 @@ jobs:
           retention-days: 30
 
       - name: Report failure (标红 + 微信告警)
-        if: ${{ steps.live.outcome == 'failure' }}
+        if: ${{ env.SKIP != '1' && steps.live.outcome == 'failure' }}
         env:
           NOTIFY_WX_PROVIDER: ${{ secrets.NOTIFY_WX_PROVIDER }}
           NOTIFY_WX_KEY: ${{ secrets.NOTIFY_WX_KEY }}
