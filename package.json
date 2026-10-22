@@ -54,7 +54,7 @@
     "tail:replay": "node eod/tail_screener.js --replay",
     "tail:selftest": "node eod/lib/trading.selftest.js",
     "preopen": "node eod/preopen_screener.js",
-    "preopen:universe": "node eod/preopen_screener.js --universe",
+    "preopen:watchlist": "node eod/preopen_screener.js --scope watchlist",
     "preopen:baseline": "node eod/preopen_screener.js --baseline",
     "preopen:backfill": "node eod/preopen_backfill.js",
     "paths": "node gen_candidates.js --paths",
