@@ -179,7 +179,7 @@ async function run() {
 
   // 仅预计算基线缓存（供全市场次日盘前用，建议 15:30 后定时跑）
   if (OPT.baseline) {
-    const scope = OPT.universe ? 'universe' : cfg.scope.default;
+    const scope = argOf('--scope') || (OPT.universe ? 'universe' : cfg.scope.default);
     const codes = scope === 'universe' ? market.expandCodes(cfg.market) : readCandidates().map((c) => c.code);
     log(`[基线预计算] scope=${scope} 共 ${codes.length} 只，锚定日 ${anchor}`);
     const m = new Map();
@@ -203,7 +203,7 @@ async function run() {
   if (!ss.ok) { log('[结束] 跳过'); return { skipped: ss.reason }; }
 
   // 范围与代码
-  const scope = OPT.universe ? 'universe' : cfg.scope.default;
+  const scope = argOf('--scope') || (OPT.universe ? 'universe' : cfg.scope.default);
   let codes, quotes;
   if (scope === 'watchlist') {
     const watch = readCandidates();

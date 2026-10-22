@@ -51,11 +51,12 @@ module.exports = {
 
   // =========================================================================
   // 3. 范围
-  //    scope: 'watchlist'（默认，扫 candidates.json 观察池，轻量稳）
-  //         | 'universe'（全市场盲扫，需 baseline 缓存，见 baseline 段）
+  //    default: 'universe'（默认，全市场盲扫，覆盖最全、信号最准；需 baseline 缓存，见 baseline 段）
+  //         可显式 --scope watchlist 回退到观察池（扫 candidates.json，轻量稳、不依赖缓存）
+  //    生效优先级：--scope <x> 显式指定 > --universe 简写 > scope.default
   // =========================================================================
   scope: {
-    default: 'watchlist',
+    default: 'universe',
   },
 
   // =========================================================================
