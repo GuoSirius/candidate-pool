@@ -2,6 +2,28 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.0.2
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.0.1...v3.0.2)
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- Code review 必改项修复（正则剥前缀、迁移标记、keep-alive、默认双写、ua与waf防护、engines） ([4955417](https://github.com/GuoSirius/candidate-pool/commit/4955417))
+
+### 📚 文档 (Documentation)
+
+- 目录整理与定时任务真值源重建 ([b3a61ed](https://github.com/GuoSirius/candidate-pool/commit/b3a61ed))
+- 收紧文档序号（05-复盘改03、npm-publish 02/03改01/02），同步全部引用 ([1b82665](https://github.com/GuoSirius/candidate-pool/commit/1b82665))
+
+### 📦 杂项维护 (Chores)
+
+- 每日实时初筛 2026-10-22 ([f515912](https://github.com/GuoSirius/candidate-pool/commit/f515912))
+- 盘前选股归档 2026-10-22 ([ad3936e](https://github.com/GuoSirius/candidate-pool/commit/ad3936e))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v3.0.1
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.0.0...v3.0.1)
