@@ -177,6 +177,26 @@ async function run() {
     : dayjs.tz();
   const anchor = lastClosedTradingDay(now);   // 前一日 K 线锚定日
 
+  // 仅预计算基线缓存（供全市场次日盘前用，建议 15:30 后定时跑）
+  if (OPT.baseline) {
+    const scope = OPT.universe ? 'universe' : cfg.scope.default;
+    const codes = scope === 'universe' ? market.expandCodes(cfg.market) : readCandidates().map((c) => c.code);
+    log(`[基线预计算] scope=${scope} 共 ${codes.length} 只，锚定日 ${anchor}`);
+    const m = new Map();
+    const res = await mapLimit(codes, cfg.market.concurrency, async (code) => {
+      try { const kl = await market.fetchKline(code, anchor); return [code, PR.calcBaseline(kl, code, cfg)]; }
+      catch (e) { return [code, { error: String((e && e.message) || e) }]; }
+    });
+    let ok = 0, err = 0;
+    for (const [c, b] of res) { if (b && !b.error) { m.set(c, b); ok++; } else err++; }
+    const out = {}; for (const [c, b] of m) out[c] = b;
+    const cf = path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor));
+    fs.mkdirSync(path.dirname(cf), { recursive: true });
+    fs.writeFileSync(cf, JSON.stringify(out), 'utf8');
+    log(`[基线] 已缓存 ${ok} 只（失败 ${err}）→ ${path.basename(cf)}`);
+    return { baseline: { file: cf, ok, err } };
+  }
+
   // 时段守卫（本地时钟，第一遍）
   let ss = sessionState({ now, force: OPT.force });
   log(`[时段] ${ss.reason}`);
