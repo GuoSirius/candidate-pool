@@ -50,7 +50,7 @@ const paths = require('./paths');
 const scaffold = require('./scaffold');
 // 规则引擎纯函数（R01/R07/R05/行业中位数/成交量单位/时区锚定）统一走 rules.js，
 // 单测见 rules.test.js，避免与 gen_candidates 内联实现漂移导致双份真相。
-const { lastClosedTradingDay, nextTradingDay, calcTurnover, computeSectors, calcR01, isLaggard, verifyR05 } = require('./rules');
+const { lastClosedTradingDay, nextTradingDay, calcTurnover, computeSectors, calcR01, isLaggard, verifyR05, G } = require('./rules');
 
 // ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
 const QT_QUOTE = 'https://qt.gtimg.cn/q=';
@@ -423,6 +423,10 @@ async function main() {
   paths.ensureDir(path.dirname(snapshotPath));   // --dump 指向新目录时也要能写出去
   const snap = {
     anchor, target, limit, topN,
+    generatedAt: new Date().toISOString(),
+    // 快照当时的规则常量（rules.js G）：日后调参（如 CHG_MIN 3→4）时，
+    // 历史门槛可按当时的常量重算，也可按新常量对 stocks[].chg 等原始值离线重切。
+    rulesG: { ...G },
     breadth, breadthIsAnchor, overview,
     stocks: stocks.map(s => { const c = Object.assign({}, s); delete c.kline; delete c.quote; delete c.minute; return c; }),
     sectors: validSectors.map(s => { const c = Object.assign({}, s); delete c.members; return c; }),
