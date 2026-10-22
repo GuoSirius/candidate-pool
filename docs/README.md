@@ -36,14 +36,14 @@
 |------|------|
 | [eod-tail-screener/01-需求.md](eod-tail-screener/01-需求.md) | 尾盘选股：目标、功能 / 非功能需求、验收标准 |
 | [eod-tail-screener/02-方案.md](eod-tail-screener/02-方案.md) | 尾盘选股：数据链路、筛选规则、同类比较、调度、存储、风险 |
-| [eod-tail-screener/05-复盘.md](eod-tail-screener/05-复盘.md) | 尾盘选股：**上线后复盘** —— 实际落地 vs 原设计的差异、口径速查入口、落库事故结论、GitHub cron 实测延迟、尚未实施项；附录 A/B 为已关闭的计划基线与待确认决策记录（2026-10-22 并入） |
+| [eod-tail-screener/03-复盘.md](eod-tail-screener/03-复盘.md) | 尾盘选股：**上线后复盘** —— 实际落地 vs 原设计的差异、口径速查入口、落库事故结论、GitHub cron 实测延迟、尚未实施项；附录 A/B 为已关闭的计划基线与待确认决策记录（2026-10-22 并入） |
 | [backtest/01-复盘.md](backtest/01-复盘.md) | 参数回溯与优化建议：尾盘 341 条 + R01 44 条 K 线回补真实收益，分桶 / 秩相关 / what-if 模拟，逐参数给出调整建议与置信度（§8 记录已执行的调整与回溯数据基建） |
 | [code-review/01-标准与流程.md](code-review/01-标准与流程.md) | 代码审查标准：按维度的 Checklist（正确性 / 健壮性 / 性能 / 结构）、红线依据、审查流程 |
 | [code-review/02-评审-2026-10-22.md](code-review/02-评审-2026-10-22.md) | 2026-10-22 全量评审报告（2🔴/6🟡/5💭）+ §7 处置记录：已修 6 项、误报 2 项、故意设计 4 项 |
 | [automations/README.md](automations/README.md) | 本机定时任务单一真值源：全部自动化的 prompt / rrule / 状态，换设备可一句话重建 |
 | [notes-groups/01-方案.md](notes-groups/01-方案.md) | 评论/分组：需求、接口清单、写鉴权方案、前端交互、边界 |
-| [npm-publish/02-方案.md](npm-publish/02-方案.md) | 独立发布：两种运行模式差异、边界清单、全量打包 / 只发尾盘 / npx github 三方案对比、落地顺序、已完成的可重定位层 |
-| [npm-publish/03-计划.md](npm-publish/03-计划.md) | 独立发布实施计划：方案 A 交付物、首次运行脚手架、发布链路、部署已解耦、向后兼容四条保票、npx 不 pin 版本、三道闸、踩坑、验证清单 |
+| [npm-publish/01-方案.md](npm-publish/01-方案.md) | 独立发布：两种运行模式差异、边界清单、全量打包 / 只发尾盘 / npx github 三方案对比、落地顺序、已完成的可重定位层 |
+| [npm-publish/02-计划.md](npm-publish/02-计划.md) | 独立发布实施计划：方案 A 交付物、首次运行脚手架、发布链路、部署已解耦、向后兼容四条保票、npx 不 pin 版本、三道闸、踩坑、验证清单 |
 | [ops/01-方案.md](ops/01-方案.md) | 定时任务：本地 ↔ GitHub Actions 双通道拓扑、cron 只作触发、尾盘三口径（cut/observe/intraday）、落库双写、三种「看着跑了其实没跑」排查 |
 | [storage/01-方案.md](storage/01-方案.md) | 数据存储：两层存储与写入目标、两端一致性校验、D1 用量限额实测、10 张表说明、`npm run db:migrate` 差异驱动同步、两个「本地库」的区别 |
 | [api/01-方案.md](api/01-方案.md) | API 服务：为什么只有 Pages Functions 同源一种形态、`worker/` 目录职责、读/写接口一览、响应信封与业务码、环境注入两条链路 |
