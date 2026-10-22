@@ -40,9 +40,10 @@ const pageSize = ref<number>(50);
 const page = ref(1);
 
 /**
- * 六维子分按「这分是谁给的」分两组：
- *   · 个股自身 65 分 = 动能 30 + 量能 20 + 位置 15 —— 这只票自己在走出来的证据，**重点看这组**；
- *   · 环境与质量 35 分 = 板块 15 + 均线 10 + 换手 10 —— 板块与流动性给的背景分，靠它撑起来的高分不可信。
+ * 五个子分按「这分是谁给的」分两组（2026-10-22 回溯调参后）：
+ *   · 个股自身 77 分 = 动能 35 + 量能 24 + 位置 18 —— 这只票自己在走出来的证据，**重点看这组**；
+ *   · 环境与质量 23 分 = 均线 12 + 换手 11 —— 流动性与位置给的背景分，靠它撑起来的高分不可信。
+ * 原「板块 15 分」因恒为满分（常量、零区分度）删除，权重按比例重分配，见 docs/backtest/01-复盘.md。
  * 组内按权重降序（权重大的先看）；顺序即渲染顺序，原始值已乘权重（0..权重）。
  * ⚠️ 与 eod/lib/report.js 的 SCORE_GROUPS 是同一份口径，改一处必须改另一处。
  */
@@ -51,7 +52,7 @@ const SCORE_GROUPS: {
   keys: { key: string; label: string }[];
 }[] = [
   {
-    key: 'self', label: '个股自身', max: 65, cls: 'self',
+    key: 'self', label: '个股自身', max: 77, cls: 'self',
     keys: [
       { key: 'tailMomentum', label: '动能' },
       { key: 'volume', label: '量能' },
@@ -59,9 +60,8 @@ const SCORE_GROUPS: {
     ],
   },
   {
-    key: 'ctx', label: '环境质量', max: 35, cls: 'ctx',
+    key: 'ctx', label: '环境质量', max: 23, cls: 'ctx',
     keys: [
-      { key: 'sector', label: '板块' },
       { key: 'avgLine', label: '均线' },
       { key: 'turnoverFit', label: '换手' },
     ],
@@ -283,7 +283,7 @@ onMounted(loadRuns);
 
 <template>
   <div class="tail">
-    <PageHeader title="尾盘候选" sub="盘中（14:50 截点）六维打分筛选：个股自身 65 分（重点看）+ 环境与质量 35 分">
+    <PageHeader title="尾盘候选" sub="盘中（14:50 截点）五维打分筛选：个股自身 77 分（重点看）+ 环境与质量 23 分">
       <template #actions>
         <router-link class="ghost-btn" to="/tail/review">尾盘复盘 →</router-link>
         <router-link class="ghost-btn" to="/tail/diff">口径对照 →</router-link>
@@ -385,7 +385,7 @@ onMounted(loadRuns);
     </section>
 
     <p class="legend" v-if="detail">
-      分项得分分两组：<b class="lg-self">个股自身 65 分</b>（动能 30 + 量能 20 + 位置 15，重点看这组）· <b class="lg-ctx">环境与质量 35 分</b>（板块 15 + 均线 10 + 换手 10，靠它撑起来的高分不可信）。总分 = 两组之和；子分柱按该维度在列表中最大值归一。复盘红涨绿跌；N 列仅 N1/N2/N3/N5/N7/N9/N10 七个检查点。
+      分项得分分两组：<b class="lg-self">个股自身 77 分</b>（动能 35 + 量能 24 + 位置 18，重点看这组）· <b class="lg-ctx">环境与质量 23 分</b>（均线 12 + 换手 11，靠它撑起来的高分不可信）。总分 = 两组之和（总分与次日收益仅弱相关 ρ≈0.04，涨幅 ≥5% 的标记更值得看）；子分柱按该维度在列表中最大值归一。复盘红涨绿跌；N 列仅 N1/N2/N3/N5/N7/N9/N10 七个检查点。
     </p>
 
     <!-- 候选表（宽表：11 逻辑列 → 移动端横向滚动，不翻转） -->
@@ -416,7 +416,7 @@ onMounted(loadRuns);
             <th :class="{ sortable: true, sorted: pickSortKey === 'sector' }"><button class="th-btn" @click="togglePickSort('sector')">板块<span class="arrow">{{ pickArrow('sector') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'total' }"><button class="th-btn" @click="togglePickSort('total')">总分<span class="arrow">{{ pickArrow('total') }}</span></button></th>
             <th>标记</th>
-            <th>分项得分<span class="thsub">自身 65 · 环境 35</span></th>
+            <th>分项得分<span class="thsub">自身 77 · 环境 23</span></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'chg_pct' }"><button class="th-btn" @click="togglePickSort('chg_pct')">涨跌幅<span class="arrow">{{ pickArrow('chg_pct') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'tail_seg_pct' }"><button class="th-btn" @click="togglePickSort('tail_seg_pct')">尾盘段<span class="arrow">{{ pickArrow('tail_seg_pct') }}</span></button></th>
             <th :class="{ sortable: true, sorted: pickSortKey === 'vol_ratio' }"><button class="th-btn" @click="togglePickSort('vol_ratio')">量比<span class="arrow">{{ pickArrow('vol_ratio') }}</span></button></th>
@@ -631,7 +631,7 @@ onMounted(loadRuns);
 .flat { color: var(--text); }
 .muted { color: var(--muted); }
 
-/* 六维分项：竖向 slim 条，按「个股自身 65 / 环境质量 35」切成两块 ——
+/* 五维分项：竖向 slim 条，按「个股自身 77 / 环境质量 23」切成两块 ——
    左栏 2px 竖线 + 组标题行，让「哪几个子分该当真」不靠读文字也能看出来 */
 .scores { white-space: nowrap; }
 .scgrp { padding-left: 6px; border-left: 2px solid var(--border); }

@@ -23,17 +23,19 @@ function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) +
 function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 /*
- * 六维分项按「这分是谁给的」分两组（2026-09-21）：
- *   · 个股自身 65 分 = 尾盘动能 30 + 量能 20 + 位置 15 —— 这只票「自己在走」的证据，**重点看这组**；
- *   · 环境与质量 35 分 = 板块 15 + 均价线 10 + 换手 10 —— 板块与流动性给的背景分。
- * 只看总分会被「板块热 + 换手够」抬高分数骗到，故两组在表头/底色上必须可分辨。
+ * 五个分项按「这分是谁给的」分两组（2026-10-22 回溯调参后）：
+ *   · 个股自身 77 分 = 尾盘动能 35 + 量能 24 + 位置 18 —— 这只票「自己在走」的证据，**重点看这组**；
+ *   · 环境与质量 23 分 = 均价线 12 + 换手 11 —— 流动性与位置给的背景分。
+ * 原「板块强度 15 分」因在全部候选上恒为满分（常量、零区分度）被删除，
+ * 权重按原比例重分配（30/20/15/10/10 → 35/24/18/12/11），依据见 docs/backtest/01-复盘.md。
+ * 只看总分会被背景分抬高分数骗到，故两组在表头/底色上必须可分辨。
  * 组内按权重降序（权重大的先看）—— 顺序即渲染顺序。
  * ⚠️ 与 web/src/views/TailView.vue 的 SCORE_GROUPS 是同一份口径，改一处必须改另一处。
  */
 const SCORE_GROUPS = [
   {
-    key: 'self', cls: 'self', max: 65,
-    zh: '个股自身（65 分）', en: 'The stock itself (65)',
+    key: 'self', cls: 'self', max: 77,
+    zh: '个股自身（77 分）', en: 'The stock itself (77)',
     cols: [
       ['tailMomentum', '尾盘动能', 'Tail momentum'],
       ['volume', '量能', 'Volume'],
@@ -41,10 +43,9 @@ const SCORE_GROUPS = [
     ],
   },
   {
-    key: 'ctx', cls: 'ctx', max: 35,
-    zh: '环境质量（35 分）', en: 'Context & quality (35)',
+    key: 'ctx', cls: 'ctx', max: 23,
+    zh: '环境质量（23 分）', en: 'Context & quality (23)',
     cols: [
-      ['sector', '板块', 'Sector'],
       ['avgLine', '均价线', 'VWAP'],
       ['turnoverFit', '换手', 'Turnover'],
     ],
@@ -76,6 +77,11 @@ function rowHtml(c, i, cfg, withBreakdown) {
   const warn = cfg.score.tailUpRatioWarn;
   const tagBits = [];
   if (c.bestInGroup) tagBits.push(`<span class="tag pass">${b('组内最优', 'best in group')}</span>`);
+  // 2026-10-22 回溯调参：涨幅是全部原始特征里与次日收益相关最强的（ρ=+0.150），
+  // 5–7% 段是唯一正期望的涨幅桶，故对 chg≥5% 的候选加显式标记（决策清单第 8 项）。
+  if (c.chgPct != null && c.chgPct >= 5) {
+    tagBits.push(`<span class="tag hot">${b('涨幅≥5%', 'chg ≥5%')}</span>`);
+  }
   if (tail.upRatio != null && tail.upRatio < warn) {
     tagBits.push(`<span class="tag gap">${b('拉升不连贯', 'choppy tail')}</span>`);
   }
@@ -161,6 +167,7 @@ const CSS = `  :root, :root[data-theme="light"] {
   .tag.fail { background: #f1f5f9; color: var(--slate); }
   .tag.pass { background: #fef2f2; color: var(--red); }
   .tag.gap { background: #fffbeb; color: var(--amber); }
+  .tag.hot { background: var(--red); color: #fff; font-weight: 700; }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -192,6 +199,7 @@ const CSS = `  :root, :root[data-theme="light"] {
   :root[data-theme="dark"] .tag.fail { background: var(--tag-fail-bg); }
   :root[data-theme="dark"] .tag.pass { background: var(--tag-pass-bg); }
   :root[data-theme="dark"] .tag.gap { background: var(--tag-gap-bg); }
+  :root[data-theme="dark"] .tag.hot { background: #b91c1c; color: #fff; }
   :root[data-theme="dark"] th { background: var(--th-bg); }
   :root[data-theme="dark"] th.grp-self { background: var(--grp-self-bg); color: var(--grp-self-fg); }
   :root[data-theme="dark"] th.grp-ctx { background: var(--grp-ctx-bg); color: var(--grp-ctx-fg); }
@@ -259,7 +267,7 @@ function buildHTML(m) {
       `Funnel: snapshot ${stats.snapshotCount} → pre-filter pass ${stats.prePassCount} → after tail checks ${stats.candidateCount}.`),
   ];
 
-  // 两级表头：第一行把六个子分切成「个股自身 65 / 环境与质量 35」两块，
+  // 两级表头：第一行把五个子分切成「个股自身 77 / 环境与质量 23」两块，
   // 第一行列宽靠 colspan 自动对齐到下面的子分列，不需要额外配 colgroup。
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
@@ -271,12 +279,12 @@ function buildHTML(m) {
 
   // 读分说明：不解释这一步，用户只会看到一堆等宽数字，不知道哪几个该当真。
   const scoreNote = `<p class="score-note" id="scoreNote">${b(
-    `六维分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 65 分</b>（尾盘动能 30 + 量能 20 + 位置 15）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 35 分</b>（板块 15 + 均价线 10 + 换手 10）—— 板块与流动性给的背景分，靠它撑起来的高分不可信。`,
-    `<b class='sn-self'>The stock itself — 65 pts</b> (tail momentum 30 + volume 20 + position 15): evidence this name moved on its own — <b>this is the group to read first</b>. <b class='sn-ctx'>Context &amp; quality — 35 pts</b> (sector 15 + VWAP 10 + turnover 10): background handed over by the sector and by liquidity; a high total carried by this group alone is not trustworthy.`)}</p>`;
+    `五个分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 77 分</b>（尾盘动能 35 + 量能 24 + 位置 18）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 23 分</b>（均价线 12 + 换手 11）—— 流动性与位置给的背景分，靠它撑起来的高分不可信。总分与次日收益相关性弱（ρ≈0.04），<b>「涨幅≥5%」标记比总分更值得看</b>（涨幅是相关最强的特征，ρ=+0.15）。`,
+    `<b class='sn-self'>The stock itself — 77 pts</b> (tail momentum 35 + volume 24 + position 18): evidence this name moved on its own — <b>this is the group to read first</b>. <b class='sn-ctx'>Context &amp; quality — 23 pts</b> (VWAP 12 + turnover 11): background handed over by liquidity and position; a high total carried by this group alone is not trustworthy. The total correlates only weakly with next-day return (ρ≈0.04), so the <b>chg ≥5% flag</b> deserves more attention than the total (chg is the strongest correlate, ρ=+0.15).`)}</p>`;
 
   // ---- 候选明细（单表双视图）：TOP 表与分行业卡片本是同一批候选的两种组织方式，
   // 双列表翻页滚动成本高，故合并为一张表：默认按总分排序，「按行业」视图由前端
-  // 把行重排进分组分隔行之下；行业 chips 做筛选；分项 6 列可用开关收起。
+  // 把行重排进分组分隔行之下；行业 chips 做筛选；分项 5 列可用开关收起。
   // 展示上限沿用 report.maxRows（总量控制），列表为 top 之外的全量候选。----
   const listed = candidates.slice(0, cfg.report.maxRows);
   const truncated = candidates.length - listed.length;
