@@ -41,13 +41,13 @@ function labelCls(l) {
  * 信号分项分组（两级表头）：P1 竞价强势(35) + P2 弱转强/超预期(35) + P3 趋势(30)。
  * 组内列顺序 = 渲染顺序，权重写进组标题，一眼看出谁占大头。
  */
-const SCORE_GROUP = { key: 'sig', zh: '信号分项', en: 'Signals', cols: [['p1', 'P1 竞价·35'], ['p2', 'P2 弱转强·35'], ['p3', 'P3 趋势·30']] };
+const SCORE_GROUP = { key: 'sig', zh: '信号分项', en: 'Signals', cols: [['p1', 'P1 竞价', 35], ['p2', 'P2 弱转强', 35], ['p3', 'P3 趋势', 30]] };
 const SCORE_COLS = SCORE_GROUP.cols;
 
 /** 候选行。withBreakdown 控制是否渲染 P1/P2/P3 三个分项单元格。 */
 function rowHtml(c, i, withBreakdown) {
   const cells = withBreakdown
-    ? SCORE_COLS.map(([k]) => `<td class="num sc">${num(c.scoreItems ? c.scoreItems[k] : null, 1)}</td>`).join('')
+    ? SCORE_COLS.map(([k, , w]) => `<td class="num sc">${num((c.scoreItems ? c.scoreItems[k] : 0) * w, 1)}</td>`).join('')
     : '';
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}">
@@ -172,11 +172,11 @@ function buildHTML(m) {
     <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
     <th colspan="${SCORE_COLS.length}" class="grp">${b(SCORE_GROUP.zh, SCORE_GROUP.en)}</th>
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标签', 'Label')}</th></tr>
-    <tr>${SCORE_COLS.map(([, zh]) => `<th class="grp-sub">${b(zh, zh)}</th>`).join('')}</tr>`;
+    <tr>${SCORE_COLS.map(([, zh, w]) => `<th class="grp-sub">${b(`${zh} · ${w}`, `${zh} · ${w}`)}</th>`).join('')}</tr>`;
 
   const scoreNote = `<p class="score-note" id="scoreNote">${b(
-    `信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。总分 = P1×0.35 + P2×0.35 + P3×0.30。`,
-    `Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Total = P1×0.35 + P2×0.35 + P3×0.30.`)}</p>`;
+    `信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。`,
+    `Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total.`)}</p>`;
 
   // ---- 候选明细 + 工具栏（标签过滤 + 行业过滤 + 双视图 + 分项开关）----
   const listed = candidates.slice(0, cfg.report.maxRows);

@@ -111,7 +111,7 @@
   </div>
 
   <h2><span data-zh="候选明细（18 只）" data-en="Candidates (18)">候选明细（18 只）</span></h2>
-  <p class="score-note" id="scoreNote"><span data-zh="信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。总分 = P1×0.35 + P2×0.35 + P3×0.30。" data-en="Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Total = P1×0.35 + P2×0.35 + P3×0.30.">信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。总分 = P1×0.35 + P2×0.35 + P3×0.30。</span></p><div class="toolbar">
+  <p class="score-note" id="scoreNote"><span data-zh="信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。" data-en="Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total.">信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。</span></p><div class="toolbar">
     <div class="seg" role="tablist">
       <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
       <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
@@ -125,7 +125,7 @@
     <th rowspan="2"><span data-zh="竞价量能比" data-en="Auction vol">竞价量能比</span></th><th rowspan="2"><span data-zh="趋势" data-en="Trend">趋势</span></th>
     <th colspan="3" class="grp"><span data-zh="信号分项" data-en="Signals">信号分项</span></th>
     <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标签" data-en="Label">标签</span></th></tr>
-    <tr><th class="grp-sub"><span data-zh="P1 竞价·35" data-en="P1 竞价·35">P1 竞价·35</span></th><th class="grp-sub"><span data-zh="P2 弱转强·35" data-en="P2 弱转强·35">P2 弱转强·35</span></th><th class="grp-sub"><span data-zh="P3 趋势·30" data-en="P3 趋势·30">P3 趋势·30</span></th></tr></thead>
+    <tr><th class="grp-sub"><span data-zh="P1 竞价 · 35" data-en="P1 竞价 · 35">P1 竞价 · 35</span></th><th class="grp-sub"><span data-zh="P2 弱转强 · 35" data-en="P2 弱转强 · 35">P2 弱转强 · 35</span></th><th class="grp-sub"><span data-zh="P3 趋势 · 30" data-en="P3 趋势 · 30">P3 趋势 · 30</span></th></tr></thead>
     <tbody id="candBody"><tr data-sector="玻璃玻纤" data-label="超预期" data-best="1" data-grank="1">
     <td>1</td>
     <td><b>三峡新材</b><span class="src">600293</span></td>
@@ -135,7 +135,7 @@
     <td class="num up">+9.95%</td>
     <td class="num">1.67</td>
     <td class="trend">多头✓ 20新✓ 60新✓ 斜率2.2%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">1.0</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">30.0</td>
     <td><span class="score">100.0</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="通用设备" data-label="超预期" data-best="1" data-grank="1">
@@ -147,7 +147,7 @@
     <td class="num up">+10.01%</td>
     <td class="num">8.17</td>
     <td class="trend">多头✓ 20新✓ 60新✓ 斜率1.3%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">1.0</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">30.0</td>
     <td><span class="score">100.0</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="其他电子Ⅱ" data-label="超预期" data-best="1" data-grank="1">
@@ -159,7 +159,7 @@
     <td class="num up">+10.04%</td>
     <td class="num">2.79</td>
     <td class="trend">多头✓ 20新✓ 60新✓ 斜率1.9%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">1.0</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">30.0</td>
     <td><span class="score">100.0</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="照明设备Ⅱ" data-label="超预期" data-best="1" data-grank="1">
@@ -171,7 +171,7 @@
     <td class="num up">+10.04%</td>
     <td class="num">9.04</td>
     <td class="trend">多头✓ 20新✓ 60新✓ 斜率1.0%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">0.9</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">28.2</td>
     <td><span class="score">98.3</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="炼化及贸易" data-label="超预期" data-best="1" data-grank="1">
@@ -183,7 +183,7 @@
     <td class="num up">+15.60%</td>
     <td class="num">0.85</td>
     <td class="trend">多头✓ 20新✓ 60新✓ 斜率0.5%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">0.7</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">22.2</td>
     <td><span class="score">92.2</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="饲料" data-label="超预期" data-best="1" data-grank="1">
@@ -195,7 +195,7 @@
     <td class="num up">+10.04%</td>
     <td class="num">1.88</td>
     <td class="trend">多头✓ 斜率2.8%/d</td>
-    <td class="num sc">0.8</td><td class="num sc">1.0</td><td class="num sc">0.7</td>
+    <td class="num sc">28.7</td><td class="num sc">35.0</td><td class="num sc">21.0</td>
     <td><span class="score">84.8</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="服装家纺" data-label="超预期" data-best="1" data-grank="1">
@@ -207,7 +207,7 @@
     <td class="num up">+9.99%</td>
     <td class="num">1.74</td>
     <td class="trend">多头✗ 20新✓ 斜率0.5%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">0.3</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">9.9</td>
     <td><span class="score">79.9</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="化学纤维" data-label="超预期" data-best="1" data-grank="1">
@@ -219,7 +219,7 @@
     <td class="num up">+9.97%</td>
     <td class="num">5.60</td>
     <td class="trend">多头✗ 20新✓ 60新✓ 斜率0.1%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">0.3</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
     <td><span class="score">79.0</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="照明设备Ⅱ" data-label="超预期" data-grank="2">
@@ -231,7 +231,7 @@
     <td class="num up">+9.87%</td>
     <td class="num">4.66</td>
     <td class="trend">多头✗ 20新✓ 60新✓ 斜率0.1%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">0.3</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
     <td><span class="score">79.0</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="IT服务Ⅱ" data-label="超预期" data-best="1" data-grank="1">
@@ -243,7 +243,7 @@
     <td class="num up">+10.01%</td>
     <td class="num">3.60</td>
     <td class="trend">多头✗ 斜率-0.5%/d</td>
-    <td class="num sc">1.0</td><td class="num sc">1.0</td><td class="num sc">0.0</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
     <td><span class="score">70.0</span></td>
     <td class="wrap"><span class="tag pass">超预期</span></td>
   </tr><tr data-sector="出版" data-label="弱转强·符合" data-best="1" data-grank="1">
@@ -255,7 +255,7 @@
     <td class="num up">+10.01%</td>
     <td class="num">4.30</td>
     <td class="trend">多头✓ 斜率0.6%/d</td>
-    <td class="num sc">0.7</td><td class="num sc">0.7</td><td class="num sc">0.5</td>
+    <td class="num sc">23.8</td><td class="num sc">24.5</td><td class="num sc">14.7</td>
     <td><span class="score">62.9</span></td>
     <td class="wrap"><span class="tag ">弱转强·符合</span></td>
   </tr><tr data-sector="通信服务" data-label="弱转强·符合" data-best="1" data-grank="1">
@@ -267,7 +267,7 @@
     <td class="num up">+9.99%</td>
     <td class="num">1.84</td>
     <td class="trend">多头✗ 20新✓ 斜率-0.7%/d</td>
-    <td class="num sc">0.8</td><td class="num sc">0.7</td><td class="num sc">0.3</td>
+    <td class="num sc">27.7</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
     <td><span class="score">61.2</span></td>
     <td class="wrap"><span class="tag ">弱转强·符合</span></td>
   </tr><tr data-sector="出版" data-label="弱转强·符合" data-grank="2">
@@ -279,7 +279,7 @@
     <td class="num up">+9.97%</td>
     <td class="num">2.41</td>
     <td class="trend">多头✓ 20新✓ 60新✓ 斜率0.5%/d</td>
-    <td class="num sc">0.4</td><td class="num sc">0.7</td><td class="num sc">0.7</td>
+    <td class="num sc">14.3</td><td class="num sc">24.5</td><td class="num sc">21.9</td>
     <td><span class="score">61.0</span></td>
     <td class="wrap"><span class="tag ">弱转强·符合</span></td>
   </tr><tr data-sector="光学光电子" data-label="弱转强·符合" data-best="1" data-grank="1">
@@ -291,7 +291,7 @@
     <td class="num up">+20.04%</td>
     <td class="num">1.31</td>
     <td class="trend">多头✗ 20新✓ 60新✓ 斜率-0.1%/d</td>
-    <td class="num sc">0.7</td><td class="num sc">0.7</td><td class="num sc">0.3</td>
+    <td class="num sc">24.1</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
     <td><span class="score">57.5</span></td>
     <td class="wrap"><span class="tag ">弱转强·符合</span></td>
   </tr><tr data-sector="通信设备" data-label="弱转强·符合" data-best="1" data-grank="1">
@@ -303,7 +303,7 @@
     <td class="num up">+10.00%</td>
     <td class="num">7.13</td>
     <td class="trend">多头✗ 20新✓ 60新✓ 斜率-0.0%/d</td>
-    <td class="num sc">0.6</td><td class="num sc">0.7</td><td class="num sc">0.3</td>
+    <td class="num sc">21.7</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
     <td><span class="score">55.1</span></td>
     <td class="wrap"><span class="tag ">弱转强·符合</span></td>
   </tr><tr data-sector="电视广播Ⅱ" data-label="弱转强·符合" data-best="1" data-grank="1">
@@ -315,7 +315,7 @@
     <td class="num up">+9.97%</td>
     <td class="num">2.69</td>
     <td class="trend">多头✗ 斜率0.5%/d</td>
-    <td class="num sc">0.8</td><td class="num sc">0.7</td><td class="num sc">0.0</td>
+    <td class="num sc">26.6</td><td class="num sc">24.5</td><td class="num sc">0.9</td>
     <td><span class="score">51.8</span></td>
     <td class="wrap"><span class="tag ">弱转强·符合</span></td>
   </tr><tr data-sector="包装印刷" data-label="弱转强·符合" data-best="1" data-grank="1">
@@ -327,7 +327,7 @@
     <td class="num up">+9.99%</td>
     <td class="num">3.31</td>
     <td class="trend">多头✗ 斜率-0.5%/d</td>
-    <td class="num sc">0.7</td><td class="num sc">0.7</td><td class="num sc">0.0</td>
+    <td class="num sc">22.8</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
     <td><span class="score">47.4</span></td>
     <td class="wrap"><span class="tag ">弱转强·符合</span></td>
   </tr><tr data-sector="化学制品" data-label="竞价强+趋势" data-best="1" data-grank="1">
@@ -339,7 +339,7 @@
     <td class="num down">-2.70%</td>
     <td class="num">1.30</td>
     <td class="trend">多头✓ 斜率1.5%/d</td>
-    <td class="num sc">0.7</td><td class="num sc">0.0</td><td class="num sc">0.7</td>
+    <td class="num sc">24.1</td><td class="num sc">0.0</td><td class="num sc">21.0</td>
     <td><span class="score">45.3</span></td>
     <td class="wrap"><span class="tag gap">竞价强+趋势</span></td>
   </tr><tr class="sector-row" data-sep="玻璃玻纤" hidden><td colspan="13"><span data-zh="玻璃玻纤" data-en="玻璃玻纤">玻璃玻纤</span> · <span data-zh="组内 1 只，最优 三峡新材（100.0）" data-en="1 picked; top 三峡新材 (100.0)">组内 1 只，最优 三峡新材（100.0）</span></td></tr><tr class="sector-row" data-sep="通用设备" hidden><td colspan="13"><span data-zh="通用设备" data-en="通用设备">通用设备</span> · <span data-zh="组内 1 只，最优 大业股份（100.0）" data-en="1 picked; top 大业股份 (100.0)">组内 1 只，最优 大业股份（100.0）</span></td></tr><tr class="sector-row" data-sep="其他电子Ⅱ" hidden><td colspan="13"><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span> · <span data-zh="组内 1 只，最优 新亚制程（100.0）" data-en="1 picked; top 新亚制程 (100.0)">组内 1 只，最优 新亚制程（100.0）</span></td></tr><tr class="sector-row" data-sep="照明设备Ⅱ" hidden><td colspan="13"><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span> · <span data-zh="组内 2 只，最优 海洋王（98.3）" data-en="2 picked; top 海洋王 (98.3)">组内 2 只，最优 海洋王（98.3）</span></td></tr><tr class="sector-row" data-sep="炼化及贸易" hidden><td colspan="13"><span data-zh="炼化及贸易" data-en="炼化及贸易">炼化及贸易</span> · <span data-zh="组内 1 只，最优 博汇股份（92.2）" data-en="1 picked; top 博汇股份 (92.2)">组内 1 只，最优 博汇股份（92.2）</span></td></tr><tr class="sector-row" data-sep="饲料" hidden><td colspan="13"><span data-zh="饲料" data-en="饲料">饲料</span> · <span data-zh="组内 1 只，最优 百洋股份（84.8）" data-en="1 picked; top 百洋股份 (84.8)">组内 1 只，最优 百洋股份（84.8）</span></td></tr><tr class="sector-row" data-sep="服装家纺" hidden><td colspan="13"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span> · <span data-zh="组内 1 只，最优 九牧王（79.9）" data-en="1 picked; top 九牧王 (79.9)">组内 1 只，最优 九牧王（79.9）</span></td></tr><tr class="sector-row" data-sep="化学纤维" hidden><td colspan="13"><span data-zh="化学纤维" data-en="化学纤维">化学纤维</span> · <span data-zh="组内 1 只，最优 苏州龙杰（79.0）" data-en="1 picked; top 苏州龙杰 (79.0)">组内 1 只，最优 苏州龙杰（79.0）</span></td></tr><tr class="sector-row" data-sep="IT服务Ⅱ" hidden><td colspan="13"><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span> · <span data-zh="组内 1 只，最优 海量数据（70.0）" data-en="1 picked; top 海量数据 (70.0)">组内 1 只，最优 海量数据（70.0）</span></td></tr><tr class="sector-row" data-sep="出版" hidden><td colspan="13"><span data-zh="出版" data-en="出版">出版</span> · <span data-zh="组内 2 只，最优 出版传媒（62.9）" data-en="2 picked; top 出版传媒 (62.9)">组内 2 只，最优 出版传媒（62.9）</span></td></tr><tr class="sector-row" data-sep="通信服务" hidden><td colspan="13"><span data-zh="通信服务" data-en="通信服务">通信服务</span> · <span data-zh="组内 1 只，最优 润建股份（61.2）" data-en="1 picked; top 润建股份 (61.2)">组内 1 只，最优 润建股份（61.2）</span></td></tr><tr class="sector-row" data-sep="光学光电子" hidden><td colspan="13"><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span> · <span data-zh="组内 1 只，最优 利亚德（57.5）" data-en="1 picked; top 利亚德 (57.5)">组内 1 只，最优 利亚德（57.5）</span></td></tr><tr class="sector-row" data-sep="通信设备" hidden><td colspan="13"><span data-zh="通信设备" data-en="通信设备">通信设备</span> · <span data-zh="组内 1 只，最优 日海智能（55.1）" data-en="1 picked; top 日海智能 (55.1)">组内 1 只，最优 日海智能（55.1）</span></td></tr><tr class="sector-row" data-sep="电视广播Ⅱ" hidden><td colspan="13"><span data-zh="电视广播Ⅱ" data-en="电视广播Ⅱ">电视广播Ⅱ</span> · <span data-zh="组内 1 只，最优 天威视讯（51.8）" data-en="1 picked; top 天威视讯 (51.8)">组内 1 只，最优 天威视讯（51.8）</span></td></tr><tr class="sector-row" data-sep="包装印刷" hidden><td colspan="13"><span data-zh="包装印刷" data-en="包装印刷">包装印刷</span> · <span data-zh="组内 1 只，最优 顺灏股份（47.4）" data-en="1 picked; top 顺灏股份 (47.4)">组内 1 只，最优 顺灏股份（47.4）</span></td></tr><tr class="sector-row" data-sep="化学制品" hidden><td colspan="13"><span data-zh="化学制品" data-en="化学制品">化学制品</span> · <span data-zh="组内 1 只，最优 建新股份（45.3）" data-en="1 picked; top 建新股份 (45.3)">组内 1 只，最优 建新股份（45.3）</span></td></tr></tbody></table></div>
