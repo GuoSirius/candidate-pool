@@ -318,7 +318,7 @@ async function emitResult(p) {
   fs.mkdirSync(reportDir, { recursive: true });
   const suffix = OPT.stamp ? `-${dayjs.tz().format('HHmm')}` : '';
   const reportFile = path.join(reportDir, `${cfg.store.prefix}-${tradeDate}${suffix}.html`);
-  fs.writeFileSync(reportFile, buildHTML({ cfg, tradeDate, scope, result, marketDate, runner: RUNNER }), 'utf8');
+  fs.writeFileSync(reportFile, buildHTML({ cfg, tradeDate, scope, result, marketDate, anchor: p.anchor, runner: RUNNER }), 'utf8');
   log(`[报告] ${reportFile}`);
 
   if (cfg.notify.enabled && !OPT.noNotify) {
