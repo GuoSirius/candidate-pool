@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>盘前选股 2026-10-22</title>
+<style>
+  :root { --bg:#0f1419; --card:#1a2129; --fg:#e6edf3; --muted:#8b98a5; --up:#ff5b5b; --down:#26a69a; --hot:#ffb74d; --line:#2a323c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; padding:20px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:12px; margin-bottom:16px; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 14px; }
+  .stat b { font-size:18px; color:var(--hot); }
+  .stat span { display:block; color:var(--muted); font-size:11px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border-radius:8px; overflow:hidden; }
+  th, td { padding:7px 9px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { background:#222b35; color:var(--muted); font-weight:600; font-size:12px; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .up { color:var(--up); } .down { color:var(--down); }
+  .total { color:var(--hot); font-weight:700; }
+  .code { color:var(--muted); }
+  .label { color:var(--hot); }
+  .trend { color:var(--muted); font-size:12px; }
+  tr.hot { background:rgba(255,183,77,.08); }
+  tr.risk { background:rgba(255,91,91,.07); }
+  .groups { margin:16px 0; }
+  .grp { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-bottom:8px; }
+  .chip { display:inline-block; background:#222b35; border-radius:6px; padding:2px 8px; margin:2px; font-size:12px; }
+  .chip.risk { background:rgba(255,91,91,.18); }
+  .muted { color:var(--muted); font-size:12px; }
+  details { margin-top:14px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 12px; }
+  details ul { margin:6px 0; padding-left:20px; color:var(--muted); font-size:12px; }
+  .note { margin-top:16px; color:var(--muted); font-size:12px; border-top:1px solid var(--line); padding-top:10px; }
+</style></head>
+<body>
+  <h1>盘前选股 · Pre-Open Screener</h1>
+  <div class="sub">交易日 2026-10-22 · 观察池 · 行情日 2026-10-22 · 生成 2026/10/22 09:52:59 · local</div>
+  <div class="stats">
+    <div class="stat"><b>0</b><span>候选</span></div>
+    <div class="stat"><b>0</b><span>行业</span></div>
+    <div class="stat"><b>377</b><span>快照</span></div>
+    <div class="stat"><b>377</b><span>基线K线</span></div>
+    <div class="stat"><b>2</b><span>缺口</span></div>
+  </div>
+  <div class="groups"><div class="muted">无候选</div></div>
+  <table>
+    <thead><tr>
+      <th>#</th><th>代码</th><th>名称</th><th>板块</th><th>竞价涨幅</th><th>昨日涨幅</th><th>趋势</th><th>P1</th><th>P2</th><th>P3</th><th>总分</th><th>标签</th>
+    </tr></thead>
+    <tbody><tr><td colspan="12" class="muted">无候选</td></tr></tbody>
+  </table>
+  <details><summary>数据缺口（2）</summary><ul><li>601198 东兴证券 — 停牌/无成交</li><li>603056 德邦股份 — 停牌/无成交</li></ul></details>
+  <div class="note">信号说明：P1 竞价强势（高开+竞价量能）· P2 弱转强/超预期（昨日强+今日开幅）· P3 趋势（均线多头+N日新高+斜率）。
+  开盘快照存档于 eod/data/preopen-2026-10-22.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停，统计命中率，便于溯源。</div>
+</body></html>

@@ -1,0 +1,30 @@
+{
+  "tradeDate": "2026-10-22",
+  "scope": "watchlist",
+  "mode": "preopen",
+  "generatedAt": "2026-10-22T01:52:59.652Z",
+  "marketDate": "2026-10-22",
+  "meta": {
+    "snapshotCount": 377,
+    "baselineCount": 377,
+    "validQuotes": 377,
+    "marketDate": "2026-10-22",
+    "elapsedMs": 1,
+    "recordCount": 0,
+    "runCount": 2
+  },
+  "runs": [
+    {
+      "at": "2026-10-22T01:49:44.120Z",
+      "count": 0,
+      "codes": []
+    },
+    {
+      "at": "2026-10-22T01:52:59.652Z",
+      "count": 0,
+      "codes": []
+    }
+  ],
+  "close": null,
+  "records": {}
+}

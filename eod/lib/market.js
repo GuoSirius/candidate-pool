@@ -339,7 +339,57 @@ async function fetchMinutes(codes, cfg, log = _log) {
   return res;
 }
 
+// ---------------------------------------------------------------------------
+// 日K线（前复权 qfq）—— 抽自 gen_candidates.js，作为行情层公共能力，供盘前基线等复用。
+// 腾讯按日期【升序】返回，统一翻转为【降序】（最新在前），与下游 hist[0]=前一交易日一致。
+// 三主机降级链（与分时同理：某台被 WAF 封则切下一台，粘性记忆）。
+// ---------------------------------------------------------------------------
+const KLINE_ENDPOINTS = [
+  { name: 'web.ifzq/fqkline', qfq: true, url: (c) => `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${c},day,,,260,qfq` },
+  { name: 'ifzq/fqkline', qfq: true, url: (c) => `https://ifzq.gtimg.cn/appstock/app/fqkline/get?param=${c},day,,,260,qfq` },
+  { name: 'proxy.finance/fqkline', qfq: true, url: (c) => `https://proxy.finance.qq.com/ifzqgtimg/appstock/app/fqkline/get?param=${c},day,,,260,qfq` },
+  { name: 'web.ifzq/kline(不复权)', qfq: false, url: (c) => `https://web.ifzq.gtimg.cn/appstock/app/kline/kline?param=${c},day,,,260` },
+];
+let _klineEp = 0;
+
+/**
+ * 抓单只日K（前复权），返回 { rows, today, hist }。
+ * @param {string} code  sh/sz/bj + 6 位
+ * @param {string} anchor 'YYYY-MM-DD' 锚定日（取至此日的 K 线）
+ */
+async function fetchKline(code, anchor) {
+  let lastErr;
+  for (let step = 0; step < KLINE_ENDPOINTS.length; step++) {
+    const idx = (_klineEp + step) % KLINE_ENDPOINTS.length;
+    const ep = KLINE_ENDPOINTS[idx];
+    let obj;
+    try {
+      obj = await httpGet(ep.url(code), { json: true, retries: 2, timeout: 15000 });
+    } catch (e) {
+      lastErr = e;
+      if (e.waf || /timeout|ECONN|socket|HTTP \d/i.test(String(e.message || ''))) continue;
+      throw e;
+    }
+    const node = (obj.data && obj.data[code]) || {};
+    const rows = node.qfqday || node.day || [];
+    if (!rows.length) { lastErr = new Error('K线为空'); continue; }
+    if (idx !== _klineEp) {
+      _klineEp = idx;
+      _log(`[降级] K线数据源切换为 ${ep.name}${ep.qfq ? '' : '（不复权，除权日附近数据会失真）'}`);
+    }
+    const norm = rows.map((r) => ({ date: r[0], open: +r[1], close: +r[2], high: +r[3], low: +r[4], vol: +r[5] }))
+      .filter((r) => r.date && !isNaN(r.close))
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)); // 降序：最新在前
+    const till = norm.filter((r) => r.date <= anchor);
+    const today = till.find((r) => r.date === anchor) || null;
+    const hist = till.filter((r) => r.date < anchor && r.vol > 0);
+    return { rows: till, today, hist, source: ep.name, qfq: ep.qfq };
+  }
+  throw lastErr || new Error('全部 K线端点均不可用');
+}
+
 module.exports = {
   volLotSize, expandCodes, parseQuote, fetchBatch, fullMarketSnapshot,
   fetchMinute, fetchMinutes, tailMetrics, barAt, barAtOrBefore, setLog,
+  fetchKline, KLINE_ENDPOINTS,
 };
