@@ -2,6 +2,68 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.0.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.2.0...v3.0.0)
+
+### 🚀 新功能 (Features)
+
+- **preopen:** 盘前选股子系统 P1竞价/P2弱转强/P3趋势 + 溯源推送 ([fe2094b](https://github.com/GuoSirius/candidate-pool/commit/fe2094b))
+- **preopen:** 补 --baseline 预计算分支 + 基线缓存 gitignore ([730fcac](https://github.com/GuoSirius/candidate-pool/commit/730fcac))
+- **preopen:** 默认全市场模式(--universe)，并修复 --scope watchlist 逃生通道被覆盖的问题 ([96bbf69](https://github.com/GuoSirius/candidate-pool/commit/96bbf69))
+- **preopen:** 报告升级对齐尾盘富报告——主题/双语/双视图/双重过滤 ([6a6a9a0](https://github.com/GuoSirius/candidate-pool/commit/6a6a9a0))
+- **eod:** 尾盘选股按回溯结论调参并删板块常量打分项 ([4884961](https://github.com/GuoSirius/candidate-pool/commit/4884961))
+- 次日候选突破涨幅下限由 3 提至 4 ([54f4446](https://github.com/GuoSirius/candidate-pool/commit/54f4446))
+- **eod:** 尾盘报告打分组改 77/23 五列并加强涨幅标记 ([304e076](https://github.com/GuoSirius/candidate-pool/commit/304e076))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- **preopen:** 修正 baseline/universe 代码枚举范围 ([3b52ecd](https://github.com/GuoSirius/candidate-pool/commit/3b52ecd))
+- **report:** 统一候选表对齐——全表居中，修两级表头三套对齐错位 ([ad5ae49](https://github.com/GuoSirius/candidate-pool/commit/ad5ae49))
+- **preopen:** 分项单元格改显实际得分(归一化×权重)，与表头·35/·30及总分一致 ([8a576a8](https://github.com/GuoSirius/candidate-pool/commit/8a576a8))
+
+### 📚 文档 (Documentation)
+
+- 新增参数回溯与优化建议复盘文档 ([d4c353a](https://github.com/GuoSirius/candidate-pool/commit/d4c353a))
+- 参数复盘补记已执行调整与前后对照 ([c1b6cea](https://github.com/GuoSirius/candidate-pool/commit/c1b6cea))
+
+### 📦 杂项维护 (Chores)
+
+- Obs run 2026-10-13 (16 candidates) ([ceec5d9](https://github.com/GuoSirius/candidate-pool/commit/ceec5d9))
+- 尾盘选股 2026-10-13 ([faa013b](https://github.com/GuoSirius/candidate-pool/commit/faa013b))
+- 每日实时初筛 2026-10-13 ([cf511b2](https://github.com/GuoSirius/candidate-pool/commit/cf511b2))
+- 尾盘选股观察 2026-10-14 ([3654ac5](https://github.com/GuoSirius/candidate-pool/commit/3654ac5))
+- 尾盘选股 2026-10-14 ([baf234e](https://github.com/GuoSirius/candidate-pool/commit/baf234e))
+- 每日实时初筛 2026-10-14 ([e423a9a](https://github.com/GuoSirius/candidate-pool/commit/e423a9a))
+- **eod:** Add 2026-10-15 obs artifacts ([b14ba14](https://github.com/GuoSirius/candidate-pool/commit/b14ba14))
+- 尾盘选股 2026-10-15 ([3348624](https://github.com/GuoSirius/candidate-pool/commit/3348624))
+- 每日实时初筛 2026-10-15 ([8469f95](https://github.com/GuoSirius/candidate-pool/commit/8469f95))
+- Add 2026-10-16 obs screening artifacts ([46f3b4a](https://github.com/GuoSirius/candidate-pool/commit/46f3b4a))
+- 尾盘选股 2026-10-16 ([2859a9a](https://github.com/GuoSirius/candidate-pool/commit/2859a9a))
+- 每日实时初筛 2026-10-16 ([fe8d0d4](https://github.com/GuoSirius/candidate-pool/commit/fe8d0d4))
+- Eod obs 2026-10-19 观察模式产物（23 条候选，非正式口径） ([de976b4](https://github.com/GuoSirius/candidate-pool/commit/de976b4))
+- 尾盘选股 2026-10-19 ([c5dab21](https://github.com/GuoSirius/candidate-pool/commit/c5dab21))
+- 每日实时初筛 2026-10-19 ([e57e4ad](https://github.com/GuoSirius/candidate-pool/commit/e57e4ad))
+- Obs results for 2026-10-20 (44 candidates) ([8cdbc75](https://github.com/GuoSirius/candidate-pool/commit/8cdbc75))
+- 尾盘选股 2026-10-20 ([778be58](https://github.com/GuoSirius/candidate-pool/commit/778be58))
+- 每日实时初筛 2026-10-20 ([a2e5189](https://github.com/GuoSirius/candidate-pool/commit/a2e5189))
+- Eod obs candidates 2026-10-21 ([581627f](https://github.com/GuoSirius/candidate-pool/commit/581627f))
+- 尾盘选股 2026-10-21 ([708281a](https://github.com/GuoSirius/candidate-pool/commit/708281a))
+- 每日实时初筛 2026-10-21 ([4cdcb0a](https://github.com/GuoSirius/candidate-pool/commit/4cdcb0a))
+- **preopen:** 脚本 preopen:universe 改为 preopen:watchlist（默认已 universe） ([591c921](https://github.com/GuoSirius/candidate-pool/commit/591c921))
+- 提交观察池刷新与盘中筛选产出 ([ff8a837](https://github.com/GuoSirius/candidate-pool/commit/ff8a837))
+- 更新产出——盘中intraday(11:31) + preopen(事后强制跑) ([25d6bf1](https://github.com/GuoSirius/candidate-pool/commit/25d6bf1))
+- 重新生成报告产物(对齐修复后) ([159a13a](https://github.com/GuoSirius/candidate-pool/commit/159a13a))
+
+### ⚙️ 持续集成 (CI)
+
+- 四个定时工作流加调试步骤/强制时区/防重复执行锁 ([9bcff24](https://github.com/GuoSirius/candidate-pool/commit/9bcff24))
+- 修复调试步骤(计划cron误当时间戳) + 尾盘任务加延迟护栏 ([c4dda84](https://github.com/GuoSirius/candidate-pool/commit/c4dda84))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v2.2.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.1.1...v2.2.0)
