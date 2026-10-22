@@ -19,7 +19,7 @@ function buildAllPass() {
 
 test('G: R01 门槛常量与文档一致', () => {
   assert.equal(R.G.VOL_RATIO_MIN, 1.5);
-  assert.equal(R.G.CHG_MIN, 3.0);
+  assert.equal(R.G.CHG_MIN, 4.0);
   assert.equal(R.G.CHG_MAX, 8.0);
   assert.equal(R.G.TURN_MIN, 3.0);
   assert.equal(R.G.CAP_MIN, 20);
