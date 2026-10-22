@@ -7,6 +7,7 @@
 | 目录 | 主题 |
 |------|------|
 | `docs/eod-tail-screener/` | 尾盘选股（收盘前 10 分钟）新功能：需求 / 方案 / 计划 / 待确认 / 上线后复盘 |
+| `docs/backtest/` | 参数回溯与调优：用 K 线回补真实收益，量化各参数区分度，输出优化建议 |
 | `docs/notes-groups/` | 评论（备注）与分组管理：可写能力方案 |
 | `docs/npm-publish/` | 独立发布（npm 包 / 免拉代码运行）：三方案对比与落地顺序 / 实施计划 |
 | `docs/ops/` | 定时任务与调度口径：双通道拓扑、尾盘三口径、落库目标、排查 |
@@ -36,6 +37,7 @@
 | [eod-tail-screener/03-计划.md](eod-tail-screener/03-计划.md) | 尾盘选股：分阶段交付物与验证清单 |
 | [eod-tail-screener/04-待确认.md](eod-tail-screener/04-待确认.md) | 尾盘选股：需你拍板的开放问题（**已全部关闭**；Q2/Q3/Q14 的最终选择与建议不同） |
 | [eod-tail-screener/05-复盘.md](eod-tail-screener/05-复盘.md) | 尾盘选股：**上线后复盘** —— 实际落地 vs 原设计的差异、口径速查入口、落库事故结论、GitHub cron 实测延迟、尚未实施项 |
+| [backtest/01-复盘.md](backtest/01-复盘.md) | 参数回溯与优化建议：尾盘 341 条 + R01 44 条 K 线回补真实收益，分桶 / 秩相关 / what-if 模拟，逐参数给出调整建议与置信度（待拍板） |
 | [notes-groups/01-方案.md](notes-groups/01-方案.md) | 评论/分组：需求、接口清单、写鉴权方案、前端交互、边界 |
 | [npm-publish/02-方案.md](npm-publish/02-方案.md) | 独立发布：两种运行模式差异、边界清单、全量打包 / 只发尾盘 / npx github 三方案对比、落地顺序、已完成的可重定位层 |
 | [npm-publish/03-计划.md](npm-publish/03-计划.md) | 独立发布实施计划：方案 A 交付物、首次运行脚手架、发布链路、部署已解耦、向后兼容四条保票、npx 不 pin 版本、三道闸、踩坑、验证清单 |
