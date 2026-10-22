@@ -41,7 +41,7 @@ function labelCls(l) {
  * 信号分项分组（两级表头）：P1 竞价强势(35) + P2 弱转强/超预期(35) + P3 趋势(30)。
  * 组内列顺序 = 渲染顺序，权重写进组标题，一眼看出谁占大头。
  */
-const SCORE_GROUP = { key: 'sig', zh: '信号分项', en: 'Signal', cols: [['p1', 'P1 竞价'], ['p2', 'P2 弱转强'], ['p3', 'P3 趋势']] };
+const SCORE_GROUP = { key: 'sig', zh: '信号分项', en: 'Signals', cols: [['p1', 'P1 竞价·35'], ['p2', 'P2 弱转强·35'], ['p3', 'P3 趋势·30']] };
 const SCORE_COLS = SCORE_GROUP.cols;
 
 /** 候选行。withBreakdown 控制是否渲染 P1/P2/P3 三个分项单元格。 */
@@ -110,11 +110,11 @@ const CSS = `  :root, :root[data-theme="light"] {
   .tag.gap { background: var(--tag-gap-bg); color: var(--amber); }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: var(--th-bg); }
   th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); background: var(--grp-self-bg); color: var(--grp-self-fg); font-weight: 700; }
   th.grp-sub { background: var(--grp-sub-self-bg); color: var(--accent); }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.num { text-align: center; font-variant-numeric: tabular-nums; }
   td.sc { background: var(--sc-self-bg); }
   .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: var(--note-fg); background: var(--callout-bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
   td.wrap { white-space: normal; min-width: 130px; }
@@ -170,7 +170,7 @@ function buildHTML(m) {
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开', 'Open')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
     <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
-    <th colspan="${SCORE_COLS.length}" class="grp">${b('信号分项（P1 竞价 35 · P2 弱转强 35 · P3 趋势 30）', 'Signals (P1 35 · P2 35 · P3 30)')}</th>
+    <th colspan="${SCORE_COLS.length}" class="grp">${b(SCORE_GROUP.zh, SCORE_GROUP.en)}</th>
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标签', 'Label')}</th></tr>
     <tr>${SCORE_COLS.map(([, zh]) => `<th class="grp-sub">${b(zh, zh)}</th>`).join('')}</tr>`;
 

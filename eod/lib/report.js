@@ -33,7 +33,7 @@ function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&
 const SCORE_GROUPS = [
   {
     key: 'self', cls: 'self', max: 65,
-    zh: '个股自身 · 重点看（65 分）', en: 'The stock itself · focus (65)',
+    zh: '个股自身（65 分）', en: 'The stock itself (65)',
     cols: [
       ['tailMomentum', '尾盘动能', 'Tail momentum'],
       ['volume', '量能', 'Volume'],
@@ -42,7 +42,7 @@ const SCORE_GROUPS = [
   },
   {
     key: 'ctx', cls: 'ctx', max: 35,
-    zh: '环境与质量（35 分）', en: 'Context &amp; quality (35)',
+    zh: '环境质量（35 分）', en: 'Context & quality (35)',
     cols: [
       ['sector', '板块', 'Sector'],
       ['avgLine', '均价线', 'VWAP'],
@@ -163,7 +163,7 @@ const CSS = `  :root, :root[data-theme="light"] {
   .tag.gap { background: #fffbeb; color: var(--amber); }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: #fefce8; }
   /* 六维分项分两组：表头两级 + 组底色 + 组首左分隔线，让「重点看哪组」不用读文字 */
   th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
@@ -172,7 +172,7 @@ const CSS = `  :root, :root[data-theme="light"] {
   th.grp-sub.grp-self { background: #fff7ed; color: var(--accent); }
   th.grp-sub.grp-ctx { background: #f1f5f9; color: var(--slate); }
   th.sc-start, td.sc-start { border-left: 2px solid var(--border); }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.num { text-align: center; font-variant-numeric: tabular-nums; }
   td.sc-self { background: rgba(217, 119, 6, 0.06); }
   td.sc-ctx { background: rgba(100, 116, 139, 0.05); }
   .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: #57534e; background: #fff7ed; border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
