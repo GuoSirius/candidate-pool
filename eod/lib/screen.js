@@ -11,8 +11,10 @@
  *          （已退市个股仍会返回陈旧价格，只看价格会把它们放进来）
  *        - 一字板：开=高=低（全天一个价，实盘买不到）
  *        - 已封涨停：现价达到该板块涨停价（主板 10% / 双创 20% / 北交所 30%）
- *   3. 打分（FR-06）六项全部线性映射到 0..1 再加权，**每一项都能在报告里解释**，
+ *   3. 打分（FR-06）五项全部线性映射到 0..1 再加权，**每一项都能在报告里解释**，
  *      不做「黑箱总分」。任何一项缺数据记 0 分而不是猜值。
+ *      （2026-10-22 回溯调参：原第六项「板块强度」在全部候选上恒为满分（常量，
+ *      零区分度）已删除，权重按比例重分配，见 tail.config.js score 段注释。）
  *   4. 分组（FR-07）按行业聚合，组内按总分降序，标记组内最优。
  * ---------------------------------------------------------------------------
  */
@@ -36,6 +38,7 @@ const REASON = {
   TAIL_SEG: '尾盘段涨幅不足',
   BELOW_AVG: '现价低于当日均价',
   FROM_HIGH: '距日内高点回落过多',
+  LOW_SCORE: '总分低于下限',
 };
 
 /** 板块判定：涨跌幅制度与成交量单位都与板块相关 */
@@ -169,26 +172,6 @@ function turnoverFit(t, s, f) {
   return clamp01((f.turnoverMax - t) / (f.turnoverMax - s.turnoverSweetHigh));
 }
 
-/**
- * 板块强度（实测后定的混合口径）。
- *
- * 只用「行业涨幅中位数的绝对阈值」会在普涨日整体饱和——实测 2026-09-18
- * 全市场 68.7% 个股上涨，多数行业中位数都超过 2%，导致候选清一色拿满分、该项失去区分度。
- * 只用「分位」则会在普跌日把「跌得最少的行业」也抬到满分，同样失真。
- * 故取两者折中：
- *   1. 行业中位数 ≤ sectorChgLoPct（默认 0%）→ 0 分：行业实际在跌，不给板块加分；
- *   2. 行业中位数 ≥ sectorChgHiPct（默认 2%）→ 满分：绝对强度已足够；
- *   3. 区间内 → 按该行业在全市场行业涨幅中的**分位**给分（相对强弱，自归一）。
- */
-function sectorStrength(sec, s) {
-  if (!sec || sec.median == null) return 0;
-  if (sec.median <= s.sectorChgLoPct) return 0;
-  if (sec.median >= s.sectorChgHiPct) return 1;
-  if (!sec.total || sec.total <= 1) return 0;
-  const pct = (sec.total - sec.rank) / (sec.total - 1);   // rank=1 → 1，最末 → 0
-  return clamp01(pct);
-}
-
 /** 「距日内高点」百分比：越小越强 */
 function fromHighPct(q, tm) {
   if (!(q.high > 0) || tm == null || tm.p1 == null) return null;
@@ -196,7 +179,7 @@ function fromHighPct(q, tm) {
 }
 
 /**
- * 六项打分（FR-06）。总分 = Σ(权重 × 归一化值)。
+ * 五项打分（FR-06）。总分 = Σ(权重 × 归一化值)。
  * @returns {{total:number, items:object, ctx:object}} items 为各项得分（已乘权重）
  */
 function scoreStock(q, tm, cfg, sectorStats, sector) {
@@ -216,8 +199,6 @@ function scoreStock(q, tm, cfg, sectorStats, sector) {
     position: w.position * (1 - lin(fh, 0, f.maxFromHighPct)),
     // 均价线强度：高出均价 0% → 0 分，avgLineFullPct → 满分
     avgLine: w.avgLine * lin(tm.priceVsAvgPct, 0, s.avgLineFullPct),
-    // 板块强度：见 sectorStrength() 的口径说明
-    sector: w.sector * sectorStrength(sec, s),
     // 换手适中度
     turnoverFit: w.turnoverFit * turnoverFit(q.turnover, s, f),
   };
@@ -295,6 +276,13 @@ function buildCandidates({ quotes, minutes, cfg, map, tradeDate, cutHHMM, segFro
 
     const sector = sectorOf(map, q.code) || UNKNOWN;
     const sc = scoreStock(q, tm, cfg, sectorStats, sector);
+    // 总分下限（2026-10-22 回溯调参新增）：45–55 段是回溯里最差的一段，
+    // 打不过线的连同原因进 dropped，报告「数据缺口」区可见。
+    if (cfg.score.minTotal != null && sc.total < cfg.score.minTotal) {
+      tailReasons[REASON.LOW_SCORE] = (tailReasons[REASON.LOW_SCORE] || 0) + 1;
+      dropped.push({ code: q.code, name: q.name, reason: REASON.LOW_SCORE });
+      continue;
+    }
     const sec = sectorStats.get(sector);
 
     candidates.push({
@@ -351,5 +339,5 @@ function buildCandidates({ quotes, minutes, cfg, map, tradeDate, cutHHMM, segFro
 module.exports = {
   REASON, BOARD_LABEL, boardOf, limitUpPct, daysBetween,
   preFilterOne, preFilter, postCheck, scoreStock, turnoverFit, fromHighPct, lin,
-  sectorStrength, groupAndRank, buildCandidates,
+  turnoverFit, groupAndRank, buildCandidates,
 };
