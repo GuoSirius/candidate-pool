@@ -14,7 +14,7 @@ if "%NODE%"=="" set "NODE=C:\Users\Admin\.workbuddy\binaries\node\versions\22.22
 set "SCRIPT=%~dp0gen_candidates.js"
 if not exist "%NODE%" (
   echo [错误] 未找到 node: %NODE%
-  echo 请安装 Node ^>=18，或用 CANDIDATE_NODE 环境变量指定路径。
+  echo 请安装 Node ^>=22.5（db 层用内置 node:sqlite），或用 CANDIDATE_NODE 环境变量指定路径。
   exit /b 1
 )
 "%NODE%" "%SCRIPT%" %*

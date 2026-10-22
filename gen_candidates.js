@@ -42,6 +42,9 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+// keep-alive 连接复用（与 eod/lib/http.js 同口径）：观察池逐只抓取 ~360×3 类请求，
+// 复用 TCP/TLS 省掉大半握手耗时。空闲套接字经验证不阻塞进程退出（Node 22）。
+const AGENT = new https.Agent({ keepAlive: true, maxSockets: 8, maxFreeSockets: 8, keepAliveMsecs: 30000 });
 const { now: nowStr, dayjs } = require('./time');
 // 工作目录解析：产物/配置的落点走 paths，代码资产（本文件等）仍锚在包内。
 // 默认 HOME = 包根（与历史 __dirname 行为一致）；可用 CANDIDATE_POOL_HOME / --cwd 重定位。
@@ -121,44 +124,42 @@ function looksLikeWaf(txt) {
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 const WAF_BACKOFF = [2000, 5000, 12000, 25000]; // 命中拦截时的退避梯度（ms）
 
-function httpGet(url, { json = true, retries = 4, timeout = 15000 } = {}) {
-  return new Promise(async (resolve, reject) => {
-    let lastErr;
-    let wafHits = 0;
-    for (let i = 0; i < retries; i++) {
-      if (i > 0) {
-        // 拦截用长退避，普通网络错误用短退避
-        await sleep(lastErr && lastErr.waf
-          ? WAF_BACKOFF[Math.min(wafHits - 1, WAF_BACKOFF.length - 1)]
-          : 500 * i);
-      }
-      try {
-        const { status, txt } = await new Promise((res, rej) => {
-          const req = https.get(url, { timeout, headers: { 'User-Agent': UA, 'Referer': 'https://gu.qq.com/', 'Accept': '*/*' } }, (resp) => {
-            let d = ''; resp.on('data', c => d += c); resp.on('end', () => res({ status: resp.statusCode, txt: d.trim() }));
-          });
-          req.on('error', rej);
-          req.on('timeout', () => { req.destroy(); rej(new Error('timeout')); });
-        });
-        // WAF 拦截返回 HTTP 501 + 跳转页；状态码判定比嗅探 body 更可靠，两者都查。
-        if (status === 501 || looksLikeWaf(txt)) {
-          wafHits++;
-          const e = new Error(`被接口反爬拦截（HTTP ${status}）`);
-          e.waf = true;
-          throw e;
-        }
-        if (status && status >= 400) throw new Error(`HTTP ${status}`);
-        if (!json) return resolve(txt);
-        try { return resolve(JSON.parse(txt)); }
-        catch (e) {
-          const m = txt.match(/^[a-zA-Z0-9_]+\(([\s\S]*)\);?\s*$/);
-          if (m) { try { return resolve(JSON.parse(m[1])); } catch (e2) {} }
-          throw new Error('JSON 解析失败: ' + txt.slice(0, 120));
-        }
-      } catch (e) { lastErr = e; }
+async function httpGet(url, { json = true, retries = 4, timeout = 15000 } = {}) {
+  let lastErr;
+  let wafHits = 0;
+  for (let i = 0; i < retries; i++) {
+    if (i > 0) {
+      // 拦截用长退避，普通网络错误用短退避
+      await sleep(lastErr && lastErr.waf
+        ? WAF_BACKOFF[Math.min(wafHits - 1, WAF_BACKOFF.length - 1)]
+        : 500 * i);
     }
-    reject(lastErr || new Error('httpGet 失败'));
-  });
+    try {
+      const { status, txt } = await new Promise((res, rej) => {
+        const req = https.get(url, { timeout, agent: AGENT, headers: { 'User-Agent': UA, 'Referer': 'https://gu.qq.com/', 'Accept': '*/*' } }, (resp) => {
+          let d = ''; resp.on('data', c => d += c); resp.on('end', () => res({ status: resp.statusCode, txt: d.trim() }));
+        });
+        req.on('error', rej);
+        req.on('timeout', () => { req.destroy(); rej(new Error('timeout')); });
+      });
+      // WAF 拦截返回 HTTP 501 + 跳转页；状态码判定比嗅探 body 更可靠，两者都查。
+      if (status === 501 || looksLikeWaf(txt)) {
+        wafHits++;
+        const e = new Error(`被接口反爬拦截（HTTP ${status}）`);
+        e.waf = true;
+        throw e;
+      }
+      if (status && status >= 400) throw new Error(`HTTP ${status}`);
+      if (!json) return txt;
+      try { return JSON.parse(txt); }
+      catch (e) {
+        const m = txt.match(/^[a-zA-Z0-9_]+\(([\s\S]*)\);?\s*$/);
+        if (m) { try { return JSON.parse(m[1]); } catch (e2) {} }
+        throw new Error('JSON 解析失败: ' + txt.slice(0, 120));
+      }
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('httpGet 失败');
 }
 
 // 候选源：HOME 下 candidates.json 配置的可编辑观察池（替代 westock ranking CompScore）
@@ -487,7 +488,7 @@ function buildHTML(m) {
 
   // 核心结论
   const best = [...universe].sort((a, b) => (b.r01.core || 0) - (a.r01.core || 0))[0];
-  const bestStr = best && best.r01.core ? `${esc(best.name)}（${best.code.replace(/^[sh|sz]/, '')}），四项中达成 ${best.r01.core} 项${best.r01.capOk ? '，市值达标' : ''}` : '无';
+  const bestStr = best && best.r01.core ? `${esc(best.name)}（${best.code.replace(/^(sh|sz|bj)/, '')}），四项中达成 ${best.r01.core} 项${best.r01.capOk ? '，市值达标' : ''}` : '无';
   const conclusion = [
     `<b>${b('R01 ' + (r01Triggers ? `硬触发 ${r01Triggers} 只` : '零硬触发'), 'R01 ' + (r01Triggers ? `${r01Triggers} hard trigger(s)` : 'zero hard triggers'))}。</b>` +
       (r01Triggers ? '' : `${universe.length} 只标的无一满足全部门槛。最接近者为 ${bestStr}。`),
@@ -522,7 +523,7 @@ function buildHTML(m) {
     const tier = tierOf.get(s.code) || 'excluded';
     const cls = r.ok ? ' class="hit"' : '';
     matrixRows += `<tr data-tier="${tier}"${cls}>` +
-      `<td>${s.code.replace(/^[sh|sz]/, '')}</td>` +
+      `<td>${s.code.replace(/^(sh|sz|bj)/, '')}</td>` +
       `<td>${b(s.name, s.name)}</td>` +
       `<td><span class="tag tier-${tier}">${TIER_LABEL[tier]}</span></td>` +
       `<td>${num(r.close)}</td>` +
@@ -545,7 +546,7 @@ function buildHTML(m) {
   let exRows = '';
   for (const s of excluded) {
     exRows += `<tr>` +
-      `<td>${s.code.replace(/^[sh|sz]/, '')}</td>` +
+      `<td>${s.code.replace(/^(sh|sz|bj)/, '')}</td>` +
       `<td>${b(s.name, s.name)}</td>` +
       `<td class="wrap">${(s.excludeReasons || ['—']).map(r => b(r, r)).join('；')}</td>` +
       `</tr>`;
@@ -561,7 +562,7 @@ function buildHTML(m) {
     const r07 = s.r07 || {};
     return `<div class="card ${label === 'priority' ? 'priority' : ''}">` +
       `<div class="grid-2">` +
-      `<div><div class="kv"><span class="label">${b('名称', 'Name')}：</span><span class="value">${b(s.name, s.name)}（${s.code.replace(/^[sh|sz]/, '')}）</span></div>` +
+      `<div><div class="kv"><span class="label">${b('名称', 'Name')}：</span><span class="value">${b(s.name, s.name)}（${s.code.replace(/^(sh|sz|bj)/, '')}）</span></div>` +
       `<div class="kv"><span class="label">${b('R01 达成', 'R01 score')}：</span><span class="value">${r.core}/4${r.capOk ? '，市值达标' : '，市值越线'}</span></div>` +
       `<div class="kv"><span class="label">${b('行业', 'Sector')}：</span><span class="value">${r07.sectorName || '—'}（${pct(r07.sectorPct)}，排名 ${r07.sectorRank || '—'}/${r07.total || '—'}）</span></div></div>` +
       `<div>${fund}` +

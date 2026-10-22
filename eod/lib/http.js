@@ -22,6 +22,10 @@
 
 const https = require('https');
 
+// keep-alive 连接复用：省掉每次请求的 TCP/TLS 握手（全流程 ~500-700 次请求）。
+// 经验证（Node 22）：空闲套接字不阻塞进程退出，脚本可正常结束。
+const AGENT = new https.Agent({ keepAlive: true, maxSockets: 8, maxFreeSockets: 8, keepAliveMsecs: 30000 });
+
 // 用完整浏览器 UA：残缺 UA（如裸 "Mozilla/5.0"）本身就是风控指纹特征。
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
@@ -60,68 +64,67 @@ function looksLikeWaf(txt) {
  *   - isWaf    自定义「这条响应算不算被拦截」判定（默认 looksLikeWaf）
  * @returns {Promise<any>} 文本或已解析的 JSON
  */
-function httpGet(url, opts = {}) {
+async function httpGet(url, opts = {}) {
   const {
     enc = 'utf8', json = false, retries = 4, timeout = 15000,
     referer = 'https://gu.qq.com/', isWaf = null,
   } = opts;
 
-  return new Promise(async (resolve, reject) => {
-    let lastErr = null;
-    let wafHits = 0;
+  let lastErr = null;
+  let wafHits = 0;
 
-    for (let i = 0; i < retries; i++) {
-      if (i > 0) {
-        // 被拦截 -> 长退避；普通网络抖动 -> 短退避
-        const wait = (lastErr && lastErr.waf)
-          ? WAF_BACKOFF[Math.min(wafHits - 1, WAF_BACKOFF.length - 1)]
-          : 500 * i;
-        await sleep(wait);
-      }
-      try {
-        const { status, txt } = await new Promise((res, rej) => {
-          const req = https.get(url, {
-            timeout,
-            headers: {
-              'User-Agent': UA,
-              Referer: referer,
-              Accept: '*/*',
-              'Accept-Language': 'zh-CN,zh;q=0.9',
-            },
-          }, (resp) => {
-            const chunks = [];
-            resp.on('data', (c) => chunks.push(c));
-            resp.on('end', () => res({ status: resp.statusCode, txt: decode(Buffer.concat(chunks), enc) }));
-          });
-          req.on('error', rej);
-          req.on('timeout', () => { req.destroy(); rej(new Error('timeout')); });
-        });
-
-        // WAF 拦截：状态码判定 + 正文嗅探，两者都查
-        const waf = (isWaf ? isWaf(txt, status) : false) || status === 501 || looksLikeWaf(txt);
-        if (waf) {
-          wafHits++;
-          const e = new Error(`被接口反爬拦截（HTTP ${status}）`);
-          e.waf = true;
-          throw e;
-        }
-        if (status && status >= 400) throw new Error(`HTTP ${status}`);
-
-        if (!json) return resolve(txt.trim());
-        const body = txt.trim();
-        try { return resolve(JSON.parse(body)); }
-        catch (e) {
-          // 兼容 JSONP 包裹：name({...});
-          const m = body.match(/^[a-zA-Z0-9_$.]+\(([\s\S]*)\);?$/);
-          if (m) { try { return resolve(JSON.parse(m[1])); } catch (e2) { /* 落到下面报错 */ } }
-          throw new Error('JSON 解析失败: ' + body.slice(0, 120));
-        }
-      } catch (e) {
-        lastErr = e;
-      }
+  for (let i = 0; i < retries; i++) {
+    if (i > 0) {
+      // 被拦截 -> 长退避；普通网络抖动 -> 短退避
+      const wait = (lastErr && lastErr.waf)
+        ? WAF_BACKOFF[Math.min(wafHits - 1, WAF_BACKOFF.length - 1)]
+        : 500 * i;
+      await sleep(wait);
     }
-    reject(lastErr || new Error('httpGet 失败'));
-  });
+    try {
+      const { status, txt } = await new Promise((res, rej) => {
+        const req = https.get(url, {
+          timeout,
+          agent: AGENT,
+          headers: {
+            'User-Agent': UA,
+            Referer: referer,
+            Accept: '*/*',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+          },
+        }, (resp) => {
+          const chunks = [];
+          resp.on('data', (c) => chunks.push(c));
+          resp.on('end', () => res({ status: resp.statusCode, txt: decode(Buffer.concat(chunks), enc) }));
+        });
+        req.on('error', rej);
+        req.on('timeout', () => { req.destroy(); rej(new Error('timeout')); });
+      });
+
+      // WAF 拦截：状态码判定 + 正文嗅探，两者都查
+      const waf = (isWaf ? isWaf(txt, status) : false) || status === 501 || looksLikeWaf(txt);
+      if (waf) {
+        wafHits++;
+        const e = new Error(`被接口反爬拦截（HTTP ${status}）`);
+        e.waf = true;
+        throw e;
+      }
+      if (status && status >= 400) throw new Error(`HTTP ${status}`);
+
+      if (!json) return txt.trim();
+      const body = txt.trim();
+      try { return JSON.parse(body); }
+      catch (e) {
+        // 兼容 JSONP 包裹：name({...});
+        const m = body.match(/^[a-zA-Z0-9_$.]+\(([\s\S]*)\);?$/);
+        if (m) { try { return JSON.parse(m[1]); } catch (e2) { /* 落到下面报错 */ } }
+        throw new Error('JSON 解析失败: ' + body.slice(0, 120));
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('httpGet 失败');
 }
 
 /**

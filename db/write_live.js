@@ -1,6 +1,7 @@
 'use strict';
 // 实时入库：读取「最近一次」快照，写入
-//   Cloudflare D1（默认，不写本地）/ 本地 SQLite（--local）/ 两边都写（--both）。
+//   本机裸跑默认双写（远程 D1 + 本地 SQLite，2026-10-22 起与尾盘口径一致）；
+//   CI（GITHUB_ACTIONS）默认只写远程；--local / --both 可显式覆盖。
 // 由 run_today.cmd/sh 在 gen_candidates 之后链式调用 —— 本机任务用 --both，
 // 这样一次运行就让本地库与线上库同时前进，不会出现「一边新一边旧」。
 // 凭据缺失或入库失败时：打印告警并退出 0（不阻断报告生成本身）。

@@ -23,6 +23,9 @@ const path = require('path');
 const https = require('https');
 const { now } = require('./time');
 const paths = require('./paths');
+// UA 与 WAF 嗅探与主流程同源：残缺 UA（裸 "Mozilla/5.0"）本身就是风控指纹特征；
+// WAF 跳转页若不识别会静默「少抓几只」，必须显式报错（2026-10-22 code review #8）。
+const { looksLikeWaf, UA } = require('./eod/lib/http');
 
 // 输出跟随工作目录（见 paths.js）：默认 <仓库根>/candidates.json
 const OUT = paths.candidatesFile();
@@ -114,7 +117,7 @@ function getRaw(url, retries = 3) {
         return resolve(await new Promise((res, rej) => {
           const req = https.get(url, {
             timeout: 20000,
-            headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://gu.qq.com/' },
+            headers: { 'User-Agent': UA, 'Referer': 'https://gu.qq.com/' },
           }, r => {
             const chunks = [];
             r.on('data', c => chunks.push(c));
@@ -132,6 +135,9 @@ function getRaw(url, retries = 3) {
 async function fetchBatch(codes) {
   const buf = await getRaw('https://qt.gtimg.cn/q=' + codes.join(','));
   const txt = decodeGbk(buf);
+  // WAF 跳转页识别：命中的批次直接抛错（调用方按「失败」计数并打印），
+  // 而不是让正则静默匹配不到、把整批票当作「代码不存在」丢掉。
+  if (looksLikeWaf(txt)) throw new Error('被接口反爬拦截（WAF 跳转页），请稍后重跑');
   const out = {};
   for (const seg of txt.split(';')) {
     const m = seg.match(/v_([a-z]{2}\d{6})="([^"]*)"/);

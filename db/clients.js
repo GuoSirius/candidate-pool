@@ -18,16 +18,22 @@ const has = (argv, flag) => argv.includes(flag);
  *
  * | 参数      | 远程 D1        | 本地 db/local.db |
  * |-----------|----------------|------------------|
- * | （无）    | 有凭据则写     | 不写             |
+ * | （无）本机 | 写             | 写（2026-10-22 起，与 ops/01 文档表格及尾盘 targetArgv 口径对齐） |
+ * | （无）CI  | 写             | 不写             |
  * | --local   | 不写           | 写               |
- * | --both    | 有凭据则写     | 写               |
+ * | --both    | 写             | 写               |
+ *
+ * 无显式参数时按「本机双写 / CI 只远程」取默认（判据 GITHUB_ACTIONS，
+ * 与 eod/lib/store_d1.js::targetArgv 同一口径）——此前本机裸跑只写远程，
+ * 导致本地库有尾盘数据却没有候选池快照，复盘缺半边。
  *
  * @param {string[]} argv 命令行参数，默认 process.argv
  * @returns {{targets: Array<{name: 'remote'|'local', client: object, file?: string}>, notes: string[]}}
  *   notes 是需要调用方打印的提示（例如缺少远程凭据）。
  */
 function resolveTargets(argv = process.argv) {
-  const wantLocal = has(argv, '--local') || has(argv, '--both');
+  const explicit = has(argv, '--local') || has(argv, '--both');
+  const wantLocal = explicit ? has(argv, '--local') || has(argv, '--both') : !process.env.GITHUB_ACTIONS;
   const wantRemote = has(argv, '--both') || !has(argv, '--local');
   const targets = [];
   const notes = [];

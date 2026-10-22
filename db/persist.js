@@ -39,10 +39,12 @@ const BASE_Q = `INSERT OR IGNORE INTO stock_base (code,name,sector,updated_at) V
 
 // 惰性迁移：为既有 D1 / 本地 SQLite 补上 run_at 列（新库由 schema.sql 直接建好）。
 // 两端都会跑，先到者成功、后到者捕获「列已存在」忽略即可。
-let _migrated = false;
+// 「已迁移」必须按 client 记（WeakSet）而非全局布尔：--both 时同一进程先后写
+// remote + local 两个 client，全局旗标会让第二个库永远跳过 ALTER（静默缺列）。
+const _migrated = new WeakSet();
 async function ensureColumns(client) {
-  if (_migrated) return;
-  _migrated = true;
+  if (_migrated.has(client)) return;
+  _migrated.add(client);
   for (const sql of [
     'ALTER TABLE pick_record ADD COLUMN run_at TEXT',
     'ALTER TABLE pick_record ADD COLUMN vol_ratio REAL',

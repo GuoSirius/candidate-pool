@@ -16,7 +16,7 @@ if [ ! -x "$NODE" ] && [ ! -f "$NODE" ]; then
     NODE="$(command -v node)"
   else
     echo "[错误] 未找到 node: $NODE" >&2
-    echo "请安装 Node >=18，或用 CANDIDATE_NODE 环境变量指定路径。" >&2
+    echo "请安装 Node >=22.5（db 层用内置 node:sqlite），或用 CANDIDATE_NODE 环境变量指定路径。" >&2
     exit 1
   fi
 fi
