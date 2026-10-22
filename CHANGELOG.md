@@ -2,6 +2,29 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.0.1
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.0.0...v3.0.1)
+
+### 🚀 新功能 (Features)
+
+- **preopen:** 归档补贴线样本与淘汰统计支撑日后调参 ([c8d206b](https://github.com/GuoSirius/candidate-pool/commit/c8d206b))
+- 次日候选快照记录当时规则常量与生成时间 ([3cc1b72](https://github.com/GuoSirius/candidate-pool/commit/3cc1b72))
+
+### 📚 文档 (Documentation)
+
+- **eod:** 尾盘原始存档永久保留策略落注释并补复盘第8.6节 ([6ba4fef](https://github.com/GuoSirius/candidate-pool/commit/6ba4fef))
+
+### 📦 杂项维护 (Chores)
+
+- **eod:** 尾盘口径版本号升到 2 并写明版本切段规则 ([5a6921a](https://github.com/GuoSirius/candidate-pool/commit/5a6921a))
+- Obs run 2026-10-22 (0 candidates) ([4d44623](https://github.com/GuoSirius/candidate-pool/commit/4d44623))
+- 尾盘选股 2026-10-22 ([2e0e85b](https://github.com/GuoSirius/candidate-pool/commit/2e0e85b))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v3.0.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v2.2.0...v3.0.0)
