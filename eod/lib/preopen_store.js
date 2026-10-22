@@ -4,6 +4,9 @@
  * ---------------------------------------------------------------------------
  * 一天一份文件：preopen/data/preopen-YYYYMMDD.json
  *   - records: code -> 候选明细（含 P1/P2/P3 分项、基线、标签、总分）
+ *   - nearMiss: 贴线样本（总分落在 [minTotal-10, minTotal) 的 Top10，带完整分项）——
+ *     竞价特征无法事后从 K 线重建，被拒样本不留就无法回溯调「入选线」（2026-10-22 补）
+ *   - meta.rejByReason: 各淘汰原因计数（漏斗/通过率分析）
  *   - runs[]: 当日多次运行留痕（幂等：同文件整文件覆盖，records 按 code 唯一）
  *   - close：收盘回填后追加当日收盘/涨跌幅/是否涨停/命中标记（preopen_backfill.js）
  *
@@ -27,10 +30,13 @@ function loadRun(cfg, tradeDate) {
 
 /**
  * 落库（幂等：同文件整文件覆盖，runs[] 追加本次运行）。
- * @param {object} p { cfg, tradeDate, scope, candidates, meta, marketDate }
+ * @param {object} p { cfg, tradeDate, scope, candidates, nearMiss?, rejByReason?, meta, marketDate }
+ *   - nearMiss：贴线样本（总分 [minTotal-10, minTotal) 的 Top10，带完整分项），
+ *     供日后调「入选线」用；竞价特征无法事后重建，必须运行时留。语义 = 最近一次运行覆盖。
+ *   - rejByReason：各淘汰原因计数（漏斗分析用）。
  * @returns {{file, recordCount, runCount}}
  */
-function saveRun({ cfg, tradeDate, scope, candidates, meta, marketDate }) {
+function saveRun({ cfg, tradeDate, scope, candidates, nearMiss, rejByReason, meta, marketDate }) {
   const dir = path.join(paths.eodDir(), cfg.store.dataDir);
   fs.mkdirSync(dir, { recursive: true });
   const f = dataFile(cfg, tradeDate);
@@ -55,10 +61,13 @@ function saveRun({ cfg, tradeDate, scope, candidates, meta, marketDate }) {
     marketDate,
     meta: Object.assign({}, meta, { recordCount: Object.keys(records).length, runCount: runs.length }),
     runs,
+    // 贴线样本（最近一次运行覆盖）；rejByReason 挂在 meta 里
+    nearMiss: Array.isArray(nearMiss) ? nearMiss : (prev.nearMiss || []),
     // 保留历史回填结果（若有）
     close: prev.close || null,
     records,
   };
+  if (rejByReason && Object.keys(rejByReason).length) doc.meta.rejByReason = rejByReason;
   fs.writeFileSync(f, JSON.stringify(doc, null, 2), 'utf8');
   return { file: f, recordCount: doc.meta.recordCount, runCount: runs.length };
 }

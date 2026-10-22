@@ -249,6 +249,7 @@ async function run() {
   // 规则 + 打分
   log('[3/4] 应用 P1/P2/P3 打分…');
   const candidates = [];
+  const nearMissAll = [];
   const gaps = [];
   for (const q of quotes) {
     const b = baseline.get(q.code);
@@ -261,10 +262,8 @@ async function run() {
     const p2 = PR.calcP2(q, b, cfg);
     const p3 = PR.calcP3(b, cfg);
     const sc = PR.scorePreopen(p1, p2, p3, cfg);
-    if (sc.total < cfg.score.minTotal) continue;
-
     const sector = sectorOf(map, q.code) || UNKNOWN;
-    candidates.push({
+    const rec = {
       code: q.code, name: q.name, sector,
       board: /sh68[89]/.test(q.code) ? '科创板' : /^sz30/.test(q.code) ? '创业板' : /^bj/.test(q.code) ? '北交所' : '主板',
       open: q.open, prevClose: q.prevClose, price: q.price,
@@ -277,9 +276,23 @@ async function run() {
       total: +sc.total.toFixed(1),
       scoreItems: { p1: +p1.score.toFixed(2), p2: +p2.score.toFixed(2), p3: +p3.score.toFixed(2) },
       stamp: q.stamp,
-    });
+    };
+    if (sc.total < cfg.score.minTotal) {
+      // 贴线样本（2026-10-22 补）：总分落在 [minTotal-10, minTotal) 的进归档 nearMiss 段。
+      // 竞价量比等特征无法事后从 K 线重建，被拒样本不留就无法回溯调「入选线」本身。
+      if (sc.total >= cfg.score.minTotal - 10) {
+        nearMissAll.push(Object.assign(rec, { belowMin: +(cfg.score.minTotal - sc.total).toFixed(1) }));
+      }
+      continue;
+    }
+    candidates.push(rec);
   }
   candidates.sort((a, b) => b.total - a.total);
+  nearMissAll.sort((a, b) => b.total - a.total);
+  const nearMiss = nearMissAll.slice(0, 10);
+  // 各淘汰原因计数（gaps 明细不落盘，只留统计——6000+ 只/天的明细太肥且没用）
+  const rejByReason = {};
+  for (const g of gaps) rejByReason[g.reason] = (rejByReason[g.reason] || 0) + 1;
 
   // 分组
   const bySector = new Map();
@@ -297,8 +310,9 @@ async function run() {
 
   const result = {
     candidates, groups, top: candidates.slice(0, cfg.group.topN),
-    stats: { snapshotCount: quotes.length, baselineCount: baseline.size, candidateCount: candidates.length, groupCount: groups.length, gapCount: gaps.length },
+    stats: { snapshotCount: quotes.length, baselineCount: baseline.size, candidateCount: candidates.length, groupCount: groups.length, gapCount: gaps.length, rejByReason },
     gaps,
+    nearMiss,
   };
 
   log(`[4/4] 落库 + 报告 + 通知…`);
@@ -309,6 +323,7 @@ async function emitResult(p) {
   const { tradeDate, scope, result, marketDate } = p;
   const saved = store.saveRun({
     cfg, tradeDate, scope, candidates: result.candidates,
+    nearMiss: result.nearMiss, rejByReason: result.stats.rejByReason,
     meta: { snapshotCount: result.stats.snapshotCount, baselineCount: p.baselineCount, validQuotes: p.quotesCount, marketDate, elapsedMs: Date.now() - (p._t0 || Date.now()) },
     marketDate,
   });
