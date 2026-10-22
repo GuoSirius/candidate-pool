@@ -2,14 +2,14 @@
 /*
  * eod/preopen_backfill.js —— 收盘回填 + 命中率统计（溯源增强，Q3）
  * ---------------------------------------------------------------------------
- * 盘前快照只是"开盘信号"，价值要收盘验证。本脚本在 15:00–16:00 运行：
+ * 盘前快照只是"开盘信号"，价值要收盘验证。本脚本在 15:00–当日 23:59 运行：
  *   1. 读取当日 preopen-YYYYMMDD.json 的 records
  *   2. 抓取每只候选当日收盘（quote.price=收盘价，chgPct=当日涨幅）
  *   3. 回填：当日涨跌幅 / 是否涨停 / 命中（开盘买入当日收益 ≥ hitDayChgMin）
  *   4. 统计命中率，合并进归档（doc.close）
  *
  * 用法：
- *   node eod/preopen_backfill.js                  # 回填今日（受 15:00–16:00 窗口限制）
+ *   node eod/preopen_backfill.js                  # 回填今日（受 15:00–23:59 窗口限制；跨夜补跑用 --date --force）
  *   node eod/preopen_backfill.js --date 2026-10-22
  *   node eod/preopen_backfill.js --force          # 忽略时段
  *   node eod/preopen_backfill.js --no-push        # 不推送归档

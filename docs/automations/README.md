@@ -80,7 +80,7 @@
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-16:00 内执行有效；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段。完成后汇总：回填总数、命中数、命中率；若当日无盘前归档则说明。
+在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段。完成后汇总：回填总数、命中数、命中率；若当日无盘前归档则说明。
 ~~~
 
 ---
