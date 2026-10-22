@@ -49,11 +49,11 @@
   .tag.gap { background: var(--tag-gap-bg); color: var(--amber); }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: var(--th-bg); }
   th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); background: var(--grp-self-bg); color: var(--grp-self-fg); font-weight: 700; }
   th.grp-sub { background: var(--grp-sub-self-bg); color: var(--accent); }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.num { text-align: center; font-variant-numeric: tabular-nums; }
   td.sc { background: var(--sc-self-bg); }
   .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: var(--note-fg); background: var(--callout-bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
   td.wrap { white-space: normal; min-width: 130px; }
@@ -123,9 +123,9 @@
   <div class="table-wrap"><table id="candTable"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
     <th rowspan="2"><span data-zh="板块" data-en="Board">板块</span></th><th rowspan="2"><span data-zh="今开" data-en="Open">今开</span></th><th rowspan="2"><span data-zh="昨涨" data-en="Prev chg">昨涨</span></th>
     <th rowspan="2"><span data-zh="竞价量能比" data-en="Auction vol">竞价量能比</span></th><th rowspan="2"><span data-zh="趋势" data-en="Trend">趋势</span></th>
-    <th colspan="3" class="grp"><span data-zh="信号分项（P1 竞价 35 · P2 弱转强 35 · P3 趋势 30）" data-en="Signals (P1 35 · P2 35 · P3 30)">信号分项（P1 竞价 35 · P2 弱转强 35 · P3 趋势 30）</span></th>
+    <th colspan="3" class="grp"><span data-zh="信号分项" data-en="Signals">信号分项</span></th>
     <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标签" data-en="Label">标签</span></th></tr>
-    <tr><th class="grp-sub"><span data-zh="P1 竞价" data-en="P1 竞价">P1 竞价</span></th><th class="grp-sub"><span data-zh="P2 弱转强" data-en="P2 弱转强">P2 弱转强</span></th><th class="grp-sub"><span data-zh="P3 趋势" data-en="P3 趋势">P3 趋势</span></th></tr></thead>
+    <tr><th class="grp-sub"><span data-zh="P1 竞价·35" data-en="P1 竞价·35">P1 竞价·35</span></th><th class="grp-sub"><span data-zh="P2 弱转强·35" data-en="P2 弱转强·35">P2 弱转强·35</span></th><th class="grp-sub"><span data-zh="P3 趋势·30" data-en="P3 趋势·30">P3 趋势·30</span></th></tr></thead>
     <tbody id="candBody"><tr data-sector="玻璃玻纤" data-label="超预期" data-best="1" data-grank="1">
     <td>1</td>
     <td><b>三峡新材</b><span class="src">600293</span></td>

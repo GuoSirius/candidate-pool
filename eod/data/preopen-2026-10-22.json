@@ -2,7 +2,7 @@
   "tradeDate": "2026-10-22",
   "scope": "universe",
   "mode": "preopen",
-  "generatedAt": "2026-10-22T03:32:49.172Z",
+  "generatedAt": "2026-10-22T03:43:34.089Z",
   "marketDate": "2026-10-22",
   "meta": {
     "snapshotCount": 6177,
@@ -11,7 +11,7 @@
     "marketDate": "2026-10-22",
     "elapsedMs": 0,
     "recordCount": 18,
-    "runCount": 4
+    "runCount": 5
   },
   "runs": [
     {
@@ -50,6 +50,30 @@
     },
     {
       "at": "2026-10-22T03:32:49.172Z",
+      "count": 18,
+      "codes": [
+        "sh600293",
+        "sh603278",
+        "sz002388",
+        "sz002724",
+        "sz300839",
+        "sz002696",
+        "sh601566",
+        "sh603332",
+        "sz002076",
+        "sh603138",
+        "sh601999",
+        "sz002929",
+        "sz002181",
+        "sz300296",
+        "sz002313",
+        "sz002238",
+        "sz002565",
+        "sz300107"
+      ]
+    },
+    {
+      "at": "2026-10-22T03:43:34.089Z",
       "count": 18,
       "codes": [
         "sh600293",
@@ -130,7 +154,7 @@
         "p2": 1,
         "p3": 1
       },
-      "stamp": "20261022113233",
+      "stamp": "20261022114303",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -190,7 +214,7 @@
         "p2": 1,
         "p3": 1
       },
-      "stamp": "20261022113240",
+      "stamp": "20261022114310",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -250,7 +274,7 @@
         "p2": 1,
         "p3": 1
       },
-      "stamp": "20261022113154",
+      "stamp": "20261022114254",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -310,7 +334,7 @@
         "p2": 1,
         "p3": 0.94
       },
-      "stamp": "20261022113145",
+      "stamp": "20261022114245",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 2
@@ -370,7 +394,7 @@
         "p2": 1,
         "p3": 0.74
       },
-      "stamp": "20261022113209",
+      "stamp": "20261022114309",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -430,7 +454,7 @@
         "p2": 1,
         "p3": 0.7
       },
-      "stamp": "20261022113212",
+      "stamp": "20261022114312",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -490,7 +514,7 @@
         "p2": 1,
         "p3": 0.33
       },
-      "stamp": "20261022113231",
+      "stamp": "20261022114301",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -550,7 +574,7 @@
         "p2": 1,
         "p3": 0.3
       },
-      "stamp": "20261022113226",
+      "stamp": "20261022114326",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -610,7 +634,7 @@
         "p2": 1,
         "p3": 0.3
       },
-      "stamp": "20261022113230",
+      "stamp": "20261022114230",
       "groupRank": 2,
       "bestInGroup": false,
       "groupSize": 2
@@ -670,7 +694,7 @@
         "p2": 1,
         "p3": 0
       },
-      "stamp": "20261022113231",
+      "stamp": "20261022114301",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -730,7 +754,7 @@
         "p2": 0.7,
         "p3": 0.49
       },
-      "stamp": "20261022113218",
+      "stamp": "20261022114318",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 2
@@ -790,7 +814,7 @@
         "p2": 0.7,
         "p3": 0.3
       },
-      "stamp": "20261022113221",
+      "stamp": "20261022114321",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -850,7 +874,7 @@
         "p2": 0.7,
         "p3": 0.73
       },
-      "stamp": "20261022113242",
+      "stamp": "20261022114242",
       "groupRank": 2,
       "bestInGroup": false,
       "groupSize": 2
@@ -910,7 +934,7 @@
         "p2": 0.7,
         "p3": 0.3
       },
-      "stamp": "20261022113212",
+      "stamp": "20261022114312",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -970,7 +994,7 @@
         "p2": 0.7,
         "p3": 0.3
       },
-      "stamp": "20261022113148",
+      "stamp": "20261022114248",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -1030,7 +1054,7 @@
         "p2": 0.7,
         "p3": 0.03
       },
-      "stamp": "20261022113212",
+      "stamp": "20261022114312",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -1090,7 +1114,7 @@
         "p2": 0.7,
         "p3": 0
       },
-      "stamp": "20261022113215",
+      "stamp": "20261022114315",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1
@@ -1150,7 +1174,7 @@
         "p2": 0,
         "p3": 0.7
       },
-      "stamp": "20261022113212",
+      "stamp": "20261022114312",
       "groupRank": 1,
       "bestInGroup": true,
       "groupSize": 1

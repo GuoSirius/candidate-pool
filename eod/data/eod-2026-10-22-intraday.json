@@ -3,7 +3,7 @@
  "tradeDate": "2026-10-22",
  "mode": "intraday",
  "cutAt": "1130",
- "updatedAt": "2026-10-22 11:31:40",
+ "updatedAt": "2026-10-22 11:44:08",
  "runs": [
   {
    "at": "2026-10-22 10:34:48",
@@ -19,6 +19,18 @@
   },
   {
    "at": "2026-10-22 11:31:40",
+   "mode": "intraday",
+   "cutAt": "1130",
+   "segFrom": "1110",
+   "segMinutes": 20,
+   "candidateCount": 21,
+   "groupCount": 12,
+   "prePassCount": 141,
+   "snapshotCount": 6177,
+   "runner": "local"
+  },
+  {
+   "at": "2026-10-22 11:44:08",
    "mode": "intraday",
    "cutAt": "1130",
    "segFrom": "1110",
