@@ -354,7 +354,7 @@ async function emitResult(p) {
   if (!OPT.noPush) {
     try {
       const pushFiles = [saved.file, reportFile];
-      gitPush(pushFiles, `preopen: ${tradeDate} 候选 ${result.stats.candidateCount} 只（${scope}）`);
+      gitPush(pushFiles, `chore(preopen): ${tradeDate} 候选 ${result.stats.candidateCount} 只（${scope}）`);
       log('[推送] 已 git 提交并推送远程（溯源）');
     } catch (e) {
       log(`[推送] 失败（数据已落本地，可稍后手动推送）：${e && e.message || e}`);

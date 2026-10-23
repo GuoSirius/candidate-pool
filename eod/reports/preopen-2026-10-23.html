@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盘前选股 — 2026-10-23</title>
+<style>  :root, :root[data-theme="light"] {
+    --bg: #fffbeb; --card: #fff; --text: #1c1917; --muted: #92400e;
+    --border: #fde68a; --accent: #b45309; --red: #dc2626; --green: #16a34a;
+    --blue: #2563eb; --amber: #d97706; --gold: #ca8a04; --slate: #64748b;
+    --btn-bg: #fff; --btn-fg: #b45309; --callout-bg: #fff7ed; --th-bg: #fefce8;
+    --grp-self-bg: #fed7aa; --grp-self-fg: #7c2d12; --grp-sub-self-bg: #fff7ed;
+    --tag-bg: #eff6ff; --tag-pass-bg: #fef2f2; --tag-gap-bg: #fff7ed; --score-bg: #fffbeb;
+    --sc-self-bg: rgba(217, 119, 6, 0.06); --note-fg: #57534e;
+    --disc-bg: #fef2f2; --disc-border: #fecaca; --disc-fg: #991b1b; --card-empty-bg: #fafaf9;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1419; --card: #1a2129; --text: #e6edf3; --muted: #c9a684;
+    --border: #2a323c; --accent: #f59e0b; --red: #ff5b5b; --green: #26a69a;
+    --blue: #60a5fa; --amber: #fbbf24; --gold: #ffb74d; --slate: #94a3b8;
+    --btn-bg: #222b35; --btn-fg: #f59e0b; --callout-bg: #1f1c17; --th-bg: #222b35;
+    --grp-self-bg: #3a2a1a; --grp-self-fg: #fcd34d; --grp-sub-self-bg: #1f1c17;
+    --tag-bg: #1b2533; --tag-pass-bg: #2a1e1e; --tag-gap-bg: #1f1c17; --score-bg: #211d14;
+    --sc-self-bg: rgba(245, 158, 11, 0.10); --note-fg: #b9b3a8;
+    --disc-bg: #2a1e1e; --disc-border: #5b2a2a; --disc-fg: #fca5a5; --card-empty-bg: #14171c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px 16px; }
+  .container { max-width: 1320px; margin: 0 auto; }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
+  h1 { font-size: 1.55rem; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 14px; }
+  .topbtn { flex: none; cursor: pointer; border: 1px solid var(--accent); background: var(--btn-bg); color: var(--btn-fg); font-weight: 600; font-size: 0.85rem; padding: 7px 14px; border-radius: 999px; font-family: inherit; transition: all .15s; white-space: nowrap; }
+  .topbtn:hover { background: var(--accent); color: var(--btn-bg); }
+  .topbar .btns { display: flex; gap: 8px; }
+  .meta-bar { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.88rem; margin-bottom: 18px; }
+  .meta-bar .label { color: var(--muted); }
+  .meta-bar .value { font-weight: 600; }
+  .callout { background: var(--callout-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 16px 20px; margin-bottom: 18px; }
+  .callout h3 { color: var(--accent); margin-bottom: 8px; }
+  .callout ul { margin: 6px 0 0 18px; font-size: 0.9rem; }
+  .callout li { margin-bottom: 5px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+  .up { color: var(--red); } .down { color: var(--green); } .flat { color: var(--slate); }
+  .score { display: inline-block; font-size: 0.95rem; font-weight: 700; padding: 2px 12px; border-radius: 6px; background: var(--score-bg); color: var(--gold); }
+  .tag { display: inline-block; font-size: 0.78rem; padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; background: var(--tag-bg); color: var(--blue); }
+  .tag.pass { background: var(--tag-pass-bg); color: var(--red); }
+  .tag.gap { background: var(--tag-gap-bg); color: var(--amber); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; background: var(--th-bg); }
+  th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); background: var(--grp-self-bg); color: var(--grp-self-fg); font-weight: 700; }
+  th.grp-sub { background: var(--grp-sub-self-bg); color: var(--accent); }
+  td.num { text-align: center; font-variant-numeric: tabular-nums; }
+  td.sc { background: var(--sc-self-bg); }
+  .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: var(--note-fg); background: var(--callout-bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
+  td.wrap { white-space: normal; min-width: 130px; }
+  td .src { display: block; color: var(--slate); font-size: 0.72rem; }
+  td.trend { color: var(--muted); font-size: 0.8rem; }
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0 0 12px; }
+  .toolrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+  .toolrow .cap { font-size: 0.8rem; color: var(--muted); font-weight: 600; flex: none; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; flex: none; }
+  .segbtn { border: 0; background: var(--btn-bg); color: var(--btn-fg); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 6px 16px; cursor: pointer; white-space: nowrap; }
+  .segbtn + .segbtn { border-left: 1px solid var(--border); }
+  .segbtn.active { background: var(--accent); color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font: inherit; font-size: 0.8rem; padding: 3px 11px; border-radius: 999px; cursor: pointer; }
+  .chip i { font-style: normal; color: var(--muted); margin-left: 3px; }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.active i { color: inherit; opacity: 0.85; }
+  .bd-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); cursor: pointer; white-space: nowrap; flex: none; }
+  tr.sector-row td { background: var(--th-bg); color: var(--accent); font-weight: 700; font-size: 0.88rem; }
+  table.hide-bd th.grp, table.hide-bd th.grp-sub, table.hide-bd td.sc { display: none; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; font-weight: 600; }
+  .src { font-size: 0.78rem; color: var(--slate); margin-top: 8px; }
+  .disclaimer { margin-top: 26px; padding: 14px 18px; background: var(--disc-bg); border: 1px solid var(--disc-border); border-radius: 8px; font-size: 0.85rem; color: var(--disc-fg); }
+  .footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; text-align: center; }</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div>
+      <h1><span data-zh="盘前选股" data-en="Pre-Open Screener">盘前选股</span> · 2026-10-23</h1>
+      <div class="sub"><span data-zh="盘前窗口 09:20–09:35 · 今开(open) 09:25 撮合后固定 · 满分 100" data-en="Pre-open window 09:20–09:35 · open fixed at 09:25 auction close · max 100">盘前窗口 09:20–09:35 · 今开(open) 09:25 撮合后固定 · 满分 100</span></div>
+    </div>
+    <div class="btns">
+      <button id="themeBtn" type="button" class="topbtn" title="切换深浅色">☀</button>
+      <button id="langBtn" type="button" class="topbtn">EN</button>
+    </div>
+  </div>
+
+  <div class="meta-bar">
+    <div><span class="label"><span data-zh="交易日：" data-en="Trade date:">交易日：</span></span><span class="value">2026-10-23</span></div>
+    <div><span class="label"><span data-zh="范围：" data-en="Scope:">范围：</span></span><span class="value"><span data-zh="全市场" data-en="Full market">全市场</span></span></div>
+    <div><span class="label"><span data-zh="行情日：" data-en="Market date:">行情日：</span></span><span class="value">2026-10-23</span></div>
+    <div><span class="label"><span data-zh="基线锚定日：" data-en="Baseline anchor:">基线锚定日：</span></span><span class="value">2026-10-22</span></div>
+    <div><span class="label"><span data-zh="快照：" data-en="Snapshot:">快照：</span></span><span class="value">6178</span></div>
+    <div><span class="label"><span data-zh="基线：" data-en="Baseline:">基线：</span></span><span class="value">5911</span></div>
+    <div><span class="label"><span data-zh="候选：" data-en="Candidates:">候选：</span></span><span class="value up">0</span></div>
+    <div><span class="label"><span data-zh="行业组：" data-en="Groups:">行业组：</span></span><span class="value">0</span></div>
+    <div><span class="label"><span data-zh="缺口：" data-en="Gaps:">缺口：</span></span><span class="value">6178</span></div>
+  </div>
+
+  <div class="callout">
+    <h3><span data-zh="核心结论（先行）" data-en="Key Conclusions (Up Front)">核心结论（先行）</span></h3>
+    <ul><li><b><span data-zh="候选 0 只 / 0 个行业（全市场）" data-en="0 names across 0 industries (full market)">候选 0 只 / 0 个行业（全市场）</span>。</b></li><li><span data-zh="本时段无候选。" data-en="No candidates.">本时段无候选。</span></li><li><span data-zh="漏斗：快照 6178 → 有基线 5911 → 入选 0（缺口 6178）。" data-en="Funnel: snapshot 6178 → with baseline 5911 → picked 0 (gaps 6178).">漏斗：快照 6178 → 有基线 5911 → 入选 0（缺口 6178）。</span></li></ul>
+  </div>
+
+  <h2><span data-zh="候选明细（0 只）" data-en="Candidates (0)">候选明细（0 只）</span></h2>
+  <div class="card"><span data-zh="本时段无满足全部门槛的候选。" data-en="No candidate passed all gates.">本时段无满足全部门槛的候选。</span></div>
+
+  <h2><span data-zh="数据缺口" data-en="Data Gaps">数据缺口</span></h2>
+  <div class="card">
+    <details><summary><span data-zh="被剔除/缺数据明细（最多 40 条，共 6178）" data-en="Excluded / missing-data details (up to 40 of 6178)">被剔除/缺数据明细（最多 40 条，共 6178）</span></summary>
+      <div class="table-wrap"><table><thead><tr><th><span data-zh="代码" data-en="Code">代码</span></th><th><span data-zh="名称" data-en="Name">名称</span></th><th><span data-zh="原因" data-en="Reason">原因</span></th></tr></thead>
+      <tbody><tr><td>600000</td><td>浦发银行</td><td>停牌/无成交</td></tr><tr><td>600001</td><td>邯郸钢铁</td><td>停牌/无成交</td></tr><tr><td>600002</td><td>齐鲁石化</td><td>停牌/无成交</td></tr><tr><td>600003</td><td>ST东北高</td><td>ST/退市风险</td></tr><tr><td>600004</td><td>白云机场</td><td>停牌/无成交</td></tr><tr><td>600005</td><td>武钢股份</td><td>停牌/无成交</td></tr><tr><td>600006</td><td>东风股份</td><td>停牌/无成交</td></tr><tr><td>600007</td><td>中国国贸</td><td>停牌/无成交</td></tr><tr><td>600008</td><td>首创环保</td><td>停牌/无成交</td></tr><tr><td>600009</td><td>上海机场</td><td>停牌/无成交</td></tr><tr><td>600010</td><td>包钢股份</td><td>停牌/无成交</td></tr><tr><td>600011</td><td>华能国际</td><td>停牌/无成交</td></tr><tr><td>600012</td><td>皖通高速</td><td>停牌/无成交</td></tr><tr><td>600015</td><td>华夏银行</td><td>停牌/无成交</td></tr><tr><td>600016</td><td>民生银行</td><td>停牌/无成交</td></tr><tr><td>600017</td><td>日照港</td><td>停牌/无成交</td></tr><tr><td>600018</td><td>上港集团</td><td>停牌/无成交</td></tr><tr><td>600019</td><td>宝钢股份</td><td>停牌/无成交</td></tr><tr><td>600020</td><td>中原高速</td><td>停牌/无成交</td></tr><tr><td>600021</td><td>上海电力</td><td>停牌/无成交</td></tr><tr><td>600022</td><td>山东钢铁</td><td>停牌/无成交</td></tr><tr><td>600023</td><td>XD浙能电</td><td>停牌/无成交</td></tr><tr><td>600025</td><td>华能水电</td><td>停牌/无成交</td></tr><tr><td>600026</td><td>中远海能</td><td>停牌/无成交</td></tr><tr><td>600027</td><td>华电国际</td><td>停牌/无成交</td></tr><tr><td>600028</td><td>中国石化</td><td>停牌/无成交</td></tr><tr><td>600029</td><td>南方航空</td><td>停牌/无成交</td></tr><tr><td>600030</td><td>中信证券</td><td>停牌/无成交</td></tr><tr><td>600031</td><td>三一重工</td><td>停牌/无成交</td></tr><tr><td>600032</td><td>浙江新能</td><td>停牌/无成交</td></tr><tr><td>600033</td><td>福建高速</td><td>停牌/无成交</td></tr><tr><td>600035</td><td>楚天高速</td><td>停牌/无成交</td></tr><tr><td>600036</td><td>招商银行</td><td>停牌/无成交</td></tr><tr><td>600037</td><td>歌华有线</td><td>停牌/无成交</td></tr><tr><td>600038</td><td>中直股份</td><td>停牌/无成交</td></tr><tr><td>600039</td><td>四川路桥</td><td>停牌/无成交</td></tr><tr><td>600048</td><td>保利发展</td><td>停牌/无成交</td></tr><tr><td>600050</td><td>中国联通</td><td>停牌/无成交</td></tr><tr><td>600051</td><td>宁波联合</td><td>停牌/无成交</td></tr><tr><td>600052</td><td>东望时代</td><td>停牌/无成交</td></tr></tbody></table></div></details>
+  </div>
+
+  <h2><span data-zh="数据口径与偏差声明" data-en="Data Provenance and Deviations">数据口径与偏差声明</span></h2>
+  <div class="card"><p class="body-text"><span data-zh="竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 + 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线，锚定前一交易日 2026-10-22（全市场基线缓存 preopen-baseline-*.json）。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（2026-10-23），不依赖外部交易日历。运行环境：local。" data-en="Auction snapshot: Tencent qt.gtimg.cn batch quotes (open fixed at 09:25 auction close; auction vol ratio = auction vol / yesterday full-day vol). Yesterday-change + trend baseline: Tencent ifzq fqkline (pre-adjusted daily K), anchored to the prior trading day 2026-10-22 (full-market baseline cache preopen-baseline-*.json). Industry: local cache eod/data/industry-map.json. Trade date derived from quote-timestamp mode (2026-10-23); no external calendar. Runner: local.">竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 + 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线，锚定前一交易日 2026-10-22（全市场基线缓存 preopen-baseline-*.json）。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（2026-10-23），不依赖外部交易日历。运行环境：local。</span></p></div>
+
+  <div class="disclaimer"><span data-zh="本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen-2026-10-23.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。" data-en="This report is programmatic observation output for personal research only and is not investment advice. Pre-open candidates are screened on the auction snapshot; prices may still move after 09:25, and limit-up / one-word boards may be unbuyable — verify tradability and liquidity yourself. The snapshot is archived to eod/data/preopen-2026-10-23.json; after close preopen_backfill.js back-fills the day change / limit-up and computes the hit rate.">本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen-2026-10-23.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。</span></div>
+  <div class="footer">candidate-pool · preopen screener v1 · <span data-zh="全市场" data-en="Full market">全市场</span> · 2026-10-23</div>
+</div>
+<script>
+(function () {
+  var themeBtn = document.getElementById('themeBtn');
+  var root = document.documentElement;
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('report-theme'); } catch (e) {}
+  if (savedTheme === 'light' || savedTheme === 'dark') root.setAttribute('data-theme', savedTheme);
+  function syncThemeLabel() { themeBtn.textContent = (root.getAttribute('data-theme') === 'dark') ? '☀' : '🌙'; }
+  syncThemeLabel();
+  themeBtn.addEventListener('click', function () {
+    var t = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem('report-theme', t); } catch (e) {}
+    syncThemeLabel();
+  });
+  var lang = 'zh';
+  var btn = document.getElementById('langBtn');
+  var nodes = document.querySelectorAll('[data-zh]');
+  nodes.forEach(function (el) { if (!el.getAttribute('data-zh')) el.setAttribute('data-zh', el.innerHTML); });
+  function apply(target) {
+    nodes.forEach(function (el) {
+      var val = el.getAttribute('data-' + target);
+      if (val !== null && val !== '') el.innerHTML = val;
+    });
+    document.documentElement.lang = (target === 'zh') ? 'zh-CN' : 'en';
+    document.title = (target === 'zh') ? '盘前选股 — 2026-10-23' : 'Pre-Open Screener — 2026-10-23';
+    btn.textContent = (target === 'zh') ? 'EN' : '中文';
+  }
+  btn.addEventListener('click', function () { lang = (lang === 'zh') ? 'en' : 'zh'; apply(lang); });
+  apply(lang);
+
+  // 候选明细：视图切换 + 标签过滤 + 行业过滤（AND）+ 分项开关。
+  // 行服务端渲染好；「按行业」把行重排进分组分隔行之下，不重建 DOM。
+  var tbody = document.getElementById('candBody');
+  if (tbody) {
+    var candRows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-sector]'));
+    var sepOrder = [];
+    Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-sep]'), function (tr) { sepOrder.push(tr); });
+    var candView = 'score', lFilter = '', sFilter = '';
+    var viewScoreBtn = document.getElementById('viewScore');
+    var viewSectorBtn = document.getElementById('viewSector');
+    function want(tr) {
+      var okL = true, okS = true;
+      if (lFilter === '@best') okL = tr.hasAttribute('data-best');
+      else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (lFilter) okL = tr.getAttribute('data-label') === lFilter;
+      if (sFilter) okS = tr.getAttribute('data-sector') === sFilter;
+      return okL && okS;
+    }
+    function renderCand() {
+      var frag = document.createDocumentFragment();
+      var ranked = (lFilter === '@best' || lFilter === '@top3');
+      var shown = [];
+      if (candView === 'score') {
+        candRows.forEach(function (tr) { if (want(tr)) { frag.appendChild(tr); shown.push(tr); } });
+      } else {
+        sepOrder.forEach(function (sep) {
+          var sec = sep.getAttribute('data-sep');
+          if (sFilter && sec !== sFilter) return;
+          var groupRows = [];
+          candRows.forEach(function (tr) { if (tr.getAttribute('data-sector') === sec && want(tr)) groupRows.push(tr); });
+          if (!groupRows.length) return;
+          sep.hidden = false; frag.appendChild(sep);
+          groupRows.forEach(function (tr) { frag.appendChild(tr); shown.push(tr); });
+        });
+      }
+      shown.forEach(function (tr) {
+        var cell = tr.cells[0];
+        if (ranked) {
+          if (!tr.dataset.idx) tr.dataset.idx = cell.textContent;
+          cell.textContent = tr.getAttribute('data-grank') || tr.dataset.idx;
+        } else if (tr.dataset.idx) {
+          cell.textContent = tr.dataset.idx;
+        }
+      });
+      while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+      tbody.appendChild(frag);
+    }
+    function setView(v) {
+      candView = v;
+      viewScoreBtn.classList.toggle('active', v === 'score');
+      viewSectorBtn.classList.toggle('active', v === 'sector');
+      renderCand();
+    }
+    viewScoreBtn.addEventListener('click', function () { setView('score'); });
+    viewSectorBtn.addEventListener('click', function () { setView('sector'); });
+    function bindChips(id, setter) {
+      var wrap = document.getElementById(id);
+      wrap.addEventListener('click', function (e) {
+        var chip = e.target.closest('.chip');
+        if (!chip) return;
+        setter(chip.getAttribute('data-lfilter') != null ? chip.getAttribute('data-lfilter') : chip.getAttribute('data-sfilter') || '');
+        Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function (c) {
+          var v = c.getAttribute('data-lfilter') != null ? c.getAttribute('data-lfilter') : (c.getAttribute('data-sfilter') || '');
+          var cur = (id === 'lchips') ? lFilter : sFilter;
+          c.classList.toggle('active', v === cur);
+        });
+        // 组内前三要求同组相邻：选中时自动切「按行业」
+        if (lFilter === '@top3' && candView !== 'sector') { setView('sector'); return; }
+        renderCand();
+      });
+    }
+    bindChips('lchips', function (v) { lFilter = v; });
+    bindChips('schips', function (v) { sFilter = v; });
+    var bdToggle = document.getElementById('bdToggle');
+    var scoreNote = document.getElementById('scoreNote');
+    function applyBd() {
+      var on = bdToggle.checked;
+      document.getElementById('candTable').classList.toggle('hide-bd', !on);
+      if (scoreNote) scoreNote.style.display = on ? '' : 'none';
+    }
+    bdToggle.addEventListener('change', applyBd);
+    applyBd();
+    renderCand();
+  }
+})();
+</script>
+</body>
+</html>

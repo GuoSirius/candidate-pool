@@ -1,0 +1,31 @@
+{
+  "tradeDate": "2026-10-23",
+  "scope": "universe",
+  "mode": "preopen",
+  "generatedAt": "2026-10-23T01:20:41.169Z",
+  "marketDate": "2026-10-23",
+  "meta": {
+    "snapshotCount": 6178,
+    "baselineCount": 5911,
+    "validQuotes": 6178,
+    "marketDate": "2026-10-23",
+    "elapsedMs": 0,
+    "recordCount": 0,
+    "runCount": 1,
+    "rejByReason": {
+      "停牌/无成交": 5441,
+      "ST/退市风险": 470,
+      "无基线K线": 267
+    }
+  },
+  "runs": [
+    {
+      "at": "2026-10-23T01:20:41.169Z",
+      "count": 0,
+      "codes": []
+    }
+  ],
+  "nearMiss": [],
+  "close": null,
+  "records": {}
+}

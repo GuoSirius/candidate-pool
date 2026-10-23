@@ -16,7 +16,6 @@ eod/data/raw/
 eod/reports/_*.html
 # 盘前基线缓存（前一日 K 线指标，由 --baseline 重建，非溯源必需）
 eod/data/preopen-baseline-*.json
-!eod/data/industry_mapping.json
 
 # 推送凭据（含 163 授权码 / 微信 key，切勿提交）
 notify_config.json
