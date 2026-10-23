@@ -226,8 +226,9 @@ module.exports = {
   report: {
     title: '尾盘选股',
     titleEn: 'EOD Tail Screener',
-    // 报告中展示的候选上限（分组区块之外再做一次总量控制，避免手机端过长）
-    maxRows: 60,
+    // 报告中展示的候选上限（分组区块之外再做一次总量控制，避免手机端过长）。
+    // 0 = 不限制，渲染全部候选（与头部「候选 N 只」计数保持一致）。
+    maxRows: 0,
     showScoreBreakdown: true,   // Q11：展示分项明细
     showDataGap: true,          // 展示被数据缺口剔除的标的（默认折叠）
   },

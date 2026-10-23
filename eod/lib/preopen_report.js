@@ -179,7 +179,7 @@ function buildHTML(m) {
     `Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total.`)}</p>`;
 
   // ---- 候选明细 + 工具栏（标签过滤 + 行业过滤 + 双视图 + 分项开关）----
-  const listed = candidates.slice(0, cfg.report.maxRows);
+  const listed = candidates.slice(0, cfg.report.maxRows > 0 ? cfg.report.maxRows : candidates.length);
   const truncated = candidates.length - listed.length;
   // 标签 chips（按出现顺序去重）
   const labelCounts = {};

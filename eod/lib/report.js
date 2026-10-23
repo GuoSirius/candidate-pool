@@ -285,8 +285,9 @@ function buildHTML(m) {
   // ---- 候选明细（单表双视图）：TOP 表与分行业卡片本是同一批候选的两种组织方式，
   // 双列表翻页滚动成本高，故合并为一张表：默认按总分排序，「按行业」视图由前端
   // 把行重排进分组分隔行之下；行业 chips 做筛选；分项 5 列可用开关收起。
-  // 展示上限沿用 report.maxRows（总量控制），列表为 top 之外的全量候选。----
-  const listed = candidates.slice(0, cfg.report.maxRows);
+  // 展示上限沿用 report.maxRows（总量控制），列表为 top 之外的全量候选。
+  // maxRows<=0 视为不限制 → 渲染全部候选（与头部「候选 N 只」计数一致）。----
+  const listed = candidates.slice(0, cfg.report.maxRows > 0 ? cfg.report.maxRows : candidates.length);
   const truncated = candidates.length - listed.length;
   const chipCounts = {};
   for (const c of listed) { const k = c.sector || '未分类'; chipCounts[k] = (chipCounts[k] || 0) + 1; }
