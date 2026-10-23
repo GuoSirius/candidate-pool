@@ -100,24 +100,148 @@
     <div><span class="label"><span data-zh="基线锚定日：" data-en="Baseline anchor:">基线锚定日：</span></span><span class="value">2026-10-22</span></div>
     <div><span class="label"><span data-zh="快照：" data-en="Snapshot:">快照：</span></span><span class="value">6178</span></div>
     <div><span class="label"><span data-zh="基线：" data-en="Baseline:">基线：</span></span><span class="value">5911</span></div>
-    <div><span class="label"><span data-zh="候选：" data-en="Candidates:">候选：</span></span><span class="value up">0</span></div>
-    <div><span class="label"><span data-zh="行业组：" data-en="Groups:">行业组：</span></span><span class="value">0</span></div>
-    <div><span class="label"><span data-zh="缺口：" data-en="Gaps:">缺口：</span></span><span class="value">6178</span></div>
+    <div><span class="label"><span data-zh="候选：" data-en="Candidates:">候选：</span></span><span class="value up">9</span></div>
+    <div><span class="label"><span data-zh="行业组：" data-en="Groups:">行业组：</span></span><span class="value">8</span></div>
+    <div><span class="label"><span data-zh="缺口：" data-en="Gaps:">缺口：</span></span><span class="value">889</span></div>
   </div>
 
   <div class="callout">
     <h3><span data-zh="核心结论（先行）" data-en="Key Conclusions (Up Front)">核心结论（先行）</span></h3>
-    <ul><li><b><span data-zh="候选 0 只 / 0 个行业（全市场）" data-en="0 names across 0 industries (full market)">候选 0 只 / 0 个行业（全市场）</span>。</b></li><li><span data-zh="本时段无候选。" data-en="No candidates.">本时段无候选。</span></li><li><span data-zh="漏斗：快照 6178 → 有基线 5911 → 入选 0（缺口 6178）。" data-en="Funnel: snapshot 6178 → with baseline 5911 → picked 0 (gaps 6178).">漏斗：快照 6178 → 有基线 5911 → 入选 0（缺口 6178）。</span></li></ul>
+    <ul><li><b><span data-zh="候选 9 只 / 8 个行业（全市场）" data-en="9 names across 8 industries (full market)">候选 9 只 / 8 个行业（全市场）</span>。</b><span data-zh="最强行业「玻璃玻纤」，组内最优 三峡新材（100.0）。" data-en="Strongest industry "玻璃玻纤"; its top pick is 三峡新材 (100.0).">最强行业「玻璃玻纤」，组内最优 三峡新材（100.0）。</span></li><li><span data-zh="全市场前五：三峡新材（100.0）、上海九百（91.0）、赛福天（79.0）、南方路机（79.0）、林州重机（79.0）。" data-en="Top five: 三峡新材 (100.0), 上海九百 (91.0), 赛福天 (79.0), 南方路机 (79.0), 林州重机 (79.0).">全市场前五：三峡新材（100.0）、上海九百（91.0）、赛福天（79.0）、南方路机（79.0）、林州重机（79.0）。</span></li><li><span data-zh="漏斗：快照 6178 → 有基线 5911 → 入选 9（缺口 889）。" data-en="Funnel: snapshot 6178 → with baseline 5911 → picked 9 (gaps 889).">漏斗：快照 6178 → 有基线 5911 → 入选 9（缺口 889）。</span></li></ul>
   </div>
 
-  <h2><span data-zh="候选明细（0 只）" data-en="Candidates (0)">候选明细（0 只）</span></h2>
-  <div class="card"><span data-zh="本时段无满足全部门槛的候选。" data-en="No candidate passed all gates.">本时段无满足全部门槛的候选。</span></div>
+  <h2><span data-zh="候选明细（9 只）" data-en="Candidates (9)">候选明细（9 只）</span></h2>
+  <p class="score-note" id="scoreNote"><span data-zh="信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。" data-en="Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total.">信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。</span></p><div class="toolbar">
+    <div class="seg" role="tablist">
+      <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
+      <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
+    </div>
+    <div class="toolrow"><span class="cap"><span data-zh="标签" data-en="Label">标签</span></span><span class="chips" id="lchips"><button type="button" class="chip active" data-lfilter=""><span data-zh="全部 9" data-en="All 9">全部 9</span></button><button type="button" class="chip" data-lfilter="@best"><span data-zh="组内第一" data-en="Group #1">组内第一</span><i>8</i></button><button type="button" class="chip" data-lfilter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>9</i></button><button type="button" class="chip" data-lfilter="超预期"><span data-zh="超预期" data-en="超预期">超预期</span><i>8</i></button><button type="button" class="chip" data-lfilter="弱转强·符合"><span data-zh="弱转强·符合" data-en="弱转强·符合">弱转强·符合</span><i>1</i></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="行业" data-en="Industry">行业</span></span><span class="chips" id="schips"><button type="button" class="chip active" data-sfilter=""><span data-zh="全部行业" data-en="All sectors">全部行业</span></button><button type="button" class="chip" data-sfilter="玻璃玻纤"><span data-zh="玻璃玻纤" data-en="玻璃玻纤">玻璃玻纤</span><i>1</i></button><button type="button" class="chip" data-sfilter="一般零售"><span data-zh="一般零售" data-en="一般零售">一般零售</span><i>1</i></button><button type="button" class="chip" data-sfilter="通用设备"><span data-zh="通用设备" data-en="通用设备">通用设备</span><i>1</i></button><button type="button" class="chip" data-sfilter="工程机械"><span data-zh="工程机械" data-en="工程机械">工程机械</span><i>1</i></button><button type="button" class="chip" data-sfilter="专用设备"><span data-zh="专用设备" data-en="专用设备">专用设备</span><i>2</i></button><button type="button" class="chip" data-sfilter="电机Ⅱ"><span data-zh="电机Ⅱ" data-en="电机Ⅱ">电机Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="其他电子Ⅱ"><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="基础建设"><span data-zh="基础建设" data-en="基础建设">基础建设</span><i>1</i></button></span></div>
+    <div class="toolrow"><label class="bd-toggle"><input type="checkbox" id="bdToggle" checked> <span data-zh="分项得分" data-en="Breakdown">分项得分</span></label></div>
+  </div>
+  <div class="table-wrap"><table id="candTable"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
+    <th rowspan="2"><span data-zh="板块" data-en="Board">板块</span></th><th rowspan="2"><span data-zh="今开" data-en="Open">今开</span></th><th rowspan="2"><span data-zh="昨涨" data-en="Prev chg">昨涨</span></th>
+    <th rowspan="2"><span data-zh="竞价量能比" data-en="Auction vol">竞价量能比</span></th><th rowspan="2"><span data-zh="趋势" data-en="Trend">趋势</span></th>
+    <th colspan="3" class="grp"><span data-zh="信号分项" data-en="Signals">信号分项</span></th>
+    <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标签" data-en="Label">标签</span></th></tr>
+    <tr><th class="grp-sub"><span data-zh="P1 竞价 · 35" data-en="P1 竞价 · 35">P1 竞价 · 35</span></th><th class="grp-sub"><span data-zh="P2 弱转强 · 35" data-en="P2 弱转强 · 35">P2 弱转强 · 35</span></th><th class="grp-sub"><span data-zh="P3 趋势 · 30" data-en="P3 趋势 · 30">P3 趋势 · 30</span></th></tr></thead>
+    <tbody id="candBody"><tr data-sector="玻璃玻纤" data-label="超预期" data-best="1" data-grank="1">
+    <td>1</td>
+    <td><b>三峡新材</b><span class="src">600293</span></td>
+    <td><span data-zh="玻璃玻纤" data-en="玻璃玻纤">玻璃玻纤</span></td>
+    <td>主板</td>
+    <td class="num up">+9.94%</td>
+    <td class="num up">+10.11%</td>
+    <td class="num">3.83</td>
+    <td class="trend">多头✓ 20新✓ 60新✓ 斜率2.7%/d</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">30.0</td>
+    <td><span class="score">100.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="一般零售" data-label="超预期" data-best="1" data-grank="1">
+    <td>2</td>
+    <td><b>上海九百</b><span class="src">600838</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+10.01%</td>
+    <td class="num">0.10</td>
+    <td class="trend">多头✓ 20新✓ 60新✓ 斜率0.3%/d</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">21.0</td>
+    <td><span class="score">91.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="通用设备" data-label="超预期" data-best="1" data-grank="1">
+    <td>3</td>
+    <td><b>赛福天</b><span class="src">603028</span></td>
+    <td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
+    <td>主板</td>
+    <td class="num up">+10.05%</td>
+    <td class="num up">+10.07%</td>
+    <td class="num">0.09</td>
+    <td class="trend">多头✗ 20新✓ 60新✓ 斜率0.0%/d</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
+    <td><span class="score">79.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="工程机械" data-label="超预期" data-best="1" data-grank="1">
+    <td>4</td>
+    <td><b>南方路机</b><span class="src">603280</span></td>
+    <td><span data-zh="工程机械" data-en="工程机械">工程机械</span></td>
+    <td>主板</td>
+    <td class="num up">+9.64%</td>
+    <td class="num up">+9.99%</td>
+    <td class="num">0.17</td>
+    <td class="trend">多头✗ 20新✓ 斜率0.2%/d</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
+    <td><span class="score">79.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="专用设备" data-label="超预期" data-best="1" data-grank="1">
+    <td>5</td>
+    <td><b>林州重机</b><span class="src">002535</span></td>
+    <td><span data-zh="专用设备" data-en="专用设备">专用设备</span></td>
+    <td>主板</td>
+    <td class="num up">+9.45%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num">0.17</td>
+    <td class="trend">多头✗ 20新✓ 60新✓ 斜率0.3%/d</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
+    <td><span class="score">79.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="电机Ⅱ" data-label="超预期" data-best="1" data-grank="1">
+    <td>6</td>
+    <td><b>华阳智能</b><span class="src">301502</span></td>
+    <td><span data-zh="电机Ⅱ" data-en="电机Ⅱ">电机Ⅱ</span></td>
+    <td>创业板</td>
+    <td class="num up">+7.41%</td>
+    <td class="num up">+20.00%</td>
+    <td class="num">0.08</td>
+    <td class="trend">多头✗ 20新✓ 斜率-0.9%/d</td>
+    <td class="num sc">29.0</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
+    <td><span class="score">73.1</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="其他电子Ⅱ" data-label="超预期" data-best="1" data-grank="1">
+    <td>7</td>
+    <td><b>睿能科技</b><span class="src">603933</span></td>
+    <td><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num up">+9.98%</td>
+    <td class="num up">+9.99%</td>
+    <td class="num">0.14</td>
+    <td class="trend">多头✗ 斜率-0.7%/d</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+    <td><span class="score">70.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="专用设备" data-label="超预期" data-grank="2">
+    <td>8</td>
+    <td><b>南矿集团</b><span class="src">001360</span></td>
+    <td><span data-zh="专用设备" data-en="专用设备">专用设备</span></td>
+    <td>主板</td>
+    <td class="num up">+10.01%</td>
+    <td class="num up">+10.01%</td>
+    <td class="num">0.30</td>
+    <td class="trend">多头✗ 斜率-1.2%/d</td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+    <td><span class="score">70.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="基础建设" data-label="弱转强·符合" data-best="1" data-grank="1">
+    <td>9</td>
+    <td><b>北新路桥</b><span class="src">002307</span></td>
+    <td><span data-zh="基础建设" data-en="基础建设">基础建设</span></td>
+    <td>主板</td>
+    <td class="num up">+6.19%</td>
+    <td class="num up">+10.06%</td>
+    <td class="num">0.10</td>
+    <td class="trend">多头✗ 20新✓ 60新✓ 斜率0.3%/d</td>
+    <td class="num sc">25.2</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
+    <td><span class="score">58.7</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr class="sector-row" data-sep="玻璃玻纤" hidden><td colspan="13"><span data-zh="玻璃玻纤" data-en="玻璃玻纤">玻璃玻纤</span> · <span data-zh="组内 1 只，最优 三峡新材（100.0）" data-en="1 picked; top 三峡新材 (100.0)">组内 1 只，最优 三峡新材（100.0）</span></td></tr><tr class="sector-row" data-sep="一般零售" hidden><td colspan="13"><span data-zh="一般零售" data-en="一般零售">一般零售</span> · <span data-zh="组内 1 只，最优 上海九百（91.0）" data-en="1 picked; top 上海九百 (91.0)">组内 1 只，最优 上海九百（91.0）</span></td></tr><tr class="sector-row" data-sep="通用设备" hidden><td colspan="13"><span data-zh="通用设备" data-en="通用设备">通用设备</span> · <span data-zh="组内 1 只，最优 赛福天（79.0）" data-en="1 picked; top 赛福天 (79.0)">组内 1 只，最优 赛福天（79.0）</span></td></tr><tr class="sector-row" data-sep="工程机械" hidden><td colspan="13"><span data-zh="工程机械" data-en="工程机械">工程机械</span> · <span data-zh="组内 1 只，最优 南方路机（79.0）" data-en="1 picked; top 南方路机 (79.0)">组内 1 只，最优 南方路机（79.0）</span></td></tr><tr class="sector-row" data-sep="专用设备" hidden><td colspan="13"><span data-zh="专用设备" data-en="专用设备">专用设备</span> · <span data-zh="组内 2 只，最优 林州重机（79.0）" data-en="2 picked; top 林州重机 (79.0)">组内 2 只，最优 林州重机（79.0）</span></td></tr><tr class="sector-row" data-sep="电机Ⅱ" hidden><td colspan="13"><span data-zh="电机Ⅱ" data-en="电机Ⅱ">电机Ⅱ</span> · <span data-zh="组内 1 只，最优 华阳智能（73.1）" data-en="1 picked; top 华阳智能 (73.1)">组内 1 只，最优 华阳智能（73.1）</span></td></tr><tr class="sector-row" data-sep="其他电子Ⅱ" hidden><td colspan="13"><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span> · <span data-zh="组内 1 只，最优 睿能科技（70.0）" data-en="1 picked; top 睿能科技 (70.0)">组内 1 只，最优 睿能科技（70.0）</span></td></tr><tr class="sector-row" data-sep="基础建设" hidden><td colspan="13"><span data-zh="基础建设" data-en="基础建设">基础建设</span> · <span data-zh="组内 1 只，最优 北新路桥（58.7）" data-en="1 picked; top 北新路桥 (58.7)">组内 1 只，最优 北新路桥（58.7）</span></td></tr></tbody></table></div>
+  
 
   <h2><span data-zh="数据缺口" data-en="Data Gaps">数据缺口</span></h2>
   <div class="card">
-    <details><summary><span data-zh="被剔除/缺数据明细（最多 40 条，共 6178）" data-en="Excluded / missing-data details (up to 40 of 6178)">被剔除/缺数据明细（最多 40 条，共 6178）</span></summary>
+    <details><summary><span data-zh="被剔除/缺数据明细（最多 40 条，共 889）" data-en="Excluded / missing-data details (up to 40 of 889)">被剔除/缺数据明细（最多 40 条，共 889）</span></summary>
       <div class="table-wrap"><table><thead><tr><th><span data-zh="代码" data-en="Code">代码</span></th><th><span data-zh="名称" data-en="Name">名称</span></th><th><span data-zh="原因" data-en="Reason">原因</span></th></tr></thead>
-      <tbody><tr><td>600000</td><td>浦发银行</td><td>停牌/无成交</td></tr><tr><td>600001</td><td>邯郸钢铁</td><td>停牌/无成交</td></tr><tr><td>600002</td><td>齐鲁石化</td><td>停牌/无成交</td></tr><tr><td>600003</td><td>ST东北高</td><td>ST/退市风险</td></tr><tr><td>600004</td><td>白云机场</td><td>停牌/无成交</td></tr><tr><td>600005</td><td>武钢股份</td><td>停牌/无成交</td></tr><tr><td>600006</td><td>东风股份</td><td>停牌/无成交</td></tr><tr><td>600007</td><td>中国国贸</td><td>停牌/无成交</td></tr><tr><td>600008</td><td>首创环保</td><td>停牌/无成交</td></tr><tr><td>600009</td><td>上海机场</td><td>停牌/无成交</td></tr><tr><td>600010</td><td>包钢股份</td><td>停牌/无成交</td></tr><tr><td>600011</td><td>华能国际</td><td>停牌/无成交</td></tr><tr><td>600012</td><td>皖通高速</td><td>停牌/无成交</td></tr><tr><td>600015</td><td>华夏银行</td><td>停牌/无成交</td></tr><tr><td>600016</td><td>民生银行</td><td>停牌/无成交</td></tr><tr><td>600017</td><td>日照港</td><td>停牌/无成交</td></tr><tr><td>600018</td><td>上港集团</td><td>停牌/无成交</td></tr><tr><td>600019</td><td>宝钢股份</td><td>停牌/无成交</td></tr><tr><td>600020</td><td>中原高速</td><td>停牌/无成交</td></tr><tr><td>600021</td><td>上海电力</td><td>停牌/无成交</td></tr><tr><td>600022</td><td>山东钢铁</td><td>停牌/无成交</td></tr><tr><td>600023</td><td>XD浙能电</td><td>停牌/无成交</td></tr><tr><td>600025</td><td>华能水电</td><td>停牌/无成交</td></tr><tr><td>600026</td><td>中远海能</td><td>停牌/无成交</td></tr><tr><td>600027</td><td>华电国际</td><td>停牌/无成交</td></tr><tr><td>600028</td><td>中国石化</td><td>停牌/无成交</td></tr><tr><td>600029</td><td>南方航空</td><td>停牌/无成交</td></tr><tr><td>600030</td><td>中信证券</td><td>停牌/无成交</td></tr><tr><td>600031</td><td>三一重工</td><td>停牌/无成交</td></tr><tr><td>600032</td><td>浙江新能</td><td>停牌/无成交</td></tr><tr><td>600033</td><td>福建高速</td><td>停牌/无成交</td></tr><tr><td>600035</td><td>楚天高速</td><td>停牌/无成交</td></tr><tr><td>600036</td><td>招商银行</td><td>停牌/无成交</td></tr><tr><td>600037</td><td>歌华有线</td><td>停牌/无成交</td></tr><tr><td>600038</td><td>中直股份</td><td>停牌/无成交</td></tr><tr><td>600039</td><td>四川路桥</td><td>停牌/无成交</td></tr><tr><td>600048</td><td>保利发展</td><td>停牌/无成交</td></tr><tr><td>600050</td><td>中国联通</td><td>停牌/无成交</td></tr><tr><td>600051</td><td>宁波联合</td><td>停牌/无成交</td></tr><tr><td>600052</td><td>东望时代</td><td>停牌/无成交</td></tr></tbody></table></div></details>
+      <tbody><tr><td>600001</td><td>邯郸钢铁</td><td>停牌/无成交</td></tr><tr><td>600002</td><td>齐鲁石化</td><td>停牌/无成交</td></tr><tr><td>600003</td><td>ST东北高</td><td>ST/退市风险</td></tr><tr><td>600005</td><td>武钢股份</td><td>停牌/无成交</td></tr><tr><td>600053</td><td>*ST九鼎</td><td>ST/退市风险</td></tr><tr><td>600065</td><td>*ST联谊</td><td>ST/退市风险</td></tr><tr><td>600068</td><td>葛洲坝</td><td>停牌/无成交</td></tr><tr><td>600069</td><td>退市银鸽</td><td>ST/退市风险</td></tr><tr><td>600070</td><td>*ST富润</td><td>ST/退市风险</td></tr><tr><td>600074</td><td>退市保千</td><td>ST/退市风险</td></tr><tr><td>600077</td><td>*ST宋都</td><td>ST/退市风险</td></tr><tr><td>600079</td><td>ST人福</td><td>ST/退市风险</td></tr><tr><td>600080</td><td>ST金花</td><td>ST/退市风险</td></tr><tr><td>600082</td><td>ST海泰</td><td>ST/退市风险</td></tr><tr><td>600083</td><td>*ST博信</td><td>ST/退市风险</td></tr><tr><td>600084</td><td>*ST尼雅</td><td>ST/退市风险</td></tr><tr><td>600086</td><td>退市金钰</td><td>ST/退市风险</td></tr><tr><td>600087</td><td>退市长油</td><td>ST/退市风险</td></tr><tr><td>600090</td><td>退市济堂</td><td>ST/退市风险</td></tr><tr><td>600091</td><td>退市明科</td><td>ST/退市风险</td></tr><tr><td>600092</td><td>S*ST精密</td><td>ST/退市风险</td></tr><tr><td>600093</td><td>退市易见</td><td>ST/退市风险</td></tr><tr><td>600102</td><td>莱钢股份</td><td>停牌/无成交</td></tr><tr><td>600107</td><td>*ST尔雅</td><td>ST/退市风险</td></tr><tr><td>600112</td><td>*ST天成</td><td>ST/退市风险</td></tr><tr><td>600119</td><td>*ST长投</td><td>ST/退市风险</td></tr><tr><td>600122</td><td>*ST宏图</td><td>ST/退市风险</td></tr><tr><td>600136</td><td>ST明诚</td><td>ST/退市风险</td></tr><tr><td>600139</td><td>*ST西源</td><td>ST/退市风险</td></tr><tr><td>600145</td><td>退市新亿</td><td>ST/退市风险</td></tr><tr><td>600146</td><td>退市环球</td><td>ST/退市风险</td></tr><tr><td>600169</td><td>ST太重</td><td>ST/退市风险</td></tr><tr><td>600175</td><td>退市美都</td><td>ST/退市风险</td></tr><tr><td>600180</td><td>*ST瑞茂</td><td>ST/退市风险</td></tr><tr><td>600181</td><td>S*ST云大</td><td>ST/退市风险</td></tr><tr><td>600187</td><td>*ST国中</td><td>ST/退市风险</td></tr><tr><td>600190</td><td>退市锦港</td><td>ST/退市风险</td></tr><tr><td>600193</td><td>退市创兴</td><td>ST/退市风险</td></tr><tr><td>600200</td><td>退市苏吴</td><td>ST/退市风险</td></tr><tr><td>600205</td><td>S山东铝</td><td>停牌/无成交</td></tr></tbody></table></div></details>
   </div>
 
   <h2><span data-zh="数据口径与偏差声明" data-en="Data Provenance and Deviations">数据口径与偏差声明</span></h2>

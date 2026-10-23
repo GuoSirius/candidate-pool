@@ -2,7 +2,7 @@
   "tradeDate": "2026-10-23",
   "scope": "universe",
   "mode": "preopen",
-  "generatedAt": "2026-10-23T01:20:41.169Z",
+  "generatedAt": "2026-10-23T01:26:43.089Z",
   "marketDate": "2026-10-23",
   "meta": {
     "snapshotCount": 6178,
@@ -10,12 +10,13 @@
     "validQuotes": 6178,
     "marketDate": "2026-10-23",
     "elapsedMs": 0,
-    "recordCount": 0,
-    "runCount": 1,
+    "recordCount": 9,
+    "runCount": 2,
     "rejByReason": {
-      "停牌/无成交": 5441,
+      "停牌/无成交": 151,
       "ST/退市风险": 470,
-      "无基线K线": 267
+      "无基线K线": 267,
+      "新股/次新": 1
     }
   },
   "runs": [
@@ -23,9 +24,740 @@
       "at": "2026-10-23T01:20:41.169Z",
       "count": 0,
       "codes": []
+    },
+    {
+      "at": "2026-10-23T01:26:43.089Z",
+      "count": 9,
+      "codes": [
+        "sh600293",
+        "sh600838",
+        "sh603028",
+        "sh603280",
+        "sz002535",
+        "sz301502",
+        "sh603933",
+        "sz001360",
+        "sz002307"
+      ]
     }
   ],
-  "nearMiss": [],
+  "nearMiss": [
+    {
+      "code": "sz002982",
+      "name": "湘佳股份",
+      "sector": "养殖业",
+      "board": "主板",
+      "open": 13.28,
+      "prevClose": 12.07,
+      "price": 13.28,
+      "auctionChgPct": 10.02485501242749,
+      "auctionVolRatio": 0.28948152069615857,
+      "yesterdayChgPct": -2.346278317152095,
+      "trend": {
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.11763633404266148
+      },
+      "p1": {
+        "auctionChgPct": 10.02485501242749,
+        "auctionVolRatio": 0.28948152069615857,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": -2.346278317152095,
+        "auctionChgPct": 10.02485501242749,
+        "applicable": false,
+        "verdict": "非强势股",
+        "score": 0,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 12.246,
+        "ma10": 12.428999999999998,
+        "ma20": 12.495500000000002,
+        "ma60": 12.406666666666665,
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.11763633404266148,
+        "volPriceUp": false,
+        "score": 0,
+        "ok": false
+      },
+      "label": "竞价涨停",
+      "risk": false,
+      "total": 35,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 0,
+        "p3": 0
+      },
+      "stamp": "20261023092621",
+      "belowMin": 10
+    },
+    {
+      "code": "sz300886",
+      "name": "华业香料",
+      "sector": "化学制品",
+      "board": "创业板",
+      "open": 23.5,
+      "prevClose": 21.45,
+      "price": 23.5,
+      "auctionChgPct": 9.557109557109555,
+      "auctionVolRatio": 0.13503687545445103,
+      "yesterdayChgPct": -2.8532608695652106,
+      "trend": {
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.5544245679386667
+      },
+      "p1": {
+        "auctionChgPct": 9.557109557109555,
+        "auctionVolRatio": 0.13503687545445103,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": -2.8532608695652106,
+        "auctionChgPct": 9.557109557109555,
+        "applicable": false,
+        "verdict": "非强势股",
+        "score": 0,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 21.996000000000002,
+        "ma10": 22.351999999999997,
+        "ma20": 23.087,
+        "ma60": 23.261333333333333,
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.5544245679386667,
+        "volPriceUp": false,
+        "score": 0,
+        "ok": false
+      },
+      "label": "竞价涨停",
+      "risk": false,
+      "total": 35,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 0,
+        "p3": 0
+      },
+      "stamp": "20261023092630",
+      "belowMin": 10
+    },
+    {
+      "code": "sz301533",
+      "name": "威马农机",
+      "sector": "专用设备",
+      "board": "创业板",
+      "open": 30.03,
+      "prevClose": 26.06,
+      "price": 30.03,
+      "auctionChgPct": 15.234075211051422,
+      "auctionVolRatio": 0.14240477698362436,
+      "yesterdayChgPct": -1.6974726518295125,
+      "trend": {
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.6134804135392197
+      },
+      "p1": {
+        "auctionChgPct": 15.234075211051422,
+        "auctionVolRatio": 0.14240477698362436,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": -1.6974726518295125,
+        "auctionChgPct": 15.234075211051422,
+        "applicable": false,
+        "verdict": "非强势股",
+        "score": 0,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 26.568,
+        "ma10": 27.086000000000002,
+        "ma20": 27.923999999999996,
+        "ma60": 27.442333333333348,
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.6134804135392197,
+        "volPriceUp": false,
+        "score": 0,
+        "ok": false
+      },
+      "label": "竞价涨停",
+      "risk": false,
+      "total": 35,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 0,
+        "p3": 0
+      },
+      "stamp": "20261023092636",
+      "belowMin": 10
+    }
+  ],
   "close": null,
-  "records": {}
+  "records": {
+    "sh600293": {
+      "code": "sh600293",
+      "name": "三峡新材",
+      "sector": "玻璃玻纤",
+      "board": "主板",
+      "open": 5.75,
+      "prevClose": 5.23,
+      "price": 5.75,
+      "auctionChgPct": 9.94263862332696,
+      "auctionVolRatio": 3.830044413612131,
+      "yesterdayChgPct": 10.10526315789475,
+      "trend": {
+        "maBull": true,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 2.7029681279414985
+      },
+      "p1": {
+        "auctionChgPct": 9.94263862332696,
+        "auctionVolRatio": 3.830044413612131,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 10.10526315789475,
+        "auctionChgPct": 9.94263862332696,
+        "applicable": true,
+        "verdict": "超预期·涨停预期",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 4.402,
+        "ma10": 3.928,
+        "ma20": 3.4835000000000003,
+        "ma60": 3.000333333333333,
+        "maBull": true,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 2.7029681279414985,
+        "volPriceUp": true,
+        "score": 1,
+        "ok": true
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 100,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 1
+      },
+      "stamp": "20261023092627",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 1
+    },
+    "sh600838": {
+      "code": "sh600838",
+      "name": "上海九百",
+      "sector": "一般零售",
+      "board": "主板",
+      "open": 11,
+      "prevClose": 10,
+      "price": 11,
+      "auctionChgPct": 10.000000000000009,
+      "auctionVolRatio": 0.09978851944057038,
+      "yesterdayChgPct": 10.011001100110018,
+      "trend": {
+        "maBull": true,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.3319849686312887
+      },
+      "p1": {
+        "auctionChgPct": 10.000000000000009,
+        "auctionVolRatio": 0.09978851944057038,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 10.011001100110018,
+        "auctionChgPct": 10.000000000000009,
+        "applicable": true,
+        "verdict": "超预期·涨停预期",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 8.722,
+        "ma10": 8.593,
+        "ma20": 8.454500000000001,
+        "ma60": 7.974133333333331,
+        "maBull": true,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.3319849686312887,
+        "volPriceUp": true,
+        "score": 0.7,
+        "ok": true
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 91,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 0.7
+      },
+      "stamp": "20261023092630",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 1
+    },
+    "sh603028": {
+      "code": "sh603028",
+      "name": "赛福天",
+      "sector": "通用设备",
+      "board": "主板",
+      "open": 8.54,
+      "prevClose": 7.76,
+      "price": 8.54,
+      "auctionChgPct": 10.051546391752563,
+      "auctionVolRatio": 0.09298786251748781,
+      "yesterdayChgPct": 10.070921985815605,
+      "trend": {
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.02863180199661253
+      },
+      "p1": {
+        "auctionChgPct": 10.051546391752563,
+        "auctionVolRatio": 0.09298786251748781,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 10.070921985815605,
+        "auctionChgPct": 10.051546391752563,
+        "applicable": true,
+        "verdict": "超预期·涨停预期",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 7.0760000000000005,
+        "ma10": 6.948,
+        "ma20": 7.011500000000001,
+        "ma60": 6.8805,
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.02863180199661253,
+        "volPriceUp": true,
+        "score": 0.3,
+        "ok": false
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 79,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 0.3
+      },
+      "stamp": "20261023092623",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 1
+    },
+    "sh603280": {
+      "code": "sh603280",
+      "name": "南方路机",
+      "sector": "工程机械",
+      "board": "主板",
+      "open": 31.86,
+      "prevClose": 29.06,
+      "price": 31.86,
+      "auctionChgPct": 9.635237439779765,
+      "auctionVolRatio": 0.16697797356828195,
+      "yesterdayChgPct": 9.99242997728993,
+      "trend": {
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": false,
+        "slope20": 0.18937092565374014
+      },
+      "p1": {
+        "auctionChgPct": 9.635237439779765,
+        "auctionVolRatio": 0.16697797356828195,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 9.99242997728993,
+        "auctionChgPct": 9.635237439779765,
+        "applicable": true,
+        "verdict": "超预期·涨停预期",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 26.985999999999997,
+        "ma10": 27.322000000000003,
+        "ma20": 27.101999999999993,
+        "ma60": 26.410333333333337,
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": false,
+        "slope20": 0.18937092565374014,
+        "volPriceUp": true,
+        "score": 0.3,
+        "ok": false
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 79,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 0.3
+      },
+      "stamp": "20261023092636",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 1
+    },
+    "sz002535": {
+      "code": "sz002535",
+      "name": "林州重机",
+      "sector": "专用设备",
+      "board": "主板",
+      "open": 3.01,
+      "prevClose": 2.75,
+      "price": 3.01,
+      "auctionChgPct": 9.45454545454545,
+      "auctionVolRatio": 0.1716808089517725,
+      "yesterdayChgPct": 10.000000000000009,
+      "trend": {
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.2630277587677197
+      },
+      "p1": {
+        "auctionChgPct": 9.45454545454545,
+        "auctionVolRatio": 0.1716808089517725,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 10.000000000000009,
+        "auctionChgPct": 9.45454545454545,
+        "applicable": true,
+        "verdict": "超预期·高开",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 2.538,
+        "ma10": 2.477,
+        "ma20": 2.4555,
+        "ma60": 2.4576666666666664,
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.2630277587677197,
+        "volPriceUp": false,
+        "score": 0.3,
+        "ok": false
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 79,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 0.3
+      },
+      "stamp": "20261023092500",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 2
+    },
+    "sz301502": {
+      "code": "sz301502",
+      "name": "华阳智能",
+      "sector": "电机Ⅱ",
+      "board": "创业板",
+      "open": 58,
+      "prevClose": 54,
+      "price": 58,
+      "auctionChgPct": 7.407407407407418,
+      "auctionVolRatio": 0.07874300162542894,
+      "yesterdayChgPct": 19.999999999999996,
+      "trend": {
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": false,
+        "slope20": -0.9105362012920929
+      },
+      "p1": {
+        "auctionChgPct": 7.407407407407418,
+        "auctionVolRatio": 0.07874300162542894,
+        "highOpen": true,
+        "nearLimit": false,
+        "volOk": true,
+        "score": 0.8323607515769347,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 19.999999999999996,
+        "auctionChgPct": 7.407407407407418,
+        "applicable": true,
+        "verdict": "超预期·高开",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 46.102,
+        "ma10": 45.715,
+        "ma20": 48.487500000000004,
+        "ma60": 49.803666666666686,
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": false,
+        "slope20": -0.9105362012920929,
+        "volPriceUp": false,
+        "score": 0.3,
+        "ok": false
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 73.1,
+      "scoreItems": {
+        "p1": 0.83,
+        "p2": 1,
+        "p3": 0.3
+      },
+      "stamp": "20261023092500",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 1
+    },
+    "sh603933": {
+      "code": "sh603933",
+      "name": "睿能科技",
+      "sector": "其他电子Ⅱ",
+      "board": "主板",
+      "open": 20.94,
+      "prevClose": 19.04,
+      "price": 20.94,
+      "auctionChgPct": 9.978991596638664,
+      "auctionVolRatio": 0.1419626432715438,
+      "yesterdayChgPct": 9.994222992489888,
+      "trend": {
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.6840950169420602
+      },
+      "p1": {
+        "auctionChgPct": 9.978991596638664,
+        "auctionVolRatio": 0.1419626432715438,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 9.994222992489888,
+        "auctionChgPct": 9.978991596638664,
+        "applicable": true,
+        "verdict": "超预期·涨停预期",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 17.52,
+        "ma10": 17.562,
+        "ma20": 18.291000000000004,
+        "ma60": 18.794499999999996,
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -0.6840950169420602,
+        "volPriceUp": false,
+        "score": 0,
+        "ok": false
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 70,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 0
+      },
+      "stamp": "20261023092620",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 1
+    },
+    "sz001360": {
+      "code": "sz001360",
+      "name": "南矿集团",
+      "sector": "专用设备",
+      "board": "主板",
+      "open": 20.44,
+      "prevClose": 18.58,
+      "price": 20.44,
+      "auctionChgPct": 10.01076426264802,
+      "auctionVolRatio": 0.3006810262907824,
+      "yesterdayChgPct": 10.005920663114253,
+      "trend": {
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -1.2259234955803453
+      },
+      "p1": {
+        "auctionChgPct": 10.01076426264802,
+        "auctionVolRatio": 0.3006810262907824,
+        "highOpen": true,
+        "nearLimit": true,
+        "volOk": true,
+        "score": 1,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 10.005920663114253,
+        "auctionChgPct": 10.01076426264802,
+        "applicable": true,
+        "verdict": "超预期·涨停预期",
+        "score": 1,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 17.131999999999998,
+        "ma10": 17.167999999999996,
+        "ma20": 18.505,
+        "ma60": 17.461999999999996,
+        "maBull": false,
+        "newHigh20": false,
+        "newHigh60": false,
+        "slope20": -1.2259234955803453,
+        "volPriceUp": false,
+        "score": 0,
+        "ok": false
+      },
+      "label": "超预期",
+      "risk": false,
+      "total": 70,
+      "scoreItems": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 0
+      },
+      "stamp": "20261023092621",
+      "groupRank": 2,
+      "bestInGroup": false,
+      "groupSize": 2
+    },
+    "sz002307": {
+      "code": "sz002307",
+      "name": "北新路桥",
+      "sector": "基础建设",
+      "board": "主板",
+      "open": 3.6,
+      "prevClose": 3.39,
+      "price": 3.6,
+      "auctionChgPct": 6.194690265486735,
+      "auctionVolRatio": 0.09662688302426145,
+      "yesterdayChgPct": 10.064935064935066,
+      "trend": {
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.25379694242263434
+      },
+      "p1": {
+        "auctionChgPct": 6.194690265486735,
+        "auctionVolRatio": 0.09662688302426145,
+        "highOpen": true,
+        "nearLimit": false,
+        "volOk": true,
+        "score": 0.7194690265486735,
+        "ok": true
+      },
+      "p2": {
+        "yesterdayChgPct": 10.064935064935066,
+        "auctionChgPct": 6.194690265486735,
+        "applicable": true,
+        "verdict": "符合预期·健康高开",
+        "score": 0.7,
+        "risk": false
+      },
+      "p3": {
+        "ma5": 3.0900000000000003,
+        "ma10": 3.0409999999999995,
+        "ma20": 3.004,
+        "ma60": 3.014,
+        "maBull": false,
+        "newHigh20": true,
+        "newHigh60": true,
+        "slope20": 0.25379694242263434,
+        "volPriceUp": true,
+        "score": 0.3,
+        "ok": false
+      },
+      "label": "弱转强·符合",
+      "risk": false,
+      "total": 58.7,
+      "scoreItems": {
+        "p1": 0.72,
+        "p2": 0.7,
+        "p3": 0.3
+      },
+      "stamp": "20261023092500",
+      "groupRank": 1,
+      "bestInGroup": true,
+      "groupSize": 1
+    }
+  }
 }
