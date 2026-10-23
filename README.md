@@ -329,6 +329,7 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 - **产物与代码分库**：这些报告/快照由工作流提交到独立的 `daily-artifacts` 分支，**不污染 `main` 代码分支**；`main` 始终只放代码，本地提交代码也不会与定时任务撞车。推送用 `GITHUB_TOKEN`（`permissions: contents: write`），无需 PAT。
 - **本地仍可提交产物**：你本地想保留报告/快照，照常把它们提交到 `main` 即可，与定时任务写入的 `daily-artifacts` 互不影响。
 - **入库同步（可选）**：若配置了 `CF_*` Secrets，工作流在提交报告后会自动调用 `node db/backfill.js`，把当日（及全部历史）快照规范化写入 Cloudflare D1。未配置时该步骤安全跳过，不影响报告。写入幂等，重复运行不会重复插入。
+- **提交约定**：不论本地还是云端，所有定时任务都遵循「执行后必须提交改动」。GitHub Actions 由 workflow 末尾的 commit 步骤负责（产物落 `daily-artifacts` 或 `main`）；本地 WorkBuddy 自动化由每个任务 Prompt 里的「git 推送块」负责（详见 [`docs/automations/README.md`](docs/automations/README.md)）。
 
 ---
 

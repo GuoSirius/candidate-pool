@@ -165,6 +165,8 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 
 产物提交 `daily-artifacts` 分支；D1 落库依赖分组「入库」的三个 `CF_*` Secrets，未配则安全跳过。完整拓扑见 [docs/ops/01-方案.md](./docs/ops/01-方案.md)。
 
+> 所有定时任务执行后都会自动 commit：GitHub Actions 由 workflow 末尾的 commit 步骤负责，本地 WorkBuddy 自动化由任务 Prompt 里的「git 推送块」负责（脚本内部不再写 git，避免重复提交）。统一约定见 [`docs/automations/README.md`](./docs/automations/README.md)。
+
 ---
 
 ## 3. 日常发布（环境已就绪）

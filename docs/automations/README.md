@@ -21,6 +21,16 @@
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
 
+### ⚓ 提交约定（铁律）
+
+**所有定时任务执行后，都必须把产物改动提交并推送到仓库**（`git add` → `git commit` → `git push`）。
+这是本文件与 [`docs/ops/01-方案.md`](../../docs/ops/01-方案.md) 共同遵守的硬规则：缺提交的定时任务会累积未入库产物，
+且与 GitHub Actions 分支互相覆盖时丢失数据。
+
+- **本地自动化（本机 WorkBuddy）**：**所有任务**的提交都由下方各节 Prompt 里的「git 推送块」显式负责（`git add` → `git commit` → `git push`）。脚本内部**不再写 git**——原先盘前选股 / 回填在 `preopen_screener.js` / `preopen_backfill.js` 内自动 commit，已于 2026-10-23 移除，统一收归 Prompt，避免重复提交。
+- **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
+- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1/A2 的 cwds 不在本仓库，不提交本仓库。
+
 **两个 PAUSED 任务（盘前选股 / 盘前回填）**：调度不生效，仅用于在 WorkBuddy 自动化面板**手动触发**；recurring 类型必须带 rrule，故填了名义时间但不运行。
 
 ---
@@ -63,8 +73,25 @@
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前选股：npm run preopen（等价 node eod/preopen_screener.js，默认全市场 universe 口径）。09:20-09:35 交易窗口内运行有效，窗口外需补跑时加 --force（node eod/preopen_screener.js --force）。完成后汇总：候选数量、TOP5 名称与总分、贴线样本（nearMiss）条数；若被时段守卫跳过或零候选，说明原因。脚本自身会推送通知与 git 溯源，无需额外提交。
+在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前选股：npm run preopen（等价 node eod/preopen_screener.js，默认全市场 universe 口径）。09:20-09:35 交易窗口内运行有效，窗口外需补跑时加 --force（node eod/preopen_screener.js --force）。完成后汇总：候选数量、TOP5 名称与总分、贴线样本（nearMiss）条数；若被时段守卫跳过或零候选，说明原因。
+
+生成成功后，把产物提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行）：
+
+```bash
+git add eod/data eod/reports
+git commit -m "chore: 盘前选股 $(date +%F)"
+git push
+```
 ~~~
+
+### git 推送块（本任务）
+
+```bash
+git add eod/data eod/reports
+git commit -m "chore: 盘前选股 $(date +%F)"
+git push
+```
+
 
 ---
 
@@ -81,7 +108,24 @@
 
 ~~~text
 在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段。完成后汇总：回填总数、命中数、命中率；若当日无盘前归档则说明。
+
+生成成功后，把更新后的归档提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行）：
+
+```bash
+git add eod/data eod/reports
+git commit -m "chore: 盘前回填 $(date +%F)"
+git push
+```
 ~~~
+
+### git 推送块（本任务）
+
+```bash
+git add eod/data eod/reports
+git commit -m "chore: 盘前回填 $(date +%F)"
+git push
+```
+
 
 ---
 
@@ -191,13 +235,30 @@ git push
 - **早盘机会（10:30）ID**：`437fc164-152b-431c-b5bf-8a7a211f8f47`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30`
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：均 ACTIVE
-- **推送**：脚本自身带通知与 git 溯源
+- **推送**：脚本强制 `--no-notify`（不推送微信/邮件）；`--intraday` 产物**不写入 D1**；git 提交由下方「git 推送块」负责
 
 ### Prompt（原样复制进 WorkBuddy 自动化，两任务共用）
 
 ~~~text
 在 candidate-pool 项目目录（D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）下，执行尾盘选股命令：运行 `npm run tail:intraday`（等价于 `node eod/tail_screener.js --intraday`）。等待命令执行完成，捕获并打印关键输出（候选股列表、报告路径、任何报错），用简洁中文向用户汇报结果。若命令执行失败，给出根因与可执行建议，不要隐瞒错误。
+
+生成成功后，把盘中候选提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行；`--intraday` 盘中模式强制 `--no-notify` 且不写 D1，仅入库本仓库 git）：
+
+```bash
+git add eod/data eod/reports
+git commit -m "chore: 盘中机会 $(date +%F)"
+git push
+```
 ~~~
+
+### git 推送块（本任务）
+
+```bash
+git add eod/data eod/reports
+git commit -m "chore: 盘中机会 $(date +%F)"
+git push
+```
+
 
 ---
 
