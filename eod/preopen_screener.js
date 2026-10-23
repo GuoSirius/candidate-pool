@@ -27,7 +27,6 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 
 const cfg = require('./preopen.config');
 const { dayjs } = require('../time');
@@ -50,7 +49,6 @@ const OPT = {
   force: argv.includes('--force'),
   now: argOf('--now'),
   noNotify: argv.includes('--no-notify'),
-  noPush: argv.includes('--no-push'),
   json: argv.includes('--json'),
   paths: argv.includes('--paths'),
   init: argv.includes('--init'),
@@ -146,19 +144,6 @@ function excludeOne(q, map, tradeDate) {
     }
   }
   return null;
-}
-
-// ---------- git 推送（溯源）----------
-function gitPush(files, message) {
-  const root = paths.PKG_ROOT;
-  const run = (args, allowFail) => {
-    try { return execFileSync('git', args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }).toString(); }
-    catch (e) { if (allowFail) return ''; throw e; }
-  };
-  run(['add', ...files]);
-  run(['-c', 'core.hooksPath=.git/cph', 'commit', '-m', message]);
-  const sha = run(['rev-parse', 'HEAD']).trim();
-  run(['-c', 'credential.helper=', '-c', 'credential.helper=wincred', 'push', 'origin', `${sha}:refs/heads/main`]);
 }
 
 // ---------- 主流程 ----------
@@ -348,17 +333,6 @@ async function emitResult(p) {
     ].join('\n');
     const res = await notify({ title: `盘前选股 ${tradeDate}（${result.stats.candidateCount} 只）`, content, htmlPath: reportFile });
     for (const [ch, [ok, info]] of res) log(`[notify] ${ch}: ${ok ? 'OK' : '失败 ' + JSON.stringify(info)}`);
-  }
-
-  // 推送远程溯源
-  if (!OPT.noPush) {
-    try {
-      const pushFiles = [saved.file, reportFile];
-      gitPush(pushFiles, `chore(preopen): ${tradeDate} 候选 ${result.stats.candidateCount} 只（${scope}）`);
-      log('[推送] 已 git 提交并推送远程（溯源）');
-    } catch (e) {
-      log(`[推送] 失败（数据已落本地，可稍后手动推送）：${e && e.message || e}`);
-    }
   }
 
   const summary = {

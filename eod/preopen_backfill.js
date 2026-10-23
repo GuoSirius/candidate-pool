@@ -20,11 +20,8 @@ const { dayjs } = require('../time');
 const cfg = require('./preopen.config');
 const market = require('./lib/market');
 const store = require('./lib/preopen_store');
-const paths = require('../paths');
-const { execFileSync } = require('child_process');
-
 const argv = process.argv.slice(2);
-const OPT = { date: (() => { const i = argv.indexOf('--date'); return i >= 0 ? argv[i + 1] : null; })(), force: argv.includes('--force'), noPush: argv.includes('--no-push') };
+const OPT = { date: (() => { const i = argv.indexOf('--date'); return i >= 0 ? argv[i + 1] : null; })(), force: argv.includes('--force') };
 function log(m) { console.log(m); }
 
 function boardLimitPct(code) {
@@ -68,19 +65,6 @@ async function run() {
   const summary = { hitDayChgMin: cfg.backfill.hitDayChgMin };
   const close = store.mergeBackfill(cfg, tradeDate, closeMap, summary);
   log(`[回填] 命中 ${close.hit}/${close.total}（开盘买入当日涨≥${cfg.backfill.hitDayChgMin}%）= ${close.hitRate}%`);
-
-  if (!OPT.noPush) {
-    try {
-      const file = store.dataFile(cfg, tradeDate);
-      const root = paths.PKG_ROOT;
-      const run = (a, af) => { try { return execFileSync('git', a, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }).toString(); } catch (e) { if (af) return ''; throw e; } };
-      run(['add', file]);
-      run(['-c', 'core.hooksPath=.git/cph', 'commit', '-m', `preopen: ${tradeDate} 收盘回填 命中率 ${close.hitRate}%`]);
-      const sha = run(['rev-parse', 'HEAD']).trim();
-      run(['-c', 'credential.helper=', '-c', 'credential.helper=wincred', 'push', 'origin', `${sha}:refs/heads/main`]);
-      log('[推送] 已提交并推送回填结果');
-    } catch (e) { log(`[推送] 失败（本地已回填）：${e && e.message || e}`); }
-  }
   return close;
 }
 
