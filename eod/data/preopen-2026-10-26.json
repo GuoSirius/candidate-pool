@@ -523,7 +523,196 @@
       "belowMin": 10
     }
   ],
-  "close": null,
+  "close": {
+    "backfilledAt": "2026-10-26T07:01:50.683Z",
+    "marketDate": "2026-10-26",
+    "hitDayChgMin": 2,
+    "total": 30,
+    "hit": 22,
+    "perCode": {
+      "sh603278": {
+        "close": 17.25,
+        "dayChgPct": 8.08,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh600838": {
+        "close": 12.1,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz301313": {
+        "close": 67.85,
+        "dayChgPct": 10.43,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh688071": {
+        "close": 53.14,
+        "dayChgPct": 11.83,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh603028": {
+        "close": 9.39,
+        "dayChgPct": 9.95,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603081": {
+        "close": 11.3,
+        "dayChgPct": 6.1,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh603089": {
+        "close": 13.08,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002474": {
+        "close": 7.01,
+        "dayChgPct": -1.41,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz000678": {
+        "close": 14.55,
+        "dayChgPct": 9.98,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603528": {
+        "close": 8.95,
+        "dayChgPct": 9.95,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603933": {
+        "close": 20.37,
+        "dayChgPct": -2.72,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz301502": {
+        "close": 77.76,
+        "dayChgPct": 20,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603677": {
+        "close": 16.69,
+        "dayChgPct": 2.39,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz002009": {
+        "close": 17.17,
+        "dayChgPct": -0.75,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh603337": {
+        "close": 43.19,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002606": {
+        "close": 12.49,
+        "dayChgPct": 3.31,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh603280": {
+        "close": 33.04,
+        "dayChgPct": 3.35,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh603466": {
+        "close": 14.73,
+        "dayChgPct": 0.27,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh603721": {
+        "close": 21.6,
+        "dayChgPct": -0.78,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz002354": {
+        "close": 8.15,
+        "dayChgPct": 1.49,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh603901": {
+        "close": 10.63,
+        "dayChgPct": 10.04,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002982": {
+        "close": 13.54,
+        "dayChgPct": 1.96,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz300949": {
+        "close": 35.58,
+        "dayChgPct": 20,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh688787": {
+        "close": 145.33,
+        "dayChgPct": 3.07,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz301101": {
+        "close": 37.04,
+        "dayChgPct": 4.81,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz301314": {
+        "close": 56.14,
+        "dayChgPct": 20.01,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz300916": {
+        "close": 34.27,
+        "dayChgPct": 19.99,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002421": {
+        "close": 3.42,
+        "dayChgPct": -0.29,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh603160": {
+        "close": 59.01,
+        "dayChgPct": 4.46,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh605488": {
+        "close": 41.97,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      }
+    },
+    "hitRate": 73.3
+  },
   "records": {
     "sh603278": {
       "code": "sh603278",
@@ -583,7 +772,13 @@
       "stamp": "20261026092833",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 17.25,
+        "dayChgPct": 8.08,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh600838": {
       "code": "sh600838",
@@ -643,7 +838,13 @@
       "stamp": "20261026092830",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 12.1,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz301313": {
       "code": "sz301313",
@@ -703,7 +904,13 @@
       "stamp": "20261026092757",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 67.85,
+        "dayChgPct": 10.43,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh688071": {
       "code": "sh688071",
@@ -763,7 +970,13 @@
       "stamp": "20261026092821",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 5
+      "groupSize": 5,
+      "close": {
+        "close": 53.14,
+        "dayChgPct": 11.83,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh603028": {
       "code": "sh603028",
@@ -823,7 +1036,13 @@
       "stamp": "20261026092814",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 9.39,
+        "dayChgPct": 9.95,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603081": {
       "code": "sh603081",
@@ -883,7 +1102,13 @@
       "stamp": "20261026092832",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 5
+      "groupSize": 5,
+      "close": {
+        "close": 11.3,
+        "dayChgPct": 6.1,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh603089": {
       "code": "sh603089",
@@ -943,7 +1168,13 @@
       "stamp": "20261026092835",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 13.08,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002474": {
       "code": "sz002474",
@@ -1003,7 +1234,13 @@
       "stamp": "20261026092818",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 3
+      "groupSize": 3,
+      "close": {
+        "close": 7.01,
+        "dayChgPct": -1.41,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz000678": {
       "code": "sz000678",
@@ -1063,7 +1300,13 @@
       "stamp": "20261026092800",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 14.55,
+        "dayChgPct": 9.98,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603528": {
       "code": "sh603528",
@@ -1123,7 +1366,13 @@
       "stamp": "20261026092820",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 8.95,
+        "dayChgPct": 9.95,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603933": {
       "code": "sh603933",
@@ -1183,7 +1432,13 @@
       "stamp": "20261026092842",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 20.37,
+        "dayChgPct": -2.72,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz301502": {
       "code": "sz301502",
@@ -1243,7 +1498,13 @@
       "stamp": "20261026092806",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 77.76,
+        "dayChgPct": 20,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603677": {
       "code": "sh603677",
@@ -1303,7 +1564,13 @@
       "stamp": "20261026092840",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 16.69,
+        "dayChgPct": 2.39,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz002009": {
       "code": "sz002009",
@@ -1363,7 +1630,13 @@
       "stamp": "20261026092751",
       "groupRank": 3,
       "bestInGroup": false,
-      "groupSize": 5
+      "groupSize": 5,
+      "close": {
+        "close": 17.17,
+        "dayChgPct": -0.75,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh603337": {
       "code": "sh603337",
@@ -1423,7 +1696,13 @@
       "stamp": "20261026092839",
       "groupRank": 4,
       "bestInGroup": false,
-      "groupSize": 5
+      "groupSize": 5,
+      "close": {
+        "close": 43.19,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002606": {
       "code": "sz002606",
@@ -1483,7 +1762,13 @@
       "stamp": "20261026092806",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 12.49,
+        "dayChgPct": 3.31,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh603280": {
       "code": "sh603280",
@@ -1543,7 +1828,13 @@
       "stamp": "20261026092828",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 33.04,
+        "dayChgPct": 3.35,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh603466": {
       "code": "sh603466",
@@ -1603,7 +1894,13 @@
       "stamp": "20261026092840",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 14.73,
+        "dayChgPct": 0.27,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh603721": {
       "code": "sh603721",
@@ -1663,7 +1960,13 @@
       "stamp": "20261026092822",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 21.6,
+        "dayChgPct": -0.78,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz002354": {
       "code": "sz002354",
@@ -1723,7 +2026,13 @@
       "stamp": "20261026092824",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 8.15,
+        "dayChgPct": 1.49,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh603901": {
       "code": "sh603901",
@@ -1783,7 +2092,13 @@
       "stamp": "20261026092837",
       "groupRank": 5,
       "bestInGroup": false,
-      "groupSize": 5
+      "groupSize": 5,
+      "close": {
+        "close": 10.63,
+        "dayChgPct": 10.04,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002982": {
       "code": "sz002982",
@@ -1843,7 +2158,13 @@
       "stamp": "20261026092821",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 13.54,
+        "dayChgPct": 1.96,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz300949": {
       "code": "sz300949",
@@ -1903,7 +2224,13 @@
       "stamp": "20261026092815",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 35.58,
+        "dayChgPct": 20,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh688787": {
       "code": "sh688787",
@@ -1963,7 +2290,13 @@
       "stamp": "20261026092817",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 3
+      "groupSize": 3,
+      "close": {
+        "close": 145.33,
+        "dayChgPct": 3.07,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz301101": {
       "code": "sz301101",
@@ -2023,7 +2356,13 @@
       "stamp": "20261026092748",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 37.04,
+        "dayChgPct": 4.81,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz301314": {
       "code": "sz301314",
@@ -2083,7 +2422,13 @@
       "stamp": "20261026092754",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 56.14,
+        "dayChgPct": 20.01,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz300916": {
       "code": "sz300916",
@@ -2143,7 +2488,13 @@
       "stamp": "20261026092803",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 34.27,
+        "dayChgPct": 19.99,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002421": {
       "code": "sz002421",
@@ -2203,7 +2554,13 @@
       "stamp": "20261026092842",
       "groupRank": 3,
       "bestInGroup": false,
-      "groupSize": 3
+      "groupSize": 3,
+      "close": {
+        "close": 3.42,
+        "dayChgPct": -0.29,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh603160": {
       "code": "sh603160",
@@ -2263,7 +2620,13 @@
       "stamp": "20261026092821",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 59.01,
+        "dayChgPct": 4.46,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh605488": {
       "code": "sh605488",
@@ -2323,7 +2686,13 @@
       "stamp": "20261026092831",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 41.97,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      }
     }
   }
 }
