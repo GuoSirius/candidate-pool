@@ -1,0 +1,132 @@
+{
+ "version": 2,
+ "tradeDate": "2026-10-22",
+ "mode": "cut",
+ "cutAt": "1450",
+ "updatedAt": "2026-10-22 14:51:05",
+ "runs": [
+  {
+   "at": "2026-10-22 14:51:05",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 2,
+   "groupCount": 2,
+   "prePassCount": 37,
+   "snapshotCount": 6177,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6177,
+  "prePassCount": 37,
+  "preByReason": {
+   "当日涨幅不在区间": 5294,
+   "停牌或已退市（无成交）": 327,
+   "ST / 退市风险股": 477,
+   "换手率不在区间": 31,
+   "量比不足": 3,
+   "流通市值不在区间": 8
+  },
+  "minuteDropped": 35,
+  "tailByReason": {
+   "尾盘段涨幅不足": 30,
+   "距日内高点回落过多": 31,
+   "现价低于当日均价": 17,
+   "关键字段缺失或分时数据不可用": 2
+  },
+  "candidateCount": 2,
+  "groupCount": 2
+ },
+ "records": {
+  "sz300772": {
+   "code": "sz300772",
+   "name": "运达股份",
+   "sector": "风电设备",
+   "board": "gem",
+   "boardLabel": "创业板",
+   "price": 8.83,
+   "prevClose": 8.52,
+   "high": 8.85,
+   "chgPct": 3.64,
+   "turnover": 3.09,
+   "volRatio": 1.72,
+   "volRatioEst": 1.7947826086956522,
+   "floatCapYi": 61.63,
+   "totalCapYi": 69.48,
+   "avgPrice": 8.717580798839414,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 1.8454440599769337,
+    "upRatio": 0.7058823529411765,
+    "maxDrawdownPct": 0.3401360544217816,
+    "priceVsAvgPct": 1.2895687892626517,
+    "avgAtCut": 8.717580798839414,
+    "p0": 8.67,
+    "p1": 8.83,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 32.29527104959634,
+    "volume": 6.933333333333334,
+    "position": 15.288135593220396,
+    "avgLine": 10.316550314101214,
+    "turnoverFit": 11
+   },
+   "total": 75.83329029025128,
+   "sectorMedianChg": 3.64,
+   "sectorRank": 14,
+   "sectorTotal": 20,
+   "fill": {}
+  },
+  "sz002576": {
+   "code": "sz002576",
+   "name": "通达动力",
+   "sector": "电机Ⅱ",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 15.19,
+   "prevClose": 14.4,
+   "high": 15.37,
+   "chgPct": 5.49,
+   "turnover": 8.98,
+   "volRatio": 2.58,
+   "volRatioEst": 2.692173913043478,
+   "floatCapYi": 24.61,
+   "totalCapYi": 25.08,
+   "avgPrice": 15.077316675208822,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 1.735647530040052,
+    "upRatio": 0.7058823529411765,
+    "maxDrawdownPct": 0.2657807308970161,
+    "priceVsAvgPct": 1.07899388396262,
+    "avgAtCut": 15.077316675208822,
+    "p0": 14.98,
+    "p1": 15.24,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 30.37383177570091,
+    "volume": 18.400000000000002,
+    "position": 7.850357839948027,
+    "avgLine": 8.63195107170096,
+    "turnoverFit": 3.7399999999999984
+   },
+   "total": 68.9961406873499,
+   "sectorMedianChg": 4.3,
+   "sectorRank": 8,
+   "sectorTotal": 20,
+   "fill": {}
+  }
+ }
+}
