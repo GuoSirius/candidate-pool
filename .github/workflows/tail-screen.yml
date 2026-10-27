@@ -78,18 +78,19 @@ jobs:
           echo "TZ=Asia/Shanghai" >> "$GITHUB_ENV"
           echo "Runner 本地时间  = $(date '+%Y-%m-%d %H:%M:%S %Z')"
 
-      # 延迟护栏：GitHub 调度器常排队数小时（本次实测 ~5h）。若 Runner 启动已晚于
-      # 尾盘抓取窗口收盘时刻（15:00 北京），再抓就是「收盘后」数据，且会覆盖
-      # daily-artifacts 里本地准时任务写的正确结果 —— 故直接跳过。
+      # 延迟识别：GitHub 调度器常排队数小时（本次实测 ~5h）。若 Runner 启动已晚于
+      # 尾盘抓取窗口收盘时刻（15:00 北京），不再「整条跳过」，而是继续跑——
+      # 但加 --no-d1 --force：不污染线上 Cloudflare D1 数据源（避免错误/收盘后数据
+      # 写进网页 /api/tail/*），仍照常产出本地 HTML/JSON 并推到 daily-artifacts 供分发。
       # daily-screen（抓已收盘定型的次日候选）不受影响，不加护栏。
-      - name: Guard - skip if delayed past capture window
+      - name: Guard - detect delayed past capture window
         id: guard
         run: |
           NOW_BJ=$(TZ=Asia/Shanghai date +%H%M)
           CAP=1500   # 15:00 北京 = 收盘
           if [ "$NOW_BJ" -gt "$CAP" ]; then
-            echo "::warning::Runner 启动于 ${NOW_BJ} 北京，晚于尾盘抓取窗口（已收盘），跳过抓取以避免错误数据覆盖 daily-artifacts"
-            echo "SKIP=1" >> "$GITHUB_ENV"
+            echo "::warning::Runner 启动于 ${NOW_BJ} 北京，晚于尾盘抓取窗口（已收盘）；仍产出 HTML/JSON 到 daily-artifacts，但跳过 D1 同步（--no-d1 --force）"
+            echo "NO_SYNC=1" >> "$GITHUB_ENV"
           else
             echo "启动于 ${NOW_BJ} 北京，在窗口内，正常执行"
           fi
@@ -107,7 +108,6 @@ jobs:
 
       - name: Run tail screening (尾盘选股 + 报告 + 推送)
         id: live
-        if: ${{ env.SKIP != '1' }}
         continue-on-error: true
         env:
           # D1 凭据：尾盘结果由脚本内 syncTailRun 直接写入 Cloudflare D1（网页 /api/tail/* 的数据源）。
@@ -125,10 +125,12 @@ jobs:
           NOTIFY_MAIL_HOST: ${{ secrets.NOTIFY_MAIL_HOST }}
           NOTIFY_MAIL_PORT: ${{ secrets.NOTIFY_MAIL_PORT }}
         run: |
+          ARGS=""
+          if [ "$NO_SYNC" = "1" ]; then ARGS="--no-d1 --force"; fi
           if [ "${{ github.event.inputs.wait }}" = "true" ]; then
-            node eod/tail_screener.js --wait
+            node eod/tail_screener.js --wait $ARGS
           else
-            node eod/tail_screener.js
+            node eod/tail_screener.js $ARGS
           fi
 
       # ---------------------------------------------------------------------
@@ -136,7 +138,6 @@ jobs:
       # 留档分支；报告也可在 Actions 页面直接下载。
       # ---------------------------------------------------------------------
       - name: Commit artifacts to daily-artifacts branch
-        if: ${{ env.SKIP != '1' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -162,7 +163,6 @@ jobs:
           git worktree remove _artifacts --force
 
       - name: Upload report artifact
-        if: ${{ env.SKIP != '1' }}
         uses: actions/upload-artifact@v4
         with:
           name: tail-report
@@ -173,7 +173,7 @@ jobs:
           retention-days: 30
 
       - name: Report failure (标红 + 微信告警)
-        if: ${{ env.SKIP != '1' && steps.live.outcome == 'failure' }}
+        if: ${{ steps.live.outcome == 'failure' }}
         env:
           NOTIFY_WX_PROVIDER: ${{ secrets.NOTIFY_WX_PROVIDER }}
           NOTIFY_WX_KEY: ${{ secrets.NOTIFY_WX_KEY }}
