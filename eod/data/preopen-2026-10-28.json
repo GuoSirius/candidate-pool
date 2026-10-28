@@ -329,7 +329,76 @@
       "belowMin": 10
     }
   ],
-  "close": null,
+  "close": {
+    "backfilledAt": "2026-10-28T07:30:39.982Z",
+    "marketDate": "2026-10-28",
+    "hitDayChgMin": 2,
+    "total": 10,
+    "hit": 10,
+    "perCode": {
+      "sh601956": {
+        "close": 6.09,
+        "dayChgPct": 9.93,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz000058": {
+        "close": 8.19,
+        "dayChgPct": 4.07,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz001219": {
+        "close": 16.48,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz000678": {
+        "close": 17.61,
+        "dayChgPct": 9.99,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh600838": {
+        "close": 13.99,
+        "dayChgPct": 5.11,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz002708": {
+        "close": 18.94,
+        "dayChgPct": 9.99,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz001400": {
+        "close": 88.31,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz300949": {
+        "close": 40.89,
+        "dayChgPct": 4.74,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz002187": {
+        "close": 6.04,
+        "dayChgPct": 2.03,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh600828": {
+        "close": 4.92,
+        "dayChgPct": 10.07,
+        "limitUp": true,
+        "hit": true
+      }
+    },
+    "hitRate": 100
+  },
   "records": {
     "sh601956": {
       "code": "sh601956",
@@ -389,7 +458,13 @@
       "stamp": "20261028092841",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 6.09,
+        "dayChgPct": 9.93,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz000058": {
       "code": "sz000058",
@@ -449,7 +524,13 @@
       "stamp": "20261028092800",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 4
+      "groupSize": 4,
+      "close": {
+        "close": 8.19,
+        "dayChgPct": 4.07,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz001219": {
       "code": "sz001219",
@@ -509,7 +590,13 @@
       "stamp": "20261028092809",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 16.48,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz000678": {
       "code": "sz000678",
@@ -569,7 +656,13 @@
       "stamp": "20261028092806",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 17.61,
+        "dayChgPct": 9.99,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh600838": {
       "code": "sh600838",
@@ -629,7 +722,13 @@
       "stamp": "20261028092812",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 4
+      "groupSize": 4,
+      "close": {
+        "close": 13.99,
+        "dayChgPct": 5.11,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz002708": {
       "code": "sz002708",
@@ -689,7 +788,13 @@
       "stamp": "20261028092748",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 18.94,
+        "dayChgPct": 9.99,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz001400": {
       "code": "sz001400",
@@ -749,7 +854,13 @@
       "stamp": "20261028092803",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 88.31,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz300949": {
       "code": "sz300949",
@@ -809,7 +920,13 @@
       "stamp": "20261028092821",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 40.89,
+        "dayChgPct": 4.74,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz002187": {
       "code": "sz002187",
@@ -869,7 +986,13 @@
       "stamp": "20261028092824",
       "groupRank": 3,
       "bestInGroup": false,
-      "groupSize": 4
+      "groupSize": 4,
+      "close": {
+        "close": 6.04,
+        "dayChgPct": 2.03,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh600828": {
       "code": "sh600828",
@@ -929,7 +1052,13 @@
       "stamp": "20261028092812",
       "groupRank": 4,
       "bestInGroup": false,
-      "groupSize": 4
+      "groupSize": 4,
+      "close": {
+        "close": 4.92,
+        "dayChgPct": 10.07,
+        "limitUp": true,
+        "hit": true
+      }
     }
   }
 }
