@@ -1,0 +1,89 @@
+{
+ "version": 2,
+ "tradeDate": "2026-10-29",
+ "mode": "observe",
+ "cutAt": "1437",
+ "updatedAt": "2026-10-29 14:37:47",
+ "runs": [
+  {
+   "at": "2026-10-29 14:37:47",
+   "mode": "observe",
+   "cutAt": "1437",
+   "segFrom": "1417",
+   "segMinutes": null,
+   "candidateCount": 1,
+   "groupCount": 1,
+   "prePassCount": 61,
+   "snapshotCount": 6180,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6180,
+  "prePassCount": 61,
+  "preByReason": {
+   "当日涨幅不在区间": 5242,
+   "停牌或已退市（无成交）": 329,
+   "ST / 退市风险股": 477,
+   "换手率不在区间": 44,
+   "量比不足": 18,
+   "流通市值不在区间": 8,
+   "股价过低": 1
+  },
+  "minuteDropped": 60,
+  "tailByReason": {
+   "尾盘段涨幅不足": 57,
+   "距日内高点回落过多": 46,
+   "现价低于当日均价": 23,
+   "关键字段缺失或分时数据不可用": 1
+  },
+  "candidateCount": 1,
+  "groupCount": 1
+ },
+ "records": {
+  "sh603680": {
+   "code": "sh603680",
+   "name": "今创集团",
+   "sector": "轨交设备Ⅱ",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 11.67,
+   "prevClose": 11.33,
+   "high": 11.77,
+   "chgPct": 3,
+   "turnover": 3.13,
+   "volRatio": 2.94,
+   "volRatioEst": 3.2516129032258068,
+   "floatCapYi": 91.46,
+   "totalCapYi": 91.46,
+   "avgPrice": 11.366249205740532,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 1.1255411255411167,
+    "upRatio": 0.5,
+    "maxDrawdownPct": 0.6878761822871888,
+    "priceVsAvgPct": 2.760372296790825,
+    "avgAtCut": 11.366249205740532,
+    "p0": 11.55,
+    "p1": 11.68,
+    "bars": 21,
+    "segFrom": "1417",
+    "cut": "1437"
+   },
+   "score": {
+    "tailMomentum": 19.696969696969543,
+    "volume": 23.2,
+    "position": 8.824129141886164,
+    "avgLine": 12,
+    "turnoverFit": 11
+   },
+   "total": 74.72109883885571,
+   "sectorMedianChg": 3,
+   "sectorRank": 38,
+   "sectorTotal": 38,
+   "fill": {}
+  }
+ }
+}
