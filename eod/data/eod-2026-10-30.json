@@ -1,0 +1,132 @@
+{
+ "version": 2,
+ "tradeDate": "2026-10-30",
+ "mode": "cut",
+ "cutAt": "1450",
+ "updatedAt": "2026-10-30 14:51:08",
+ "runs": [
+  {
+   "at": "2026-10-30 14:51:08",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 2,
+   "groupCount": 2,
+   "prePassCount": 73,
+   "snapshotCount": 6180,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6180,
+  "prePassCount": 73,
+  "preByReason": {
+   "当日涨幅不在区间": 5215,
+   "停牌或已退市（无成交）": 328,
+   "ST / 退市风险股": 477,
+   "换手率不在区间": 58,
+   "量比不足": 25,
+   "流通市值不在区间": 4
+  },
+  "minuteDropped": 71,
+  "tailByReason": {
+   "尾盘段涨幅不足": 66,
+   "现价低于当日均价": 27,
+   "距日内高点回落过多": 54,
+   "关键字段缺失或分时数据不可用": 1
+  },
+  "candidateCount": 2,
+  "groupCount": 2
+ },
+ "records": {
+  "sz002958": {
+   "code": "sz002958",
+   "name": "青农商行",
+   "sector": "银行Ⅱ",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 3.03,
+   "prevClose": 2.87,
+   "high": 3.04,
+   "chgPct": 5.57,
+   "turnover": 3.84,
+   "volRatio": 3.3,
+   "volRatioEst": 3.443478260869565,
+   "floatCapYi": 164.83,
+   "totalCapYi": 168.34,
+   "avgPrice": 2.9796365135554717,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.6644518272425255,
+    "upRatio": 0.6,
+    "maxDrawdownPct": 0.33112582781457717,
+    "priceVsAvgPct": 1.690256050206318,
+    "avgAtCut": 2.9796365135554717,
+    "p0": 3.01,
+    "p1": 3.03,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 11.627906976744196,
+    "volume": 24,
+    "position": 14.052631578947278,
+    "avgLine": 12,
+    "turnoverFit": 11
+   },
+   "total": 72.68053855569147,
+   "sectorMedianChg": 5.57,
+   "sectorRank": 6,
+   "sectorTotal": 43,
+   "fill": {}
+  },
+  "sh605006": {
+   "code": "sh605006",
+   "name": "山东玻纤",
+   "sector": "玻璃玻纤",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 13.38,
+   "prevClose": 12.82,
+   "high": 13.4,
+   "chgPct": 4.37,
+   "turnover": 7.54,
+   "volRatio": 1.61,
+   "volRatioEst": 1.6800000000000002,
+   "floatCapYi": 87.45,
+   "totalCapYi": 87.45,
+   "avgPrice": 12.694730965181035,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.7518796992481176,
+    "upRatio": 0.7368421052631579,
+    "maxDrawdownPct": 1.127819548872183,
+    "priceVsAvgPct": 5.555604421656257,
+    "avgAtCut": 12.694730965181035,
+    "p0": 13.3,
+    "p1": 13.4,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 13.157894736842058,
+    "volume": 5.466666666666669,
+    "position": 18,
+    "avgLine": 12,
+    "turnoverFit": 9.02
+   },
+   "total": 57.64456140350873,
+   "sectorMedianChg": 4.37,
+   "sectorRank": 27,
+   "sectorTotal": 43,
+   "fill": {}
+  }
+ }
+}
