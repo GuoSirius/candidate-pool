@@ -1,0 +1,88 @@
+{
+ "version": 2,
+ "tradeDate": "2026-10-30",
+ "mode": "observe",
+ "cutAt": "1445",
+ "updatedAt": "2026-10-30 14:45:16",
+ "runs": [
+  {
+   "at": "2026-10-30 14:45:16",
+   "mode": "observe",
+   "cutAt": "1445",
+   "segFrom": "1425",
+   "segMinutes": null,
+   "candidateCount": 1,
+   "groupCount": 1,
+   "prePassCount": 82,
+   "snapshotCount": 6180,
+   "runner": "local"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6180,
+  "prePassCount": 82,
+  "preByReason": {
+   "当日涨幅不在区间": 5198,
+   "停牌或已退市（无成交）": 328,
+   "ST / 退市风险股": 477,
+   "换手率不在区间": 63,
+   "量比不足": 27,
+   "流通市值不在区间": 5
+  },
+  "minuteDropped": 81,
+  "tailByReason": {
+   "尾盘段涨幅不足": 76,
+   "距日内高点回落过多": 64,
+   "现价低于当日均价": 22,
+   "关键字段缺失或分时数据不可用": 1
+  },
+  "candidateCount": 1,
+  "groupCount": 1
+ },
+ "records": {
+  "sz000520": {
+   "code": "sz000520",
+   "name": "凤凰航运",
+   "sector": "航运港口",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 3.53,
+   "prevClose": 3.38,
+   "high": 3.59,
+   "chgPct": 4.44,
+   "turnover": 2.84,
+   "volRatio": 1.63,
+   "volRatioEst": 1.7386666666666666,
+   "floatCapYi": 35.73,
+   "totalCapYi": 35.73,
+   "avgPrice": 3.456637768739308,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 3.2069970845481013,
+    "upRatio": 0.7142857142857143,
+    "maxDrawdownPct": 1.139601139601128,
+    "priceVsAvgPct": 2.411656552925301,
+    "avgAtCut": 3.456637768739308,
+    "p0": 3.43,
+    "p1": 3.54,
+    "bars": 21,
+    "segFrom": "1425",
+    "cut": "1445"
+   },
+   "score": {
+    "tailMomentum": 35,
+    "volume": 5.7333333333333325,
+    "position": 1.2869080779944868,
+    "avgLine": 12,
+    "turnoverFit": 9.239999999999998
+   },
+   "total": 63.260241411327826,
+   "sectorMedianChg": 4.29,
+   "sectorRank": 26,
+   "sectorTotal": 48,
+   "fill": {}
+  }
+ }
+}
