@@ -505,7 +505,94 @@
       "belowMin": 10
     }
   ],
-  "close": null,
+  "close": {
+    "backfilledAt": "2026-11-02T07:31:07.896Z",
+    "marketDate": "2026-11-02",
+    "hitDayChgMin": 2,
+    "total": 13,
+    "hit": 9,
+    "perCode": {
+      "sz002086": {
+        "close": 3.11,
+        "dayChgPct": 9.89,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh600261": {
+        "close": 4.5,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz000995": {
+        "close": 15.6,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002275": {
+        "close": 16.48,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603131": {
+        "close": 17.3,
+        "dayChgPct": -1.42,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz003032": {
+        "close": 9.57,
+        "dayChgPct": -3.92,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz000716": {
+        "close": 5.49,
+        "dayChgPct": 4.77,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz000525": {
+        "close": 4.94,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz001219": {
+        "close": 21.93,
+        "dayChgPct": 9.98,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603703": {
+        "close": 11.74,
+        "dayChgPct": -1.76,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz000410": {
+        "close": 5.91,
+        "dayChgPct": 10.06,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603587": {
+        "close": 14.19,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh603273": {
+        "close": 15.17,
+        "dayChgPct": -2.76,
+        "limitUp": false,
+        "hit": false
+      }
+    },
+    "hitRate": 69.2
+  },
   "records": {
     "sz002086": {
       "code": "sz002086",
@@ -565,7 +652,13 @@
       "stamp": "20261102092751",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 3.11,
+        "dayChgPct": 9.89,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh600261": {
       "code": "sh600261",
@@ -625,7 +718,13 @@
       "stamp": "20261102092755",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 4.5,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz000995": {
       "code": "sz000995",
@@ -685,7 +784,13 @@
       "stamp": "20261102092709",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 15.6,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002275": {
       "code": "sz002275",
@@ -745,7 +850,13 @@
       "stamp": "20261102092727",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 16.48,
+        "dayChgPct": 10.01,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603131": {
       "code": "sh603131",
@@ -805,7 +916,13 @@
       "stamp": "20261102092755",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 17.3,
+        "dayChgPct": -1.42,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz003032": {
       "code": "sz003032",
@@ -865,7 +982,13 @@
       "stamp": "20261102092709",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 9.57,
+        "dayChgPct": -3.92,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz000716": {
       "code": "sz000716",
@@ -925,7 +1048,13 @@
       "stamp": "20261102092706",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 5.49,
+        "dayChgPct": 4.77,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz000525": {
       "code": "sz000525",
@@ -985,7 +1114,13 @@
       "stamp": "20261102092736",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 4.94,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz001219": {
       "code": "sz001219",
@@ -1045,7 +1180,13 @@
       "stamp": "20261102092715",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 21.93,
+        "dayChgPct": 9.98,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603703": {
       "code": "sh603703",
@@ -1105,7 +1246,13 @@
       "stamp": "20261102092741",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 11.74,
+        "dayChgPct": -1.76,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz000410": {
       "code": "sz000410",
@@ -1165,7 +1312,13 @@
       "stamp": "20261102092748",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 5.91,
+        "dayChgPct": 10.06,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603587": {
       "code": "sh603587",
@@ -1225,7 +1378,13 @@
       "stamp": "20261102092746",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 14.19,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh603273": {
       "code": "sh603273",
@@ -1285,7 +1444,13 @@
       "stamp": "20261102092734",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 15.17,
+        "dayChgPct": -2.76,
+        "limitUp": false,
+        "hit": false
+      }
     }
   }
 }
