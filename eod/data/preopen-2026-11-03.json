@@ -631,7 +631,154 @@
       "belowMin": 9.7
     }
   ],
-  "close": null,
+  "close": {
+    "backfilledAt": "2026-11-03T07:30:39.268Z",
+    "marketDate": "2026-11-03",
+    "hitDayChgMin": 2,
+    "total": 23,
+    "hit": 12,
+    "perCode": {
+      "sh600261": {
+        "close": 4.95,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002086": {
+        "close": 3.42,
+        "dayChgPct": 9.97,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz000995": {
+        "close": 17.16,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh601599": {
+        "close": 3.82,
+        "dayChgPct": 10.09,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz000417": {
+        "close": 5.96,
+        "dayChgPct": -4.94,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz000525": {
+        "close": 5.02,
+        "dayChgPct": 1.62,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh603258": {
+        "close": 16.69,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz000037": {
+        "close": 8.61,
+        "dayChgPct": -1.94,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz001230": {
+        "close": 17.01,
+        "dayChgPct": -9.52,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz301262": {
+        "close": 23.76,
+        "dayChgPct": 2.59,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz301218": {
+        "close": 78.4,
+        "dayChgPct": -3.73,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh601595": {
+        "close": 30.59,
+        "dayChgPct": 1.12,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh600576": {
+        "close": 5.47,
+        "dayChgPct": -2.67,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh605577": {
+        "close": 14.3,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002292": {
+        "close": 9.58,
+        "dayChgPct": 9.99,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002949": {
+        "close": 15.34,
+        "dayChgPct": 8.95,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz002827": {
+        "close": 62.68,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh600892": {
+        "close": 4.81,
+        "dayChgPct": 10.07,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh605287": {
+        "close": 45.93,
+        "dayChgPct": -2.38,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz002275": {
+        "close": 15.8,
+        "dayChgPct": -4.13,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz002172": {
+        "close": 6.8,
+        "dayChgPct": 4.62,
+        "limitUp": false,
+        "hit": true
+      },
+      "sz002307": {
+        "close": 3.22,
+        "dayChgPct": 0,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz002094": {
+        "close": 4.82,
+        "dayChgPct": 0.42,
+        "limitUp": false,
+        "hit": false
+      }
+    },
+    "hitRate": 52.2
+  },
   "records": {
     "sh600261": {
       "code": "sh600261",
@@ -691,7 +838,13 @@
       "stamp": "20261103092720",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 4.95,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002086": {
       "code": "sz002086",
@@ -751,7 +904,13 @@
       "stamp": "20261103092651",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 3.42,
+        "dayChgPct": 9.97,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz000995": {
       "code": "sz000995",
@@ -811,7 +970,13 @@
       "stamp": "20261103092739",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 17.16,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh601599": {
       "code": "sh601599",
@@ -871,7 +1036,13 @@
       "stamp": "20261103092730",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 3.82,
+        "dayChgPct": 10.09,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz000417": {
       "code": "sz000417",
@@ -931,7 +1102,13 @@
       "stamp": "20261103092733",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 5.96,
+        "dayChgPct": -4.94,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz000525": {
       "code": "sz000525",
@@ -991,7 +1168,13 @@
       "stamp": "20261103092703",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 5.02,
+        "dayChgPct": 1.62,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh603258": {
       "code": "sh603258",
@@ -1051,7 +1234,13 @@
       "stamp": "20261103092729",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 16.69,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz000037": {
       "code": "sz000037",
@@ -1111,7 +1300,13 @@
       "stamp": "20261103092721",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 8.61,
+        "dayChgPct": -1.94,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz001230": {
       "code": "sz001230",
@@ -1171,7 +1366,13 @@
       "stamp": "20261103092745",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 17.01,
+        "dayChgPct": -9.52,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz301262": {
       "code": "sz301262",
@@ -1231,7 +1432,13 @@
       "stamp": "20261103092748",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 23.76,
+        "dayChgPct": 2.59,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz301218": {
       "code": "sz301218",
@@ -1291,7 +1498,13 @@
       "stamp": "20261103092748",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 78.4,
+        "dayChgPct": -3.73,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh601595": {
       "code": "sh601595",
@@ -1351,7 +1564,13 @@
       "stamp": "20261103092730",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 30.59,
+        "dayChgPct": 1.12,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh600576": {
       "code": "sh600576",
@@ -1411,7 +1630,13 @@
       "stamp": "20261103092738",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 5.47,
+        "dayChgPct": -2.67,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh605577": {
       "code": "sh605577",
@@ -1471,7 +1696,13 @@
       "stamp": "20261103092741",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 14.3,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002292": {
       "code": "sz002292",
@@ -1531,7 +1762,13 @@
       "stamp": "20261103092736",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 9.58,
+        "dayChgPct": 9.99,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002949": {
       "code": "sz002949",
@@ -1591,7 +1828,13 @@
       "stamp": "20261103092724",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 15.34,
+        "dayChgPct": 8.95,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz002827": {
       "code": "sz002827",
@@ -1651,7 +1894,13 @@
       "stamp": "20261103092739",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 62.68,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh600892": {
       "code": "sh600892",
@@ -1711,7 +1960,13 @@
       "stamp": "20261103092745",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 4.81,
+        "dayChgPct": 10.07,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh605287": {
       "code": "sh605287",
@@ -1771,7 +2026,13 @@
       "stamp": "20261103092725",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 45.93,
+        "dayChgPct": -2.38,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz002275": {
       "code": "sz002275",
@@ -1831,7 +2092,13 @@
       "stamp": "20261103092721",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 15.8,
+        "dayChgPct": -4.13,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz002172": {
       "code": "sz002172",
@@ -1891,7 +2158,13 @@
       "stamp": "20261103092657",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 6.8,
+        "dayChgPct": 4.62,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sz002307": {
       "code": "sz002307",
@@ -1951,7 +2224,13 @@
       "stamp": "20261103092736",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 3.22,
+        "dayChgPct": 0,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz002094": {
       "code": "sz002094",
@@ -2011,7 +2290,13 @@
       "stamp": "20261103092721",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 4.82,
+        "dayChgPct": 0.42,
+        "limitUp": false,
+        "hit": false
+      }
     }
   }
 }
