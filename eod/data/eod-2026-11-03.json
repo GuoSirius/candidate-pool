@@ -1,0 +1,56 @@
+{
+ "version": 2,
+ "tradeDate": "2026-11-03",
+ "mode": "cut",
+ "cutAt": "1450",
+ "updatedAt": "2026-11-03 22:25:50",
+ "runs": [
+  {
+   "at": "2026-11-03 15:01:12",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 0,
+   "groupCount": 0,
+   "prePassCount": 68,
+   "snapshotCount": 6180,
+   "runner": "local"
+  },
+  {
+   "at": "2026-11-03 22:25:50",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 0,
+   "groupCount": 0,
+   "prePassCount": 68,
+   "snapshotCount": 6180,
+   "runner": "github"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6180,
+  "prePassCount": 68,
+  "preByReason": {
+   "当日涨幅不在区间": 5154,
+   "停牌或已退市（无成交）": 329,
+   "ST / 退市风险股": 477,
+   "换手率不在区间": 91,
+   "股价过低": 2,
+   "量比不足": 39,
+   "流通市值不在区间": 20
+  },
+  "minuteDropped": 68,
+  "tailByReason": {
+   "尾盘段涨幅不足": 53,
+   "现价低于当日均价": 17,
+   "距日内高点回落过多": 41,
+   "总分低于下限": 3
+  },
+  "candidateCount": 0,
+  "groupCount": 0
+ },
+ "records": {}
+}
