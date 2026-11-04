@@ -128,11 +128,12 @@ async function getBaseline(codes, anchor, scope) {
 }
 
 // ---------- 排除项 ----------
-/** 昨日换手% = 昨日成交量(股) / 流通股本；流通股本 = 流通市值(元) / 现价(元)（报价同一时刻取数，价格约掉） */
+/** 昨日换手% = 昨日成交量(股) / 流通股本；流通股本 = 流通市值(元) / 现价(元)（报价同一时刻取数，价格约掉）。注意科创板 K 线量单位是「股」 */
 function yesterdayTurnoverPct(q, b) {
   if (!q.floatCap || q.floatCap <= 0 || !q.price || !b.yesterdayVol) return null;
+  const lot = /^sh68[89]/.test(q.code) ? 1 : 100; // 手→股（科创板 K 线量本身就是股）
   const shares = q.floatCap / q.price; // 股
-  return +((b.yesterdayVol * 100) / shares * 100).toFixed(2);
+  return +((b.yesterdayVol * lot) / shares * 100).toFixed(2);
 }
 
 function excludeOne(q, map, tradeDate) {
@@ -263,6 +264,7 @@ async function run() {
       yesterdayChgPct: b.yesterdayChgPct,
       yesterdayVolRatio: b.yesterdayVolRatio != null ? +b.yesterdayVolRatio.toFixed(2) : null,
       yesterdayTurnoverPct: yesterdayTurnoverPct(q, b),
+      capYi: { total: q.totalCapYi, float: q.floatCapYi },
       trend: { maBull: p3.maBull, newHigh20: p3.newHigh20, newHigh60: p3.newHigh60, slope20: p3.slope20 },
       p1, p2, p3,
       label: PR.labelOf(p1, p2, p3),
@@ -284,6 +286,16 @@ async function run() {
   candidates.sort((a, b) => b.total - a.total);
   nearMissAll.sort((a, b) => b.total - a.total);
   const nearMiss = nearMissAll.slice(0, 10);
+
+  // 昨日主力净流入（东财 fflow，仅候选级低频调用；封 IP / 失败留空，不阻断）
+  if (candidates.length) {
+    log(`[3.5/4] 候选昨日主力净流入（${candidates.length} 只，东财）…`);
+    await mapLimit(candidates, 4, async (c) => {
+      const f = await market.fetchFlowDay(c.code);
+      if (f && f[anchor] != null) c.yesterdayMainInflow = f[anchor];
+    });
+  }
+
   // 各淘汰原因计数（gaps 明细不落盘，只留统计——6000+ 只/天的明细太肥且没用）
   const rejByReason = {};
   for (const g of gaps) rejByReason[g.reason] = (rejByReason[g.reason] || 0) + 1;

@@ -21,6 +21,8 @@ const { dayjs } = require('../time');
 const cfg = require('./preopen.config');
 const market = require('./lib/market');
 const store = require('./lib/preopen_store');
+const PR = require('./lib/preopen_rules');
+const { mapLimit } = require('./lib/http');
 const paths = require('../paths');
 const { lastClosedTradingDay } = require('../rules');
 const { buildHTML } = require('./lib/preopen_report');
@@ -33,6 +35,25 @@ function boardLimitPct(code) {
   if (/^sz30/.test(code)) return 20;
   if (/^bj/.test(code)) return 30;
   return 10;
+}
+
+/** 候选主力净流入（东财 fflow，失败留空）→ { code: 元 } */
+async function fetchFlows(codes, date) {
+  const out = {};
+  await mapLimit(codes, 4, async (code) => {
+    const f = await market.fetchFlowDay(code);
+    if (f && f[date] != null) out[code] = f[date];
+  });
+  return out;
+}
+
+/** 候选日 K（含当日，算连板用；失败跳过）→ { code: kline } */
+async function fetchKlines(codes, date) {
+  const out = {};
+  await mapLimit(codes, 6, async (code) => {
+    try { const kl = await market.fetchKline(code, date); if (kl && kl.rows.length) out[code] = kl; } catch (e) { /* 留空 */ }
+  });
+  return out;
 }
 
 async function run() {
@@ -55,6 +76,15 @@ async function run() {
   const quotes = (await market.fetchBatch(codes, cfg)).filter(Boolean);
   const qmap = new Map(quotes.map((q) => [q.code, q]));
 
+  // 主力净流入（东财）+ 龙虎榜名单 + 连板 K 线：低频候选级调用，全部容错，失败留空
+  log('[回填] 抓主力净流入 / 龙虎榜 / 连板K线…');
+  const [flows, bbMap, klines] = await Promise.all([
+    fetchFlows(codes, tradeDate),
+    market.fetchBillboard(tradeDate),
+    fetchKlines(codes, tradeDate),
+  ]);
+  log(`[回填] 净流入 ${Object.keys(flows).length}/${codes.length} · 龙虎榜全榜 ${Object.keys(bbMap).length} 只 · K线 ${Object.keys(klines).length}/${codes.length}`);
+
   const closeMap = {};
   for (const code of codes) {
     const q = qmap.get(code);
@@ -65,8 +95,18 @@ async function run() {
     // 盘中开板：收盘涨停但当日最低价曾低于涨停价 → 封板被打开过，存在买入窗口（一字板则 low 也封死）
     const opened = limitUp && q.low != null && q.low < limitPrice - 0.005;
     const hit = dayChgPct != null && dayChgPct >= cfg.backfill.hitDayChgMin;
-    closeMap[code] = { close: q.price, dayChgPct, limitUp, opened, turnover: q.turnover, volRatio: q.volRatio, hit };
+    closeMap[code] = {
+      close: q.price, dayChgPct, limitUp, opened,
+      turnover: q.turnover, volRatio: q.volRatio, hit,
+      capYi: { total: q.totalCapYi, float: q.floatCapYi },
+      mainInflow: flows[code] != null ? flows[code] : null,
+    };
+    const bb = bbMap[code.slice(2)];
+    if (bb) closeMap[code].billboard = { net: bb.net, hot: PR.matchHotMoney(await market.fetchBillboardSeats(code.slice(2), tradeDate)) };
+    if (klines[code]) closeMap[code].boards = PR.countLimitUpStreak(klines[code].rows, code);
   }
+  const bbHits = codes.filter((c) => closeMap[c] && closeMap[c].billboard);
+  log(`[回填] 候选上榜 ${bbHits.length} 只${bbHits.length ? '：' + bbHits.map((c) => `${closeMap[c] && (qmap.get(c).name || c)}`).join('、') : ''}`);
 
   const summary = { hitDayChgMin: cfg.backfill.hitDayChgMin };
   const close = store.mergeBackfill(cfg, tradeDate, closeMap, summary);

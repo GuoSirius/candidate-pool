@@ -19,6 +19,26 @@
 function b(zh, en) { return `<span data-zh="${zh}" data-en="${en}">${zh}</span>`; }
 function num(n, d = 2) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(d); }
 function pct(n) { return (n == null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%'; }
+/** 主力净流入（元 → 万/亿），涨红跌绿 */
+function fmtFlow(v) {
+  if (v == null || isNaN(v)) return { txt: '—', cls: '' };
+  const a = Math.abs(v);
+  const txt = (v < 0 ? '-' : '') + (a >= 1e8 ? num(a / 1e8, 2) + '亿' : num(a / 1e4, 0) + '万');
+  return { txt, cls: v > 0 ? 'up' : v < 0 ? 'down' : '' };
+}
+/** 市值/流通（亿）→ 「94.8/59.2亿」 */
+function capTxt(cap) {
+  if (!cap || cap.total == null) return '—';
+  return `${num(cap.total, 1)}/${cap.float != null ? num(cap.float, 1) : '—'}亿`;
+}
+/** 连板文案：1=首板 2=2连板 …；0/null 留空 */
+function boardsTxt(n) { return n == null || n <= 0 ? '' : (n === 1 ? '首板' : `${n}连板`); }
+/** 金额（元）→ 「1.2亿」「3000万」 */
+function fmtAmt(v) {
+  if (v == null || isNaN(v)) return '';
+  const a = Math.abs(v);
+  return (v < 0 ? '-' : '') + (a >= 1e8 ? num(a / 1e8, 1) + '亿' : num(a / 1e4, 0) + '万');
+}
 function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 function trendStr(t) {
@@ -44,12 +64,13 @@ function labelCls(l) {
 const SCORE_GROUP = { key: 'sig', zh: '信号分项', en: 'Signals', cols: [['p1', 'P1 竞价', 35], ['p2', 'P2 弱转强', 35], ['p3', 'P3 趋势', 30]] };
 const SCORE_COLS = SCORE_GROUP.cols;
 
-/** 候选行。withBreakdown 控制是否渲染 P1/P2/P3 三个分项单元格。 */
+/** 候选行（列序：标的/行业/板块/今开价/今开/昨涨/昨日净流入/市值流通/竞价量能比/昨量比/昨换手/趋势/分项/总分/标签）。 */
 function rowHtml(c, i, withBreakdown) {
   const cells = withBreakdown
     ? SCORE_COLS.map(([k, , w]) => `<td class="num sc">${num((c.scoreItems ? c.scoreItems[k] : 0) * w, 1)}</td>`).join('')
     : '';
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
+  const yFlow = fmtFlow(c.yesterdayMainInflow);
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}">
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
@@ -58,9 +79,11 @@ function rowHtml(c, i, withBreakdown) {
     <td class="num">${num(c.open)}</td>
     <td class="num ${c.auctionChgPct >= 0 ? 'up' : 'down'}">${pct(c.auctionChgPct)}</td>
     <td class="num ${c.yesterdayChgPct >= 0 ? 'up' : 'down'}">${pct(c.yesterdayChgPct)}</td>
+    <td class="num ${yFlow.cls}">${yFlow.txt}</td>
+    <td class="num">${capTxt(c.capYi)}</td>
+    <td class="num">${c.auctionVolRatio == null ? '—' : num(c.auctionVolRatio, 2)}</td>
     <td class="num">${c.yesterdayVolRatio == null ? '—' : num(c.yesterdayVolRatio, 2)}</td>
     <td class="num">${c.yesterdayTurnoverPct == null ? '—' : num(c.yesterdayTurnoverPct, 2) + '%'}</td>
-    <td class="num">${c.auctionVolRatio == null ? '—' : num(c.auctionVolRatio, 2)}</td>
     <td class="trend">${esc(trendStr(c.trend))}</td>
     ${cells}
     <td><span class="score">${num(c.total, 1)}</span></td>
@@ -91,6 +114,13 @@ function closeRowHtml(c, i, sealedMin) {
   // 买入收益 = 今收涨跌幅 − 今开涨跌幅（今开价买入、收盘卖出的当日收益）
   const buyRet = (dayChg != null && openChg != null) ? Math.round((dayChg - openChg) * 100) / 100 : null;
   const brCls = buyRet == null ? '' : (buyRet >= 0 ? 'up' : 'down');
+  const tFlow = fmtFlow(cl.mainInflow);
+  // 龙虎榜：上榜 tag + 知名游资标注（如「章盟主 1.2亿」）
+  let bbCell = '';
+  if (cl.billboard) {
+    const hotTxt = (cl.billboard.hot || []).map((h) => `${esc(h.name)} ${fmtAmt(h.amt)}`).join(' / ');
+    bbCell = `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
+  }
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}">
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
@@ -100,11 +130,15 @@ function closeRowHtml(c, i, sealedMin) {
     <td class="num ${oCls}">${pct(openChg)}</td>
     <td class="num ${dCls}">${pct(dayChg)}</td>
     <td class="num ${brCls}">${pct(buyRet)}</td>
+    <td class="num ${tFlow.cls}">${tFlow.txt}</td>
+    <td class="num">${capTxt(cl.capYi)}</td>
     <td class="num">${volR != null ? num(volR, 2) : '—'}</td>
     <td class="num">${turn != null ? num(turn, 2) + '%' : '—'}</td>
     <td>${limitUp ? `<span class="tag pass">${b('涨停', 'Limit')}</span>` : ''}</td>
     <td><span class="tag ${oppCls}">${b(oppZh, oppEn)}</span></td>
     <td>${hit ? `<span class="tag pass">${b('命中', 'Hit')}</span>` : ''}</td>
+    <td>${boardsTxt(cl.boards)}</td>
+    <td>${bbCell}</td>
   </tr>`;
 }
 
@@ -239,8 +273,8 @@ function buildHTML(m) {
   // ---- 两级表头：合并「信号分项」到 P1/P2/P3 ----（基础9含今开价 + 分项3 + 总分/标签2 = 14 列）
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开价', 'Open px')}</th><th rowspan="2">${b('今开', 'Open%')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
-    <th rowspan="2">${b('昨量比', 'Prev volR')}</th><th rowspan="2">${b('昨换手%', 'Prev turn')}</th>
-    <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
+    <th rowspan="2">${b('昨日净流入', 'Prev inflow')}</th><th rowspan="2">${b('市值/流通', 'Cap/FLOAT')}</th>
+    <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('昨量比', 'Prev volR')}</th><th rowspan="2">${b('昨换手%', 'Prev turn')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
     <th colspan="${SCORE_COLS.length}" class="grp">${b(SCORE_GROUP.zh, SCORE_GROUP.en)}</th>
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标签', 'Label')}</th></tr>
     <tr>${SCORE_COLS.map(([, zh, w]) => `<th class="grp-sub">${b(`${zh} · ${w}`, `${zh} · ${w}`)}</th>`).join('')}</tr>`;
@@ -288,7 +322,7 @@ function buildHTML(m) {
   </div>`;
 
   // 分组分隔行：默认隐藏，「按行业」视图前端插入各组行首
-  const baseCols = 11 + SCORE_COLS.length + 2; // 基础11(含今开价/昨量比/昨换手) + 分项3 + 总分/标签2 = 16
+  const baseCols = 13 + SCORE_COLS.length + 2; // 基础13(标的~趋势，含净流入/市值流通/昨量比/昨换手) + 分项3 + 总分/标签2 = 18
   const sepRows = groups.map((g) =>
     `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${baseCols}">${
       b(esc(g.sector), esc(g.sector))} · ${b(`组内 ${g.size} 只，最优 ${esc(g.best.name)}（${num(g.best.total, 1)}）`,
@@ -300,7 +334,7 @@ function buildHTML(m) {
     .map((g) => `<tr><td>${esc(g.code.replace(/^[a-z]+/, ''))}</td><td>${esc(g.name)}</td><td>${esc(g.reason)}</td></tr>`).join('');
 
   const provenance = b(
-    `竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 / 昨量比 / 昨换手 / 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线（昨量比 = 昨日成交量 / 前5日均量；昨换手 = 昨日成交量 / 流通股本，流通股本 = 流通市值 / 现价），锚定前一交易日 ${esc(anchor || marketDate || tradeDate)}${scope === 'universe' ? '（全市场基线缓存 preopen-baseline-*.json）' : '（观察池实时计算）'}。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（${esc(marketDate || tradeDate)}），不依赖外部交易日历。运行环境：${esc(runner)}。`,
+    `竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 / 昨量比 / 昨换手 / 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线（昨量比 = 昨日成交量 / 前5日均量；昨换手 = 昨日成交量 / 流通股本，流通股本 = 流通市值 / 现价），锚定前一交易日 ${esc(anchor || marketDate || tradeDate)}${scope === 'universe' ? '（全市场基线缓存 preopen-baseline-*.json）' : '（观察池实时计算）'}。主力净流入与龙虎榜（含知名游资席位标注，公开常见归属仅供参考）来自东方财富 push2his / datacenter 接口，龙虎榜约 17:00 后出齐（收盘回填定时 18:00 运行），接口失败相关列留空。市值/流通来自报价市值字段（历史归档按 股本 × 当日收盘价 折算）。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（${esc(marketDate || tradeDate)}），不依赖外部交易日历。运行环境：${esc(runner)}。`,
     `Auction snapshot: Tencent qt.gtimg.cn batch quotes (open fixed at 09:25 auction close; auction vol ratio = auction vol / yesterday full-day vol). Yesterday-change + trend baseline: Tencent ifzq fqkline (pre-adjusted daily K), anchored to the prior trading day ${esc(anchor || marketDate || tradeDate)}${scope === 'universe' ? ' (full-market baseline cache preopen-baseline-*.json)' : ' (watchlist computed live)'}. Industry: local cache eod/data/industry-map.json. Trade date derived from quote-timestamp mode (${esc(marketDate || tradeDate)}); no external calendar. Runner: ${esc(runner)}.`);
 
   const title = `${cfg.report.title} — ${tradeDate}`;
@@ -354,13 +388,19 @@ function buildHTML(m) {
   ${showClose ? `
   <h2>${b('收盘回填（开盘买入当日验证）', 'Close Backfill (open-buy verification)')}</h2>
   ${closeCallout}
+  <div class="toolbar">
+    <div class="toolrow"><span class="cap">${b('标签', 'Label')}</span><span class="chips" id="closeLchips">${labelChips}</span></div>
+    <div class="toolrow"><span class="cap">${b('行业', 'Industry')}</span><span class="chips" id="closeSchips">${sectorChips}</span></div>
+  </div>
   <div class="table-wrap"><table><thead><tr>
     <th>#</th><th>${b('标的', 'Name')}</th><th>${b('行业', 'Industry')}</th><th>${b('板块', 'Board')}</th>
     <th>${b('昨收%', 'PrevClose %')}</th><th>${b('今开%', 'Open %')}</th><th>${b('今收%', 'Close %')}</th>
     <th>${b('买入收益%', 'Open-buy ret')}</th>
+    <th>${b('今日净流入', 'Inflow')}</th><th>${b('市值/流通', 'Cap/FLOAT')}</th>
     <th>${b('量比', 'Vol ratio')}</th><th>${b('换手%', 'Turnover %')}</th>
     <th>${b('涨停', 'Limit')}</th><th>${b('可买', 'Buyable')}</th><th>${b('命中', 'Hit')}</th>
-  </tr></thead><tbody>${closeRows}</tbody></table></div>` : ''}
+    <th>${b('连板', 'Streak')}</th><th>${b('上榜', 'List')}</th>
+  </tr></thead><tbody id="closeBody">${closeRows}</tbody></table></div>` : ''}
 
   <h2>${b('数据缺口', 'Data Gaps')}</h2>
   <div class="card">
@@ -490,6 +530,39 @@ function buildHTML(m) {
     bdToggle.addEventListener('change', applyBd);
     applyBd();
     renderCand();
+  }
+
+  // 收盘回填表：与候选明细同一套 标签/行业 过滤（AND），只做行显隐，不动序号。
+  var ctb = document.getElementById('closeBody');
+  if (ctb) {
+    var cRows = Array.prototype.slice.call(ctb.querySelectorAll('tr[data-sector]'));
+    var clF = '', csF = '';
+    function cWant(tr) {
+      var okL = true;
+      if (clF === '@best') okL = tr.hasAttribute('data-best');
+      else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (clF) okL = tr.getAttribute('data-label') === clF;
+      if (csF) okL = okL && tr.getAttribute('data-sector') === csF;
+      return okL;
+    }
+    function renderClose() { cRows.forEach(function (tr) { tr.hidden = !cWant(tr); }); }
+    function bindCloseChips(id, which) {
+      var wrap = document.getElementById(id);
+      if (!wrap) return;
+      wrap.addEventListener('click', function (e) {
+        var chip = e.target.closest('.chip');
+        if (!chip) return;
+        var v = which === 'l'
+          ? (chip.getAttribute('data-lfilter') != null ? chip.getAttribute('data-lfilter') : '')
+          : (chip.getAttribute('data-sfilter') || '');
+        if (which === 'l') clF = v; else csF = v;
+        Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        renderClose();
+      });
+    }
+    bindCloseChips('closeLchips', 'l');
+    bindCloseChips('closeSchips', 's');
   }
 })();
 </script>

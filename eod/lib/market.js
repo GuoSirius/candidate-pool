@@ -392,4 +392,77 @@ module.exports = {
   volLotSize, expandCodes, parseQuote, fetchBatch, fullMarketSnapshot,
   fetchMinute, fetchMinutes, tailMetrics, barAt, barAtOrBefore, setLog,
   fetchKline, KLINE_ENDPOINTS,
+  fetchFlowDay, fetchBillboard, fetchBillboardSeats,
 };
+
+// ---------------------------------------------------------------------------
+// 东方财富数据接口（主力净流入 / 龙虎榜）—— 低频调用，仅供候选名单（几十只）复用。
+// ⚠️ 东财有临时封 IP 先例（见文件头），全部容错：失败返回 null/空，绝不阻断主流程。
+// ---------------------------------------------------------------------------
+const EM_UT = 'b2884a393a59ad64002292a3e90d46a5';
+const EM_FFLOW = 'https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get';
+const EM_DATACENTER = 'https://datacenter-web.eastmoney.com/api/data/v1/get';
+
+function emSecid(code) { return /^sh/.test(code) ? `1.${code.slice(2)}` : `0.${code.slice(2)}`; }
+
+/**
+ * 主力净流入日序（东方财富 fflow daykline）。
+ * @returns {Promise<object|null>} { 'YYYY-MM-DD': 主力净流入(元) }；失败返回 null
+ */
+async function fetchFlowDay(code) {
+  try {
+    const url = `${EM_FFLOW}?lmt=0&klt=101&fields1=f1,f2,f3,f7&fields2=f51,f52&ut=${EM_UT}&secid=${emSecid(code)}`;
+    const obj = await httpGet(url, { json: true, retries: 1, timeout: 12000 });
+    const lines = (obj.data && obj.data.klines) || [];
+    const out = {};
+    for (const line of lines) {
+      const p = String(line).split(',');
+      const v = parseFloat(p[1]);
+      if (p[0] && Number.isFinite(v)) out[p[0]] = v;   // f51=日期, f52=主力净流入(元)
+    }
+    return Object.keys(out).length ? out : null;
+  } catch (e) { _log(`[资金流] ${code} 获取失败：${(e && e.message) || e}`); return null; }
+}
+
+/**
+ * 龙虎榜名单（东财 datacenter，每日盘后 17:00+ 陆续出齐）。
+ * @param {string} date 'YYYY-MM-DD'
+ * @returns {Promise<object>} { '000995': { name, net(元), explain } }；失败/无榜返回 {}
+ */
+async function fetchBillboard(date) {
+  try {
+    const filter = encodeURIComponent(`(TRADE_DATE='${date}')`);
+    const url = `${EM_DATACENTER}?reportName=RPT_DAILYBILLBOARD_DETAILSNEW&columns=SECURITY_CODE,SECURITY_NAME_ABBR,BILLBOARD_NET_AMT,EXPLAIN&filter=${filter}&pageSize=500&pageNumber=1&source=WEB&client=WEB&ut=${EM_UT}`;
+    const obj = await httpGet(url, { json: true, retries: 1, timeout: 15000 });
+    const rows = (obj.result && obj.result.data) || [];
+    const out = {};
+    for (const r of rows) {
+      if (!r.SECURITY_CODE) continue;
+      out[String(r.SECURITY_CODE)] = {
+        name: r.SECURITY_NAME_ABBR || '',
+        net: Number.isFinite(r.BILLBOARD_NET_AMT) ? r.BILLBOARD_NET_AMT : null,
+        explain: r.EXPLAIN || '',
+      };
+    }
+    return out;
+  } catch (e) { _log(`[龙虎榜] ${date} 获取失败：${(e && e.message) || e}`); return {}; }
+}
+
+/**
+ * 龙虎榜买卖席位明细（东财 datacenter）。
+ * @returns {Promise<Array>} [{ seat, buy(元), sell(元), net(元) }]；失败返回 []
+ */
+async function fetchBillboardSeats(code6, date) {
+  try {
+    const filter = encodeURIComponent(`(SECURITY_CODE="${code6}")(TRADE_DATE='${date}')`);
+    const url = `${EM_DATACENTER}?reportName=RPT_BILLBOARD_DAILYDETAILSBUY&columns=ALL&filter=${filter}&pageSize=100&pageNumber=1&source=WEB&client=WEB&ut=${EM_UT}`;
+    const obj = await httpGet(url, { json: true, retries: 1, timeout: 15000 });
+    const rows = (obj.result && obj.result.data) || [];
+    return rows.map((r) => ({
+      seat: r.OPERATEDEPT_NAME || '',
+      buy: Number.isFinite(r.BUY) ? r.BUY : null,
+      sell: Number.isFinite(r.SELL) ? r.SELL : null,
+      net: Number.isFinite(r.NET) ? r.NET : null,
+    })).filter((s) => s.seat);
+  } catch (e) { _log(`[龙虎榜席位] ${code6} ${date} 获取失败：${(e && e.message) || e}`); return []; }
+}

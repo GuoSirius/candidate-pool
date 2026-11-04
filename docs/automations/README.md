@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|
 | 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen-baseline-*.json`（不入库） |
 | 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen-<日>.json` + html |
-| 盘前回填 preopen:backfill（手动触发） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=30` | 工作日 15:30 | ACTIVE | 回填进 `eod/data/preopen-<日>.json` close 段 |
+| 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen-<日>.json` close 段 |
 | 尾盘选股-观察模式(1430) | `f46d3c1c-a803-4e43-a2a7-7db8ede8b5ba` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod-<交易日>-obs.json` + html |
 | 尾盘选股-正式口径(1450) | `6cda9d58-4ba9-4c1d-ac2c-476c2459d879` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod-<交易日>.json` + html |
 | 午盘机会（11:30） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
@@ -116,27 +116,26 @@ git push
 
 ---
 
-## 3. 盘前回填 preopen:backfill（手动触发）
+## 3. 盘前回填 preopen:backfill（18:00）
 
 - **ID**：`79f60ba3-646d-48e9-8694-a65e95606184`
-- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=30`（名义 15:30，**PAUSED 仅手动触发**）
+- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0`（工作日 18:00——龙虎榜约 17:00 后才出齐，故从 15:30 推迟到 18:00，收盘行情不受影响）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
-- **状态**：PAUSED
-- **产物**：回填进 `eod/data/preopen-<当日>.json` 的 close 段（昨收/今开/今收/当日涨跌幅/换手/是否涨停/开板/买入机会/命中），并**重渲染** `eod/reports/preopen-<当日>.html` 的「收盘回填（开盘买入当日验证）」段（含逐票昨收/今开/今收/开盘买入收益/买入机会/命中表 + 汇总 callout）
-- **推送**：回填 + 重渲染后，把 json 与 html 一并提交推送（见下方 git 推送块）
+- **状态**：ACTIVE
+- **产物**：回填进 `eod/data/preopen-<当日>.json` 的 close 段（昨收%/今开%/今收%/买入收益%/今日主力净流入/市值流通/量比/换手/涨停/连板/买入机会/命中/龙虎榜上榜含游资标注），并**重渲染** `eod/reports/preopen-<当日>.html` 的「收盘回填（开盘买入当日验证）」段（含逐票表 + 汇总 callout + 与候选明细同款 标签/行业 筛选）
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停、是否盘中开板、换手率，并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段；随后脚本会**自动重渲染** eod/reports/preopen-<当日>.html，新增「收盘回填（开盘买入当日验证）」段（逐票：昨收/今开/今收/当日涨幅%/开盘买收益%/换手%/涨停/买入机会[可买/开板可买/排板可买/一字难买]/命中 + 汇总 callout）。
+在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效（定时 18:00，等龙虎榜出齐）；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停、是否盘中开板、换手率、量比、市值/流通、今日主力净流入、连板数、龙虎榜上榜（含知名游资席位标注），并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段；随后脚本会**自动重渲染** eod/reports/preopen-<当日>.html 的「收盘回填（开盘买入当日验证）」段（逐票：昨收%/今开%/今收%/买入收益%/今日净流入/市值流通/量比/换手%/涨停/可买/命中/连板/上榜 + 汇总 callout + 标签/行业筛选）。东财接口失败时相关列自动留空，属正常降级，不算失败。
 
 买入机会四态判定（脚本已在 HTML 内算好，无需你重算）：
-- 非涨停 → 可买
+- 非涨停 → 开盘可买
 - 涨停且盘中最低价 < 涨停价（开板）→ 开板可买
-- 一字涨停但换手率 ≥ sealedTurnoverMin(1.5%)（放量）→ 排板可买
-- 一字缩量涨停 → 一字难买
+- 一字涨停但换手率 ≥ sealedTurnoverMin(1.5%)（放量）→ 放量可买
+- 一字缩量涨停 → 很难买入
 
-完成后在对话里向用户汇总（不要只给路径）：回填总数、命中数、命中率，并贴出 HTML 中那张「收盘回填」逐票表的精简版（代码/名称/今开/今收/当日涨幅%/开盘买收益%/买入机会/命中）。若当日无盘前归档则说明。
+完成后在对话里向用户汇总（不要只给路径）：回填总数、命中数、命中率、上榜只数，并贴出 HTML 中那张「收盘回填」逐票表的精简版（代码/名称/今开%/今收%/买入收益%/买入机会/连板/上榜/命中）。若当日无盘前归档则说明。
 
 生成成功后，把更新后的归档与重渲染的 html 一并提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行）：
 

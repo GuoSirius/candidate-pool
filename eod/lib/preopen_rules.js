@@ -189,8 +189,41 @@ function labelOf(p1, p2, p3) {
   return '观察';
 }
 
+// ---------- 龙虎榜知名游资席位（公开常见归属，正则匹配席位全名，按需增补） ----------
+const HOT_MONEY_SEATS = [
+  ['章盟主', /国泰(君安|海通)[^,]*上海江苏路|银泰证券[^,]*上海嘉善路/],
+  ['炒股养家', /华鑫证券[^,]*上海(分公司|宛平南路)/],
+  ['作手新一', /国泰(君安|海通)[^,]*南京太平南路/],
+  ['方新侠', /国盛证券[^,]*宁波桑田路/],
+  ['孙哥', /中信证券[^,]*上海溧阳路/],
+];
+
+/** 从龙虎榜席位明细识别知名游资 → [{ name, amt(买入额,元) }] */
+function matchHotMoney(seats) {
+  const out = [];
+  for (const s of seats || []) {
+    for (const [name, re] of HOT_MONEY_SEATS) {
+      if (re.test(s.seat || '')) { out.push({ name, amt: s.buy != null ? s.buy : null }); break; }
+    }
+  }
+  return out;
+}
+
+/** 连续涨停天数（自 rowsDesc[0] 起向前数，几连板；ST 5% 板不适用但候选已排除 ST） */
+function countLimitUpStreak(rowsDesc, code) {
+  const p = /^sh68[89]/.test(code) ? 20 : /^sz30/.test(code) ? 20 : /^bj/.test(code) ? 30 : 10;
+  let n = 0;
+  for (let i = 0; i + 1 < rowsDesc.length; i++) {
+    const r = rowsDesc[i], prev = rowsDesc[i + 1];
+    if (prev.close > 0 && r.close >= prev.close * (1 + p / 100) - 0.005) n++;
+    else break;
+  }
+  return n;
+}
+
 module.exports = {
   clamp01, lin,
   calcTrend, calcBaseline,
   calcP1, calcP2, calcP3, scorePreopen, labelOf,
+  countLimitUpStreak, matchHotMoney, HOT_MONEY_SEATS,
 };
