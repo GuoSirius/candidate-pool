@@ -330,7 +330,7 @@ function buildHTML(m) {
     </div>
     <div class="toolrow"><span class="cap">${b('标签', 'Label')}</span><span class="chips" id="lchips">${labelChips}</span></div>
     <div class="toolrow"><span class="cap">${b('行业', 'Industry')}</span><span class="chips" id="schips">${sectorChips}</span></div>
-    <div class="toolrow"><label class="bd-toggle"><input type="checkbox" id="bdToggle" checked> ${b('分项得分', 'Breakdown')}</label></div>
+    <div class="toolrow"><label class="bd-toggle"><input type="checkbox" id="bdToggle"> ${b('分项得分', 'Breakdown')}</label></div>
   </div>`;
 
   // 分组分隔行：默认隐藏，「按行业」视图前端插入各组行首
