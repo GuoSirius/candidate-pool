@@ -424,7 +424,7 @@ async function main() {
   paths.ensureDir(path.dirname(snapshotPath));   // --dump 指向新目录时也要能写出去
   const snap = {
     anchor, target, limit, topN,
-    generatedAt: new Date().toISOString(),
+    generatedAt: nowStr(),
     // 快照当时的规则常量（rules.js G）：日后调参（如 CHG_MIN 3→4）时，
     // 历史门槛可按当时的常量重算，也可按新常量对 stocks[].chg 等原始值离线重切。
     rulesG: { ...G },

@@ -149,7 +149,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "无变化，跳过提交"
           else
-            git commit -m "chore: 尾盘观察 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore: 尾盘观察 $(TZ=Asia/Shanghai date +%F)"
             git push origin HEAD:refs/heads/daily-artifacts
           fi
           cd ..

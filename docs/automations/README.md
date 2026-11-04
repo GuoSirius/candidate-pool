@@ -31,6 +31,27 @@
 - **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
 - **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1/A2 的 cwds 不在本仓库，不提交本仓库。
 
+#### 统一提交信息格式（规范 · 中文描述 + 时间）
+
+各任务运行后由 Prompt 内的「git 推送块」生成的提交信息，统一为「任务中文名 + 日期」：
+
+```
+chore: <任务中文名> $(date +%F)
+```
+
+要求**全部任务一致**：统一 `chore:` 前缀 + 中文任务名 + `$(date +%F)`（展开为 `YYYY-MM-DD`）日期；**禁止**再出现英文 slug（如 `preopen` / `tail-obs`）或 `obs run` / `add ... artifacts` 这类散装格式。
+
+| 任务（本文件小节） | 提交信息（完整） |
+|---|---|
+| 2. 盘前选股 preopen | `chore: 盘前选股 $(date +%F)` |
+| 3. 盘前回填 preopen:backfill | `chore: 盘前回填 $(date +%F)` |
+| 4. 尾盘观察(1430) | `chore: 尾盘观察 $(date +%F)` |
+| 5. 尾盘正式(1450) | `chore: 尾盘选股 $(date +%F)` |
+| 6/7. 午盘 / 早盘机会（--intraday） | `chore: 盘中机会 $(date +%F)` |
+| 8. A股次日候选池初筛 | `chore: 每日实时初筛 $(date +%F)` |
+
+> 另有**本文件自身改动**的提交（改自动化 ↔ 改文档同步）用 `chore(automations): <简述>`，与上述任务运行提交各司其职，互不打扰。
+
 **盘前选股 / 盘前回填**：日常以 WorkBuddy 自动化面板**手动触发**为主（名义 rrule 仅占位，不依赖其自动运行）；状态随本机对齐为 ACTIVE。
 
 ---
@@ -101,15 +122,23 @@ git push
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=30`（名义 15:30，**PAUSED 仅手动触发**）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：PAUSED
-- **产物**：回填进 `eod/data/preopen-<当日>.json` 的 close 段（不产生新文件）
-- **推送**：无
+- **产物**：回填进 `eod/data/preopen-<当日>.json` 的 close 段（昨收/今开/今收/当日涨跌幅/换手/是否涨停/开板/买入机会/命中），并**重渲染** `eod/reports/preopen-<当日>.html` 的「收盘回填（开盘买入当日验证）」段（含逐票昨收/今开/今收/开盘买入收益/买入机会/命中表 + 汇总 callout）
+- **推送**：回填 + 重渲染后，把 json 与 html 一并提交推送（见下方 git 推送块）
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段。完成后汇总：回填总数、命中数、命中率；若当日无盘前归档则说明。
+在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停、是否盘中开板、换手率，并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段；随后脚本会**自动重渲染** eod/reports/preopen-<当日>.html，新增「收盘回填（开盘买入当日验证）」段（逐票：昨收/今开/今收/当日涨幅%/开盘买收益%/换手%/涨停/买入机会[可买/开板可买/排板可买/一字难买]/命中 + 汇总 callout）。
 
-生成成功后，把更新后的归档提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行）：
+买入机会四态判定（脚本已在 HTML 内算好，无需你重算）：
+- 非涨停 → 可买
+- 涨停且盘中最低价 < 涨停价（开板）→ 开板可买
+- 一字涨停但换手率 ≥ sealedTurnoverMin(1.5%)（放量）→ 排板可买
+- 一字缩量涨停 → 一字难买
+
+完成后在对话里向用户汇总（不要只给路径）：回填总数、命中数、命中率，并贴出 HTML 中那张「收盘回填」逐票表的精简版（代码/名称/今开/今收/当日涨幅%/开盘买收益%/买入机会/命中）。若当日无盘前归档则说明。
+
+生成成功后，把更新后的归档与重渲染的 html 一并提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行）：
 
 ```bash
 git add eod/data eod/reports
@@ -172,7 +201,7 @@ git push
 
 ```bash
 git add eod/data eod/reports
-git commit -m "chore: 尾盘观察 $(date +%F)"
+git commit -m "chore(eod): tail-obs $(date +%F)"
 git push
 ```
 
@@ -221,7 +250,7 @@ git push
 
 ```bash
 git add eod/data eod/reports
-git commit -m "chore: 尾盘选股 $(date +%F)"
+git commit -m "chore(eod): tail $(date +%F)"
 git push
 ```
 
@@ -303,7 +332,7 @@ git push
 
 ```bash
 git add reports/stock_list_*.html data/snapshot-*.json
-git commit -m "chore: 每日实时初筛 $(date +%F)"
+git commit -m "chore(screen): daily $(date +%F)"
 git push
 ```
 
