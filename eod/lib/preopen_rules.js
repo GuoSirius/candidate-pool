@@ -76,7 +76,7 @@ function calcTrend(rowsDesc, cfg) {
 /**
  * 由 K 线计算「前一日」基线：昨日涨幅、昨日成交量、趋势。
  * @param {object} kline  { rows: 降序日K, today, hist }（fetchKline 产出）
- * @returns {object|null} { yesterdayChgPct, yesterdayVol, trend }
+ * @returns {object|null} { yesterdayChgPct, yesterdayVol, yesterdayVolRatio, trend }
  */
 function calcBaseline(kline, code, cfg) {
   const rows = (kline && kline.rows) || [];
@@ -88,8 +88,14 @@ function calcBaseline(kline, code, cfg) {
     yesterdayChgPct = (y.close / prior.close - 1) * 100;
   }
   const yesterdayVol = y ? y.vol : null; // 手（与竞价量同口径）
+  // 昨日量比 = 昨日成交量 / 前5日均量（日收盘口径下与「每分钟均量比」等价；复权对分子分母同缩放，比值不失真）
+  let yesterdayVolRatio = null;
+  if (y && y.vol > 0) {
+    const prior5 = rows.slice(1, 6).filter((r) => r.vol > 0);
+    if (prior5.length >= 3) yesterdayVolRatio = y.vol / (prior5.reduce((a, r) => a + r.vol, 0) / prior5.length);
+  }
   const trend = calcTrend(rows, cfg);
-  return { code, yesterdayChgPct, yesterdayVol, trend };
+  return { code, yesterdayChgPct, yesterdayVol, yesterdayVolRatio, trend };
 }
 
 // ---------- P01 竞价强势 ----------

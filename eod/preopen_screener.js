@@ -128,6 +128,13 @@ async function getBaseline(codes, anchor, scope) {
 }
 
 // ---------- 排除项 ----------
+/** 昨日换手% = 昨日成交量(股) / 流通股本；流通股本 = 流通市值(元) / 现价(元)（报价同一时刻取数，价格约掉） */
+function yesterdayTurnoverPct(q, b) {
+  if (!q.floatCap || q.floatCap <= 0 || !q.price || !b.yesterdayVol) return null;
+  const shares = q.floatCap / q.price; // 股
+  return +((b.yesterdayVol * 100) / shares * 100).toFixed(2);
+}
+
 function excludeOne(q, map, tradeDate) {
   const ex = cfg.exclude;
   if (ex.st && /ST|退/i.test(q.name)) return 'ST/退市风险';
@@ -254,6 +261,8 @@ async function run() {
       open: q.open, prevClose: q.prevClose, price: q.price,
       auctionChgPct: p1.auctionChgPct, auctionVolRatio: p1.auctionVolRatio,
       yesterdayChgPct: b.yesterdayChgPct,
+      yesterdayVolRatio: b.yesterdayVolRatio != null ? +b.yesterdayVolRatio.toFixed(2) : null,
+      yesterdayTurnoverPct: yesterdayTurnoverPct(q, b),
       trend: { maBull: p3.maBull, newHigh20: p3.newHigh20, newHigh60: p3.newHigh60, slope20: p3.slope20 },
       p1, p2, p3,
       label: PR.labelOf(p1, p2, p3),

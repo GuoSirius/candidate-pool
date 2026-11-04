@@ -11,7 +11,7 @@
  *   → 候选明细(工具栏+双视图+过滤) → 分组概览 → 数据缺口(折叠)
  *   → 数据口径与偏差 → 免责声明
  *
- * 列：# / 名称+代码 / 行业 / 板块 / 今开% / 昨涨% / 竞价量能比 / 趋势
+ * 列：# / 名称+代码 / 行业 / 板块 / 今开价 / 今开% / 昨涨% / 昨量比 / 昨换手% / 竞价量能比 / 趋势
  *     / P1 竞价 / P2 弱转强 / P3 趋势 / 总分 / 标签
  */
 
@@ -58,6 +58,8 @@ function rowHtml(c, i, withBreakdown) {
     <td class="num">${num(c.open)}</td>
     <td class="num ${c.auctionChgPct >= 0 ? 'up' : 'down'}">${pct(c.auctionChgPct)}</td>
     <td class="num ${c.yesterdayChgPct >= 0 ? 'up' : 'down'}">${pct(c.yesterdayChgPct)}</td>
+    <td class="num">${c.yesterdayVolRatio == null ? '—' : num(c.yesterdayVolRatio, 2)}</td>
+    <td class="num">${c.yesterdayTurnoverPct == null ? '—' : num(c.yesterdayTurnoverPct, 2) + '%'}</td>
     <td class="num">${c.auctionVolRatio == null ? '—' : num(c.auctionVolRatio, 2)}</td>
     <td class="trend">${esc(trendStr(c.trend))}</td>
     ${cells}
@@ -237,6 +239,7 @@ function buildHTML(m) {
   // ---- 两级表头：合并「信号分项」到 P1/P2/P3 ----（基础9含今开价 + 分项3 + 总分/标签2 = 14 列）
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开价', 'Open px')}</th><th rowspan="2">${b('今开', 'Open%')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
+    <th rowspan="2">${b('昨量比', 'Prev volR')}</th><th rowspan="2">${b('昨换手%', 'Prev turn')}</th>
     <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
     <th colspan="${SCORE_COLS.length}" class="grp">${b(SCORE_GROUP.zh, SCORE_GROUP.en)}</th>
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标签', 'Label')}</th></tr>
@@ -285,7 +288,7 @@ function buildHTML(m) {
   </div>`;
 
   // 分组分隔行：默认隐藏，「按行业」视图前端插入各组行首
-  const baseCols = 9 + SCORE_COLS.length + 2; // 基础9(含今开价) + 分项3 + 总分/标签2 = 14
+  const baseCols = 11 + SCORE_COLS.length + 2; // 基础11(含今开价/昨量比/昨换手) + 分项3 + 总分/标签2 = 16
   const sepRows = groups.map((g) =>
     `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${baseCols}">${
       b(esc(g.sector), esc(g.sector))} · ${b(`组内 ${g.size} 只，最优 ${esc(g.best.name)}（${num(g.best.total, 1)}）`,
@@ -297,7 +300,7 @@ function buildHTML(m) {
     .map((g) => `<tr><td>${esc(g.code.replace(/^[a-z]+/, ''))}</td><td>${esc(g.name)}</td><td>${esc(g.reason)}</td></tr>`).join('');
 
   const provenance = b(
-    `竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 + 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线，锚定前一交易日 ${esc(anchor || marketDate || tradeDate)}${scope === 'universe' ? '（全市场基线缓存 preopen-baseline-*.json）' : '（观察池实时计算）'}。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（${esc(marketDate || tradeDate)}），不依赖外部交易日历。运行环境：${esc(runner)}。`,
+    `竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 / 昨量比 / 昨换手 / 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线（昨量比 = 昨日成交量 / 前5日均量；昨换手 = 昨日成交量 / 流通股本，流通股本 = 流通市值 / 现价），锚定前一交易日 ${esc(anchor || marketDate || tradeDate)}${scope === 'universe' ? '（全市场基线缓存 preopen-baseline-*.json）' : '（观察池实时计算）'}。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（${esc(marketDate || tradeDate)}），不依赖外部交易日历。运行环境：${esc(runner)}。`,
     `Auction snapshot: Tencent qt.gtimg.cn batch quotes (open fixed at 09:25 auction close; auction vol ratio = auction vol / yesterday full-day vol). Yesterday-change + trend baseline: Tencent ifzq fqkline (pre-adjusted daily K), anchored to the prior trading day ${esc(anchor || marketDate || tradeDate)}${scope === 'universe' ? ' (full-market baseline cache preopen-baseline-*.json)' : ' (watchlist computed live)'}. Industry: local cache eod/data/industry-map.json. Trade date derived from quote-timestamp mode (${esc(marketDate || tradeDate)}); no external calendar. Runner: ${esc(runner)}.`);
 
   const title = `${cfg.report.title} — ${tradeDate}`;
