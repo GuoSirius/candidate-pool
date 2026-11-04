@@ -154,11 +154,11 @@
       <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
       <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
     </div>
-    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 3" data-en="All 3">全部 3</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>3</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>3</i></button><button type="button" class="chip" data-filter="电池"><span data-zh="电池" data-en="电池">电池</span><i>1</i></button><button type="button" class="chip" data-filter="医疗器械"><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span><i>1</i></button><button type="button" class="chip" data-filter="造纸"><span data-zh="造纸" data-en="造纸">造纸</span><i>1</i></button></div>
+    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 3" data-en="All 3">全部 3</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>3</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>3</i></button><button type="button" class="chip" data-filter="@boards"><span data-zh="连板" data-en="Boards">连板</span><i>0</i></button><button type="button" class="chip" data-filter="电池"><span data-zh="电池" data-en="电池">电池</span><i>1</i></button><button type="button" class="chip" data-filter="医疗器械"><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span><i>1</i></button><button type="button" class="chip" data-filter="造纸"><span data-zh="造纸" data-en="造纸">造纸</span><i>1</i></button></div>
     <label class="bd-toggle"><input type="checkbox" id="bdToggle" checked> <span data-zh="分项得分" data-en="Breakdown">分项得分</span></label>
   </div>
   <div class="table-wrap"><table id="candTable"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
-    <th rowspan="2"><span data-zh="涨幅" data-en="Chg">涨幅</span></th><th rowspan="2"><span data-zh="尾盘段" data-en="Tail seg">尾盘段</span></th><th rowspan="2"><span data-zh="量比" data-en="Vol ratio">量比</span></th>
+    <th rowspan="2"><span data-zh="涨幅" data-en="Chg">涨幅</span></th><th rowspan="2"><span data-zh="连板" data-en="Streak">连板</span></th><th rowspan="2"><span data-zh="尾盘段" data-en="Tail seg">尾盘段</span></th><th rowspan="2"><span data-zh="量比" data-en="Vol ratio">量比</span></th>
     <th rowspan="2"><span data-zh="换手" data-en="Turnover">换手</span></th><th rowspan="2"><span data-zh="价格" data-en="Price">价格</span></th>
     <th rowspan="2"><span data-zh="流通值" data-en="Float cap">流通值</span></th><th rowspan="2"><span data-zh="总市值" data-en="Total cap">总市值</span></th>
     <th colspan="3" class="grp grp-self"><span data-zh="个股自身（77 分）" data-en="The stock itself (77)">个股自身（77 分）</span></th><th colspan="2" class="grp grp-ctx"><span data-zh="环境质量（23 分）" data-en="Context & quality (23)">环境质量（23 分）</span></th>
@@ -169,6 +169,7 @@
     <td><b>富临精工</b><span class="src">300432</span></td>
     <td><span data-zh="电池" data-en="电池">电池</span></td>
     <td class="up">+4.42%</td>
+    <td></td>
     <td>1.45%</td>
     <td>1.85</td>
     <td>6.0%</td>
@@ -183,6 +184,7 @@
     <td><b>亚辉龙</b><span class="src">688575</span></td>
     <td><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span></td>
     <td class="up">+3.44%</td>
+    <td></td>
     <td>1.33%</td>
     <td>2.10</td>
     <td>3.3%</td>
@@ -197,6 +199,7 @@
     <td><b>岳阳林纸</b><span class="src">600963</span></td>
     <td><span data-zh="造纸" data-en="造纸">造纸</span></td>
     <td class="up">+3.56%</td>
+    <td></td>
     <td>1.07%</td>
     <td>1.91</td>
     <td>3.8%</td>
@@ -206,7 +209,7 @@
     <td class="num sc-self sc-start">18.7</td><td class="num sc-self">9.5</td><td class="num sc-self">5.5</td><td class="num sc-ctx sc-start">11.1</td><td class="num sc-ctx">11.0</td>
     <td><span class="score">55.7</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
-  </tr><tr class="sector-row" data-sep="电池" hidden><td colspan="17"><span data-zh="电池" data-en="电池">电池</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.42% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="医疗器械" hidden><td colspan="17"><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +5.01% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="造纸" hidden><td colspan="17"><span data-zh="造纸" data-en="造纸">造纸</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.56% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr></tbody></table></div>
+  </tr><tr class="sector-row" data-sep="电池" hidden><td colspan="18"><span data-zh="电池" data-en="电池">电池</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.42% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="医疗器械" hidden><td colspan="18"><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +5.01% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="造纸" hidden><td colspan="18"><span data-zh="造纸" data-en="造纸">造纸</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.56% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr></tbody></table></div>
   
 
   <h2><span data-zh="淘汰漏斗" data-en="Rejection Funnel">淘汰漏斗</span></h2>
@@ -221,7 +224,7 @@
   </div>
 
   <h2><span data-zh="数据口径与偏差声明" data-en="Data Provenance and Deviations">数据口径与偏差声明</span></h2>
-  <div class="card"><p class="body-text"><span data-zh="全市场快照来自腾讯 qt.gtimg.cn 批量报价（29999 个槽位 / 500 批 / 失败 0 批，耗时 5.6s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1411 → 1431）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-27），不依赖外部交易日历。运行环境：local。" data-en="Market snapshot: Tencent qt.gtimg.cn batch quotes (29999 slots / 500 batches / 0 failed, 5.6s); 1-minute bars: Tencent web.ifzq.gtimg.cn (tail segment 1411 → 1431); industry mapping: local cache eod/data/industry-map.json (EM sector classes). Trade date derived from the quote-timestamp mode (2026-10-27); no external calendar. Runner: local.">全市场快照来自腾讯 qt.gtimg.cn 批量报价（29999 个槽位 / 500 批 / 失败 0 批，耗时 5.6s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1411 → 1431）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-27），不依赖外部交易日历。运行环境：local。</span></p></div>
+  <div class="card"><p class="body-text"><span data-zh="全市场快照来自腾讯 qt.gtimg.cn 批量报价（0 个槽位 / 0 批 / 失败 0 批，耗时 0.0s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1411 → 1431）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-27），不依赖外部交易日历。运行环境：local。" data-en="Market snapshot: Tencent qt.gtimg.cn batch quotes (0 slots / 0 batches / 0 failed, 0.0s); 1-minute bars: Tencent web.ifzq.gtimg.cn (tail segment 1411 → 1431); industry mapping: local cache eod/data/industry-map.json (EM sector classes). Trade date derived from the quote-timestamp mode (2026-10-27); no external calendar. Runner: local.">全市场快照来自腾讯 qt.gtimg.cn 批量报价（0 个槽位 / 0 批 / 失败 0 批，耗时 0.0s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1411 → 1431）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-27），不依赖外部交易日历。运行环境：local。</span></p></div>
 
   <div class="disclaimer"><span data-zh="本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。尾盘候选按 14:50 快照口径筛选，实际 14:50—15:00 之间价格仍会波动，需自行确认可成交性与流动性。" data-en="This report is programmatic observation output for personal research only and is not investment advice. Tail candidates are screened on the 14:50 snapshot; prices still move between 14:50 and 15:00 — verify tradability and liquidity yourself.">本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。尾盘候选按 14:50 快照口径筛选，实际 14:50—15:00 之间价格仍会波动，需自行确认可成交性与流动性。</span></div>
   <div class="footer">candidate-pool · eod tail screener v2 · <span data-zh="观察模式" data-en="observe mode">观察模式</span> 1431</div>
@@ -285,6 +288,7 @@
           var g = parseInt(tr.getAttribute('data-grank'), 10);
           return g >= 1 && g <= 3;
         }
+        if (candFilter === '@boards') return tr.hasAttribute('data-boards');
         return !candFilter || tr.getAttribute('data-sector') === candFilter;
       }
       var shown = [];

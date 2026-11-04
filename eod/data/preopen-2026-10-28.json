@@ -463,7 +463,33 @@
         "close": 6.09,
         "dayChgPct": 9.93,
         "limitUp": true,
-        "hit": true
+        "hit": true,
+        "mainInflow": -26210700,
+        "boards": {
+          "streak": 2,
+          "days": 2,
+          "count": 2
+        },
+        "capYi": {
+          "total": 37.9,
+          "float": 37.9
+        },
+        "billboard": {
+          "net": -7109120.2,
+          "hot": []
+        }
+      },
+      "yesterdayVolRatio": 1.59,
+      "yesterdayTurnoverPct": 4.15,
+      "capYi": {
+        "total": 34.4,
+        "float": 34.4
+      },
+      "yesterdayMainInflow": 68428396,
+      "boards": {
+        "streak": 1,
+        "days": 1,
+        "count": 1
       }
     },
     "sz000058": {
@@ -529,7 +555,29 @@
         "close": 8.19,
         "dayChgPct": 4.07,
         "limitUp": false,
-        "hit": true
+        "hit": true,
+        "mainInflow": -35993963,
+        "boards": {
+          "streak": 0,
+          "days": 2,
+          "count": 1
+        },
+        "capYi": {
+          "total": 100.8,
+          "float": 80.6
+        }
+      },
+      "yesterdayVolRatio": 0.75,
+      "yesterdayTurnoverPct": 0.76,
+      "capYi": {
+        "total": 96.9,
+        "float": 77.5
+      },
+      "yesterdayMainInflow": 38923446,
+      "boards": {
+        "streak": 1,
+        "days": 1,
+        "count": 1
       }
     },
     "sz001219": {
@@ -595,7 +643,33 @@
         "close": 16.48,
         "dayChgPct": 10.01,
         "limitUp": true,
-        "hit": true
+        "hit": true,
+        "mainInflow": 33117549,
+        "boards": {
+          "streak": 3,
+          "days": 3,
+          "count": 3
+        },
+        "capYi": {
+          "total": 32.1,
+          "float": 31.3
+        }
+      },
+      "yesterdayVolRatio": 5.06,
+      "yesterdayTurnoverPct": 7.77,
+      "capYi": {
+        "total": 29.2,
+        "float": 28.5
+      },
+      "yesterdayMainInflow": -19342651,
+      "boards": {
+        "streak": 2,
+        "days": 2,
+        "count": 2
+      },
+      "billboard": {
+        "net": 1577309.8,
+        "hot": []
       }
     },
     "sz000678": {
@@ -661,7 +735,33 @@
         "close": 17.61,
         "dayChgPct": 9.99,
         "limitUp": true,
-        "hit": true
+        "hit": true,
+        "mainInflow": 30340276,
+        "boards": {
+          "streak": 5,
+          "days": 9,
+          "count": 6
+        },
+        "capYi": {
+          "total": 80.9,
+          "float": 80.9
+        }
+      },
+      "yesterdayVolRatio": 1.05,
+      "yesterdayTurnoverPct": 20.57,
+      "capYi": {
+        "total": 73.6,
+        "float": 73.6
+      },
+      "yesterdayMainInflow": -100769840,
+      "boards": {
+        "streak": 4,
+        "days": 8,
+        "count": 5
+      },
+      "billboard": {
+        "net": -110676407.81,
+        "hot": []
       }
     },
     "sh600838": {
@@ -727,7 +827,37 @@
         "close": 13.99,
         "dayChgPct": 5.11,
         "limitUp": false,
-        "hit": true
+        "hit": true,
+        "mainInflow": -421341262,
+        "boards": {
+          "streak": 0,
+          "days": 6,
+          "count": 5
+        },
+        "capYi": {
+          "total": 56.1,
+          "float": 56.1
+        },
+        "billboard": {
+          "net": -40138486.69,
+          "hot": []
+        }
+      },
+      "yesterdayVolRatio": 0.92,
+      "yesterdayTurnoverPct": 7.49,
+      "capYi": {
+        "total": 53.4,
+        "float": 53.4
+      },
+      "yesterdayMainInflow": -43170291,
+      "boards": {
+        "streak": 5,
+        "days": 5,
+        "count": 5
+      },
+      "billboard": {
+        "net": -25966565,
+        "hot": []
       }
     },
     "sz002708": {
@@ -793,7 +923,33 @@
         "close": 18.94,
         "dayChgPct": 9.99,
         "limitUp": true,
-        "hit": true
+        "hit": true,
+        "mainInflow": -51297749,
+        "boards": {
+          "streak": 3,
+          "days": 3,
+          "count": 3
+        },
+        "capYi": {
+          "total": 106.5,
+          "float": 96.5
+        }
+      },
+      "yesterdayVolRatio": 0.52,
+      "yesterdayTurnoverPct": 3.87,
+      "capYi": {
+        "total": 96.8,
+        "float": 87.8
+      },
+      "yesterdayMainInflow": 81500469,
+      "boards": {
+        "streak": 2,
+        "days": 2,
+        "count": 2
+      },
+      "billboard": {
+        "net": 166508742,
+        "hot": []
       }
     },
     "sz001400": {
@@ -859,7 +1015,33 @@
         "close": 88.31,
         "dayChgPct": 10,
         "limitUp": true,
-        "hit": true
+        "hit": true,
+        "mainInflow": 57489638,
+        "boards": {
+          "streak": 2,
+          "days": 2,
+          "count": 2
+        },
+        "capYi": {
+          "total": 74.2,
+          "float": 28.4
+        },
+        "billboard": {
+          "net": 5465997.30000001,
+          "hot": []
+        }
+      },
+      "yesterdayVolRatio": 0.5,
+      "yesterdayTurnoverPct": 5.84,
+      "capYi": {
+        "total": 67.4,
+        "float": 25.9
+      },
+      "yesterdayMainInflow": 57804377,
+      "boards": {
+        "streak": 1,
+        "days": 1,
+        "count": 1
       }
     },
     "sz300949": {
@@ -925,7 +1107,33 @@
         "close": 40.89,
         "dayChgPct": 4.74,
         "limitUp": false,
-        "hit": true
+        "hit": true,
+        "mainInflow": -24420887,
+        "boards": {
+          "streak": 0,
+          "days": 3,
+          "count": 1
+        },
+        "capYi": {
+          "total": 35.6,
+          "float": 20.3
+        }
+      },
+      "yesterdayVolRatio": 1.62,
+      "yesterdayTurnoverPct": 22.22,
+      "capYi": {
+        "total": 34,
+        "float": 19.4
+      },
+      "yesterdayMainInflow": -597490,
+      "boards": {
+        "streak": 0,
+        "days": 2,
+        "count": 1
+      },
+      "billboard": {
+        "net": 34704975.37,
+        "hot": []
       }
     },
     "sz002187": {
@@ -991,7 +1199,29 @@
         "close": 6.04,
         "dayChgPct": 2.03,
         "limitUp": false,
-        "hit": true
+        "hit": true,
+        "mainInflow": 14065314,
+        "boards": {
+          "streak": 0,
+          "days": 2,
+          "count": 1
+        },
+        "capYi": {
+          "total": 42.3,
+          "float": 42.3
+        }
+      },
+      "yesterdayVolRatio": 3.54,
+      "yesterdayTurnoverPct": 5.12,
+      "capYi": {
+        "total": 41.5,
+        "float": 41.5
+      },
+      "yesterdayMainInflow": 57602506,
+      "boards": {
+        "streak": 1,
+        "days": 1,
+        "count": 1
       }
     },
     "sh600828": {
@@ -1057,7 +1287,37 @@
         "close": 4.92,
         "dayChgPct": 10.07,
         "limitUp": true,
-        "hit": true
+        "hit": true,
+        "mainInflow": 34740857,
+        "boards": {
+          "streak": 2,
+          "days": 2,
+          "count": 2
+        },
+        "capYi": {
+          "total": 85.2,
+          "float": 85.2
+        },
+        "billboard": {
+          "net": -17862054.75,
+          "hot": []
+        }
+      },
+      "yesterdayVolRatio": 1.58,
+      "yesterdayTurnoverPct": 1.57,
+      "capYi": {
+        "total": 77.4,
+        "float": 77.4
+      },
+      "yesterdayMainInflow": 39999556,
+      "boards": {
+        "streak": 1,
+        "days": 1,
+        "count": 1
+      },
+      "billboard": {
+        "net": 6707903,
+        "hot": []
       }
     }
   }

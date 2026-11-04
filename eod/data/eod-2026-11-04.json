@@ -1,0 +1,205 @@
+{
+ "version": 2,
+ "tradeDate": "2026-11-04",
+ "mode": "cut",
+ "cutAt": "1450",
+ "updatedAt": "2026-11-04 22:40:51",
+ "runs": [
+  {
+   "at": "2026-11-04 14:51:34",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 6,
+   "groupCount": 5,
+   "prePassCount": 327,
+   "snapshotCount": 6180,
+   "runner": "local"
+  },
+  {
+   "at": "2026-11-04 22:40:51",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 3,
+   "groupCount": 3,
+   "prePassCount": 346,
+   "snapshotCount": 6180,
+   "runner": "github"
+  }
+ ],
+ "stats": {
+  "snapshotCount": 6180,
+  "prePassCount": 346,
+  "preByReason": {
+   "当日涨幅不在区间": 4148,
+   "停牌或已退市（无成交）": 327,
+   "ST / 退市风险股": 478,
+   "换手率不在区间": 146,
+   "量比不足": 642,
+   "流通市值不在区间": 92,
+   "股价过低": 1
+  },
+  "minuteDropped": 343,
+  "tailByReason": {
+   "尾盘段涨幅不足": 335,
+   "距日内高点回落过多": 76,
+   "现价低于当日均价": 8,
+   "总分低于下限": 5,
+   "关键字段缺失或分时数据不可用": 5
+  },
+  "candidateCount": 3,
+  "groupCount": 3
+ },
+ "records": {
+  "sz300049": {
+   "code": "sz300049",
+   "name": "福瑞医科",
+   "sector": "医疗器械",
+   "board": "gem",
+   "boardLabel": "创业板",
+   "price": 41.1,
+   "prevClose": 38.5,
+   "high": 41.24,
+   "chgPct": 6.75,
+   "turnover": 6.27,
+   "volRatio": 1.83,
+   "volRatioEst": 1.83,
+   "floatCapYi": 96.01,
+   "totalCapYi": 108.5,
+   "avgPrice": 39.870446201648164,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.9354997538158607,
+    "upRatio": 0.5263157894736842,
+    "maxDrawdownPct": 0.8765522279035778,
+    "priceVsAvgPct": 2.833060339076776,
+    "avgAtCut": 39.870446201648164,
+    "p0": 40.62,
+    "p1": 41,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 16.371245691777563,
+    "volume": 8.4,
+    "position": 11.016488845780737,
+    "avgLine": 12,
+    "turnoverFit": 11
+   },
+   "total": 58.7877345375583,
+   "boards": {
+    "streak": 0,
+    "days": 0,
+    "count": 0
+   },
+   "sectorMedianChg": 5.73,
+   "sectorRank": 11,
+   "sectorTotal": 74,
+   "fill": {}
+  },
+  "sz002812": {
+   "code": "sz002812",
+   "name": "恩捷股份",
+   "sector": "电池",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 50.99,
+   "prevClose": 48.73,
+   "high": 51.38,
+   "chgPct": 4.64,
+   "turnover": 5.2,
+   "volRatio": 1.49,
+   "volRatioEst": 1.49,
+   "floatCapYi": 417.89,
+   "totalCapYi": 500.37,
+   "avgPrice": 49.51031480065149,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 1.2294269284156205,
+    "upRatio": 0.75,
+    "maxDrawdownPct": 1.1879259980525791,
+    "priceVsAvgPct": 3.1098271250100007,
+    "avgAtCut": 49.51031480065149,
+    "p0": 50.43,
+    "p1": 51.05,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 21.51497124727336,
+    "volume": 3.866666666666667,
+    "position": 10.292720903075002,
+    "avgLine": 12,
+    "turnoverFit": 11
+   },
+   "total": 58.674358817015026,
+   "boards": {
+    "streak": 0,
+    "days": 9,
+    "count": 1
+   },
+   "sectorMedianChg": 4.73,
+   "sectorRank": 38,
+   "sectorTotal": 74,
+   "fill": {}
+  },
+  "sz001280": {
+   "code": "sz001280",
+   "name": "中国铀业",
+   "sector": "小金属",
+   "board": "main",
+   "boardLabel": "主板",
+   "price": 59.39,
+   "prevClose": 56.93,
+   "high": 59.44,
+   "chgPct": 4.32,
+   "turnover": 4.25,
+   "volRatio": 1.53,
+   "volRatioEst": 1.53,
+   "floatCapYi": 103.18,
+   "totalCapYi": 1228.29,
+   "avgPrice": 58.37638720076189,
+   "groupRank": 1,
+   "bestInGroup": true,
+   "groupSize": 1,
+   "tail": {
+    "segPct": 0.6950330564502399,
+    "upRatio": 0.5263157894736842,
+    "maxDrawdownPct": 0.5897219882055627,
+    "priceVsAvgPct": 1.753470621122566,
+    "avgAtCut": 58.37638720076189,
+    "p0": 58.99,
+    "p1": 59.4,
+    "bars": 21,
+    "segFrom": "1430",
+    "cut": "1450"
+   },
+   "score": {
+    "tailMomentum": 12.163078487879199,
+    "volume": 4.400000000000001,
+    "position": 17.192462987886962,
+    "avgLine": 12,
+    "turnoverFit": 11
+   },
+   "total": 56.755541475766165,
+   "boards": {
+    "streak": 0,
+    "days": 0,
+    "count": 0
+   },
+   "sectorMedianChg": 5.085,
+   "sectorRank": 29,
+   "sectorTotal": 74,
+   "fill": {}
+  }
+ }
+}
