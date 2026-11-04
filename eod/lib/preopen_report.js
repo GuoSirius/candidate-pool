@@ -31,14 +31,14 @@ function capTxt(cap) {
   if (!cap || cap.total == null) return '—';
   return `${num(cap.total, 1)}/${cap.float != null ? num(cap.float, 1) : '—'}亿`;
 }
-/** 连板文案：{streak,days,count} → 首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
+/** 连板文案：{streak,days,count} → 首板/昨日首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
 function boardsTxt(bd) {
   if (bd == null) return '';
   if (typeof bd === 'number') bd = { streak: bd, days: bd, count: bd };
   const st = bd.streak | 0, N = bd.days | 0, M = bd.count | 0;
   if (st >= 2) return M > st ? `${st}连板·${N}天${M}板` : `${st}连板`;
   if (st === 1) return M > 1 ? `首板·${N}天${M}板` : '首板';
-  if (M >= 1 && N >= 2) return `${N}天${M}板`;
+  if (M >= 1) return N === 2 ? '昨日首板' : `${N}天${M}板`;
   return '';
 }
 /** 上榜单元格：tag + 知名游资标注（如「章盟主 1.2亿」） */

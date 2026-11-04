@@ -72,14 +72,14 @@ function scoreHeadSub() {
 }
 
 /** 单条候选的行（用于 TOP 表 / 分组卡片） */
-/** 连板文案：{streak,days,count} → 首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
+/** 连板文案：{streak,days,count} → 首板/昨日首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
 function boardsTxt(bd) {
   if (bd == null) return '';
   if (typeof bd === 'number') bd = { streak: bd, days: bd, count: bd };
   const st = bd.streak | 0, N = bd.days | 0, M = bd.count | 0;
   if (st >= 2) return M > st ? `${st}连板·${N}天${M}板` : `${st}连板`;
   if (st === 1) return M > 1 ? `首板·${N}天${M}板` : '首板';
-  if (M >= 1 && N >= 2) return `${N}天${M}板`;
+  if (M >= 1) return N === 2 ? '昨日首板' : `${N}天${M}板`;
   return '';
 }
 
@@ -104,13 +104,13 @@ function rowHtml(c, i, cfg, withBreakdown) {
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
     <td class="up">${pct(c.chgPct)}</td>
+    <td>${boardsTxt(c.boards)}</td>
     <td>${num(tail.segPct, 2)}%</td>
     <td>${num(c.volRatio)}</td>
     <td>${num(c.turnover, 1)}%</td>
     <td>${num(c.price, 2)}</td>
     <td>${yi(c.floatCapYi)}</td>
     <td>${yi(c.totalCapYi)}</td>
-    <td>${boardsTxt(c.boards)}</td>
     ${cells}
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap">${tagBits.join('') || '—'}</td>
@@ -282,10 +282,9 @@ function buildHTML(m) {
   // 两级表头：第一行把五个子分切成「个股自身 77 / 环境与质量 23」两块，
   // 第一行列宽靠 colspan 自动对齐到下面的子分列，不需要额外配 colgroup。
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
-    <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
+    <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('连板', 'Streak')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
     <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('价格', 'Price')}</th>
     <th rowspan="2">${b('流通值', 'Float cap')}</th><th rowspan="2">${b('总市值', 'Total cap')}</th>
-    <th rowspan="2">${b('连板', 'Streak')}</th>
     ${scoreHeadTop()}
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标记', 'Flags')}</th></tr>
     <tr>${scoreHeadSub()}</tr>`;

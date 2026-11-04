@@ -66,9 +66,10 @@
   .tag.fail { background: #f1f5f9; color: var(--slate); }
   .tag.pass { background: #fef2f2; color: var(--red); }
   .tag.gap { background: #fffbeb; color: var(--amber); }
+  .tag.hot { background: var(--red); color: #fff; font-weight: 700; }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: #fefce8; }
   /* 六维分项分两组：表头两级 + 组底色 + 组首左分隔线，让「重点看哪组」不用读文字 */
   th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
@@ -77,7 +78,7 @@
   th.grp-sub.grp-self { background: #fff7ed; color: var(--accent); }
   th.grp-sub.grp-ctx { background: #f1f5f9; color: var(--slate); }
   th.sc-start, td.sc-start { border-left: 2px solid var(--border); }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.num { text-align: center; font-variant-numeric: tabular-nums; }
   td.sc-self { background: rgba(217, 119, 6, 0.06); }
   td.sc-ctx { background: rgba(100, 116, 139, 0.05); }
   .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: #57534e; background: #fff7ed; border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
@@ -97,6 +98,7 @@
   :root[data-theme="dark"] .tag.fail { background: var(--tag-fail-bg); }
   :root[data-theme="dark"] .tag.pass { background: var(--tag-pass-bg); }
   :root[data-theme="dark"] .tag.gap { background: var(--tag-gap-bg); }
+  :root[data-theme="dark"] .tag.hot { background: #b91c1c; color: #fff; }
   :root[data-theme="dark"] th { background: var(--th-bg); }
   :root[data-theme="dark"] th.grp-self { background: var(--grp-self-bg); color: var(--grp-self-fg); }
   :root[data-theme="dark"] th.grp-ctx { background: var(--grp-ctx-bg); color: var(--grp-ctx-fg); }
@@ -146,48 +148,50 @@
     <ul><li><b><span data-zh="候选 100 只 / 43 个行业" data-en="100 names across 43 industries">候选 100 只 / 43 个行业</span>。</b><span data-zh="最强行业「消费电子」（中位涨幅 3.58%），组内最优 春秋电子。" data-en="Strongest industry "消费电子" (median 3.58%); its top pick is 春秋电子.">最强行业「消费电子」（中位涨幅 3.58%），组内最优 春秋电子。</span></li><li><span data-zh="全市场前五：春秋电子（98.0）、盛视科技（94.5）、名臣健康（93.8）、宝鼎科技（93.5）、哈投股份（93.2）。" data-en="Top five: 春秋电子 (98.0), 盛视科技 (94.5), 名臣健康 (93.8), 宝鼎科技 (93.5), 哈投股份 (93.2).">全市场前五：春秋电子（98.0）、盛视科技（94.5）、名臣健康（93.8）、宝鼎科技（93.5）、哈投股份（93.2）。</span></li><li><span data-zh="漏斗：快照 6173 → 初筛通过 161 → 尾盘段校验后 100。" data-en="Funnel: snapshot 6173 → pre-filter pass 161 → after tail checks 100.">漏斗：快照 6173 → 初筛通过 161 → 尾盘段校验后 100。</span></li></ul>
   </div>
 
-  <h2><span data-zh="候选明细（60 只）" data-en="Candidates (60)">候选明细（60 只）</span></h2>
-  <p class="score-note" id="scoreNote"><span data-zh="六维分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 65 分</b>（尾盘动能 30 + 量能 20 + 位置 15）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 35 分</b>（板块 15 + 均价线 10 + 换手 10）—— 板块与流动性给的背景分，靠它撑起来的高分不可信。" data-en="<b class='sn-self'>The stock itself — 65 pts</b> (tail momentum 30 + volume 20 + position 15): evidence this name moved on its own — <b>this is the group to read first</b>. <b class='sn-ctx'>Context &amp; quality — 35 pts</b> (sector 15 + VWAP 10 + turnover 10): background handed over by the sector and by liquidity; a high total carried by this group alone is not trustworthy.">六维分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 65 分</b>（尾盘动能 30 + 量能 20 + 位置 15）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 35 分</b>（板块 15 + 均价线 10 + 换手 10）—— 板块与流动性给的背景分，靠它撑起来的高分不可信。</span></p><div class="toolbar">
+  <h2><span data-zh="候选明细（100 只）" data-en="Candidates (100)">候选明细（100 只）</span></h2>
+  <p class="score-note" id="scoreNote"><span data-zh="五个分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 77 分</b>（尾盘动能 35 + 量能 24 + 位置 18）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 23 分</b>（均价线 12 + 换手 11）—— 流动性与位置给的背景分，靠它撑起来的高分不可信。总分与次日收益相关性弱（ρ≈0.04），<b>「涨幅≥5%」标记比总分更值得看</b>（涨幅是相关最强的特征，ρ=+0.15）。" data-en="<b class='sn-self'>The stock itself — 77 pts</b> (tail momentum 35 + volume 24 + position 18): evidence this name moved on its own — <b>this is the group to read first</b>. <b class='sn-ctx'>Context &amp; quality — 23 pts</b> (VWAP 12 + turnover 11): background handed over by liquidity and position; a high total carried by this group alone is not trustworthy. The total correlates only weakly with next-day return (ρ≈0.04), so the <b>chg ≥5% flag</b> deserves more attention than the total (chg is the strongest correlate, ρ=+0.15).">五个分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 77 分</b>（尾盘动能 35 + 量能 24 + 位置 18）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 23 分</b>（均价线 12 + 换手 11）—— 流动性与位置给的背景分，靠它撑起来的高分不可信。总分与次日收益相关性弱（ρ≈0.04），<b>「涨幅≥5%」标记比总分更值得看</b>（涨幅是相关最强的特征，ρ=+0.15）。</span></p><div class="toolbar">
     <div class="seg" role="tablist">
       <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
       <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
     </div>
-    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 60" data-en="All 60">全部 60</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>29</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>50</i></button><button type="button" class="chip" data-filter="消费电子"><span data-zh="消费电子" data-en="消费电子">消费电子</span><i>2</i></button><button type="button" class="chip" data-filter="计算机设备"><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span><i>3</i></button><button type="button" class="chip" data-filter="游戏Ⅱ"><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="元件"><span data-zh="元件" data-en="元件">元件</span><i>10</i></button><button type="button" class="chip" data-filter="证券Ⅱ"><span data-zh="证券Ⅱ" data-en="证券Ⅱ">证券Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="橡胶"><span data-zh="橡胶" data-en="橡胶">橡胶</span><i>1</i></button><button type="button" class="chip" data-filter="通用设备"><span data-zh="通用设备" data-en="通用设备">通用设备</span><i>3</i></button><button type="button" class="chip" data-filter="半导体"><span data-zh="半导体" data-en="半导体">半导体</span><i>3</i></button><button type="button" class="chip" data-filter="医疗器械"><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span><i>2</i></button><button type="button" class="chip" data-filter="自动化设备"><span data-zh="自动化设备" data-en="自动化设备">自动化设备</span><i>3</i></button><button type="button" class="chip" data-filter="广告营销"><span data-zh="广告营销" data-en="广告营销">广告营销</span><i>1</i></button><button type="button" class="chip" data-filter="旅游及景区"><span data-zh="旅游及景区" data-en="旅游及景区">旅游及景区</span><i>1</i></button><button type="button" class="chip" data-filter="电子化学品Ⅱ"><span data-zh="电子化学品Ⅱ" data-en="电子化学品Ⅱ">电子化学品Ⅱ</span><i>2</i></button><button type="button" class="chip" data-filter="光学光电子"><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span><i>4</i></button><button type="button" class="chip" data-filter="化学制品"><span data-zh="化学制品" data-en="化学制品">化学制品</span><i>4</i></button><button type="button" class="chip" data-filter="软件开发"><span data-zh="软件开发" data-en="软件开发">软件开发</span><i>2</i></button><button type="button" class="chip" data-filter="互联网电商"><span data-zh="互联网电商" data-en="互联网电商">互联网电商</span><i>2</i></button><button type="button" class="chip" data-filter="一般零售"><span data-zh="一般零售" data-en="一般零售">一般零售</span><i>1</i></button><button type="button" class="chip" data-filter="贸易Ⅱ"><span data-zh="贸易Ⅱ" data-en="贸易Ⅱ">贸易Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="航天装备Ⅱ"><span data-zh="航天装备Ⅱ" data-en="航天装备Ⅱ">航天装备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="通信设备"><span data-zh="通信设备" data-en="通信设备">通信设备</span><i>4</i></button><button type="button" class="chip" data-filter="塑料"><span data-zh="塑料" data-en="塑料">塑料</span><i>1</i></button><button type="button" class="chip" data-filter="农化制品"><span data-zh="农化制品" data-en="农化制品">农化制品</span><i>1</i></button><button type="button" class="chip" data-filter="装修装饰Ⅱ"><span data-zh="装修装饰Ⅱ" data-en="装修装饰Ⅱ">装修装饰Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="照明设备Ⅱ"><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="其他电子Ⅱ"><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="汽车服务"><span data-zh="汽车服务" data-en="汽车服务">汽车服务</span><i>1</i></button><button type="button" class="chip" data-filter="家电零部件Ⅱ"><span data-zh="家电零部件Ⅱ" data-en="家电零部件Ⅱ">家电零部件Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="服装家纺"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span><i>1</i></button></div>
+    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 100" data-en="All 100">全部 100</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>43</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>77</i></button><button type="button" class="chip" data-filter="消费电子"><span data-zh="消费电子" data-en="消费电子">消费电子</span><i>4</i></button><button type="button" class="chip" data-filter="计算机设备"><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span><i>4</i></button><button type="button" class="chip" data-filter="游戏Ⅱ"><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="元件"><span data-zh="元件" data-en="元件">元件</span><i>10</i></button><button type="button" class="chip" data-filter="证券Ⅱ"><span data-zh="证券Ⅱ" data-en="证券Ⅱ">证券Ⅱ</span><i>2</i></button><button type="button" class="chip" data-filter="橡胶"><span data-zh="橡胶" data-en="橡胶">橡胶</span><i>2</i></button><button type="button" class="chip" data-filter="通用设备"><span data-zh="通用设备" data-en="通用设备">通用设备</span><i>4</i></button><button type="button" class="chip" data-filter="半导体"><span data-zh="半导体" data-en="半导体">半导体</span><i>3</i></button><button type="button" class="chip" data-filter="医疗器械"><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span><i>2</i></button><button type="button" class="chip" data-filter="自动化设备"><span data-zh="自动化设备" data-en="自动化设备">自动化设备</span><i>4</i></button><button type="button" class="chip" data-filter="广告营销"><span data-zh="广告营销" data-en="广告营销">广告营销</span><i>4</i></button><button type="button" class="chip" data-filter="旅游及景区"><span data-zh="旅游及景区" data-en="旅游及景区">旅游及景区</span><i>1</i></button><button type="button" class="chip" data-filter="电子化学品Ⅱ"><span data-zh="电子化学品Ⅱ" data-en="电子化学品Ⅱ">电子化学品Ⅱ</span><i>2</i></button><button type="button" class="chip" data-filter="光学光电子"><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span><i>5</i></button><button type="button" class="chip" data-filter="化学制品"><span data-zh="化学制品" data-en="化学制品">化学制品</span><i>5</i></button><button type="button" class="chip" data-filter="软件开发"><span data-zh="软件开发" data-en="软件开发">软件开发</span><i>5</i></button><button type="button" class="chip" data-filter="互联网电商"><span data-zh="互联网电商" data-en="互联网电商">互联网电商</span><i>3</i></button><button type="button" class="chip" data-filter="一般零售"><span data-zh="一般零售" data-en="一般零售">一般零售</span><i>6</i></button><button type="button" class="chip" data-filter="贸易Ⅱ"><span data-zh="贸易Ⅱ" data-en="贸易Ⅱ">贸易Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="航天装备Ⅱ"><span data-zh="航天装备Ⅱ" data-en="航天装备Ⅱ">航天装备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="通信设备"><span data-zh="通信设备" data-en="通信设备">通信设备</span><i>5</i></button><button type="button" class="chip" data-filter="塑料"><span data-zh="塑料" data-en="塑料">塑料</span><i>1</i></button><button type="button" class="chip" data-filter="农化制品"><span data-zh="农化制品" data-en="农化制品">农化制品</span><i>2</i></button><button type="button" class="chip" data-filter="装修装饰Ⅱ"><span data-zh="装修装饰Ⅱ" data-en="装修装饰Ⅱ">装修装饰Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="照明设备Ⅱ"><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="其他电子Ⅱ"><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span><i>2</i></button><button type="button" class="chip" data-filter="汽车服务"><span data-zh="汽车服务" data-en="汽车服务">汽车服务</span><i>1</i></button><button type="button" class="chip" data-filter="家电零部件Ⅱ"><span data-zh="家电零部件Ⅱ" data-en="家电零部件Ⅱ">家电零部件Ⅱ</span><i>2</i></button><button type="button" class="chip" data-filter="服装家纺"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span><i>2</i></button><button type="button" class="chip" data-filter="航空装备Ⅱ"><span data-zh="航空装备Ⅱ" data-en="航空装备Ⅱ">航空装备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="其他电源设备Ⅱ"><span data-zh="其他电源设备Ⅱ" data-en="其他电源设备Ⅱ">其他电源设备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="多元金融"><span data-zh="多元金融" data-en="多元金融">多元金融</span><i>1</i></button><button type="button" class="chip" data-filter="纺织制造"><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span><i>1</i></button><button type="button" class="chip" data-filter="金属新材料"><span data-zh="金属新材料" data-en="金属新材料">金属新材料</span><i>1</i></button><button type="button" class="chip" data-filter="装修建材"><span data-zh="装修建材" data-en="装修建材">装修建材</span><i>1</i></button><button type="button" class="chip" data-filter="IT服务Ⅱ"><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span><i>1</i></button><button type="button" class="chip" data-filter="专用设备"><span data-zh="专用设备" data-en="专用设备">专用设备</span><i>1</i></button><button type="button" class="chip" data-filter="小家电"><span data-zh="小家电" data-en="小家电">小家电</span><i>1</i></button><button type="button" class="chip" data-filter="非白酒"><span data-zh="非白酒" data-en="非白酒">非白酒</span><i>1</i></button><button type="button" class="chip" data-filter="数字媒体"><span data-zh="数字媒体" data-en="数字媒体">数字媒体</span><i>1</i></button><button type="button" class="chip" data-filter="化学制药"><span data-zh="化学制药" data-en="化学制药">化学制药</span><i>1</i></button><button type="button" class="chip" data-filter="煤炭开采"><span data-zh="煤炭开采" data-en="煤炭开采">煤炭开采</span><i>1</i></button><button type="button" class="chip" data-filter="农产品加工"><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span><i>1</i></button></div>
     <label class="bd-toggle"><input type="checkbox" id="bdToggle" checked> <span data-zh="分项得分" data-en="Breakdown">分项得分</span></label>
   </div>
   <div class="table-wrap"><table id="candTable"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
-    <th rowspan="2"><span data-zh="涨幅" data-en="Chg">涨幅</span></th><th rowspan="2"><span data-zh="尾盘段" data-en="Tail seg">尾盘段</span></th><th rowspan="2"><span data-zh="量比" data-en="Vol ratio">量比</span></th>
+    <th rowspan="2"><span data-zh="涨幅" data-en="Chg">涨幅</span></th><th rowspan="2"><span data-zh="连板" data-en="Streak">连板</span></th><th rowspan="2"><span data-zh="尾盘段" data-en="Tail seg">尾盘段</span></th><th rowspan="2"><span data-zh="量比" data-en="Vol ratio">量比</span></th>
     <th rowspan="2"><span data-zh="换手" data-en="Turnover">换手</span></th><th rowspan="2"><span data-zh="价格" data-en="Price">价格</span></th>
     <th rowspan="2"><span data-zh="流通值" data-en="Float cap">流通值</span></th><th rowspan="2"><span data-zh="总市值" data-en="Total cap">总市值</span></th>
-    <th colspan="3" class="grp grp-self"><span data-zh="个股自身 · 重点看（65 分）" data-en="The stock itself · focus (65)">个股自身 · 重点看（65 分）</span></th><th colspan="3" class="grp grp-ctx"><span data-zh="环境与质量（35 分）" data-en="Context &amp; quality (35)">环境与质量（35 分）</span></th>
+    <th colspan="3" class="grp grp-self"><span data-zh="个股自身（77 分）" data-en="The stock itself (77)">个股自身（77 分）</span></th><th colspan="2" class="grp grp-ctx"><span data-zh="环境质量（23 分）" data-en="Context & quality (23)">环境质量（23 分）</span></th>
     <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标记" data-en="Flags">标记</span></th></tr>
-    <tr><th class="grp-sub grp-self sc-start"><span data-zh="尾盘动能" data-en="Tail momentum">尾盘动能</span></th><th class="grp-sub grp-self"><span data-zh="量能" data-en="Volume">量能</span></th><th class="grp-sub grp-self"><span data-zh="位置" data-en="Position">位置</span></th><th class="grp-sub grp-ctx sc-start"><span data-zh="板块" data-en="Sector">板块</span></th><th class="grp-sub grp-ctx"><span data-zh="均价线" data-en="VWAP">均价线</span></th><th class="grp-sub grp-ctx"><span data-zh="换手" data-en="Turnover">换手</span></th></tr></thead>
+    <tr><th class="grp-sub grp-self sc-start"><span data-zh="尾盘动能" data-en="Tail momentum">尾盘动能</span></th><th class="grp-sub grp-self"><span data-zh="量能" data-en="Volume">量能</span></th><th class="grp-sub grp-self"><span data-zh="位置" data-en="Position">位置</span></th><th class="grp-sub grp-ctx sc-start"><span data-zh="均价线" data-en="VWAP">均价线</span></th><th class="grp-sub grp-ctx"><span data-zh="换手" data-en="Turnover">换手</span></th></tr></thead>
     <tbody id="candBody"><tr data-sector="消费电子" data-best="1" data-grank="1">
     <td>1</td>
     <td><b>春秋电子</b><span class="src">603890</span></td>
     <td><span data-zh="消费电子" data-en="消费电子">消费电子</span></td>
     <td class="up">+6.76%</td>
+    <td></td>
     <td>2.23%</td>
     <td>3.30</td>
     <td>4.7%</td>
     <td>15.16</td>
     <td>76.4 亿</td>
     <td>76.4 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">13.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">13.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">98.0</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="计算机设备" data-best="1" data-grank="1">
     <td>2</td>
     <td><b>盛视科技</b><span class="src">002990</span></td>
     <td><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span></td>
     <td class="up">+4.70%</td>
+    <td>昨日首板</td>
     <td>2.14%</td>
     <td>3.06</td>
     <td>13.4%</td>
     <td>58.58</td>
     <td>80.8 亿</td>
     <td>153.4 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">13.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">6.6</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">13.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">6.6</td>
     <td><span class="score">94.5</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="游戏Ⅱ" data-best="1" data-grank="1">
@@ -195,13 +199,14 @@
     <td><b>名臣健康</b><span class="src">002919</span></td>
     <td><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span></td>
     <td class="up">+3.44%</td>
+    <td></td>
     <td>1.86%</td>
     <td>2.78</td>
     <td>3.9%</td>
     <td>18.04</td>
     <td>47.7 亿</td>
     <td>48.0 亿</td>
-    <td class="num sc-self sc-start">28.0</td><td class="num sc-self">17.6</td><td class="num sc-self">13.3</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">28.0</td><td class="num sc-self">17.6</td><td class="num sc-self">13.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">93.8</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="元件" data-best="1" data-grank="1">
@@ -209,55 +214,59 @@
     <td><b>宝鼎科技</b><span class="src">002552</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+6.38%</td>
+    <td></td>
     <td>4.48%</td>
     <td>2.44</td>
     <td>3.8%</td>
     <td>42.66</td>
     <td>157.2 亿</td>
     <td>165.5 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">13.8</td><td class="num sc-self">14.8</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">13.8</td><td class="num sc-self">14.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">93.5</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="证券Ⅱ" data-best="1" data-grank="1">
     <td>5</td>
     <td><b>哈投股份</b><span class="src">600864</span></td>
     <td><span data-zh="证券Ⅱ" data-en="证券Ⅱ">证券Ⅱ</span></td>
     <td class="up">+5.71%</td>
+    <td></td>
     <td>3.38%</td>
     <td>3.21</td>
     <td>2.8%</td>
     <td>6.11</td>
     <td>127.1 亿</td>
     <td>127.1 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">10.1</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">8.1</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">10.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">8.1</td>
     <td><span class="score">93.2</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="橡胶" data-best="1" data-grank="1">
     <td>6</td>
     <td><b>震安科技</b><span class="src">300767</span></td>
     <td><span data-zh="橡胶" data-en="橡胶">橡胶</span></td>
     <td class="up">+6.85%</td>
+    <td></td>
     <td>3.25%</td>
     <td>2.45</td>
     <td>3.4%</td>
     <td>19.04</td>
     <td>45.7 亿</td>
     <td>52.6 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">13.9</td><td class="num sc-self">12.9</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">13.9</td><td class="num sc-self">12.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">91.8</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="通用设备" data-best="1" data-grank="1">
     <td>7</td>
     <td><b>冰轮环境</b><span class="src">000811</span></td>
     <td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
     <td class="up">+4.60%</td>
+    <td></td>
     <td>2.55%</td>
     <td>2.25</td>
     <td>3.4%</td>
     <td>36.60</td>
     <td>360.6 亿</td>
     <td>363.3 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">11.7</td><td class="num sc-self">13.4</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">11.7</td><td class="num sc-self">13.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">90.0</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="计算机设备" data-grank="2">
@@ -265,41 +274,44 @@
     <td><b>金溢科技</b><span class="src">002869</span></td>
     <td><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span></td>
     <td class="up">+5.42%</td>
+    <td>4天1板</td>
     <td>1.96%</td>
     <td>2.28</td>
     <td>8.0%</td>
     <td>21.80</td>
     <td>34.5 亿</td>
     <td>38.6 亿</td>
-    <td class="num sc-self sc-start">29.5</td><td class="num sc-self">12.0</td><td class="num sc-self">12.7</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">29.5</td><td class="num sc-self">12.0</td><td class="num sc-self">12.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">89.2</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="半导体" data-best="1" data-grank="1">
     <td>9</td>
     <td><b>英集芯</b><span class="src">688209</span></td>
     <td><span data-zh="半导体" data-en="半导体">半导体</span></td>
     <td class="up">+6.30%</td>
+    <td></td>
     <td>3.19%</td>
     <td>2.14</td>
     <td>3.6%</td>
     <td>31.04</td>
     <td>134.7 亿</td>
     <td>134.7 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">10.4</td><td class="num sc-self">13.7</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">10.4</td><td class="num sc-self">13.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">89.2</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="医疗器械" data-best="1" data-grank="1">
     <td>10</td>
     <td><b>正川股份</b><span class="src">603976</span></td>
     <td><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span></td>
     <td class="up">+3.89%</td>
+    <td></td>
     <td>2.17%</td>
     <td>2.56</td>
     <td>2.4%</td>
     <td>32.03</td>
     <td>55.0 亿</td>
     <td>55.0 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">15.1</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">3.6</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">15.1</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">3.6</td>
     <td><span class="score">88.7</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="自动化设备" data-best="1" data-grank="1">
@@ -307,13 +319,14 @@
     <td><b>雷赛智能</b><span class="src">002979</span></td>
     <td><span data-zh="自动化设备" data-en="自动化设备">自动化设备</span></td>
     <td class="up">+3.08%</td>
+    <td>3天1板</td>
     <td>2.50%</td>
     <td>1.98</td>
     <td>3.7%</td>
     <td>54.50</td>
     <td>122.1 亿</td>
     <td>172.2 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">8.7</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">8.7</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">88.7</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="广告营销" data-best="1" data-grank="1">
@@ -321,13 +334,14 @@
     <td><b>宣亚国际</b><span class="src">300612</span></td>
     <td><span data-zh="广告营销" data-en="广告营销">广告营销</span></td>
     <td class="up">+2.17%</td>
+    <td></td>
     <td>2.91%</td>
     <td>1.97</td>
     <td>3.6%</td>
     <td>12.71</td>
     <td>23.1 亿</td>
     <td>23.3 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">8.6</td><td class="num sc-self">14.2</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">8.6</td><td class="num sc-self">14.2</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">87.8</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="旅游及景区" data-best="1" data-grank="1">
@@ -335,41 +349,44 @@
     <td><b>天府文旅</b><span class="src">000558</span></td>
     <td><span data-zh="旅游及景区" data-en="旅游及景区">旅游及景区</span></td>
     <td class="up">+6.30%</td>
+    <td>首板</td>
     <td>3.34%</td>
     <td>2.72</td>
     <td>2.3%</td>
     <td>3.71</td>
     <td>47.8 亿</td>
     <td>47.8 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">16.9</td><td class="num sc-self">12.3</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">3.3</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">16.9</td><td class="num sc-self">12.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">3.3</td>
     <td><span class="score">87.5</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="电子化学品Ⅱ" data-best="1" data-grank="1">
     <td>14</td>
     <td><b>天承科技</b><span class="src">688603</span></td>
     <td><span data-zh="电子化学品Ⅱ" data-en="电子化学品Ⅱ">电子化学品Ⅱ</span></td>
     <td class="up">+5.89%</td>
+    <td></td>
     <td>2.23%</td>
     <td>1.87</td>
     <td>3.3%</td>
     <td>97.50</td>
     <td>121.6 亿</td>
     <td>121.6 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">7.4</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">7.4</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">87.4</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="元件" data-grank="2">
     <td>15</td>
     <td><b>中英科技</b><span class="src">300936</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+3.78%</td>
+    <td></td>
     <td>4.61%</td>
     <td>1.76</td>
     <td>4.6%</td>
     <td>62.65</td>
     <td>29.8 亿</td>
     <td>47.1 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.2</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.2</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">86.2</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="光学光电子" data-best="1" data-grank="1">
@@ -377,55 +394,59 @@
     <td><b>翰博高新</b><span class="src">301321</span></td>
     <td><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span></td>
     <td class="up">+5.14%</td>
+    <td></td>
     <td>3.36%</td>
     <td>1.83</td>
     <td>3.4%</td>
     <td>42.16</td>
     <td>62.2 亿</td>
     <td>78.6 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">7.0</td><td class="num sc-self">14.1</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">7.0</td><td class="num sc-self">14.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">86.1</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="化学制品" data-best="1" data-grank="1">
     <td>17</td>
     <td><b>锦鸡股份</b><span class="src">300798</span></td>
     <td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
     <td class="up">+5.66%</td>
+    <td></td>
     <td>1.86%</td>
     <td>1.93</td>
     <td>6.2%</td>
     <td>8.77</td>
     <td>35.6 亿</td>
     <td>43.3 亿</td>
-    <td class="num sc-self sc-start">27.9</td><td class="num sc-self">8.1</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">27.9</td><td class="num sc-self">8.1</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">86.0</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="元件" data-grank="3">
     <td>18</td>
     <td><b>金安国纪</b><span class="src">002636</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+6.20%</td>
+    <td></td>
     <td>3.09%</td>
     <td>1.77</td>
     <td>4.7%</td>
     <td>68.50</td>
     <td>496.8 亿</td>
     <td>498.7 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.3</td><td class="num sc-self">14.6</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.3</td><td class="num sc-self">14.6</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">85.9</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="消费电子" data-grank="2">
     <td>19</td>
     <td><b>共达电声</b><span class="src">002655</span></td>
     <td><span data-zh="消费电子" data-en="消费电子">消费电子</span></td>
     <td class="up">+3.82%</td>
+    <td></td>
     <td>3.17%</td>
     <td>1.74</td>
     <td>5.2%</td>
     <td>32.86</td>
     <td>120.1 亿</td>
     <td>120.5 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.0</td><td class="num sc-self">14.7</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.0</td><td class="num sc-self">14.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">85.7</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="软件开发" data-best="1" data-grank="1">
@@ -433,13 +454,14 @@
     <td><b>银之杰</b><span class="src">300085</span></td>
     <td><span data-zh="软件开发" data-en="软件开发">软件开发</span></td>
     <td class="up">+3.42%</td>
+    <td></td>
     <td>2.65%</td>
     <td>2.60</td>
     <td>5.7%</td>
     <td>29.06</td>
     <td>173.4 亿</td>
     <td>205.3 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">15.6</td><td class="num sc-self">5.1</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">15.6</td><td class="num sc-self">5.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">85.7</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="计算机设备" data-grank="3">
@@ -447,13 +469,14 @@
     <td><b>汇金股份</b><span class="src">300368</span></td>
     <td><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span></td>
     <td class="up">+4.35%</td>
+    <td></td>
     <td>4.89%</td>
     <td>2.59</td>
     <td>10.1%</td>
     <td>10.08</td>
     <td>53.3 亿</td>
     <td>53.3 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">15.4</td><td class="num sc-self">5.2</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">9.9</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">15.4</td><td class="num sc-self">5.2</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">9.9</td>
     <td><span class="score">85.6</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="软件开发" data-grank="2">
@@ -461,27 +484,29 @@
     <td><b>赢时胜</b><span class="src">300377</span></td>
     <td><span data-zh="软件开发" data-en="软件开发">软件开发</span></td>
     <td class="up">+6.42%</td>
+    <td></td>
     <td>2.96%</td>
     <td>4.41</td>
     <td>6.3%</td>
     <td>14.25</td>
     <td>99.9 亿</td>
     <td>107.0 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">0.5</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">20.0</td><td class="num sc-self">0.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">85.5</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="元件" data-grank="4">
     <td>23</td>
     <td><b>华正新材</b><span class="src">603186</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+3.97%</td>
+    <td></td>
     <td>2.55%</td>
     <td>1.67</td>
     <td>10.3%</td>
     <td>193.19</td>
     <td>302.9 亿</td>
     <td>302.9 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.2</td><td class="num sc-self">14.8</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">9.7</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.2</td><td class="num sc-self">14.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">9.7</td>
     <td><span class="score">84.8</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="化学制品" data-grank="2">
@@ -489,27 +514,29 @@
     <td><b>世名科技</b><span class="src">300522</span></td>
     <td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
     <td class="up">+5.27%</td>
+    <td>4天1板</td>
     <td>2.08%</td>
     <td>2.11</td>
     <td>15.3%</td>
     <td>18.17</td>
     <td>47.9 亿</td>
     <td>58.6 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">10.1</td><td class="num sc-self">14.4</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">4.7</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">10.1</td><td class="num sc-self">14.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">4.7</td>
     <td><span class="score">84.2</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="互联网电商" data-best="1" data-grank="1">
     <td>25</td>
     <td><b>星徽股份</b><span class="src">300464</span></td>
     <td><span data-zh="互联网电商" data-en="互联网电商">互联网电商</span></td>
     <td class="up">+3.96%</td>
+    <td></td>
     <td>2.36%</td>
     <td>1.56</td>
     <td>4.3%</td>
     <td>8.67</td>
     <td>39.7 亿</td>
     <td>40.5 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.0</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.0</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">84.0</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="互联网电商" data-grank="2">
@@ -517,13 +544,14 @@
     <td><b>壹网壹创</b><span class="src">300792</span></td>
     <td><span data-zh="互联网电商" data-en="互联网电商">互联网电商</span></td>
     <td class="up">+3.99%</td>
+    <td></td>
     <td>1.05%</td>
     <td>3.19</td>
     <td>6.3%</td>
     <td>26.05</td>
     <td>55.8 亿</td>
     <td>61.9 亿</td>
-    <td class="num sc-self sc-start">15.7</td><td class="num sc-self">20.0</td><td class="num sc-self">12.7</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">15.7</td><td class="num sc-self">20.0</td><td class="num sc-self">12.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">83.4</span></td>
     <td class="wrap"><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
   </tr><tr data-sector="元件" data-grank="5">
@@ -531,13 +559,14 @@
     <td><b>世运电路</b><span class="src">603920</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+4.56%</td>
+    <td></td>
     <td>4.45%</td>
     <td>1.66</td>
     <td>3.4%</td>
     <td>41.30</td>
     <td>297.6 亿</td>
     <td>297.6 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.1</td><td class="num sc-self">13.1</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.1</td><td class="num sc-self">13.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">83.2</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="半导体" data-grank="2">
@@ -545,13 +574,14 @@
     <td><b>炬光科技</b><span class="src">688167</span></td>
     <td><span data-zh="半导体" data-en="半导体">半导体</span></td>
     <td class="up">+2.54%</td>
+    <td></td>
     <td>3.06%</td>
     <td>1.69</td>
     <td>3.8%</td>
     <td>241.44</td>
     <td>314.2 亿</td>
     <td>314.2 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.4</td><td class="num sc-self">12.7</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.4</td><td class="num sc-self">12.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">83.1</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="光学光电子" data-grank="2">
@@ -559,13 +589,14 @@
     <td><b>隆利科技</b><span class="src">300752</span></td>
     <td><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span></td>
     <td class="up">+4.73%</td>
+    <td></td>
     <td>1.82%</td>
     <td>1.99</td>
     <td>2.7%</td>
     <td>11.73</td>
     <td>26.2 亿</td>
     <td>37.9 亿</td>
-    <td class="num sc-self sc-start">27.3</td><td class="num sc-self">8.8</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">7.0</td>
+    <td class="num sc-self sc-start">27.3</td><td class="num sc-self">8.8</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">7.0</td>
     <td><span class="score">83.1</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="一般零售" data-best="1" data-grank="1">
@@ -573,27 +604,29 @@
     <td><b>南宁百货</b><span class="src">600712</span></td>
     <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
     <td class="up">+5.40%</td>
+    <td>首板</td>
     <td>2.17%</td>
     <td>1.79</td>
     <td>3.0%</td>
     <td>5.66</td>
     <td>30.5 亿</td>
     <td>30.8 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.6</td><td class="num sc-self">11.5</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.6</td><td class="num sc-self">11.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">83.0</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
   </tr><tr data-sector="通用设备" data-grank="2">
     <td>31</td>
     <td><b>泰福泵业</b><span class="src">300992</span></td>
     <td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
     <td class="up">+3.14%</td>
+    <td></td>
     <td>3.06%</td>
     <td>1.71</td>
     <td>3.2%</td>
     <td>26.29</td>
     <td>20.5 亿</td>
     <td>25.1 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.7</td><td class="num sc-self">12.3</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.7</td><td class="num sc-self">12.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">83.0</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="光学光电子" data-grank="3">
@@ -601,27 +634,29 @@
     <td><b>沃格光电</b><span class="src">603773</span></td>
     <td><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span></td>
     <td class="up">+5.60%</td>
+    <td>9天1板</td>
     <td>2.38%</td>
     <td>1.46</td>
     <td>8.2%</td>
     <td>75.18</td>
     <td>168.9 亿</td>
     <td>168.9 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">2.9</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">2.9</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">82.9</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="化学制品" data-grank="3">
     <td>33</td>
     <td><b>东方材料</b><span class="src">603110</span></td>
     <td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
     <td class="up">+2.83%</td>
+    <td></td>
     <td>2.02%</td>
     <td>1.60</td>
     <td>3.6%</td>
     <td>24.72</td>
     <td>49.7 亿</td>
     <td>49.7 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.4</td><td class="num sc-self">13.4</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.4</td><td class="num sc-self">13.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">82.8</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="通用设备" data-grank="3">
@@ -629,13 +664,14 @@
     <td><b>乔锋智能</b><span class="src">301603</span></td>
     <td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
     <td class="up">+2.38%</td>
+    <td></td>
     <td>3.98%</td>
     <td>1.79</td>
     <td>3.5%</td>
     <td>112.92</td>
     <td>42.6 亿</td>
     <td>136.4 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.6</td><td class="num sc-self">11.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.6</td><td class="num sc-self">11.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">82.6</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="贸易Ⅱ" data-best="1" data-grank="1">
@@ -643,13 +679,14 @@
     <td><b>凯瑞德</b><span class="src">002072</span></td>
     <td><span data-zh="贸易Ⅱ" data-en="贸易Ⅱ">贸易Ⅱ</span></td>
     <td class="up">+3.60%</td>
+    <td></td>
     <td>1.69%</td>
     <td>2.56</td>
     <td>2.5%</td>
     <td>7.20</td>
     <td>26.5 亿</td>
     <td>26.5 亿</td>
-    <td class="num sc-self sc-start">25.4</td><td class="num sc-self">15.1</td><td class="num sc-self">12.2</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">4.7</td>
+    <td class="num sc-self sc-start">25.4</td><td class="num sc-self">15.1</td><td class="num sc-self">12.2</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">4.7</td>
     <td><span class="score">82.5</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="半导体" data-grank="3">
@@ -657,13 +694,14 @@
     <td><b>帝奥微</b><span class="src">688381</span></td>
     <td><span data-zh="半导体" data-en="半导体">半导体</span></td>
     <td class="up">+3.60%</td>
+    <td></td>
     <td>2.14%</td>
     <td>1.58</td>
     <td>3.2%</td>
     <td>37.72</td>
     <td>93.4 亿</td>
     <td>93.4 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.2</td><td class="num sc-self">12.9</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.2</td><td class="num sc-self">12.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">82.1</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="航天装备Ⅱ" data-best="1" data-grank="1">
@@ -671,27 +709,29 @@
     <td><b>理工导航</b><span class="src">688282</span></td>
     <td><span data-zh="航天装备Ⅱ" data-en="航天装备Ⅱ">航天装备Ⅱ</span></td>
     <td class="up">+6.50%</td>
+    <td></td>
     <td>1.36%</td>
     <td>4.33</td>
     <td>2.2%</td>
     <td>59.61</td>
     <td>53.1 亿</td>
     <td>53.1 亿</td>
-    <td class="num sc-self sc-start">20.4</td><td class="num sc-self">20.0</td><td class="num sc-self">14.5</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">2.0</td>
+    <td class="num sc-self sc-start">20.4</td><td class="num sc-self">20.0</td><td class="num sc-self">14.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">2.0</td>
     <td><span class="score">81.9</span></td>
-    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="通信设备" data-best="1" data-grank="1">
     <td>38</td>
     <td><b>太辰光</b><span class="src">300570</span></td>
     <td><span data-zh="通信设备" data-en="通信设备">通信设备</span></td>
     <td class="up">+4.52%</td>
+    <td></td>
     <td>3.15%</td>
     <td>1.36</td>
     <td>4.8%</td>
     <td>193.48</td>
     <td>371.9 亿</td>
     <td>439.4 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">1.8</td><td class="num sc-self">14.9</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">1.8</td><td class="num sc-self">14.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">81.7</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="自动化设备" data-grank="2">
@@ -699,13 +739,14 @@
     <td><b>杰普特</b><span class="src">688025</span></td>
     <td><span data-zh="自动化设备" data-en="自动化设备">自动化设备</span></td>
     <td class="up">+4.86%</td>
+    <td></td>
     <td>3.51%</td>
     <td>1.74</td>
     <td>2.6%</td>
     <td>386.97</td>
     <td>367.8 亿</td>
     <td>367.8 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.0</td><td class="num sc-self">14.9</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">5.7</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.0</td><td class="num sc-self">14.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">5.7</td>
     <td><span class="score">81.6</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="自动化设备" data-grank="3">
@@ -713,13 +754,14 @@
     <td><b>矩子科技</b><span class="src">300802</span></td>
     <td><span data-zh="自动化设备" data-en="自动化设备">自动化设备</span></td>
     <td class="up">+4.17%</td>
+    <td></td>
     <td>2.84%</td>
     <td>1.71</td>
     <td>3.1%</td>
     <td>21.73</td>
     <td>44.0 亿</td>
     <td>61.7 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.7</td><td class="num sc-self">10.9</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.7</td><td class="num sc-self">10.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">81.5</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="元件" data-grank="6">
@@ -727,27 +769,29 @@
     <td><b>弘信电子</b><span class="src">300657</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+5.53%</td>
+    <td></td>
     <td>1.21%</td>
     <td>2.42</td>
     <td>4.6%</td>
     <td>33.59</td>
     <td>160.6 亿</td>
     <td>164.7 亿</td>
-    <td class="num sc-self sc-start">18.1</td><td class="num sc-self">13.6</td><td class="num sc-self">14.7</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">18.1</td><td class="num sc-self">13.6</td><td class="num sc-self">14.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">81.3</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="塑料" data-best="1" data-grank="1">
     <td>42</td>
     <td><b>江苏博云</b><span class="src">301003</span></td>
     <td><span data-zh="塑料" data-en="塑料">塑料</span></td>
     <td class="up">+4.32%</td>
+    <td></td>
     <td>1.57%</td>
     <td>2.21</td>
     <td>2.8%</td>
     <td>59.38</td>
     <td>44.6 亿</td>
     <td>57.7 亿</td>
-    <td class="num sc-self sc-start">23.6</td><td class="num sc-self">11.2</td><td class="num sc-self">13.3</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">8.1</td>
+    <td class="num sc-self sc-start">23.6</td><td class="num sc-self">11.2</td><td class="num sc-self">13.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">8.1</td>
     <td><span class="score">81.2</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="元件" data-grank="7">
@@ -755,13 +799,14 @@
     <td><b>天津普林</b><span class="src">002134</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+4.16%</td>
+    <td></td>
     <td>3.19%</td>
     <td>1.42</td>
     <td>4.6%</td>
     <td>22.30</td>
     <td>55.0 亿</td>
     <td>55.3 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">2.4</td><td class="num sc-self">13.7</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">2.4</td><td class="num sc-self">13.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">81.1</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="化学制品" data-grank="4">
@@ -769,27 +814,29 @@
     <td><b>安诺其</b><span class="src">300067</span></td>
     <td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
     <td class="up">+6.17%</td>
+    <td></td>
     <td>0.73%</td>
     <td>3.10</td>
     <td>5.6%</td>
     <td>5.51</td>
     <td>51.7 亿</td>
     <td>63.6 亿</td>
-    <td class="num sc-self sc-start">11.0</td><td class="num sc-self">20.0</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">11.0</td><td class="num sc-self">20.0</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">81.0</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="农化制品" data-best="1" data-grank="1">
     <td>45</td>
     <td><b>辉丰股份</b><span class="src">002496</span></td>
     <td><span data-zh="农化制品" data-en="农化制品">农化制品</span></td>
     <td class="up">+4.83%</td>
+    <td></td>
     <td>2.36%</td>
     <td>1.69</td>
     <td>4.2%</td>
     <td>2.17</td>
     <td>25.6 亿</td>
     <td>32.7 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.4</td><td class="num sc-self">10.4</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.4</td><td class="num sc-self">10.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.9</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="装修装饰Ⅱ" data-best="1" data-grank="1">
@@ -797,13 +844,14 @@
     <td><b>郑中设计</b><span class="src">002811</span></td>
     <td><span data-zh="装修装饰Ⅱ" data-en="装修装饰Ⅱ">装修装饰Ⅱ</span></td>
     <td class="up">+4.40%</td>
+    <td>首板·3天2板</td>
     <td>1.64%</td>
     <td>1.76</td>
     <td>5.5%</td>
     <td>19.24</td>
     <td>54.5 亿</td>
     <td>59.3 亿</td>
-    <td class="num sc-self sc-start">24.6</td><td class="num sc-self">6.2</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">24.6</td><td class="num sc-self">6.2</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.8</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="元件" data-grank="8">
@@ -811,13 +859,14 @@
     <td><b>科翔股份</b><span class="src">300903</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+3.44%</td>
+    <td></td>
     <td>3.94%</td>
     <td>1.27</td>
     <td>3.8%</td>
     <td>87.08</td>
     <td>306.0 亿</td>
     <td>379.1 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.8</td><td class="num sc-self">14.9</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.8</td><td class="num sc-self">14.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.7</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="照明设备Ⅱ" data-best="1" data-grank="1">
@@ -825,13 +874,14 @@
     <td><b>民爆光电</b><span class="src">301362</span></td>
     <td><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span></td>
     <td class="up">+2.32%</td>
+    <td></td>
     <td>3.62%</td>
     <td>1.25</td>
     <td>4.1%</td>
     <td>97.20</td>
     <td>39.8 亿</td>
     <td>141.9 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.6</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.6</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.6</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="通信设备" data-grank="2">
@@ -839,13 +889,14 @@
     <td><b>通鼎互联</b><span class="src">002491</span></td>
     <td><span data-zh="通信设备" data-en="通信设备">通信设备</span></td>
     <td class="up">+2.55%</td>
+    <td></td>
     <td>2.32%</td>
     <td>1.23</td>
     <td>5.8%</td>
     <td>18.08</td>
     <td>212.7 亿</td>
     <td>222.4 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.3</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.3</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.3</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="通信设备" data-grank="3">
@@ -853,13 +904,14 @@
     <td><b>长盈通</b><span class="src">688143</span></td>
     <td><span data-zh="通信设备" data-en="通信设备">通信设备</span></td>
     <td class="up">+4.10%</td>
+    <td></td>
     <td>3.19%</td>
     <td>1.26</td>
     <td>5.3%</td>
     <td>155.22</td>
     <td>192.1 亿</td>
     <td>199.9 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.7</td><td class="num sc-self">14.6</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.7</td><td class="num sc-self">14.6</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.3</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="通信设备" data-grank="4">
@@ -867,13 +919,14 @@
     <td><b>铭普光磁</b><span class="src">002902</span></td>
     <td><span data-zh="通信设备" data-en="通信设备">通信设备</span></td>
     <td class="up">+2.39%</td>
+    <td></td>
     <td>3.02%</td>
     <td>1.26</td>
     <td>4.5%</td>
     <td>23.17</td>
     <td>43.2 亿</td>
     <td>54.5 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.7</td><td class="num sc-self">14.6</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.7</td><td class="num sc-self">14.6</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.2</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="其他电子Ⅱ" data-best="1" data-grank="1">
@@ -881,13 +934,14 @@
     <td><b>富信科技</b><span class="src">688662</span></td>
     <td><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span></td>
     <td class="up">+2.71%</td>
+    <td></td>
     <td>2.71%</td>
     <td>1.21</td>
     <td>8.1%</td>
     <td>101.79</td>
     <td>116.8 亿</td>
     <td>116.8 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.1</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.1</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">80.1</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="汽车服务" data-best="1" data-grank="1">
@@ -895,13 +949,14 @@
     <td><b>阿尔特</b><span class="src">300825</span></td>
     <td><span data-zh="汽车服务" data-en="汽车服务">汽车服务</span></td>
     <td class="up">+2.89%</td>
+    <td></td>
     <td>2.58%</td>
     <td>1.50</td>
     <td>2.9%</td>
     <td>10.33</td>
     <td>50.0 亿</td>
     <td>51.1 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">3.3</td><td class="num sc-self">13.1</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">8.6</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">3.3</td><td class="num sc-self">13.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">8.6</td>
     <td><span class="score">80.0</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="医疗器械" data-grank="2">
@@ -909,13 +964,14 @@
     <td><b>奥精医疗</b><span class="src">688613</span></td>
     <td><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span></td>
     <td class="up">+2.78%</td>
+    <td></td>
     <td>3.93%</td>
     <td>1.56</td>
     <td>3.9%</td>
     <td>19.57</td>
     <td>26.8 亿</td>
     <td>26.8 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.0</td><td class="num sc-self">10.9</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.0</td><td class="num sc-self">10.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">79.9</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="家电零部件Ⅱ" data-best="1" data-grank="1">
@@ -923,13 +979,14 @@
     <td><b>宏昌科技</b><span class="src">301008</span></td>
     <td><span data-zh="家电零部件Ⅱ" data-en="家电零部件Ⅱ">家电零部件Ⅱ</span></td>
     <td class="up">+2.62%</td>
+    <td></td>
     <td>5.68%</td>
     <td>1.20</td>
     <td>4.8%</td>
     <td>43.55</td>
     <td>50.4 亿</td>
     <td>57.0 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.0</td><td class="num sc-self">14.5</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.0</td><td class="num sc-self">14.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">79.5</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
   </tr><tr data-sector="元件" data-grank="9">
@@ -937,13 +994,14 @@
     <td><b>中富电路</b><span class="src">300814</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+2.99%</td>
+    <td></td>
     <td>4.37%</td>
     <td>1.76</td>
     <td>2.3%</td>
     <td>113.80</td>
     <td>217.8 亿</td>
     <td>217.8 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.2</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">3.3</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.2</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">3.3</td>
     <td><span class="score">79.5</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="电子化学品Ⅱ" data-grank="2">
@@ -951,13 +1009,14 @@
     <td><b>天通股份</b><span class="src">600330</span></td>
     <td><span data-zh="电子化学品Ⅱ" data-en="电子化学品Ⅱ">电子化学品Ⅱ</span></td>
     <td class="up">+2.02%</td>
+    <td></td>
     <td>3.27%</td>
     <td>1.23</td>
     <td>3.6%</td>
     <td>22.75</td>
     <td>280.6 亿</td>
     <td>280.6 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.3</td><td class="num sc-self">14.1</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.3</td><td class="num sc-self">14.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">79.5</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="光学光电子" data-grank="4">
@@ -965,13 +1024,14 @@
     <td><b>木林森</b><span class="src">002745</span></td>
     <td><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span></td>
     <td class="up">+3.28%</td>
+    <td></td>
     <td>2.26%</td>
     <td>1.54</td>
     <td>3.8%</td>
     <td>11.33</td>
     <td>119.7 亿</td>
     <td>168.2 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">3.8</td><td class="num sc-self">10.6</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">3.8</td><td class="num sc-self">10.6</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">79.4</span></td>
     <td class="wrap">—</td>
   </tr><tr data-sector="元件" data-grank="10">
@@ -979,31 +1039,633 @@
     <td><b>崇达技术</b><span class="src">002815</span></td>
     <td><span data-zh="元件" data-en="元件">元件</span></td>
     <td class="up">+6.03%</td>
+    <td>6天1板</td>
     <td>4.15%</td>
     <td>1.40</td>
     <td>6.0%</td>
     <td>21.81</td>
     <td>169.5 亿</td>
     <td>269.2 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">2.2</td><td class="num sc-self">11.8</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">10.0</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">2.2</td><td class="num sc-self">11.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">79.0</span></td>
-    <td class="wrap">—</td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
   </tr><tr data-sector="服装家纺" data-best="1" data-grank="1">
     <td>60</td>
     <td><b>探路者</b><span class="src">300005</span></td>
     <td><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span></td>
     <td class="up">+2.06%</td>
+    <td></td>
     <td>2.87%</td>
     <td>1.56</td>
     <td>2.8%</td>
     <td>10.39</td>
     <td>91.1 亿</td>
     <td>91.8 亿</td>
-    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.0</td><td class="num sc-self">12.1</td><td class="num sc-ctx sc-start">15.0</td><td class="num sc-ctx">10.0</td><td class="num sc-ctx">7.6</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">4.0</td><td class="num sc-self">12.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">7.6</td>
     <td><span class="score">78.7</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="航空装备Ⅱ" data-best="1" data-grank="1">
+    <td>61</td>
+    <td><b>航发科技</b><span class="src">600391</span></td>
+    <td><span data-zh="航空装备Ⅱ" data-en="航空装备Ⅱ">航空装备Ⅱ</span></td>
+    <td class="up">+6.10%</td>
+    <td>首板</td>
+    <td>1.41%</td>
+    <td>2.92</td>
+    <td>4.8%</td>
+    <td>37.40</td>
+    <td>123.5 亿</td>
+    <td>123.5 亿</td>
+    <td class="num sc-self sc-start">21.1</td><td class="num sc-self">19.1</td><td class="num sc-self">3.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">78.4</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
+  </tr><tr data-sector="互联网电商" data-grank="3">
+    <td>62</td>
+    <td><b>青木科技</b><span class="src">301110</span></td>
+    <td><span data-zh="互联网电商" data-en="互联网电商">互联网电商</span></td>
+    <td class="up">+3.92%</td>
+    <td></td>
+    <td>0.83%</td>
+    <td>2.65</td>
+    <td>4.2%</td>
+    <td>37.67</td>
+    <td>34.3 亿</td>
+    <td>48.8 亿</td>
+    <td class="num sc-self sc-start">12.4</td><td class="num sc-self">16.1</td><td class="num sc-self">14.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">78.3</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="其他电源设备Ⅱ" data-best="1" data-grank="1">
+    <td>63</td>
+    <td><b>通合科技</b><span class="src">300491</span></td>
+    <td><span data-zh="其他电源设备Ⅱ" data-en="其他电源设备Ⅱ">其他电源设备Ⅱ</span></td>
+    <td class="up">+3.89%</td>
+    <td></td>
+    <td>4.39%</td>
+    <td>1.28</td>
+    <td>5.1%</td>
+    <td>28.05</td>
+    <td>44.2 亿</td>
+    <td>49.8 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">0.9</td><td class="num sc-self">12.2</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">78.0</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="消费电子" data-grank="3">
+    <td>64</td>
+    <td><b>利通电子</b><span class="src">603629</span></td>
+    <td><span data-zh="消费电子" data-en="消费电子">消费电子</span></td>
+    <td class="up">+2.00%</td>
+    <td></td>
+    <td>1.55%</td>
+    <td>1.67</td>
+    <td>3.3%</td>
+    <td>90.28</td>
+    <td>325.7 亿</td>
+    <td>331.1 亿</td>
+    <td class="num sc-self sc-start">23.3</td><td class="num sc-self">5.2</td><td class="num sc-self">14.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">77.8</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="通信设备" data-grank="5">
+    <td>65</td>
+    <td><b>联特科技</b><span class="src">301205</span></td>
+    <td><span data-zh="通信设备" data-en="通信设备">通信设备</span></td>
+    <td class="up">+6.06%</td>
+    <td></td>
+    <td>1.65%</td>
+    <td>1.53</td>
+    <td>7.8%</td>
+    <td>302.27</td>
+    <td>253.1 亿</td>
+    <td>393.4 亿</td>
+    <td class="num sc-self sc-start">24.8</td><td class="num sc-self">3.7</td><td class="num sc-self">14.2</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">77.7</span></td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
+  </tr><tr data-sector="多元金融" data-best="1" data-grank="1">
+    <td>66</td>
+    <td><b>翠微股份</b><span class="src">603123</span></td>
+    <td><span data-zh="多元金融" data-en="多元金融">多元金融</span></td>
+    <td class="up">+3.43%</td>
+    <td></td>
+    <td>2.22%</td>
+    <td>1.75</td>
+    <td>2.9%</td>
+    <td>9.65</td>
+    <td>62.9 亿</td>
+    <td>77.1 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.1</td><td class="num sc-self">6.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">8.9</td>
+    <td><span class="score">76.8</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="纺织制造" data-best="1" data-grank="1">
+    <td>67</td>
+    <td><b>富春染织</b><span class="src">605189</span></td>
+    <td><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span></td>
+    <td class="up">+4.33%</td>
+    <td></td>
+    <td>3.12%</td>
+    <td>1.81</td>
+    <td>2.1%</td>
+    <td>14.23</td>
+    <td>33.9 亿</td>
+    <td>33.9 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">6.8</td><td class="num sc-self">13.6</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">1.4</td>
+    <td><span class="score">76.8</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="家电零部件Ⅱ" data-grank="2">
+    <td>68</td>
+    <td><b>春光科技</b><span class="src">603657</span></td>
+    <td><span data-zh="家电零部件Ⅱ" data-en="家电零部件Ⅱ">家电零部件Ⅱ</span></td>
+    <td class="up">+4.09%</td>
+    <td></td>
+    <td>3.68%</td>
+    <td>1.68</td>
+    <td>4.0%</td>
+    <td>34.34</td>
+    <td>46.4 亿</td>
+    <td>46.4 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">5.3</td><td class="num sc-self">6.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">76.7</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="金属新材料" data-best="1" data-grank="1">
+    <td>69</td>
+    <td><b>龙磁科技</b><span class="src">300835</span></td>
+    <td><span data-zh="金属新材料" data-en="金属新材料">金属新材料</span></td>
+    <td class="up">+3.10%</td>
+    <td></td>
+    <td>2.91%</td>
+    <td>1.36</td>
+    <td>2.5%</td>
+    <td>177.63</td>
+    <td>146.0 亿</td>
+    <td>211.8 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">1.8</td><td class="num sc-self">14.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">4.8</td>
+    <td><span class="score">76.4</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="软件开发" data-grank="3">
+    <td>70</td>
+    <td><b>行云科技</b><span class="src">300209</span></td>
+    <td><span data-zh="软件开发" data-en="软件开发">软件开发</span></td>
+    <td class="up">+3.76%</td>
+    <td></td>
+    <td>1.78%</td>
+    <td>1.30</td>
+    <td>4.2%</td>
+    <td>34.81</td>
+    <td>258.6 亿</td>
+    <td>323.3 亿</td>
+    <td class="num sc-self sc-start">26.8</td><td class="num sc-self">1.1</td><td class="num sc-self">13.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">76.1</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="其他电子Ⅱ" data-grank="2">
+    <td>71</td>
+    <td><b>洁美科技</b><span class="src">002859</span></td>
+    <td><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span></td>
+    <td class="up">+2.91%</td>
+    <td></td>
+    <td>2.77%</td>
+    <td>1.88</td>
+    <td>2.0%</td>
+    <td>53.00</td>
+    <td>227.0 亿</td>
+    <td>240.4 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">7.6</td><td class="num sc-self">13.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">0.3</td>
+    <td><span class="score">76.0</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="装修建材" data-best="1" data-grank="1">
+    <td>72</td>
+    <td><b>开尔新材</b><span class="src">300234</span></td>
+    <td><span data-zh="装修建材" data-en="装修建材">装修建材</span></td>
+    <td class="up">+2.76%</td>
+    <td></td>
+    <td>1.85%</td>
+    <td>1.42</td>
+    <td>3.5%</td>
+    <td>11.55</td>
+    <td>39.7 亿</td>
+    <td>58.1 亿</td>
+    <td class="num sc-self sc-start">27.8</td><td class="num sc-self">2.4</td><td class="num sc-self">10.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">75.9</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="IT服务Ⅱ" data-best="1" data-grank="1">
+    <td>73</td>
+    <td><b>达实智能</b><span class="src">002421</span></td>
+    <td><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span></td>
+    <td class="up">+2.80%</td>
+    <td></td>
+    <td>2.48%</td>
+    <td>1.37</td>
+    <td>4.2%</td>
+    <td>3.31</td>
+    <td>67.4 亿</td>
+    <td>70.2 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">1.9</td><td class="num sc-self">9.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">75.9</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="软件开发" data-grank="4">
+    <td>74</td>
+    <td><b>麦迪科技</b><span class="src">603990</span></td>
+    <td><span data-zh="软件开发" data-en="软件开发">软件开发</span></td>
+    <td class="up">+2.83%</td>
+    <td></td>
+    <td>1.42%</td>
+    <td>1.70</td>
+    <td>3.3%</td>
+    <td>19.25</td>
+    <td>58.8 亿</td>
+    <td>58.8 亿</td>
+    <td class="num sc-self sc-start">21.3</td><td class="num sc-self">5.6</td><td class="num sc-self">12.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">74.3</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="一般零售" data-grank="2">
+    <td>75</td>
+    <td><b>大连友谊</b><span class="src">000679</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td class="up">+4.29%</td>
+    <td></td>
+    <td>1.23%</td>
+    <td>2.71</td>
+    <td>2.8%</td>
+    <td>6.57</td>
+    <td>23.4 亿</td>
+    <td>23.4 亿</td>
+    <td class="num sc-self sc-start">18.5</td><td class="num sc-self">16.8</td><td class="num sc-self">4.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">8.4</td>
+    <td><span class="score">73.1</span></td>
+    <td class="wrap"><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
+  </tr><tr data-sector="一般零售" data-grank="3">
+    <td>76</td>
+    <td><b>杭州解百</b><span class="src">600814</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td class="up">+4.29%</td>
+    <td></td>
+    <td>1.11%</td>
+    <td>3.45</td>
+    <td>2.1%</td>
+    <td>7.29</td>
+    <td>53.6 亿</td>
+    <td>53.6 亿</td>
+    <td class="num sc-self sc-start">16.6</td><td class="num sc-self">20.0</td><td class="num sc-self">9.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">1.2</td>
+    <td><span class="score">72.4</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="橡胶" data-grank="2">
+    <td>77</td>
+    <td><b>科创新源</b><span class="src">300731</span></td>
+    <td><span data-zh="橡胶" data-en="橡胶">橡胶</span></td>
+    <td class="up">+2.25%</td>
+    <td></td>
+    <td>3.42%</td>
+    <td>1.30</td>
+    <td>2.3%</td>
+    <td>39.06</td>
+    <td>65.7 亿</td>
+    <td>69.3 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">1.1</td><td class="num sc-self">13.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">2.6</td>
+    <td><span class="score">72.2</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="消费电子" data-grank="4">
+    <td>78</td>
+    <td><b>致尚科技</b><span class="src">301486</span></td>
+    <td><span data-zh="消费电子" data-en="消费电子">消费电子</span></td>
+    <td class="up">+3.33%</td>
+    <td></td>
+    <td>2.29%</td>
+    <td>1.55</td>
+    <td>8.5%</td>
+    <td>218.11</td>
+    <td>159.0 亿</td>
+    <td>280.8 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">3.9</td><td class="num sc-self">2.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">71.3</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="计算机设备" data-grank="4">
+    <td>79</td>
+    <td><b>雄帝科技</b><span class="src">300546</span></td>
+    <td><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span></td>
+    <td class="up">+2.13%</td>
+    <td></td>
+    <td>1.14%</td>
+    <td>2.50</td>
+    <td>3.4%</td>
+    <td>17.76</td>
+    <td>24.5 亿</td>
+    <td>33.3 亿</td>
+    <td class="num sc-self sc-start">17.1</td><td class="num sc-self">14.4</td><td class="num sc-self">6.6</td><td class="num sc-ctx sc-start">7.6</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">70.8</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="软件开发" data-grank="5">
+    <td>80</td>
+    <td><b>汇金科技</b><span class="src">300561</span></td>
+    <td><span data-zh="软件开发" data-en="软件开发">软件开发</span></td>
+    <td class="up">+2.45%</td>
+    <td></td>
+    <td>1.95%</td>
+    <td>2.07</td>
+    <td>5.3%</td>
+    <td>14.65</td>
+    <td>35.3 亿</td>
+    <td>48.1 亿</td>
+    <td class="num sc-self sc-start">29.2</td><td class="num sc-self">9.7</td><td class="num sc-self">1.5</td><td class="num sc-ctx sc-start">4.6</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">70.0</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="一般零售" data-grank="4">
+    <td>81</td>
+    <td><b>汇通能源</b><span class="src">600605</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td class="up">+6.37%</td>
+    <td>9天1板</td>
+    <td>1.16%</td>
+    <td>1.90</td>
+    <td>2.4%</td>
+    <td>28.72</td>
+    <td>59.2 亿</td>
+    <td>59.2 亿</td>
+    <td class="num sc-self sc-start">17.4</td><td class="num sc-self">7.8</td><td class="num sc-self">14.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">4.3</td>
+    <td><span class="score">68.8</span></td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
+  </tr><tr data-sector="光学光电子" data-grank="5">
+    <td>82</td>
+    <td><b>奥拓电子</b><span class="src">002587</span></td>
+    <td><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span></td>
+    <td class="up">+2.29%</td>
+    <td>首板</td>
+    <td>0.94%</td>
+    <td>2.43</td>
+    <td>2.3%</td>
+    <td>5.36</td>
+    <td>28.6 亿</td>
+    <td>35.1 亿</td>
+    <td class="num sc-self sc-start">14.1</td><td class="num sc-self">13.7</td><td class="num sc-self">13.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">2.6</td>
+    <td><span class="score">68.5</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="一般零售" data-grank="5">
+    <td>83</td>
+    <td><b>中央商场</b><span class="src">600280</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td class="up">+3.33%</td>
+    <td></td>
+    <td>1.31%</td>
+    <td>1.60</td>
+    <td>2.4%</td>
+    <td>3.10</td>
+    <td>35.0 亿</td>
+    <td>35.0 亿</td>
+    <td class="num sc-self sc-start">19.6</td><td class="num sc-self">4.4</td><td class="num sc-self">15.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">4.2</td>
+    <td><span class="score">68.3</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="服装家纺" data-grank="2">
+    <td>84</td>
+    <td><b>朗姿股份</b><span class="src">002612</span></td>
+    <td><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span></td>
+    <td class="up">+2.71%</td>
+    <td></td>
+    <td>1.89%</td>
+    <td>1.35</td>
+    <td>2.3%</td>
+    <td>16.67</td>
+    <td>43.6 亿</td>
+    <td>73.8 亿</td>
+    <td class="num sc-self sc-start">28.4</td><td class="num sc-self">1.7</td><td class="num sc-self">9.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">3.3</td>
+    <td><span class="score">67.4</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="证券Ⅱ" data-grank="2">
+    <td>85</td>
+    <td><b>湘财股份</b><span class="src">600095</span></td>
+    <td><span data-zh="证券Ⅱ" data-en="证券Ⅱ">证券Ⅱ</span></td>
+    <td class="up">+2.54%</td>
+    <td></td>
+    <td>2.18%</td>
+    <td>2.22</td>
+    <td>2.0%</td>
+    <td>8.89</td>
+    <td>254.2 亿</td>
+    <td>254.2 亿</td>
+    <td class="num sc-self sc-start">30.0</td><td class="num sc-self">11.3</td><td class="num sc-self">0.6</td><td class="num sc-ctx sc-start">9.2</td><td class="num sc-ctx">0.5</td>
+    <td><span class="score">66.6</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="广告营销" data-grank="2">
+    <td>86</td>
+    <td><b>电声股份</b><span class="src">300805</span></td>
+    <td><span data-zh="广告营销" data-en="广告营销">广告营销</span></td>
+    <td class="up">+2.23%</td>
+    <td></td>
+    <td>0.88%</td>
+    <td>1.53</td>
+    <td>4.6%</td>
+    <td>9.17</td>
+    <td>27.5 亿</td>
+    <td>38.9 亿</td>
+    <td class="num sc-self sc-start">13.2</td><td class="num sc-self">3.7</td><td class="num sc-self">13.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">65.8</span></td>
+    <td class="wrap"><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
+  </tr><tr data-sector="专用设备" data-best="1" data-grank="1">
+    <td>87</td>
+    <td><b>蓝科高新</b><span class="src">601798</span></td>
+    <td><span data-zh="专用设备" data-en="专用设备">专用设备</span></td>
+    <td class="up">+2.51%</td>
+    <td></td>
+    <td>0.78%</td>
+    <td>3.36</td>
+    <td>2.4%</td>
+    <td>7.76</td>
+    <td>27.5 亿</td>
+    <td>27.5 亿</td>
+    <td class="num sc-self sc-start">11.7</td><td class="num sc-self">20.0</td><td class="num sc-self">4.8</td><td class="num sc-ctx sc-start">9.8</td><td class="num sc-ctx">3.6</td>
+    <td><span class="score">64.8</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="小家电" data-best="1" data-grank="1">
+    <td>88</td>
+    <td><b>彩虹集团</b><span class="src">003023</span></td>
+    <td><span data-zh="小家电" data-en="小家电">小家电</span></td>
+    <td class="up">+2.35%</td>
+    <td></td>
+    <td>1.22%</td>
+    <td>1.74</td>
+    <td>2.4%</td>
+    <td>25.65</td>
+    <td>27.0 亿</td>
+    <td>27.0 亿</td>
+    <td class="num sc-self sc-start">18.4</td><td class="num sc-self">6.0</td><td class="num sc-self">11.9</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">3.5</td>
+    <td><span class="score">64.7</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="非白酒" data-best="1" data-grank="1">
+    <td>89</td>
+    <td><b>惠泉啤酒</b><span class="src">600573</span></td>
+    <td><span data-zh="非白酒" data-en="非白酒">非白酒</span></td>
+    <td class="up">+3.52%</td>
+    <td></td>
+    <td>0.64%</td>
+    <td>1.80</td>
+    <td>6.3%</td>
+    <td>12.66</td>
+    <td>31.6 亿</td>
+    <td>31.6 亿</td>
+    <td class="num sc-self sc-start">9.5</td><td class="num sc-self">6.7</td><td class="num sc-self">13.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">64.6</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
+  </tr><tr data-sector="化学制品" data-grank="5">
+    <td>90</td>
+    <td><b>宏柏新材</b><span class="src">605366</span></td>
+    <td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
+    <td class="up">+6.70%</td>
+    <td>7天1板</td>
+    <td>1.06%</td>
+    <td>1.53</td>
+    <td>9.1%</td>
+    <td>9.55</td>
+    <td>73.8 亿</td>
+    <td>73.8 亿</td>
+    <td class="num sc-self sc-start">15.9</td><td class="num sc-self">3.7</td><td class="num sc-self">9.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">64.3</span></td>
+    <td class="wrap"><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
+  </tr><tr data-sector="数字媒体" data-best="1" data-grank="1">
+    <td>91</td>
+    <td><b>值得买</b><span class="src">300785</span></td>
+    <td><span data-zh="数字媒体" data-en="数字媒体">数字媒体</span></td>
+    <td class="up">+2.88%</td>
+    <td></td>
+    <td>0.81%</td>
+    <td>1.75</td>
+    <td>11.0%</td>
+    <td>37.48</td>
+    <td>48.8 亿</td>
+    <td>74.5 亿</td>
+    <td class="num sc-self sc-start">12.1</td><td class="num sc-self">6.1</td><td class="num sc-self">10.2</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">9.0</td>
+    <td><span class="score">62.4</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
+  </tr><tr data-sector="化学制药" data-best="1" data-grank="1">
+    <td>92</td>
+    <td><b>灵康药业</b><span class="src">603669</span></td>
+    <td><span data-zh="化学制药" data-en="化学制药">化学制药</span></td>
+    <td class="up">+6.84%</td>
+    <td></td>
+    <td>0.84%</td>
+    <td>1.86</td>
+    <td>5.4%</td>
+    <td>7.19</td>
+    <td>51.2 亿</td>
+    <td>51.2 亿</td>
+    <td class="num sc-self sc-start">12.6</td><td class="num sc-self">7.3</td><td class="num sc-self">5.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">60.3</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
+  </tr><tr data-sector="煤炭开采" data-best="1" data-grank="1">
+    <td>93</td>
+    <td><b>广汇能源</b><span class="src">600256</span></td>
+    <td><span data-zh="煤炭开采" data-en="煤炭开采">煤炭开采</span></td>
+    <td class="up">+5.49%</td>
+    <td></td>
+    <td>0.69%</td>
+    <td>2.20</td>
+    <td>3.0%</td>
+    <td>7.30</td>
+    <td>466.6 亿</td>
+    <td>466.6 亿</td>
+    <td class="num sc-self sc-start">10.3</td><td class="num sc-self">11.1</td><td class="num sc-self">4.2</td><td class="num sc-ctx sc-start">7.3</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">58.0</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span><span class="tag hot"><span data-zh="涨幅≥5%" data-en="chg ≥5%">涨幅≥5%</span></span></td>
+  </tr><tr data-sector="农化制品" data-grank="2">
+    <td>94</td>
+    <td><b>中农联合</b><span class="src">003042</span></td>
+    <td><span data-zh="农化制品" data-en="农化制品">农化制品</span></td>
+    <td class="up">+2.28%</td>
+    <td></td>
+    <td>1.34%</td>
+    <td>1.77</td>
+    <td>2.2%</td>
+    <td>14.33</td>
+    <td>20.3 亿</td>
+    <td>20.4 亿</td>
+    <td class="num sc-self sc-start">20.2</td><td class="num sc-self">6.3</td><td class="num sc-self">4.0</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">2.2</td>
+    <td><span class="score">57.6</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="自动化设备" data-grank="4">
+    <td>95</td>
+    <td><b>宇树科技-W</b><span class="src">688836</span></td>
+    <td><span data-zh="自动化设备" data-en="自动化设备">自动化设备</span></td>
+    <td class="up">+2.54%</td>
+    <td></td>
+    <td>0.58%</td>
+    <td>1.87</td>
+    <td>5.5%</td>
+    <td>432.00</td>
+    <td>130.0 亿</td>
+    <td>1747.3 亿</td>
+    <td class="num sc-self sc-start">8.7</td><td class="num sc-self">7.4</td><td class="num sc-self">7.3</td><td class="num sc-ctx sc-start">8.2</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">56.7</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="农产品加工" data-best="1" data-grank="1">
+    <td>96</td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span></td>
+    <td class="up">+2.46%</td>
+    <td></td>
+    <td>0.97%</td>
+    <td>1.92</td>
+    <td>2.8%</td>
+    <td>2.08</td>
+    <td>32.9 亿</td>
+    <td>40.8 亿</td>
+    <td class="num sc-self sc-start">14.6</td><td class="num sc-self">8.0</td><td class="num sc-self">0.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">8.0</td>
+    <td><span class="score">56.3</span></td>
+    <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
+  </tr><tr data-sector="广告营销" data-grank="3">
+    <td>97</td>
+    <td><b>旗天科技</b><span class="src">300061</span></td>
+    <td><span data-zh="广告营销" data-en="广告营销">广告营销</span></td>
+    <td class="up">+3.10%</td>
+    <td></td>
+    <td>0.58%</td>
+    <td>1.89</td>
+    <td>5.1%</td>
+    <td>6.98</td>
+    <td>42.6 亿</td>
+    <td>46.0 亿</td>
+    <td class="num sc-self sc-start">8.6</td><td class="num sc-self">7.7</td><td class="num sc-self">3.7</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">55.0</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="广告营销" data-grank="4">
+    <td>98</td>
+    <td><b>蓝色光标</b><span class="src">300058</span></td>
+    <td><span data-zh="广告营销" data-en="广告营销">广告营销</span></td>
+    <td class="up">+3.10%</td>
+    <td></td>
+    <td>0.70%</td>
+    <td>1.85</td>
+    <td>4.5%</td>
+    <td>12.98</td>
+    <td>451.4 亿</td>
+    <td>466.0 亿</td>
+    <td class="num sc-self sc-start">10.5</td><td class="num sc-self">7.2</td><td class="num sc-self">2.1</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
+    <td><span class="score">54.8</span></td>
+    <td class="wrap"><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
+  </tr><tr data-sector="一般零售" data-grank="6">
+    <td>99</td>
+    <td><b>上海九百</b><span class="src">600838</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td class="up">+2.17%</td>
+    <td></td>
+    <td>0.71%</td>
+    <td>1.45</td>
+    <td>2.5%</td>
+    <td>8.49</td>
+    <td>34.0 亿</td>
+    <td>34.0 亿</td>
+    <td class="num sc-self sc-start">10.7</td><td class="num sc-self">2.8</td><td class="num sc-self">11.5</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">4.6</td>
+    <td><span class="score">54.5</span></td>
+    <td class="wrap">—</td>
+  </tr><tr data-sector="通用设备" data-grank="4">
+    <td>100</td>
+    <td><b>瑞晨环保</b><span class="src">301273</span></td>
+    <td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
+    <td class="up">+4.19%</td>
+    <td></td>
+    <td>0.84%</td>
+    <td>1.20</td>
+    <td>2.6%</td>
+    <td>41.05</td>
+    <td>31.6 亿</td>
+    <td>41.2 亿</td>
+    <td class="num sc-self sc-start">12.5</td><td class="num sc-self">0.0</td><td class="num sc-self">5.8</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">6.1</td>
+    <td><span class="score">49.5</span></td>
+    <td class="wrap"><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
   </tr><tr class="sector-row" data-sep="消费电子" hidden><td colspan="18"><span data-zh="消费电子" data-en="消费电子">消费电子</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.58% · <span data-zh="组内 4 只" data-en="4 picked">组内 4 只</span></td></tr><tr class="sector-row" data-sep="计算机设备" hidden><td colspan="18"><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.53% · <span data-zh="组内 4 只" data-en="4 picked">组内 4 只</span></td></tr><tr class="sector-row" data-sep="游戏Ⅱ" hidden><td colspan="18"><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.21% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="元件" hidden><td colspan="18"><span data-zh="元件" data-en="元件">元件</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.56% · <span data-zh="组内 10 只" data-en="10 picked">组内 10 只</span></td></tr><tr class="sector-row" data-sep="证券Ⅱ" hidden><td colspan="18"><span data-zh="证券Ⅱ" data-en="证券Ⅱ">证券Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.78% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="橡胶" hidden><td colspan="18"><span data-zh="橡胶" data-en="橡胶">橡胶</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.55% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="通用设备" hidden><td colspan="18"><span data-zh="通用设备" data-en="通用设备">通用设备</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.70% · <span data-zh="组内 4 只" data-en="4 picked">组内 4 只</span></td></tr><tr class="sector-row" data-sep="半导体" hidden><td colspan="18"><span data-zh="半导体" data-en="半导体">半导体</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.63% · <span data-zh="组内 3 只" data-en="3 picked">组内 3 只</span></td></tr><tr class="sector-row" data-sep="医疗器械" hidden><td colspan="18"><span data-zh="医疗器械" data-en="医疗器械">医疗器械</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.33% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="自动化设备" hidden><td colspan="18"><span data-zh="自动化设备" data-en="自动化设备">自动化设备</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.63% · <span data-zh="组内 4 只" data-en="4 picked">组内 4 只</span></td></tr><tr class="sector-row" data-sep="广告营销" hidden><td colspan="18"><span data-zh="广告营销" data-en="广告营销">广告营销</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.10% · <span data-zh="组内 4 只" data-en="4 picked">组内 4 只</span></td></tr><tr class="sector-row" data-sep="旅游及景区" hidden><td colspan="18"><span data-zh="旅游及景区" data-en="旅游及景区">旅游及景区</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +6.30% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="电子化学品Ⅱ" hidden><td colspan="18"><span data-zh="电子化学品Ⅱ" data-en="电子化学品Ⅱ">电子化学品Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.96% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="光学光电子" hidden><td colspan="18"><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.33% · <span data-zh="组内 5 只" data-en="5 picked">组内 5 只</span></td></tr><tr class="sector-row" data-sep="化学制品" hidden><td colspan="18"><span data-zh="化学制品" data-en="化学制品">化学制品</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +5.04% · <span data-zh="组内 5 只" data-en="5 picked">组内 5 只</span></td></tr><tr class="sector-row" data-sep="软件开发" hidden><td colspan="18"><span data-zh="软件开发" data-en="软件开发">软件开发</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.59% · <span data-zh="组内 5 只" data-en="5 picked">组内 5 只</span></td></tr><tr class="sector-row" data-sep="互联网电商" hidden><td colspan="18"><span data-zh="互联网电商" data-en="互联网电商">互联网电商</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.96% · <span data-zh="组内 3 只" data-en="3 picked">组内 3 只</span></td></tr><tr class="sector-row" data-sep="一般零售" hidden><td colspan="18"><span data-zh="一般零售" data-en="一般零售">一般零售</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.15% · <span data-zh="组内 6 只" data-en="6 picked">组内 6 只</span></td></tr><tr class="sector-row" data-sep="贸易Ⅱ" hidden><td colspan="18"><span data-zh="贸易Ⅱ" data-en="贸易Ⅱ">贸易Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.60% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="航天装备Ⅱ" hidden><td colspan="18"><span data-zh="航天装备Ⅱ" data-en="航天装备Ⅱ">航天装备Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +6.50% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="通信设备" hidden><td colspan="18"><span data-zh="通信设备" data-en="通信设备">通信设备</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.10% · <span data-zh="组内 5 只" data-en="5 picked">组内 5 只</span></td></tr><tr class="sector-row" data-sep="塑料" hidden><td colspan="18"><span data-zh="塑料" data-en="塑料">塑料</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.32% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="农化制品" hidden><td colspan="18"><span data-zh="农化制品" data-en="农化制品">农化制品</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.55% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="装修装饰Ⅱ" hidden><td colspan="18"><span data-zh="装修装饰Ⅱ" data-en="装修装饰Ⅱ">装修装饰Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.40% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="照明设备Ⅱ" hidden><td colspan="18"><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.32% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="其他电子Ⅱ" hidden><td colspan="18"><span data-zh="其他电子Ⅱ" data-en="其他电子Ⅱ">其他电子Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.81% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="汽车服务" hidden><td colspan="18"><span data-zh="汽车服务" data-en="汽车服务">汽车服务</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.89% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="家电零部件Ⅱ" hidden><td colspan="18"><span data-zh="家电零部件Ⅱ" data-en="家电零部件Ⅱ">家电零部件Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.35% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="服装家纺" hidden><td colspan="18"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.38% · <span data-zh="组内 2 只" data-en="2 picked">组内 2 只</span></td></tr><tr class="sector-row" data-sep="航空装备Ⅱ" hidden><td colspan="18"><span data-zh="航空装备Ⅱ" data-en="航空装备Ⅱ">航空装备Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +6.10% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="其他电源设备Ⅱ" hidden><td colspan="18"><span data-zh="其他电源设备Ⅱ" data-en="其他电源设备Ⅱ">其他电源设备Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.89% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="多元金融" hidden><td colspan="18"><span data-zh="多元金融" data-en="多元金融">多元金融</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.43% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="纺织制造" hidden><td colspan="18"><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +4.33% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="金属新材料" hidden><td colspan="18"><span data-zh="金属新材料" data-en="金属新材料">金属新材料</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.10% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="装修建材" hidden><td colspan="18"><span data-zh="装修建材" data-en="装修建材">装修建材</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.37% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="IT服务Ⅱ" hidden><td colspan="18"><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.92% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="专用设备" hidden><td colspan="18"><span data-zh="专用设备" data-en="专用设备">专用设备</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.99% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="小家电" hidden><td colspan="18"><span data-zh="小家电" data-en="小家电">小家电</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.35% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="非白酒" hidden><td colspan="18"><span data-zh="非白酒" data-en="非白酒">非白酒</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.52% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="数字媒体" hidden><td colspan="18"><span data-zh="数字媒体" data-en="数字媒体">数字媒体</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.88% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="化学制药" hidden><td colspan="18"><span data-zh="化学制药" data-en="化学制药">化学制药</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +3.17% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="煤炭开采" hidden><td colspan="18"><span data-zh="煤炭开采" data-en="煤炭开采">煤炭开采</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +5.49% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr><tr class="sector-row" data-sep="农产品加工" hidden><td colspan="18"><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span> · <span data-zh="中位涨幅" data-en="median">中位涨幅</span> +2.46% · <span data-zh="组内 1 只" data-en="1 picked">组内 1 只</span></td></tr></tbody></table></div>
-  <p class="src"><span data-zh="另有 40 只超出展示上限（report.maxRows）未列出。" data-en="40 more candidates not listed (report.maxRows cap).">另有 40 只超出展示上限（report.maxRows）未列出。</span></p>
+  
 
   <h2><span data-zh="淘汰漏斗" data-en="Rejection Funnel">淘汰漏斗</span></h2>
   <div class="card">
@@ -1013,16 +1675,14 @@
     <h3 style="margin-top:14px"><span data-zh="尾盘段校验阶段（需分时数据）" data-en="Tail-segment checks (needs minute data)">尾盘段校验阶段（需分时数据）</span></h3>
     <div class="table-wrap"><table><thead><tr><th><span data-zh="原因" data-en="Reason">原因</span></th><th><span data-zh="数量" data-en="Count">数量</span></th></tr></thead>
       <tbody><tr><td><span data-zh="距日内高点回落过多" data-en="距日内高点回落过多">距日内高点回落过多</span></td><td>52</td></tr><tr><td><span data-zh="尾盘段涨幅不足" data-en="尾盘段涨幅不足">尾盘段涨幅不足</span></td><td>31</td></tr><tr><td><span data-zh="现价低于当日均价" data-en="现价低于当日均价">现价低于当日均价</span></td><td>17</td></tr><tr><td><span data-zh="关键字段缺失或分时数据不可用" data-en="关键字段缺失或分时数据不可用">关键字段缺失或分时数据不可用</span></td><td>6</td></tr></tbody></table></div>
-    <details><summary><span data-zh="数据缺口明细（最多 40 条）" data-en="Data-gap details (up to 40)">数据缺口明细（最多 40 条）</span></summary>
-      <div class="table-wrap"><table><thead><tr><th>Code</th><th><span data-zh="名称" data-en="Name">名称</span></th><th><span data-zh="原因" data-en="Reason">原因</span></th></tr></thead>
-      <tbody><tr><td>bj920045</td><td>蘅东光</td><td>关键字段缺失或分时数据不可用</td></tr><tr><td>bj920509</td><td>同惠电子</td><td>关键字段缺失或分时数据不可用</td></tr><tr><td>bj920725</td><td>惠丰钻石</td><td>关键字段缺失或分时数据不可用</td></tr><tr><td>bj920748</td><td>路桥信息</td><td>尾盘段涨幅不足、关键字段缺失或分时数据不可用、距日内高点回落过多</td></tr><tr><td>bj920799</td><td>艾融软件</td><td>关键字段缺失或分时数据不可用、距日内高点回落过多</td></tr><tr><td>bj920961</td><td>创远信科</td><td>关键字段缺失或分时数据不可用</td></tr></tbody></table></div></details>
+    
   </div>
 
   <h2><span data-zh="数据口径与偏差声明" data-en="Data Provenance and Deviations">数据口径与偏差声明</span></h2>
-  <div class="card"><p class="body-text"><span data-zh="全市场快照来自腾讯 qt.gtimg.cn 批量报价（29999 个槽位 / 500 批 / 失败 0 批，耗时 7.9s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1110 → 1130）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-13），不依赖外部交易日历。运行环境：local。" data-en="Market snapshot: Tencent qt.gtimg.cn batch quotes (29999 slots / 500 batches / 0 failed, 7.9s); 1-minute bars: Tencent web.ifzq.gtimg.cn (tail segment 1110 → 1130); industry mapping: local cache eod/data/industry-map.json (EM sector classes). Trade date derived from the quote-timestamp mode (2026-10-13); no external calendar. Runner: local.">全市场快照来自腾讯 qt.gtimg.cn 批量报价（29999 个槽位 / 500 批 / 失败 0 批，耗时 7.9s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1110 → 1130）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-13），不依赖外部交易日历。运行环境：local。</span></p></div>
+  <div class="card"><p class="body-text"><span data-zh="全市场快照来自腾讯 qt.gtimg.cn 批量报价（0 个槽位 / 0 批 / 失败 0 批，耗时 0.0s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1110 → 1130）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-13），不依赖外部交易日历。运行环境：local。" data-en="Market snapshot: Tencent qt.gtimg.cn batch quotes (0 slots / 0 batches / 0 failed, 0.0s); 1-minute bars: Tencent web.ifzq.gtimg.cn (tail segment 1110 → 1130); industry mapping: local cache eod/data/industry-map.json (EM sector classes). Trade date derived from the quote-timestamp mode (2026-10-13); no external calendar. Runner: local.">全市场快照来自腾讯 qt.gtimg.cn 批量报价（0 个槽位 / 0 批 / 失败 0 批，耗时 0.0s）；分时 1 分钟线来自腾讯 web.ifzq.gtimg.cn 分时接口（尾盘段 1110 → 1130）；行业归属来自本地缓存 eod/data/industry-map.json（东财行业分类）。交易日由行情时间戳众数推导（2026-10-13），不依赖外部交易日历。运行环境：local。</span></p></div>
 
   <div class="disclaimer"><span data-zh="本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。尾盘候选按 14:50 快照口径筛选，实际 14:50—15:00 之间价格仍会波动，需自行确认可成交性与流动性。" data-en="This report is programmatic observation output for personal research only and is not investment advice. Tail candidates are screened on the 14:50 snapshot; prices still move between 14:50 and 15:00 — verify tradability and liquidity yourself.">本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。尾盘候选按 14:50 快照口径筛选，实际 14:50—15:00 之间价格仍会波动，需自行确认可成交性与流动性。</span></div>
-  <div class="footer">candidate-pool · eod tail screener v1 · <span data-zh="盘中模式" data-en="intraday mode">盘中模式</span> 1130</div>
+  <div class="footer">candidate-pool · eod tail screener v2 · <span data-zh="盘中模式" data-en="intraday mode">盘中模式</span> 1130</div>
 </div>
 <script>
 (function () {

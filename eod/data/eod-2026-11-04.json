@@ -132,7 +132,12 @@
       "sectorMedianChg": 5.455,
       "sectorRank": 14,
       "sectorTotal": 70,
-      "fill": {}
+      "fill": {},
+      "boards": {
+        "streak": 0,
+        "days": 0,
+        "count": 0
+      }
     },
     "sz002812": {
       "code": "sz002812",
@@ -225,7 +230,12 @@
       "sectorMedianChg": 4.78,
       "sectorRank": 35,
       "sectorTotal": 70,
-      "fill": {}
+      "fill": {},
+      "boards": {
+        "streak": 0,
+        "days": 0,
+        "count": 0
+      }
     },
     "sh603976": {
       "code": "sh603976",
