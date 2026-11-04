@@ -10,12 +10,12 @@
 
 | 任务 | 自动化 ID | 调度（RRULE） | 人类可读 | 状态 | 产物 |
 |---|---|---|---|---|---|
-| 盘前基线预计算 | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen-baseline-*.json`（不入库） |
-| 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | **PAUSED** | `eod/data/preopen-<日>.json` + html |
-| 盘前回填 preopen:backfill（手动触发） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=30` | 工作日 15:30 | **PAUSED** | 回填进 `eod/data/preopen-<日>.json` close 段 |
+| 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen-baseline-*.json`（不入库） |
+| 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen-<日>.json` + html |
+| 盘前回填 preopen:backfill（手动触发） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=30` | 工作日 15:30 | ACTIVE | 回填进 `eod/data/preopen-<日>.json` close 段 |
 | 尾盘选股-观察模式(1430) | `f46d3c1c-a803-4e43-a2a7-7db8ede8b5ba` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod-<交易日>-obs.json` + html |
 | 尾盘选股-正式口径(1450) | `6cda9d58-4ba9-4c1d-ac2c-476c2459d879` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod-<交易日>.json` + html |
-| 尾盘选股（手动触发） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
+| 午盘机会（11:30） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
 | 早盘机会（10:30） | `437fc164-152b-431c-b5bf-8a7a211f8f47` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30` | 工作日 10:30 | ACTIVE | 同 `--intraday` 产物 |
 | A股次日候选池初筛 | `automation-1786328116138` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
 
@@ -31,7 +31,7 @@
 - **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
 - **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1/A2 的 cwds 不在本仓库，不提交本仓库。
 
-**两个 PAUSED 任务（盘前选股 / 盘前回填）**：调度不生效，仅用于在 WorkBuddy 自动化面板**手动触发**；recurring 类型必须带 rrule，故填了名义时间但不运行。
+**盘前选股 / 盘前回填**：日常以 WorkBuddy 自动化面板**手动触发**为主（名义 rrule 仅占位，不依赖其自动运行）；状态随本机对齐为 ACTIVE。
 
 ---
 
@@ -227,11 +227,11 @@ git push
 
 ---
 
-## 6. 尾盘选股（手动触发）& 7. 早盘机会（10:30）
+## 6. 午盘机会（11:30）& 7. 早盘机会（10:30）
 
 > 这两个任务 prompt 完全相同，仅调度时间与用途不同：10:30 是早盘异动观察，11:30 是午前手动兜底（对应 `npm run tail:intraday`）。均为本机实时盘中筛，产物 `-intraday` 系列。
 
-- **尾盘选股（手动触发）ID**：`2b6b4b02-247a-433c-9b66-1c7cb45b780e`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30`
+- **午盘机会（11:30）ID**：`2b6b4b02-247a-433c-9b66-1c7cb45b780e`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30`
 - **早盘机会（10:30）ID**：`437fc164-152b-431c-b5bf-8a7a211f8f47`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30`
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：均 ACTIVE
@@ -368,7 +368,7 @@ git push
 1. 拉取本仓库，对 AI 说：**「按 docs/automations/README.md 重建所有定时任务」**。
 2. AI 逐条用 `automation_update`（mode=create）照各节 Prompt、rrule、cwds 创建；总览表中的 ID 会变（本机 ID 仅供参考对齐，重建后以新 ID 为准）。
 3. 把各节 cwds 里的旧路径替换为新设备的仓库实际路径。
-4. 两个 PAUSED 任务创建后同样设为 PAUSED（scheduleType=recurring + status=PAUSED）。
+4. 盘前选股 / 盘前回填两个手动兜底任务创建后状态设为 ACTIVE（与当前本机一致；scheduleType=recurring + status=ACTIVE，名义 rrule 仅占位，日常手动触发）。
 5. 重建完成后用本文件逐字校验各 prompt。
 
 ## 对齐约定（务必遵守）
