@@ -154,7 +154,7 @@
       <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
       <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
     </div>
-    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 2" data-en="All 2">全部 2</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>2</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>2</i></button><button type="button" class="chip" data-filter="风电设备"><span data-zh="风电设备" data-en="风电设备">风电设备</span><i>1</i></button><button type="button" class="chip" data-filter="电机Ⅱ"><span data-zh="电机Ⅱ" data-en="电机Ⅱ">电机Ⅱ</span><i>1</i></button></div>
+    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 2" data-en="All 2">全部 2</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>2</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>2</i></button><button type="button" class="chip" data-filter="@boards"><span data-zh="连板" data-en="Boards">连板</span><i>1</i></button><button type="button" class="chip" data-filter="风电设备"><span data-zh="风电设备" data-en="风电设备">风电设备</span><i>1</i></button><button type="button" class="chip" data-filter="电机Ⅱ"><span data-zh="电机Ⅱ" data-en="电机Ⅱ">电机Ⅱ</span><i>1</i></button></div>
     <label class="bd-toggle"><input type="checkbox" id="bdToggle" checked> <span data-zh="分项得分" data-en="Breakdown">分项得分</span></label>
   </div>
   <div class="table-wrap"><table id="candTable"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
@@ -179,7 +179,7 @@
     <td class="num sc-self sc-start">32.3</td><td class="num sc-self">6.9</td><td class="num sc-self">15.3</td><td class="num sc-ctx sc-start">10.3</td><td class="num sc-ctx">11.0</td>
     <td><span class="score">75.8</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
-  </tr><tr data-sector="电机Ⅱ" data-best="1" data-grank="1">
+  </tr><tr data-sector="电机Ⅱ" data-best="1" data-grank="1" data-boards="1">
     <td>2</td>
     <td><b>通达动力</b><span class="src">002576</span></td>
     <td><span data-zh="电机Ⅱ" data-en="电机Ⅱ">电机Ⅱ</span></td>
@@ -273,6 +273,7 @@
           var g = parseInt(tr.getAttribute('data-grank'), 10);
           return g >= 1 && g <= 3;
         }
+        if (candFilter === '@boards') return tr.hasAttribute('data-boards');
         return !candFilter || tr.getAttribute('data-sector') === candFilter;
       }
       var shown = [];

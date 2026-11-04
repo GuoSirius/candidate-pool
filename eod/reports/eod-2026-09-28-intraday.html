@@ -154,7 +154,7 @@
       <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
       <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
     </div>
-    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 8" data-en="All 8">全部 8</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>7</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>8</i></button><button type="button" class="chip" data-filter="专业服务"><span data-zh="专业服务" data-en="专业服务">专业服务</span><i>1</i></button><button type="button" class="chip" data-filter="教育"><span data-zh="教育" data-en="教育">教育</span><i>1</i></button><button type="button" class="chip" data-filter="软件开发"><span data-zh="软件开发" data-en="软件开发">软件开发</span><i>2</i></button><button type="button" class="chip" data-filter="煤炭开采"><span data-zh="煤炭开采" data-en="煤炭开采">煤炭开采</span><i>1</i></button><button type="button" class="chip" data-filter="通信服务"><span data-zh="通信服务" data-en="通信服务">通信服务</span><i>1</i></button><button type="button" class="chip" data-filter="电力"><span data-zh="电力" data-en="电力">电力</span><i>1</i></button><button type="button" class="chip" data-filter="工程咨询服务Ⅱ"><span data-zh="工程咨询服务Ⅱ" data-en="工程咨询服务Ⅱ">工程咨询服务Ⅱ</span><i>1</i></button></div>
+    <div class="chips" id="chips"><button type="button" class="chip active" data-filter=""><span data-zh="全部 8" data-en="All 8">全部 8</span></button><button type="button" class="chip" data-filter="@best"><span data-zh="只看组内第一" data-en="Group #1 only">只看组内第一</span><i>7</i></button><button type="button" class="chip" data-filter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>8</i></button><button type="button" class="chip" data-filter="@boards"><span data-zh="连板" data-en="Boards">连板</span><i>3</i></button><button type="button" class="chip" data-filter="专业服务"><span data-zh="专业服务" data-en="专业服务">专业服务</span><i>1</i></button><button type="button" class="chip" data-filter="教育"><span data-zh="教育" data-en="教育">教育</span><i>1</i></button><button type="button" class="chip" data-filter="软件开发"><span data-zh="软件开发" data-en="软件开发">软件开发</span><i>2</i></button><button type="button" class="chip" data-filter="煤炭开采"><span data-zh="煤炭开采" data-en="煤炭开采">煤炭开采</span><i>1</i></button><button type="button" class="chip" data-filter="通信服务"><span data-zh="通信服务" data-en="通信服务">通信服务</span><i>1</i></button><button type="button" class="chip" data-filter="电力"><span data-zh="电力" data-en="电力">电力</span><i>1</i></button><button type="button" class="chip" data-filter="工程咨询服务Ⅱ"><span data-zh="工程咨询服务Ⅱ" data-en="工程咨询服务Ⅱ">工程咨询服务Ⅱ</span><i>1</i></button></div>
     <label class="bd-toggle"><input type="checkbox" id="bdToggle" checked> <span data-zh="分项得分" data-en="Breakdown">分项得分</span></label>
   </div>
   <div class="table-wrap"><table id="candTable"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
@@ -164,7 +164,7 @@
     <th colspan="3" class="grp grp-self"><span data-zh="个股自身（77 分）" data-en="The stock itself (77)">个股自身（77 分）</span></th><th colspan="2" class="grp grp-ctx"><span data-zh="环境质量（23 分）" data-en="Context & quality (23)">环境质量（23 分）</span></th>
     <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标记" data-en="Flags">标记</span></th></tr>
     <tr><th class="grp-sub grp-self sc-start"><span data-zh="尾盘动能" data-en="Tail momentum">尾盘动能</span></th><th class="grp-sub grp-self"><span data-zh="量能" data-en="Volume">量能</span></th><th class="grp-sub grp-self"><span data-zh="位置" data-en="Position">位置</span></th><th class="grp-sub grp-ctx sc-start"><span data-zh="均价线" data-en="VWAP">均价线</span></th><th class="grp-sub grp-ctx"><span data-zh="换手" data-en="Turnover">换手</span></th></tr></thead>
-    <tbody id="candBody"><tr data-sector="专业服务" data-best="1" data-grank="1">
+    <tbody id="candBody"><tr data-sector="专业服务" data-best="1" data-grank="1" data-boards="1">
     <td>1</td>
     <td><b>安邦护卫</b><span class="src">603373</span></td>
     <td><span data-zh="专业服务" data-en="专业服务">专业服务</span></td>
@@ -224,7 +224,7 @@
     <td class="num sc-self sc-start">18.5</td><td class="num sc-self">6.8</td><td class="num sc-self">8.4</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">68.6</span></td>
     <td class="wrap"><span class="tag gap"><span data-zh="拉升不连贯" data-en="choppy tail">拉升不连贯</span></span></td>
-  </tr><tr data-sector="煤炭开采" data-best="1" data-grank="1">
+  </tr><tr data-sector="煤炭开采" data-best="1" data-grank="1" data-boards="1">
     <td>5</td>
     <td><b>大有能源</b><span class="src">600403</span></td>
     <td><span data-zh="煤炭开采" data-en="煤炭开采">煤炭开采</span></td>
@@ -239,7 +239,7 @@
     <td class="num sc-self sc-start">18.4</td><td class="num sc-self">4.7</td><td class="num sc-self">8.3</td><td class="num sc-ctx sc-start">10.0</td><td class="num sc-ctx">10.0</td>
     <td><span class="score">66.4</span></td>
     <td class="wrap"><span class="tag pass"><span data-zh="组内最优" data-en="best in group">组内最优</span></span></td>
-  </tr><tr data-sector="通信服务" data-best="1" data-grank="1">
+  </tr><tr data-sector="通信服务" data-best="1" data-grank="1" data-boards="1">
     <td>6</td>
     <td><b>二六三</b><span class="src">002467</span></td>
     <td><span data-zh="通信服务" data-en="通信服务">通信服务</span></td>
@@ -363,6 +363,7 @@
           var g = parseInt(tr.getAttribute('data-grank'), 10);
           return g >= 1 && g <= 3;
         }
+        if (candFilter === '@boards') return tr.hasAttribute('data-boards');
         return !candFilter || tr.getAttribute('data-sector') === candFilter;
       }
       var shown = [];

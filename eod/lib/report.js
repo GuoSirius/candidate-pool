@@ -99,12 +99,13 @@ function rowHtml(c, i, cfg, withBreakdown) {
   const cells = withBreakdown
     ? SCORE_COLS.map(([k], idx) => `<td class="${SCORE_CELL_CLS[idx]}">${num(c.score ? c.score[k] : null, 1)}</td>`).join('')
     : '';
-  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}">
+  const btxt = boardsTxt(c.boards);
+  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${btxt ? ' data-boards="1"' : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
     <td class="up">${pct(c.chgPct)}</td>
-    <td>${boardsTxt(c.boards)}</td>
+    <td>${btxt}</td>
     <td>${num(tail.segPct, 2)}%</td>
     <td>${num(c.volRatio)}</td>
     <td>${num(c.turnover, 1)}%</td>
@@ -309,10 +310,12 @@ function buildHTML(m) {
   // 组内排名来自 groupAndRank 的 groupRank（组内按总分降序）。
   const bestCount = listed.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
   const top3Count = listed.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
+  const boardsCount = listed.filter((c) => boardsTxt(c.boards)).length;
   const chipsHtml = [`<button type="button" class="chip active" data-filter="">${b(`全部 ${listed.length}`, `All ${listed.length}`)}</button>`]
     .concat([
       `<button type="button" class="chip" data-filter="@best">${b('只看组内第一', 'Group #1 only')}<i>${bestCount}</i></button>`,
       `<button type="button" class="chip" data-filter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
+      `<button type="button" class="chip" data-filter="@boards">${b('连板', 'Boards')}<i>${boardsCount}</i></button>`,
     ])
     .concat(chipOrder.map((s) =>
       `<button type="button" class="chip" data-filter="${esc(s)}">${b(esc(s), esc(s))}<i>${chipCounts[s]}</i></button>`))
@@ -471,6 +474,7 @@ function buildHTML(m) {
           var g = parseInt(tr.getAttribute('data-grank'), 10);
           return g >= 1 && g <= 3;
         }
+        if (candFilter === '@boards') return tr.hasAttribute('data-boards');
         return !candFilter || tr.getAttribute('data-sector') === candFilter;
       }
       var shown = [];
