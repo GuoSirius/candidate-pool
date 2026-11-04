@@ -507,7 +507,100 @@
       "belowMin": 10
     }
   ],
-  "close": null,
+  "close": {
+    "backfilledAt": "2026-11-04T07:31:23.874Z",
+    "marketDate": "2026-11-04",
+    "hitDayChgMin": 2,
+    "total": 14,
+    "hit": 7,
+    "perCode": {
+      "sz000995": {
+        "close": 16.36,
+        "dayChgPct": -4.66,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh601566": {
+        "close": 10.95,
+        "dayChgPct": -5.19,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh600892": {
+        "close": 5.29,
+        "dayChgPct": 9.98,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002086": {
+        "close": 3.28,
+        "dayChgPct": -4.09,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh601123": {
+        "close": 16.58,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz000679": {
+        "close": 7.28,
+        "dayChgPct": 9.97,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002029": {
+        "close": 9.3,
+        "dayChgPct": -9.97,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz002827": {
+        "close": 68.95,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      },
+      "sz002580": {
+        "close": 19.05,
+        "dayChgPct": 2.04,
+        "limitUp": false,
+        "hit": true
+      },
+      "sh600327": {
+        "close": 4.2,
+        "dayChgPct": -3.45,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh601599": {
+        "close": 4.2,
+        "dayChgPct": 9.95,
+        "limitUp": true,
+        "hit": true
+      },
+      "sh601366": {
+        "close": 3.82,
+        "dayChgPct": -3.54,
+        "limitUp": false,
+        "hit": false
+      },
+      "sh603289": {
+        "close": 9.97,
+        "dayChgPct": -3.86,
+        "limitUp": false,
+        "hit": false
+      },
+      "sz002088": {
+        "close": 9.16,
+        "dayChgPct": 9.96,
+        "limitUp": true,
+        "hit": true
+      }
+    },
+    "hitRate": 50
+  },
   "records": {
     "sz000995": {
       "code": "sz000995",
@@ -567,7 +660,13 @@
       "stamp": "20261104093948",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 16.36,
+        "dayChgPct": -4.66,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh601566": {
       "code": "sh601566",
@@ -627,7 +726,13 @@
       "stamp": "20261104093947",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 10.95,
+        "dayChgPct": -5.19,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh600892": {
       "code": "sh600892",
@@ -687,7 +792,13 @@
       "stamp": "20261104093947",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 5.29,
+        "dayChgPct": 9.98,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002086": {
       "code": "sz002086",
@@ -747,7 +858,13 @@
       "stamp": "20261104093948",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 3.28,
+        "dayChgPct": -4.09,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh601123": {
       "code": "sh601123",
@@ -807,7 +924,13 @@
       "stamp": "20261104093947",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 16.58,
+        "dayChgPct": 10.02,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz000679": {
       "code": "sz000679",
@@ -867,7 +990,13 @@
       "stamp": "20261104093948",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 3
+      "groupSize": 3,
+      "close": {
+        "close": 7.28,
+        "dayChgPct": 9.97,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002029": {
       "code": "sz002029",
@@ -927,7 +1056,13 @@
       "stamp": "20261104093948",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 2
+      "groupSize": 2,
+      "close": {
+        "close": 9.3,
+        "dayChgPct": -9.97,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz002827": {
       "code": "sz002827",
@@ -987,7 +1122,13 @@
       "stamp": "20261104093948",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 68.95,
+        "dayChgPct": 10,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sz002580": {
       "code": "sz002580",
@@ -1047,7 +1188,13 @@
       "stamp": "20261104093948",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 19.05,
+        "dayChgPct": 2.04,
+        "limitUp": false,
+        "hit": true
+      }
     },
     "sh600327": {
       "code": "sh600327",
@@ -1107,7 +1254,13 @@
       "stamp": "20261104093947",
       "groupRank": 2,
       "bestInGroup": false,
-      "groupSize": 3
+      "groupSize": 3,
+      "close": {
+        "close": 4.2,
+        "dayChgPct": -3.45,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh601599": {
       "code": "sh601599",
@@ -1167,7 +1320,13 @@
       "stamp": "20261104093947",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 4.2,
+        "dayChgPct": 9.95,
+        "limitUp": true,
+        "hit": true
+      }
     },
     "sh601366": {
       "code": "sh601366",
@@ -1227,7 +1386,13 @@
       "stamp": "20261104093948",
       "groupRank": 3,
       "bestInGroup": false,
-      "groupSize": 3
+      "groupSize": 3,
+      "close": {
+        "close": 3.82,
+        "dayChgPct": -3.54,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sh603289": {
       "code": "sh603289",
@@ -1287,7 +1452,13 @@
       "stamp": "20261104093947",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 9.97,
+        "dayChgPct": -3.86,
+        "limitUp": false,
+        "hit": false
+      }
     },
     "sz002088": {
       "code": "sz002088",
@@ -1347,7 +1518,13 @@
       "stamp": "20261104093948",
       "groupRank": 1,
       "bestInGroup": true,
-      "groupSize": 1
+      "groupSize": 1,
+      "close": {
+        "close": 9.16,
+        "dayChgPct": 9.96,
+        "limitUp": true,
+        "hit": true
+      }
     }
   }
 }
