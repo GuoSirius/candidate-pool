@@ -264,6 +264,7 @@ async function run() {
       yesterdayChgPct: b.yesterdayChgPct,
       yesterdayVolRatio: b.yesterdayVolRatio != null ? +b.yesterdayVolRatio.toFixed(2) : null,
       yesterdayTurnoverPct: yesterdayTurnoverPct(q, b),
+      boards: b.boards || null,
       capYi: { total: q.totalCapYi, float: q.floatCapYi },
       trend: { maBull: p3.maBull, newHigh20: p3.newHigh20, newHigh60: p3.newHigh60, slope20: p3.slope20 },
       p1, p2, p3,
@@ -287,13 +288,20 @@ async function run() {
   nearMissAll.sort((a, b) => b.total - a.total);
   const nearMiss = nearMissAll.slice(0, 10);
 
-  // 昨日主力净流入（东财 fflow，仅候选级低频调用；封 IP / 失败留空，不阻断）
+  // 昨日主力净流入（东财 fflow）+ 昨日龙虎榜（候选级低频调用；封 IP / 失败留空，不阻断）
   if (candidates.length) {
-    log(`[3.5/4] 候选昨日主力净流入（${candidates.length} 只，东财）…`);
+    log(`[3.5/4] 候选昨日净流入/龙虎榜（${candidates.length} 只，东财）…`);
     await mapLimit(candidates, 4, async (c) => {
       const f = await market.fetchFlowDay(c.code);
       if (f && f[anchor] != null) c.yesterdayMainInflow = f[anchor];
     });
+    const bb = await market.fetchBillboard(anchor);
+    for (const c of candidates) {
+      const info = bb[c.code.slice(2)];
+      if (!info) continue;
+      const seats = await market.fetchBillboardSeats(c.code.slice(2), anchor);
+      c.billboard = { net: info.net, hot: PR.matchHotMoney(seats) };
+    }
   }
 
   // 各淘汰原因计数（gaps 明细不落盘，只留统计——6000+ 只/天的明细太肥且没用）

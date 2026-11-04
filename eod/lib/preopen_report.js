@@ -31,8 +31,22 @@ function capTxt(cap) {
   if (!cap || cap.total == null) return '—';
   return `${num(cap.total, 1)}/${cap.float != null ? num(cap.float, 1) : '—'}亿`;
 }
-/** 连板文案：1=首板 2=2连板 …；0/null 留空 */
-function boardsTxt(n) { return n == null || n <= 0 ? '' : (n === 1 ? '首板' : `${n}连板`); }
+/** 连板文案：{streak,days,count} → 首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
+function boardsTxt(bd) {
+  if (bd == null) return '';
+  if (typeof bd === 'number') bd = { streak: bd, days: bd, count: bd };
+  const st = bd.streak | 0, N = bd.days | 0, M = bd.count | 0;
+  if (st >= 2) return M > st ? `${st}连板·${N}天${M}板` : `${st}连板`;
+  if (st === 1) return M > 1 ? `首板·${N}天${M}板` : '首板';
+  if (M >= 1 && N >= 2) return `${N}天${M}板`;
+  return '';
+}
+/** 上榜单元格：tag + 知名游资标注（如「章盟主 1.2亿」） */
+function billboardCell(bb) {
+  if (!bb) return '';
+  const hotTxt = (bb.hot || []).map((h) => `${esc(h.name)} ${fmtAmt(h.amt)}`).join(' / ');
+  return `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
+}
 /** 金额（元）→ 「1.2亿」「3000万」 */
 function fmtAmt(v) {
   if (v == null || isNaN(v)) return '';
@@ -85,6 +99,8 @@ function rowHtml(c, i, withBreakdown) {
     <td class="num">${c.yesterdayVolRatio == null ? '—' : num(c.yesterdayVolRatio, 2)}</td>
     <td class="num">${c.yesterdayTurnoverPct == null ? '—' : num(c.yesterdayTurnoverPct, 2) + '%'}</td>
     <td class="trend">${esc(trendStr(c.trend))}</td>
+    <td>${boardsTxt(c.boards)}</td>
+    <td>${billboardCell(c.billboard)}</td>
     ${cells}
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap"><span class="tag ${labelCls(c.label)}">${esc(c.label)}</span>${riskTag}</td>
@@ -115,12 +131,7 @@ function closeRowHtml(c, i, sealedMin) {
   const buyRet = (dayChg != null && openChg != null) ? Math.round((dayChg - openChg) * 100) / 100 : null;
   const brCls = buyRet == null ? '' : (buyRet >= 0 ? 'up' : 'down');
   const tFlow = fmtFlow(cl.mainInflow);
-  // 龙虎榜：上榜 tag + 知名游资标注（如「章盟主 1.2亿」）
-  let bbCell = '';
-  if (cl.billboard) {
-    const hotTxt = (cl.billboard.hot || []).map((h) => `${esc(h.name)} ${fmtAmt(h.amt)}`).join(' / ');
-    bbCell = `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
-  }
+  const bbCell = billboardCell(cl.billboard);
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}">
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
@@ -275,6 +286,7 @@ function buildHTML(m) {
     <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开价', 'Open px')}</th><th rowspan="2">${b('今开', 'Open%')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
     <th rowspan="2">${b('昨日净流入', 'Prev inflow')}</th><th rowspan="2">${b('市值/流通', 'Cap/FLOAT')}</th>
     <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('昨量比', 'Prev volR')}</th><th rowspan="2">${b('昨换手%', 'Prev turn')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
+    <th rowspan="2">${b('连板', 'Streak')}</th><th rowspan="2">${b('上榜', 'List')}</th>
     <th colspan="${SCORE_COLS.length}" class="grp">${b(SCORE_GROUP.zh, SCORE_GROUP.en)}</th>
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标签', 'Label')}</th></tr>
     <tr>${SCORE_COLS.map(([, zh, w]) => `<th class="grp-sub">${b(`${zh} · ${w}`, `${zh} · ${w}`)}</th>`).join('')}</tr>`;
@@ -322,7 +334,7 @@ function buildHTML(m) {
   </div>`;
 
   // 分组分隔行：默认隐藏，「按行业」视图前端插入各组行首
-  const baseCols = 13 + SCORE_COLS.length + 2; // 基础13(标的~趋势，含净流入/市值流通/昨量比/昨换手) + 分项3 + 总分/标签2 = 18
+  const baseCols = 15 + SCORE_COLS.length + 2; // 基础15(标的~趋势 + 连板/上榜) + 分项3 + 总分/标签2 = 20
   const sepRows = groups.map((g) =>
     `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${baseCols}">${
       b(esc(g.sector), esc(g.sector))} · ${b(`组内 ${g.size} 只，最优 ${esc(g.best.name)}（${num(g.best.total, 1)}）`,

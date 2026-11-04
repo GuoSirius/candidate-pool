@@ -103,7 +103,7 @@ async function run() {
     };
     const bb = bbMap[code.slice(2)];
     if (bb) closeMap[code].billboard = { net: bb.net, hot: PR.matchHotMoney(await market.fetchBillboardSeats(code.slice(2), tradeDate)) };
-    if (klines[code]) closeMap[code].boards = PR.countLimitUpStreak(klines[code].rows, code);
+    if (klines[code]) closeMap[code].boards = PR.boardsInfo(klines[code].rows, code);
   }
   const bbHits = codes.filter((c) => closeMap[c] && closeMap[c].billboard);
   log(`[回填] 候选上榜 ${bbHits.length} 只${bbHits.length ? '：' + bbHits.map((c) => `${closeMap[c] && (qmap.get(c).name || c)}`).join('、') : ''}`);

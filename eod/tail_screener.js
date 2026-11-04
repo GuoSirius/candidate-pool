@@ -52,6 +52,7 @@ const cfg = require('./tail.config');
 const { sessionState, estimateFullDayVolRatio, nowBjt, TZ } = require('./lib/trading');
 const { dayjs } = require('../time');
 const market = require('./lib/market');
+const { mapLimit } = require('./lib/http');
 const { buildCandidates } = require('./lib/screen');
 const { saveRun, daySuffix, saveRaw, loadRaw } = require('./lib/store');
 const { syncTailRun, cleanupLegacyModes, d1Mode, targetLabel } = require('./lib/store_d1');
@@ -318,6 +319,17 @@ async function run() {
   });
   // 收盘预估量比（参考值）
   for (const c of result.candidates) c.volRatioEst = estimateFullDayVolRatio(c.volRatio, ss.elapsed);
+  // 连板/几天几板（日K含当日实时 bar；低频候选级调用，失败留空）
+  if (result.candidates.length) {
+    log(`[4/4] 候选连板信息（${result.candidates.length} 只）…`);
+    const PR = require('./lib/preopen_rules');
+    await mapLimit(result.candidates, 6, async (c) => {
+      try {
+        const kl = await market.fetchKline(c.code, ss.tradeDate);
+        if (kl && kl.rows.length) c.boards = PR.boardsInfo(kl.rows, c.code);
+      } catch (e) { /* 留空 */ }
+    });
+  }
 
   return emitResult({
     tradeDate: ss.tradeDate, mode: ss.mode, cutHHMM, segFrom,

@@ -72,6 +72,17 @@ function scoreHeadSub() {
 }
 
 /** 单条候选的行（用于 TOP 表 / 分组卡片） */
+/** 连板文案：{streak,days,count} → 首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
+function boardsTxt(bd) {
+  if (bd == null) return '';
+  if (typeof bd === 'number') bd = { streak: bd, days: bd, count: bd };
+  const st = bd.streak | 0, N = bd.days | 0, M = bd.count | 0;
+  if (st >= 2) return M > st ? `${st}连板·${N}天${M}板` : `${st}连板`;
+  if (st === 1) return M > 1 ? `首板·${N}天${M}板` : '首板';
+  if (M >= 1 && N >= 2) return `${N}天${M}板`;
+  return '';
+}
+
 function rowHtml(c, i, cfg, withBreakdown) {
   const tail = c.tail || {};
   const warn = cfg.score.tailUpRatioWarn;
@@ -99,6 +110,7 @@ function rowHtml(c, i, cfg, withBreakdown) {
     <td>${num(c.price, 2)}</td>
     <td>${yi(c.floatCapYi)}</td>
     <td>${yi(c.totalCapYi)}</td>
+    <td>${boardsTxt(c.boards)}</td>
     ${cells}
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap">${tagBits.join('') || '—'}</td>
@@ -273,6 +285,7 @@ function buildHTML(m) {
     <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
     <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('价格', 'Price')}</th>
     <th rowspan="2">${b('流通值', 'Float cap')}</th><th rowspan="2">${b('总市值', 'Total cap')}</th>
+    <th rowspan="2">${b('连板', 'Streak')}</th>
     ${scoreHeadTop()}
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标记', 'Flags')}</th></tr>
     <tr>${scoreHeadSub()}</tr>`;
@@ -316,7 +329,7 @@ function buildHTML(m) {
   // 分组分隔行：默认隐藏，「按行业」视图由前端插入到各组行首（含行业中位涨幅与组内数量）
   // colspan = 基础 10 列（# 标的 行业 涨幅 尾盘段 量比 换手 价格 流通值 总市值）+ 分项 6 列 + 总分/标记 2 列
   const sepRows = groups.map((g) =>
-    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${10 + SCORE_COLS.length + 2}">${
+    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${11 + SCORE_COLS.length + 2}">${
       b(esc(g.sector), esc(g.sector))} · ${b('中位涨幅', 'median')} ${pct(g.best.sectorMedianChg)} · ${b(`组内 ${g.size} 只`, `${g.size} picked`)}</td></tr>`).join('');
   const candRows = listed.map((c, i) => rowHtml(c, i, cfg, true)).join('');
 

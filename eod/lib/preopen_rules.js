@@ -95,7 +95,7 @@ function calcBaseline(kline, code, cfg) {
     if (prior5.length >= 3) yesterdayVolRatio = y.vol / (prior5.reduce((a, r) => a + r.vol, 0) / prior5.length);
   }
   const trend = calcTrend(rows, cfg);
-  return { code, yesterdayChgPct, yesterdayVol, yesterdayVolRatio, trend };
+  return { code, yesterdayChgPct, yesterdayVol, yesterdayVolRatio, boards: boardsInfo(rows, code), trend };
 }
 
 // ---------- P01 竞价强势 ----------
@@ -221,9 +221,29 @@ function countLimitUpStreak(rowsDesc, code) {
   return n;
 }
 
+/**
+ * 连板 + 几天几板（rowsDesc 降序，rowsDesc[0] 为基准日）。
+ * 几天几板：默认回看 10 个交易日内的涨停 → 「N天M板」（N=最老板距基准日的交易日数）；
+ * 最老板顶满窗口且再往前一天仍是涨停时逐日外扩（如 10天1板 → 倒推11日也是板则 11天2板）。
+ * @returns {{streak:number, days:number, count:number}}
+ */
+function boardsInfo(rowsDesc, code, windowDays = 10) {
+  const p = /^sh68[89]/.test(code) ? 20 : /^sz30/.test(code) ? 20 : /^bj/.test(code) ? 30 : 10;
+  const n = rowsDesc.length;
+  const isBoard = (i) => i + 1 < n && rowsDesc[i + 1].close > 0 && rowsDesc[i].close >= rowsDesc[i + 1].close * (1 + p / 100) - 0.005;
+  let streak = 0;
+  while (streak < n - 1 && isBoard(streak)) streak++;
+  const days = [];
+  for (let d = 1; d <= windowDays && d < n; d++) if (isBoard(d - 1)) days.push(d);
+  if (!days.length) return { streak, days: 0, count: 0 };
+  let N = days[days.length - 1], M = days.length;
+  while (N >= windowDays && N + 1 < n && isBoard(N)) { N++; M++; }   // 边界外扩
+  return { streak, days: N, count: M };
+}
+
 module.exports = {
   clamp01, lin,
   calcTrend, calcBaseline,
   calcP1, calcP2, calcP3, scorePreopen, labelOf,
-  countLimitUpStreak, matchHotMoney, HOT_MONEY_SEATS,
+  countLimitUpStreak, boardsInfo, matchHotMoney, HOT_MONEY_SEATS,
 };

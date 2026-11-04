@@ -66,6 +66,7 @@ function toRecord(c) {
     } : null,
     score: c.score,
     total: c.total,
+    boards: c.boards ?? null,
     sectorMedianChg: c.sectorMedianChg,
     sectorRank: c.sectorRank,
     sectorTotal: c.sectorTotal,
