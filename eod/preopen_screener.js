@@ -310,7 +310,7 @@ async function emitResult(p) {
     cfg, tradeDate, scope, candidates: result.candidates,
     nearMiss: result.nearMiss, rejByReason: result.stats.rejByReason,
     meta: { snapshotCount: result.stats.snapshotCount, baselineCount: p.baselineCount, validQuotes: p.quotesCount, marketDate, elapsedMs: Date.now() - (p._t0 || Date.now()) },
-    marketDate,
+    marketDate, anchor: p.anchor,
   });
   log(`[落库] ${path.basename(saved.file)}（${saved.recordCount} 条 / 第 ${saved.runCount} 次运行）`);
 

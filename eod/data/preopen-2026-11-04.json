@@ -508,7 +508,7 @@
     }
   ],
   "close": {
-    "backfilledAt": "2026-11-04T07:31:23.874Z",
+    "backfilledAt": "2026-11-04 17:37:34",
     "marketDate": "2026-11-04",
     "hitDayChgMin": 2,
     "total": 14,
@@ -518,84 +518,126 @@
         "close": 16.36,
         "dayChgPct": -4.66,
         "limitUp": false,
+        "opened": false,
+        "turnover": 41.52,
+        "volRatio": 2.45,
         "hit": false
       },
       "sh601566": {
         "close": 10.95,
         "dayChgPct": -5.19,
         "limitUp": false,
+        "opened": false,
+        "turnover": 16.72,
+        "volRatio": 1.71,
         "hit": false
       },
       "sh600892": {
         "close": 5.29,
         "dayChgPct": 9.98,
         "limitUp": true,
+        "opened": false,
+        "turnover": 2.35,
+        "volRatio": 0.18,
         "hit": true
       },
       "sz002086": {
         "close": 3.28,
         "dayChgPct": -4.09,
         "limitUp": false,
+        "opened": false,
+        "turnover": 50.92,
+        "volRatio": 2.61,
         "hit": false
       },
       "sh601123": {
         "close": 16.58,
         "dayChgPct": 10.02,
         "limitUp": true,
+        "opened": true,
+        "turnover": 32.01,
+        "volRatio": 3.96,
         "hit": true
       },
       "sz000679": {
         "close": 7.28,
         "dayChgPct": 9.97,
         "limitUp": true,
+        "opened": false,
+        "turnover": 2.6,
+        "volRatio": 0.95,
         "hit": true
       },
       "sz002029": {
         "close": 9.3,
         "dayChgPct": -9.97,
         "limitUp": false,
+        "opened": false,
+        "turnover": 23.86,
+        "volRatio": 3.01,
         "hit": false
       },
       "sz002827": {
         "close": 68.95,
         "dayChgPct": 10,
         "limitUp": true,
+        "opened": false,
+        "turnover": 0.2,
+        "volRatio": 0.07,
         "hit": true
       },
       "sz002580": {
         "close": 19.05,
         "dayChgPct": 2.04,
         "limitUp": false,
+        "opened": false,
+        "turnover": 32.35,
+        "volRatio": 2.7,
         "hit": true
       },
       "sh600327": {
         "close": 4.2,
         "dayChgPct": -3.45,
         "limitUp": false,
+        "opened": false,
+        "turnover": 13.35,
+        "volRatio": 4.72,
         "hit": false
       },
       "sh601599": {
         "close": 4.2,
         "dayChgPct": 9.95,
         "limitUp": true,
+        "opened": true,
+        "turnover": 9.67,
+        "volRatio": 3.53,
         "hit": true
       },
       "sh601366": {
         "close": 3.82,
         "dayChgPct": -3.54,
         "limitUp": false,
+        "opened": false,
+        "turnover": 7.73,
+        "volRatio": 4.83,
         "hit": false
       },
       "sh603289": {
         "close": 9.97,
         "dayChgPct": -3.86,
         "limitUp": false,
+        "opened": false,
+        "turnover": 8.79,
+        "volRatio": 5.44,
         "hit": false
       },
       "sz002088": {
         "close": 9.16,
         "dayChgPct": 9.96,
         "limitUp": true,
+        "opened": true,
+        "turnover": 6.68,
+        "volRatio": 2.48,
         "hit": true
       }
     },
@@ -665,6 +707,9 @@
         "close": 16.36,
         "dayChgPct": -4.66,
         "limitUp": false,
+        "opened": false,
+        "turnover": 41.52,
+        "volRatio": 2.45,
         "hit": false
       }
     },
@@ -731,6 +776,9 @@
         "close": 10.95,
         "dayChgPct": -5.19,
         "limitUp": false,
+        "opened": false,
+        "turnover": 16.72,
+        "volRatio": 1.71,
         "hit": false
       }
     },
@@ -797,6 +845,9 @@
         "close": 5.29,
         "dayChgPct": 9.98,
         "limitUp": true,
+        "opened": false,
+        "turnover": 2.35,
+        "volRatio": 0.18,
         "hit": true
       }
     },
@@ -863,6 +914,9 @@
         "close": 3.28,
         "dayChgPct": -4.09,
         "limitUp": false,
+        "opened": false,
+        "turnover": 50.92,
+        "volRatio": 2.61,
         "hit": false
       }
     },
@@ -929,6 +983,9 @@
         "close": 16.58,
         "dayChgPct": 10.02,
         "limitUp": true,
+        "opened": true,
+        "turnover": 32.01,
+        "volRatio": 3.96,
         "hit": true
       }
     },
@@ -995,6 +1052,9 @@
         "close": 7.28,
         "dayChgPct": 9.97,
         "limitUp": true,
+        "opened": false,
+        "turnover": 2.6,
+        "volRatio": 0.95,
         "hit": true
       }
     },
@@ -1061,6 +1121,9 @@
         "close": 9.3,
         "dayChgPct": -9.97,
         "limitUp": false,
+        "opened": false,
+        "turnover": 23.86,
+        "volRatio": 3.01,
         "hit": false
       }
     },
@@ -1127,6 +1190,9 @@
         "close": 68.95,
         "dayChgPct": 10,
         "limitUp": true,
+        "opened": false,
+        "turnover": 0.2,
+        "volRatio": 0.07,
         "hit": true
       }
     },
@@ -1193,6 +1259,9 @@
         "close": 19.05,
         "dayChgPct": 2.04,
         "limitUp": false,
+        "opened": false,
+        "turnover": 32.35,
+        "volRatio": 2.7,
         "hit": true
       }
     },
@@ -1259,6 +1328,9 @@
         "close": 4.2,
         "dayChgPct": -3.45,
         "limitUp": false,
+        "opened": false,
+        "turnover": 13.35,
+        "volRatio": 4.72,
         "hit": false
       }
     },
@@ -1325,6 +1397,9 @@
         "close": 4.2,
         "dayChgPct": 9.95,
         "limitUp": true,
+        "opened": true,
+        "turnover": 9.67,
+        "volRatio": 3.53,
         "hit": true
       }
     },
@@ -1391,6 +1466,9 @@
         "close": 3.82,
         "dayChgPct": -3.54,
         "limitUp": false,
+        "opened": false,
+        "turnover": 7.73,
+        "volRatio": 4.83,
         "hit": false
       }
     },
@@ -1457,6 +1535,9 @@
         "close": 9.97,
         "dayChgPct": -3.86,
         "limitUp": false,
+        "opened": false,
+        "turnover": 8.79,
+        "volRatio": 5.44,
         "hit": false
       }
     },
@@ -1523,8 +1604,12 @@
         "close": 9.16,
         "dayChgPct": 9.96,
         "limitUp": true,
+        "opened": true,
+        "turnover": 6.68,
+        "volRatio": 2.48,
         "hit": true
       }
     }
-  }
+  },
+  "anchor": "2026-11-03"
 }

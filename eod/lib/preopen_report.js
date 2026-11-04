@@ -55,6 +55,7 @@ function rowHtml(c, i, withBreakdown) {
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
     <td>${esc(c.board)}</td>
+    <td class="num">${num(c.open)}</td>
     <td class="num ${c.auctionChgPct >= 0 ? 'up' : 'down'}">${pct(c.auctionChgPct)}</td>
     <td class="num ${c.yesterdayChgPct >= 0 ? 'up' : 'down'}">${pct(c.yesterdayChgPct)}</td>
     <td class="num">${c.auctionVolRatio == null ? '—' : num(c.auctionVolRatio, 2)}</td>
@@ -63,6 +64,64 @@ function rowHtml(c, i, withBreakdown) {
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap"><span class="tag ${labelCls(c.label)}">${esc(c.label)}</span>${riskTag}</td>
   </tr>`;
+}
+
+/** 收盘回填行：昨收%/今开%/涨跌幅%（均为涨跌幅）+ 换手%/涨停/买入机会/命中 */
+function closeRowHtml(c, i, sealedMin) {
+  const cl = c.close || {};
+  const yChg = c.yesterdayChgPct;   // 昨收涨跌幅（昨日 vs 前日）
+  const openChg = c.auctionChgPct;  // 今开涨跌幅（今开 vs 昨收）
+  const dayChg = cl.dayChgPct;      // 今收涨跌幅（今收 vs 昨收）
+  const limitUp = !!cl.limitUp;
+  const opened = !!cl.opened;
+  const turn = cl.turnover;
+  const hit = !!cl.hit;
+  // 买入机会四态：非涨停=开盘可买；涨停开板=开板可买；一字但放量=放量可买；一字缩量=很难买入
+  let oppCls, oppZh, oppEn;
+  if (!limitUp) { oppCls = ''; oppZh = '开盘可买'; oppEn = 'Open-buyable'; }
+  else if (opened) { oppCls = 'pass'; oppZh = '开板可买'; oppEn = 'Opened'; }
+  else if (turn != null && turn >= sealedMin) { oppCls = ''; oppZh = '放量可买'; oppEn = 'Volume queue'; }
+  else { oppCls = 'gap'; oppZh = '很难买入'; oppEn = 'Hard to buy'; }
+  const yCls = yChg >= 0 ? 'up' : 'down';
+  const oCls = openChg >= 0 ? 'up' : 'down';
+  const dCls = dayChg >= 0 ? 'up' : 'down';
+  const volR = cl.volRatio;
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}">
+    <td>${i + 1}</td>
+    <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
+    <td>${b(esc(c.sector), esc(c.sector))}</td>
+    <td>${esc(c.board)}</td>
+    <td class="num ${yCls}">${pct(yChg)}</td>
+    <td class="num ${oCls}">${pct(openChg)}</td>
+    <td class="num ${dCls}">${pct(dayChg)}</td>
+    <td class="num">${volR != null ? num(volR, 2) : '—'}</td>
+    <td class="num">${turn != null ? num(turn, 2) + '%' : '—'}</td>
+    <td>${limitUp ? `<span class="tag pass">${b('涨停', 'Limit')}</span>` : ''}</td>
+    <td><span class="tag ${oppCls}">${b(oppZh, oppEn)}</span></td>
+    <td>${hit ? `<span class="tag pass">${b('命中', 'Hit')}</span>` : ''}</td>
+  </tr>`;
+}
+
+/** 收盘回填结论 */
+function buildCloseSummary(cands, closeObj, sealedMin) {
+  const wc = cands.filter((c) => c.close);
+  const hitN = wc.filter((c) => c.close.hit).length;
+  const limitN = wc.filter((c) => c.close.limitUp).length;
+  const openedN = wc.filter((c) => c.close.limitUp && c.close.opened).length;
+  const sealedN = limitN - openedN;
+  const queueN = wc.filter((c) => c.close.limitUp && !c.close.opened && c.close.turnover != null && c.close.turnover >= sealedMin).length;
+  const hardN = sealedN - queueN;
+  const buyN = wc.length - hardN;
+  const thresh = closeObj && closeObj.hitDayChgMin != null ? closeObj.hitDayChgMin : 2;
+  return `<div class="callout">
+    <h3>${b('收盘回填结论（开盘买入当日验证）', 'Close-backfill Summary (open-buy verification)')}</h3>
+    <ul>
+      <li>${b(`入选 ${cands.length} 只 · 命中 ${hitN} 只（当日涨幅 ≥ ${thresh}%）· 可买入 ${buyN} 只（涨停 ${limitN} 只：开板可买 ${openedN} / 一字 ${sealedN}，其中放量可买 ${queueN} / 很难买入 ${hardN}）`,
+        `${cands.length} picked · ${hitN} hit (day chg ≥ ${thresh}%) · buyable ${buyN} (limit-up ${limitN}: opened-buyable ${openedN} / sealed ${sealedN}, volume-buyable ${queueN} / hard ${hardN})`)}</li>
+      <li>${b(`买入机会：非涨停可直接开盘买入；涨停开板（盘中曾跌破涨停价）开板可买；一字涨停但放量（换手 ≥ ${sealedMin}%）放量可买（可涨停价排板成交）；缩量一字很难买入。`,
+        `Buyability: non-limit open-buyable; limit-up opened (intraday dip below limit) opened-buyable; sealed limit-up with volume (turnover ≥ ${sealedMin}%) volume-buyable (queueable at limit); thin sealed limit-up hard to buy.`)}</li>
+    </ul>
+  </div>`;
 }
 
 const CSS = `  :root, :root[data-theme="light"] {
@@ -146,8 +205,13 @@ const CSS = `  :root, :root[data-theme="light"] {
  * @returns {string} 完整 HTML
  */
 function buildHTML(m) {
-  const { cfg, tradeDate, scope, anchor, result, marketDate, runner } = m;
+  const { cfg, tradeDate, scope, anchor, result, marketDate, runner, close } = m;
   const { candidates, groups, top, stats } = result;
+  // ---- 收盘回填区块（仅收盘回填重渲染时传入 close 才展示）----
+  const sealedMin = (cfg.backfill && cfg.backfill.sealedTurnoverMin) || 1.5;
+  const showClose = !!close;
+  const closeRows = showClose ? candidates.map((c, i) => closeRowHtml(c, i, sealedMin)).join('') : '';
+  const closeCallout = showClose ? buildCloseSummary(candidates, close, sealedMin) : '';
   const scopeLabel = scope === 'universe' ? b('全市场', 'Full market') : b('观察池', 'Watchlist');
 
   // ---- 核心结论 ----
@@ -166,9 +230,9 @@ function buildHTML(m) {
       `Funnel: snapshot ${stats.snapshotCount} → with baseline ${stats.baselineCount} → picked ${stats.candidateCount} (gaps ${stats.gapCount}).`),
   ];
 
-  // ---- 两级表头：合并「信号分项」到 P1/P2/P3 ----
+  // ---- 两级表头：合并「信号分项」到 P1/P2/P3 ----（基础9含今开价 + 分项3 + 总分/标签2 = 14 列）
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
-    <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开', 'Open')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
+    <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开价', 'Open px')}</th><th rowspan="2">${b('今开', 'Open%')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
     <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
     <th colspan="${SCORE_COLS.length}" class="grp">${b(SCORE_GROUP.zh, SCORE_GROUP.en)}</th>
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标签', 'Label')}</th></tr>
@@ -217,7 +281,7 @@ function buildHTML(m) {
   </div>`;
 
   // 分组分隔行：默认隐藏，「按行业」视图前端插入各组行首
-  const baseCols = 8 + SCORE_COLS.length + 2; // 基础8 + 分项3 + 总分/标签2 = 13
+  const baseCols = 9 + SCORE_COLS.length + 2; // 基础9(含今开价) + 分项3 + 总分/标签2 = 14
   const sepRows = groups.map((g) =>
     `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${baseCols}">${
       b(esc(g.sector), esc(g.sector))} · ${b(`组内 ${g.size} 只，最优 ${esc(g.best.name)}（${num(g.best.total, 1)}）`,
@@ -279,6 +343,16 @@ function buildHTML(m) {
     <tbody id="candBody">${candRows}${sepRows}</tbody></table></div>
   ${truncated > 0 ? `<p class="src">${b(`另有 ${truncated} 只超出展示上限（report.maxRows）未列出。`, `${truncated} more candidates not listed (report.maxRows cap).`)}</p>` : ''}`
     : `<div class="card">${b('本时段无满足全部门槛的候选。', 'No candidate passed all gates.')}</div>`}
+
+  ${showClose ? `
+  <h2>${b('收盘回填（开盘买入当日验证）', 'Close Backfill (open-buy verification)')}</h2>
+  ${closeCallout}
+  <div class="table-wrap"><table><thead><tr>
+    <th>#</th><th>${b('标的', 'Name')}</th><th>${b('行业', 'Industry')}</th><th>${b('板块', 'Board')}</th>
+    <th>${b('昨收%', 'PrevClose %')}</th><th>${b('今开%', 'Open %')}</th><th>${b('涨跌幅%', 'Chg %')}</th>
+    <th>${b('量比', 'Vol ratio')}</th><th>${b('换手%', 'Turnover %')}</th>
+    <th>${b('涨停', 'Limit')}</th><th>${b('可买', 'Buyable')}</th><th>${b('命中', 'Hit')}</th>
+  </tr></thead><tbody>${closeRows}</tbody></table></div>` : ''}
 
   <h2>${b('数据缺口', 'Data Gaps')}</h2>
   <div class="card">

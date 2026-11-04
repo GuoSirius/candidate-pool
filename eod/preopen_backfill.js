@@ -16,10 +16,14 @@
  * ---------------------------------------------------------------------------
  */
 const fs = require('fs');
+const path = require('path');
 const { dayjs } = require('../time');
 const cfg = require('./preopen.config');
 const market = require('./lib/market');
 const store = require('./lib/preopen_store');
+const paths = require('../paths');
+const { lastClosedTradingDay } = require('../rules');
+const { buildHTML } = require('./lib/preopen_report');
 const argv = process.argv.slice(2);
 const OPT = { date: (() => { const i = argv.indexOf('--date'); return i >= 0 ? argv[i + 1] : null; })(), force: argv.includes('--force') };
 function log(m) { console.log(m); }
@@ -58,13 +62,45 @@ async function run() {
     const dayChgPct = q.chgPct;
     const limitPrice = q.prevClose > 0 ? Math.round(q.prevClose * (1 + boardLimitPct(code) / 100) * 100) / 100 : null;
     const limitUp = limitPrice != null && q.price >= limitPrice - 0.005;
+    // 盘中开板：收盘涨停但当日最低价曾低于涨停价 → 封板被打开过，存在买入窗口（一字板则 low 也封死）
+    const opened = limitUp && q.low != null && q.low < limitPrice - 0.005;
     const hit = dayChgPct != null && dayChgPct >= cfg.backfill.hitDayChgMin;
-    closeMap[code] = { close: q.price, dayChgPct, limitUp, hit };
+    closeMap[code] = { close: q.price, dayChgPct, limitUp, opened, turnover: q.turnover, volRatio: q.volRatio, hit };
   }
 
   const summary = { hitDayChgMin: cfg.backfill.hitDayChgMin };
   const close = store.mergeBackfill(cfg, tradeDate, closeMap, summary);
   log(`[回填] 命中 ${close.hit}/${close.total}（开盘买入当日涨≥${cfg.backfill.hitDayChgMin}%）= ${close.hitRate}%`);
+
+  // 重渲染 HTML（补充收盘区块：昨收%/今开%/涨跌幅% + 换手%/涨停/买入机会/命中），覆盖盘前生成的旧报告
+  try {
+    const doc = store.loadRun(cfg, tradeDate);
+    const recs = Object.values(doc.records).sort((a, b) => b.total - a.total);
+    const bySector = new Map();
+    for (const c of recs) { if (!bySector.has(c.sector)) bySector.set(c.sector, []); bySector.get(c.sector).push(c); }
+    const groups = [];
+    for (const [sector, list] of bySector) {
+      list.sort((a, b) => b.total - a.total);
+      list.forEach((c, i) => { c.groupRank = i + 1; c.bestInGroup = i === 0; c.groupSize = list.length; });
+      groups.push({ sector, size: list.length, shown: list.slice(0, cfg.group.maxPerGroup), best: list[0] });
+    }
+    groups.sort((a, b) => b.best.total - a.best.total);
+    const top = recs.slice(0, cfg.group.topN);
+    const rej = doc.meta && doc.meta.rejByReason ? Object.values(doc.meta.rejByReason).reduce((a, b) => a + b, 0) : 0;
+    const stats = {
+      snapshotCount: (doc.meta && doc.meta.snapshotCount) || 0,
+      baselineCount: (doc.meta && doc.meta.baselineCount) || 0,
+      candidateCount: recs.length, groupCount: groups.length, gapCount: rej,
+      rejByReason: (doc.meta && doc.meta.rejByReason) || {},
+    };
+    const result = { candidates: recs, groups, top, stats, gaps: [], nearMiss: doc.nearMiss || [] };
+    const reportDir = path.join(paths.eodDir(), cfg.store.reportDir);
+    fs.mkdirSync(reportDir, { recursive: true });
+    const reportFile = path.join(reportDir, `${cfg.store.prefix}-${tradeDate}.html`);
+    fs.writeFileSync(reportFile, buildHTML({ cfg, tradeDate, scope: doc.scope, anchor: doc.anchor || lastClosedTradingDay(dayjs.tz(tradeDate)), result, marketDate: doc.marketDate, runner: 'local', close: doc.close }), 'utf8');
+    log(`[报告] 已重渲染（含收盘区块）${reportFile}`);
+  } catch (e) { log(`[警告] HTML 重渲染失败（不影响归档）：${e && e.message || e}`); }
+
   return close;
 }
 

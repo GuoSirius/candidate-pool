@@ -16,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
+const { now } = require('../../time');
 
 function dataFile(cfg, tradeDate) {
   return path.join(paths.eodDir(), cfg.store.dataDir, `${cfg.store.prefix}-${tradeDate}.json`);
@@ -36,7 +37,7 @@ function loadRun(cfg, tradeDate) {
  *   - rejByReason：各淘汰原因计数（漏斗分析用）。
  * @returns {{file, recordCount, runCount}}
  */
-function saveRun({ cfg, tradeDate, scope, candidates, nearMiss, rejByReason, meta, marketDate }) {
+function saveRun({ cfg, tradeDate, scope, candidates, nearMiss, rejByReason, meta, marketDate, anchor }) {
   const dir = path.join(paths.eodDir(), cfg.store.dataDir);
   fs.mkdirSync(dir, { recursive: true });
   const f = dataFile(cfg, tradeDate);
@@ -47,7 +48,7 @@ function saveRun({ cfg, tradeDate, scope, candidates, nearMiss, rejByReason, met
 
   const runs = prev.runs || [];
   runs.push({
-    at: new Date().toISOString(),
+    at: now(),
     count: candidates.length,
     codes: candidates.map((c) => c.code),
   });
@@ -57,8 +58,9 @@ function saveRun({ cfg, tradeDate, scope, candidates, nearMiss, rejByReason, met
     tradeDate,
     scope: scope || cfg.scope.default,
     mode: 'preopen',
-    generatedAt: new Date().toISOString(),
+    generatedAt: now(),
     marketDate,
+    anchor: anchor || prev.anchor || null, // 基线锚定日：回填重渲染时需用，随归档持久化
     meta: Object.assign({}, meta, { recordCount: Object.keys(records).length, runCount: runs.length }),
     runs,
     // 贴线样本（最近一次运行覆盖）；rejByReason 挂在 meta 里
@@ -80,7 +82,7 @@ function mergeBackfill(cfg, tradeDate, closeMap, summary) {
   const doc = loadRun(cfg, tradeDate);
   if (!doc) throw new Error(`未找到盘前归档 ${tradeDate}，无法回填`);
   doc.close = {
-    backfilledAt: new Date().toISOString(),
+    backfilledAt: now(),
     marketDate: tradeDate,
     hitDayChgMin: summary.hitDayChgMin,
     total: 0, hit: 0,
