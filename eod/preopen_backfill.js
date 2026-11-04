@@ -72,7 +72,7 @@ async function run() {
   const close = store.mergeBackfill(cfg, tradeDate, closeMap, summary);
   log(`[回填] 命中 ${close.hit}/${close.total}（开盘买入当日涨≥${cfg.backfill.hitDayChgMin}%）= ${close.hitRate}%`);
 
-  // 重渲染 HTML（补充收盘区块：昨收%/今开%/涨跌幅% + 换手%/涨停/买入机会/命中），覆盖盘前生成的旧报告
+  // 重渲染 HTML（补充收盘区块：昨收%/今开%/今收%/买入收益% + 量比/换手%/涨停/买入机会/命中），覆盖盘前生成的旧报告
   try {
     const doc = store.loadRun(cfg, tradeDate);
     const recs = Object.values(doc.records).sort((a, b) => b.total - a.total);

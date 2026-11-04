@@ -66,7 +66,7 @@ function rowHtml(c, i, withBreakdown) {
   </tr>`;
 }
 
-/** 收盘回填行：昨收%/今开%/涨跌幅%（均为涨跌幅）+ 换手%/涨停/买入机会/命中 */
+/** 收盘回填行：昨收%/今开%/今收%/买入收益%（今收−今开，模拟开盘买入持有到收盘）+ 量比/换手%/涨停/买入机会/命中 */
 function closeRowHtml(c, i, sealedMin) {
   const cl = c.close || {};
   const yChg = c.yesterdayChgPct;   // 昨收涨跌幅（昨日 vs 前日）
@@ -86,6 +86,9 @@ function closeRowHtml(c, i, sealedMin) {
   const oCls = openChg >= 0 ? 'up' : 'down';
   const dCls = dayChg >= 0 ? 'up' : 'down';
   const volR = cl.volRatio;
+  // 买入收益 = 今收涨跌幅 − 今开涨跌幅（今开价买入、收盘卖出的当日收益）
+  const buyRet = (dayChg != null && openChg != null) ? Math.round((dayChg - openChg) * 100) / 100 : null;
+  const brCls = buyRet == null ? '' : (buyRet >= 0 ? 'up' : 'down');
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}">
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
@@ -94,6 +97,7 @@ function closeRowHtml(c, i, sealedMin) {
     <td class="num ${yCls}">${pct(yChg)}</td>
     <td class="num ${oCls}">${pct(openChg)}</td>
     <td class="num ${dCls}">${pct(dayChg)}</td>
+    <td class="num ${brCls}">${pct(buyRet)}</td>
     <td class="num">${volR != null ? num(volR, 2) : '—'}</td>
     <td class="num">${turn != null ? num(turn, 2) + '%' : '—'}</td>
     <td>${limitUp ? `<span class="tag pass">${b('涨停', 'Limit')}</span>` : ''}</td>
@@ -349,7 +353,8 @@ function buildHTML(m) {
   ${closeCallout}
   <div class="table-wrap"><table><thead><tr>
     <th>#</th><th>${b('标的', 'Name')}</th><th>${b('行业', 'Industry')}</th><th>${b('板块', 'Board')}</th>
-    <th>${b('昨收%', 'PrevClose %')}</th><th>${b('今开%', 'Open %')}</th><th>${b('涨跌幅%', 'Chg %')}</th>
+    <th>${b('昨收%', 'PrevClose %')}</th><th>${b('今开%', 'Open %')}</th><th>${b('今收%', 'Close %')}</th>
+    <th>${b('买入收益%', 'Open-buy ret')}</th>
     <th>${b('量比', 'Vol ratio')}</th><th>${b('换手%', 'Turnover %')}</th>
     <th>${b('涨停', 'Limit')}</th><th>${b('可买', 'Buyable')}</th><th>${b('命中', 'Hit')}</th>
   </tr></thead><tbody>${closeRows}</tbody></table></div>` : ''}
