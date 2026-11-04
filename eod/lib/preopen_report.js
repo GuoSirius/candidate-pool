@@ -85,7 +85,7 @@ function rowHtml(c, i, withBreakdown) {
     : '';
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
   const yFlow = fmtFlow(c.yesterdayMainInflow);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}">
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -132,7 +132,7 @@ function closeRowHtml(c, i, sealedMin) {
   const brCls = buyRet == null ? '' : (buyRet >= 0 ? 'up' : 'down');
   const tFlow = fmtFlow(cl.mainInflow);
   const bbCell = billboardCell(cl.billboard);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}">
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}"${cl.billboard ? ' data-billboard="1"' : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -311,11 +311,13 @@ function buildHTML(m) {
 
   const bestCount = listed.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
   const top3Count = listed.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
+  const bbCount = listed.reduce((n, c) => n + (c.billboard ? 1 : 0), 0);
 
   const labelChips = [`<button type="button" class="chip active" data-lfilter="">${b(`全部 ${listed.length}`, `All ${listed.length}`)}</button>`]
     .concat([
       `<button type="button" class="chip" data-lfilter="@best">${b('组内第一', 'Group #1')}<i>${bestCount}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
+      `<button type="button" class="chip" data-lfilter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
     ])
     .concat(labelOrder.map((l) => `<button type="button" class="chip" data-lfilter="${esc(l)}">${b(esc(l), esc(l))}<i>${labelCounts[l]}</i></button>`))
     .join('');
@@ -473,6 +475,7 @@ function buildHTML(m) {
       var okL = true, okS = true;
       if (lFilter === '@best') okL = tr.hasAttribute('data-best');
       else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (lFilter === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (lFilter) okL = tr.getAttribute('data-label') === lFilter;
       if (sFilter) okS = tr.getAttribute('data-sector') === sFilter;
       return okL && okS;
@@ -553,6 +556,7 @@ function buildHTML(m) {
       var okL = true;
       if (clF === '@best') okL = tr.hasAttribute('data-best');
       else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (clF === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (clF) okL = tr.getAttribute('data-label') === clF;
       if (csF) okL = okL && tr.getAttribute('data-sector') === csF;
       return okL;
