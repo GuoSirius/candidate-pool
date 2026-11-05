@@ -2,6 +2,41 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.2.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.1.0...v3.2.0)
+
+### 🚀 新功能 (Features)
+
+- **preopen:** 全量展示解除4处数量限制 + nearMiss折叠表格 + 日志统一eod/logs ([495b6b8](https://github.com/GuoSirius/candidate-pool/commit/495b6b8))
+- **preopen:** 趋势放量通道(门槛制独立轨) + 盘前回填双表轨道过滤 ([94767ae](https://github.com/GuoSirius/candidate-pool/commit/94767ae))
+- **eod:** 龙虎榜游资席位库扩至18个并修复国泰海通新全名匹配 ([eaa0001](https://github.com/GuoSirius/candidate-pool/commit/eaa0001))
+- **preopen:** 上榜游资标注分层 章盟主@一线(1.2亿) 格式 ([54dfb7d](https://github.com/GuoSirius/candidate-pool/commit/54dfb7d))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- **preopen:** 趋势放量通道竞价涨幅下限默认改为-3 ([d188f42](https://github.com/GuoSirius/candidate-pool/commit/d188f42))
+
+### ♻️ 代码重构 (Refactors)
+
+- **eod:** 抽取报告共享格式化与涨停板幅度唯一真相源 ([4dc192b](https://github.com/GuoSirius/candidate-pool/commit/4dc192b))
+
+### 📦 杂项维护 (Chores)
+
+- 盘前报告加上榜过滤chip 2026-11-04 ([66b5ce5](https://github.com/GuoSirius/candidate-pool/commit/66b5ce5))
+- **preopen:** 重新生成历史盘前报告(全量展示+nearMiss折叠+轨道过滤) ([af6fc09](https://github.com/GuoSirius/candidate-pool/commit/af6fc09))
+- 盘前选股 2026-11-05 ([218b493](https://github.com/GuoSirius/candidate-pool/commit/218b493))
+- 盘中机会 2026-11-05 ([619f705](https://github.com/GuoSirius/candidate-pool/commit/619f705))
+- 盘中机会 2026-11-05 ([a2d632d](https://github.com/GuoSirius/candidate-pool/commit/a2d632d))
+
+### 🎨 代码格式 (Style)
+
+- **preopen:** 上榜游资标注改为 名字(金额)@分层 顺序 ([5e3de4c](https://github.com/GuoSirius/candidate-pool/commit/5e3de4c))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v3.1.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.0.2...v3.1.0)
