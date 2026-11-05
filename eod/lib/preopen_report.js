@@ -30,10 +30,12 @@ function capTxt(cap) {
   if (!cap || cap.total == null) return '—';
   return `${num(cap.total, 1)}/${cap.float != null ? num(cap.float, 1) : '—'}亿`;
 }
-/** 上榜单元格：tag + 知名游资标注（如「章盟主 1.2亿」） */
+/** 上榜单元格：tag + 游资标注（分层+金额，如「章盟主@一线(1.2亿)」；旧归档无 tier 只显名+额） */
 function billboardCell(bb) {
   if (!bb) return '';
-  const hotTxt = (bb.hot || []).map((h) => `${esc(h.name)} ${fmtAmt(h.amt)}`).join(' / ');
+  const hotTxt = (bb.hot || [])
+    .map((h) => `${esc(h.name)}${h.tier ? '@' + esc(h.tier) : ''}${h.amt != null ? '(' + fmtAmt(h.amt) + ')' : ''}`)
+    .join(' / ');
   return `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
 }
 /** 金额（元）→ 「1.2亿」「3000万」 */
