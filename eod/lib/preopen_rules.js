@@ -236,9 +236,14 @@ function matchHotMoney(seats) {
   return out;
 }
 
+/** 板性涨停幅度（%）：科创/创业 20、北交 30、主板 10（boardLimitPct 唯一真相源） */
+function limitUpPct(code) {
+  return /^sh68[89]/.test(code) ? 20 : /^sz30/.test(code) ? 20 : /^bj/.test(code) ? 30 : 10;
+}
+
 /** 连续涨停天数（自 rowsDesc[0] 起向前数，几连板；ST 5% 板不适用但候选已排除 ST） */
 function countLimitUpStreak(rowsDesc, code) {
-  const p = /^sh68[89]/.test(code) ? 20 : /^sz30/.test(code) ? 20 : /^bj/.test(code) ? 30 : 10;
+  const p = limitUpPct(code);
   let n = 0;
   for (let i = 0; i + 1 < rowsDesc.length; i++) {
     const r = rowsDesc[i], prev = rowsDesc[i + 1];
@@ -255,7 +260,7 @@ function countLimitUpStreak(rowsDesc, code) {
  * @returns {{streak:number, days:number, count:number}}
  */
 function boardsInfo(rowsDesc, code, windowDays = 10) {
-  const p = /^sh68[89]/.test(code) ? 20 : /^sz30/.test(code) ? 20 : /^bj/.test(code) ? 30 : 10;
+  const p = limitUpPct(code);
   const n = rowsDesc.length;
   const isBoard = (i) => i + 1 < n && rowsDesc[i + 1].close > 0 && rowsDesc[i].close >= rowsDesc[i + 1].close * (1 + p / 100) - 0.005;
   let streak = 0;
@@ -270,6 +275,7 @@ function boardsInfo(rowsDesc, code, windowDays = 10) {
 
 module.exports = {
   clamp01, lin,
+  limitUpPct,
   calcTrend, calcBaseline,
   calcP1, calcP2, calcP3, calcP4, scorePreopen, labelOf,
   countLimitUpStreak, boardsInfo, matchHotMoney, HOT_MONEY_SEATS,

@@ -31,10 +31,7 @@ const OPT = { date: (() => { const i = argv.indexOf('--date'); return i >= 0 ? a
 function log(m) { console.log(m); }
 
 function boardLimitPct(code) {
-  if (/^sh68[89]/.test(code)) return 20;
-  if (/^sz30/.test(code)) return 20;
-  if (/^bj/.test(code)) return 30;
-  return 10;
+  return PR.limitUpPct(code); // 板性唯一真相源在 preopen_rules.js
 }
 
 /** 候选主力净流入（东财 fflow，失败留空）→ { code: 元 } */

@@ -15,10 +15,9 @@
  *     / P1 竞价 / P2 弱转强 / P3 趋势 / 总分 / 标签
  */
 
-/** 双语片段：默认中文，点右上角 EN 切换 */
-function b(zh, en) { return `<span data-zh="${zh}" data-en="${en}">${zh}</span>`; }
-function num(n, d = 2) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(d); }
-function pct(n) { return (n == null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%'; }
+// 共享格式化纯函数（唯一真相源：report_fmt.js；fmtFlow/capTxt/billboardCell/fmtAmt
+// 仅本报告使用，留在本地）
+const { b, num, pct, esc, boardsTxt } = require('./report_fmt');
 /** 主力净流入（元 → 万/亿），涨红跌绿 */
 function fmtFlow(v) {
   if (v == null || isNaN(v)) return { txt: '—', cls: '' };
@@ -30,16 +29,6 @@ function fmtFlow(v) {
 function capTxt(cap) {
   if (!cap || cap.total == null) return '—';
   return `${num(cap.total, 1)}/${cap.float != null ? num(cap.float, 1) : '—'}亿`;
-}
-/** 连板文案：{streak,days,count} → 首板/昨日首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
-function boardsTxt(bd) {
-  if (bd == null) return '';
-  if (typeof bd === 'number') bd = { streak: bd, days: bd, count: bd };
-  const st = bd.streak | 0, N = bd.days | 0, M = bd.count | 0;
-  if (st >= 2) return M > st ? `${st}连板·${N}天${M}板` : `${st}连板`;
-  if (st === 1) return M > 1 ? `首板·${N}天${M}板` : '首板';
-  if (M >= 1) return N === 2 ? '昨日首板' : `${N}天${M}板`;
-  return '';
 }
 /** 上榜单元格：tag + 知名游资标注（如「章盟主 1.2亿」） */
 function billboardCell(bb) {
@@ -53,7 +42,6 @@ function fmtAmt(v) {
   const a = Math.abs(v);
   return (v < 0 ? '-' : '') + (a >= 1e8 ? num(a / 1e8, 1) + '亿' : num(a / 1e4, 0) + '万');
 }
-function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 function trendStr(t) {
   if (!t) return '—';

@@ -16,11 +16,9 @@
 const { BOARD_LABEL } = require('./screen');
 
 /** 双语片段：默认渲染中文，点击右上角按钮切换 */
-function b(zh, en) { return `<span data-zh="${zh}" data-en="${en}">${zh}</span>`; }
-function num(n, d = 2) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(d); }
-function pct(n) { return (n == null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%'; }
+// 共享格式化纯函数（唯一真相源：report_fmt.js；yi 仅本报告使用，留在本地）
+const { b, num, pct, esc, boardsTxt } = require('./report_fmt');
 function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + ' 亿'; }
-function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 /*
  * 五个分项按「这分是谁给的」分两组（2026-10-22 回溯调参后）：
@@ -72,17 +70,6 @@ function scoreHeadSub() {
 }
 
 /** 单条候选的行（用于 TOP 表 / 分组卡片） */
-/** 连板文案：{streak,days,count} → 首板/昨日首板/N连板/N天M板/组合；兼容旧数字（纯连板数） */
-function boardsTxt(bd) {
-  if (bd == null) return '';
-  if (typeof bd === 'number') bd = { streak: bd, days: bd, count: bd };
-  const st = bd.streak | 0, N = bd.days | 0, M = bd.count | 0;
-  if (st >= 2) return M > st ? `${st}连板·${N}天${M}板` : `${st}连板`;
-  if (st === 1) return M > 1 ? `首板·${N}天${M}板` : '首板';
-  if (M >= 1) return N === 2 ? '昨日首板' : `${N}天${M}板`;
-  return '';
-}
-
 function rowHtml(c, i, cfg, withBreakdown) {
   const tail = c.tail || {};
   const warn = cfg.score.tailUpRatioWarn;
