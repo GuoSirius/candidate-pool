@@ -113,7 +113,7 @@ module.exports = {
       maBull: true,             // 均线多头（复用 P3 的 MA5>MA10>MA20>MA60）
       slopeMinPerDay: 0.3,      // 20日斜率下限（%/日）：温和上行即可（低于 P3 起评 0.4）
       volRatio5v20: 1.2,        // 逐步放量：5日均量 ≥ 20日均量 × 1.2
-      auctionChgMin: -1.0,      // 竞价涨幅下限（%）：允许微低开（核心区别于 P1 的 +3%）
+      auctionChgMin: -3.0,      // 竞价涨幅下限（%）：允许低开最多 3%（核心区别于 P1 的 +3%）
       auctionVolRatioMin: 0.01, // 竞价量 / 昨日量 下限：有承接即可
       biasMaxPct: 8,            // 昨收距 MA20 乖离上限（%）：防趋势末端追高；0 = 关闭
       label: '趋势放量',        // P04 独立轨入选时的标签
