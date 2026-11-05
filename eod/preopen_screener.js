@@ -318,12 +318,12 @@ async function run() {
   for (const [sector, list] of bySector) {
     list.sort((a, b) => b.total - a.total);
     list.forEach((c, i) => { c.groupRank = i + 1; c.bestInGroup = i === 0; c.groupSize = list.length; });
-    groups.push({ sector, size: list.length, shown: list.slice(0, cfg.group.maxPerGroup), best: list[0] });
+    groups.push({ sector, size: list.length, shown: list.slice(0, cfg.group.maxPerGroup > 0 ? cfg.group.maxPerGroup : list.length), best: list[0] });
   }
   groups.sort((a, b) => b.best.total - a.best.total);
 
   const result = {
-    candidates, groups, top: candidates.slice(0, cfg.group.topN),
+    candidates, groups, top: candidates.slice(0, cfg.group.topN > 0 ? cfg.group.topN : candidates.length),
     stats: { snapshotCount: quotes.length, baselineCount: baseline.size, candidateCount: candidates.length, groupCount: groups.length, gapCount: gaps.length, rejByReason },
     gaps,
     nearMiss,
@@ -351,7 +351,7 @@ async function emitResult(p) {
   log(`[报告] ${reportFile}`);
 
   if (cfg.notify.enabled && !OPT.noNotify) {
-    const top = result.top.slice(0, cfg.notify.topInMessage);
+    const top = result.top.slice(0, cfg.notify.topInMessage > 0 ? cfg.notify.topInMessage : result.top.length);
     const lines = top.map((c, i) =>
       `${i + 1}. ${c.name}（${c.code.replace(/^[a-z]+/, '')}）${c.sector} · 竞价${c.auctionChgPct?.toFixed(2)}% · 昨${c.yesterdayChgPct?.toFixed(2)}% · ${c.label} · 总分${c.total}`);
     const content = [

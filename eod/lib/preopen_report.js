@@ -258,6 +258,9 @@ const CSS = `  :root, :root[data-theme="light"] {
 function buildHTML(m) {
   const { cfg, tradeDate, scope, anchor, result, marketDate, runner, close } = m;
   const { candidates, groups, top, stats } = result;
+  // ---- 贴线未入选（nearMiss）：总分落在入选线下 10 分内的归档样本，供回溯调参 ----
+  const nearMissList = result.nearMiss || [];
+  const nearMissRows = nearMissList.map((c, i) => rowHtml(c, i, true)).join('');
   // ---- 收盘回填区块（仅收盘回填重渲染时传入 close 才展示）----
   const sealedMin = (cfg.backfill && cfg.backfill.sealedTurnoverMin) || 1.5;
   const showClose = !!close;
@@ -415,6 +418,15 @@ function buildHTML(m) {
     <th>${b('涨停', 'Limit')}</th><th>${b('可买', 'Buyable')}</th><th>${b('命中', 'Hit')}</th>
     <th>${b('连板', 'Streak')}</th><th>${b('上榜', 'List')}</th>
   </tr></thead><tbody id="closeBody">${closeRows}</tbody></table></div>` : ''}
+
+  ${nearMissList.length ? `
+  <h2>${b(`贴线未入选（${nearMissList.length} 只）`, `Near Miss (${nearMissList.length})`)}</h2>
+  <div class="card">
+    <details>
+      <summary>${b(`总分落在入选线（${cfg.score.minTotal}）之下 10 分内的样本，默认折叠，供回溯调「入选线」`, `Scores within 10 points below the admission line (${cfg.score.minTotal}); collapsed by default, for tuning the threshold`)}</summary>
+      <div class="table-wrap"><table><thead>${topHead}</thead><tbody>${nearMissRows}</tbody></table></div>
+    </details>
+  </div>` : ''}
 
   <h2>${b('数据缺口', 'Data Gaps')}</h2>
   <div class="card">

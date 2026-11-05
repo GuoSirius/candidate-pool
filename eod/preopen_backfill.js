@@ -122,10 +122,10 @@ async function run() {
     for (const [sector, list] of bySector) {
       list.sort((a, b) => b.total - a.total);
       list.forEach((c, i) => { c.groupRank = i + 1; c.bestInGroup = i === 0; c.groupSize = list.length; });
-      groups.push({ sector, size: list.length, shown: list.slice(0, cfg.group.maxPerGroup), best: list[0] });
+      groups.push({ sector, size: list.length, shown: list.slice(0, cfg.group.maxPerGroup > 0 ? cfg.group.maxPerGroup : list.length), best: list[0] });
     }
     groups.sort((a, b) => b.best.total - a.best.total);
-    const top = recs.slice(0, cfg.group.topN);
+    const top = recs.slice(0, cfg.group.topN > 0 ? cfg.group.topN : recs.length);
     const rej = doc.meta && doc.meta.rejByReason ? Object.values(doc.meta.rejByReason).reduce((a, b) => a + b, 0) : 0;
     const stats = {
       snapshotCount: (doc.meta && doc.meta.snapshotCount) || 0,

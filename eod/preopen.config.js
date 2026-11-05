@@ -138,8 +138,8 @@ module.exports = {
   // =========================================================================
   group: {
     source: 'industry-map',  // 复用 industry-map 缓存（build_industry_map.js 生成）
-    maxPerGroup: 3,
-    topN: 15,
+    maxPerGroup: 0,          // 每组展示上限；0 = 不限制（2026-11-05 全量展示）
+    topN: 0,                 // Top N 截断；0 = 不限制
     unknownLabel: '未分类',
   },
 
@@ -159,7 +159,7 @@ module.exports = {
   report: {
     title: '盘前选股',
     titleEn: 'Pre-Open Screener',
-    maxRows: 60,
+    maxRows: 0,               // 报告行数上限；0 = 不限制
     showDataGap: true,
   },
 
@@ -168,7 +168,7 @@ module.exports = {
   // =========================================================================
   notify: {
     enabled: true,
-    topInMessage: 8,
+    topInMessage: 0,         // 通知内候选条数上限；0 = 不限制（与报告全量一致）
     alertOnFailure: true,
   },
 
