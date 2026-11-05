@@ -254,8 +254,11 @@ async function run() {
     q.__auctionChgPct = p1.auctionChgPct;
     const p2 = PR.calcP2(q, b, cfg);
     const p3 = PR.calcP3(b, cfg);
+    const p4 = PR.calcP4(q, b, cfg, p1);
     const sc = PR.scorePreopen(p1, p2, p3, cfg);
     const sector = sectorOf(map, q.code) || UNKNOWN;
+    // 双轨：score=打分入选 / p4=仅 P04 通道入选 / both=双轨皆中（报告按轨道过滤）
+    const track = sc.total >= cfg.score.minTotal ? (p4.ok ? 'both' : 'score') : 'p4';
     const rec = {
       code: q.code, name: q.name, sector,
       board: /sh68[89]/.test(q.code) ? '科创板' : /^sz30/.test(q.code) ? '创业板' : /^bj/.test(q.code) ? '北交所' : '主板',
@@ -267,18 +270,22 @@ async function run() {
       boards: b.boards || null,
       capYi: { total: q.totalCapYi, float: q.floatCapYi },
       trend: { maBull: p3.maBull, newHigh20: p3.newHigh20, newHigh60: p3.newHigh60, slope20: p3.slope20 },
-      p1, p2, p3,
-      label: PR.labelOf(p1, p2, p3),
+      p1, p2, p3, p4,
+      track,
+      label: track === 'p4' ? cfg.rules.p4.label : PR.labelOf(p1, p2, p3),
       risk: p2.risk,
       total: +sc.total.toFixed(1),
       scoreItems: { p1: +p1.score.toFixed(2), p2: +p2.score.toFixed(2), p3: +p3.score.toFixed(2) },
       stamp: q.stamp,
     };
-    if (sc.total < cfg.score.minTotal) {
+    if (sc.total < cfg.score.minTotal && !p4.ok) {
       // 贴线样本（2026-10-22 补）：总分落在 [minTotal-10, minTotal) 的进归档 nearMiss 段。
       // 竞价量比等特征无法事后从 K 线重建，被拒样本不留就无法回溯调「入选线」本身。
+      // 2026-11-05 补：P04 通道只差一项门槛的也归档（p4Miss 标记差哪项），供调 P04 门槛。
       if (sc.total >= cfg.score.minTotal - 10) {
         nearMissAll.push(Object.assign(rec, { belowMin: +(cfg.score.minTotal - sc.total).toFixed(1) }));
+      } else if (p4.miss === 1) {
+        nearMissAll.push(Object.assign(rec, { belowMin: +(cfg.score.minTotal - sc.total).toFixed(1), p4Miss: p4.failed[0] }));
       }
       continue;
     }

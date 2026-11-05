@@ -85,7 +85,7 @@ function rowHtml(c, i, withBreakdown) {
     : '';
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
   const yFlow = fmtFlow(c.yesterdayMainInflow);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}>
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -132,7 +132,7 @@ function closeRowHtml(c, i, sealedMin) {
   const brCls = buyRet == null ? '' : (buyRet >= 0 ? 'up' : 'down');
   const tFlow = fmtFlow(cl.mainInflow);
   const bbCell = billboardCell(cl.billboard);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}"${cl.billboard ? ' data-billboard="1"' : ''}>
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${cl.billboard ? ' data-billboard="1"' : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -295,8 +295,8 @@ function buildHTML(m) {
     <tr>${SCORE_COLS.map(([, zh, w]) => `<th class="grp-sub">${b(`${zh} · ${w}`, `${zh} · ${w}`)}</th>`).join('')}</tr>`;
 
   const scoreNote = `<p class="score-note" id="scoreNote">${b(
-    `信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。`,
-    `Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total.`)}</p>`;
+    `信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。另有 <b>P04 趋势放量通道</b>（门槛制独立轨，不打分：均线多头 + 温和斜率 + 逐步放量 + 竞价有承接、允许微低开），与打分轨并集入选，可用标签区「P04 通道 / 打分轨」过滤。`,
+    `Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total. A separate <b>P04 trend-volume track</b> (gate-based, unscored: MA bull + mild slope + building volume + auction support incl. slight gap-down) joins the score track; filter via the P04/Score chips.`)}</p>`;
 
   // ---- 候选明细 + 工具栏（标签过滤 + 行业过滤 + 双视图 + 分项开关）----
   const listed = candidates.slice(0, cfg.report.maxRows > 0 ? cfg.report.maxRows : candidates.length);
@@ -315,12 +315,18 @@ function buildHTML(m) {
   const bestCount = listed.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
   const top3Count = listed.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
   const bbCount = listed.reduce((n, c) => n + (c.billboard ? 1 : 0), 0);
+  // 轨道计数：p4/both 算 P04 通道；score/both 算打分轨（历史数据无 track 字段 → 默认 score）
+  const trackOf = (c) => c.track || 'score';
+  const p4Count = listed.reduce((n, c) => n + (trackOf(c) !== 'score' ? 1 : 0), 0);
+  const scoreCount = listed.reduce((n, c) => n + (trackOf(c) !== 'p4' ? 1 : 0), 0);
 
   const labelChips = [`<button type="button" class="chip active" data-lfilter="">${b(`全部 ${listed.length}`, `All ${listed.length}`)}</button>`]
     .concat([
       `<button type="button" class="chip" data-lfilter="@best">${b('组内第一', 'Group #1')}<i>${bestCount}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
+      `<button type="button" class="chip" data-lfilter="@p4">${b('P04 通道', 'P04 track')}<i>${p4Count}</i></button>`,
+      `<button type="button" class="chip" data-lfilter="@score">${b('打分轨 P1-P3', 'Score track')}<i>${scoreCount}</i></button>`,
     ])
     .concat(labelOrder.map((l) => `<button type="button" class="chip" data-lfilter="${esc(l)}">${b(esc(l), esc(l))}<i>${labelCounts[l]}</i></button>`))
     .join('');
@@ -488,6 +494,8 @@ function buildHTML(m) {
       if (lFilter === '@best') okL = tr.hasAttribute('data-best');
       else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
       else if (lFilter === '@billboard') okL = tr.hasAttribute('data-billboard');
+      else if (lFilter === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
+      else if (lFilter === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
       else if (lFilter) okL = tr.getAttribute('data-label') === lFilter;
       if (sFilter) okS = tr.getAttribute('data-sector') === sFilter;
       return okL && okS;
@@ -569,6 +577,8 @@ function buildHTML(m) {
       if (clF === '@best') okL = tr.hasAttribute('data-best');
       else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
       else if (clF === '@billboard') okL = tr.hasAttribute('data-billboard');
+      else if (clF === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
+      else if (clF === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
       else if (clF) okL = tr.getAttribute('data-label') === clF;
       if (csF) okL = okL && tr.getAttribute('data-sector') === csF;
       return okL;

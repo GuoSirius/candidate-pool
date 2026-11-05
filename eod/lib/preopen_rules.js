@@ -95,7 +95,10 @@ function calcBaseline(kline, code, cfg) {
     if (prior5.length >= 3) yesterdayVolRatio = y.vol / (prior5.reduce((a, r) => a + r.vol, 0) / prior5.length);
   }
   const trend = calcTrend(rows, cfg);
-  return { code, yesterdayChgPct, yesterdayVol, yesterdayVolRatio, boards: boardsInfo(rows, code), trend };
+  // 量能均线（P04 逐步放量用）：基准日（含）往前 5 / 20 日均量
+  const volMa5 = rows.length >= 5 ? rows.slice(0, 5).reduce((a, r) => a + (r.vol || 0), 0) / 5 : null;
+  const volMa20 = rows.length >= 20 ? rows.slice(0, 20).reduce((a, r) => a + (r.vol || 0), 0) / 20 : null;
+  return { code, yesterdayChgPct, yesterdayVol, yesterdayVolRatio, volMa5, volMa20, boards: boardsInfo(rows, code), trend };
 }
 
 // ---------- P01 竞价强势 ----------
@@ -167,6 +170,30 @@ function calcP3(baseline, cfg) {
   // 权重：多头 0.4 + 新高 0.3(20日0.3+60日0.2取含) + 斜率 0.3
   const score = (t.maBull ? 0.4 : 0) + Math.min(0.3, sHigh) + 0.3 * sSlope;
   return { ...t, score: clamp01(score), ok: !!t.maBull };
+}
+
+// ---------- P04 趋势放量通道（门槛制独立轨，不打分）----------
+// 与 P1-P3 打分轨并集入选：均线多头 + 温和上行 + 逐步放量 + 竞价有承接（允许微低开）+ 防趋势末端乖离。
+// 全部基于前一日 K 线基线与竞价快照；差一项门槛 → 调用方归档 nearMiss 供调参。
+function calcP4(quote, baseline, cfg, p1) {
+  const p = cfg.rules.p4;
+  const t = (baseline && baseline.trend) || {};
+  const gates = {};
+  gates.trend = p.maBull ? !!t.maBull : !!(t.ma5 > t.ma10 && t.ma10 > t.ma20);
+  gates.slope = t.slope20 != null && t.slope20 >= p.slopeMinPerDay;
+  gates.volume = !!(baseline && baseline.volMa5 != null && baseline.volMa20 > 0 && baseline.volMa5 >= p.volRatio5v20 * baseline.volMa20);
+  const aChg = quote && quote.__auctionChgPct != null ? quote.__auctionChgPct : null;
+  const aVol = p1 ? p1.auctionVolRatio : null;
+  gates.auction = aChg != null && aVol != null && aChg >= p.auctionChgMin && aVol >= p.auctionVolRatioMin;
+  let biasPct = null;
+  if (p.biasMaxPct > 0 && t.ma20 > 0 && quote && quote.prevClose > 0) {
+    biasPct = (quote.prevClose / t.ma20 - 1) * 100;
+    gates.bias = biasPct <= p.biasMaxPct;
+  } else {
+    gates.bias = true;
+  }
+  const failed = Object.keys(gates).filter((k) => !gates[k]);
+  return { gates, biasPct: biasPct != null ? +biasPct.toFixed(2) : null, miss: failed.length, failed, ok: failed.length === 0 };
 }
 
 // ---------- 综合打分 ----------
@@ -244,6 +271,6 @@ function boardsInfo(rowsDesc, code, windowDays = 10) {
 module.exports = {
   clamp01, lin,
   calcTrend, calcBaseline,
-  calcP1, calcP2, calcP3, scorePreopen, labelOf,
+  calcP1, calcP2, calcP3, calcP4, scorePreopen, labelOf,
   countLimitUpStreak, boardsInfo, matchHotMoney, HOT_MONEY_SEATS,
 };
