@@ -12,7 +12,7 @@ function todayRange() {
   return `${iso(yesterday)}~${iso(d)}`;
 }
 
-async function fetchAnnouncements(limit, titleKeys) {
+async function fetchAnnouncements(limit, titleKeys, excludeKeys = []) {
   const body = {
     pageNum: 1, pageSize: 50, column: 'szse', tabName: 'fulltext', plate: '', stock: '',
     searchkey: '', secid: '', category: '', trade: '', seDate: todayRange(),
@@ -25,17 +25,20 @@ async function fetchAnnouncements(limit, titleKeys) {
   const j = JSON.parse(txt);
   const list = j.announcements || [];
   return list
-    .filter((a) => titleKeys.some((k) => (a.announcementTitle || '').includes(k)))
+    .map((a) => (a.announcementTitle || '').replace(/<[^>]+>/g, ''))
+    .filter((t) => titleKeys.some((k) => t.includes(k)))
+    .filter((t) => !excludeKeys.some((k) => t.includes(k))) // 中介/例行披露（法律意见书、保荐、审计等）后置排除
     .slice(0, limit)
-    .map((a) => {
+    .map((title, i) => {
+      const src = list.find((a) => (a.announcementTitle || '').replace(/<[^>]+>/g, '') === title);
       // 公司名一般在标题最前（"公司名：关于……的公告"）
-      const name = (a.announcementTitle || '').split(/[：:]/)[0].trim();
+      const name = title.split(/[：:]/)[0].trim();
       return {
-        id: `cninfo-${a.announcementId}`,
-        code: a.secCode || '', name,
-        timeMs: a.announcementTime || 0,
-        title: (a.announcementTitle || '').replace(/<[^>]+>/g, ''),
-        url: a.adjunctUrl ? `http://static.cninfo.com.cn/${a.adjunctUrl}` : '',
+        id: `cninfo-${(src && src.announcementId) || i}`,
+        code: (src && src.secCode) || '', name,
+        timeMs: (src && src.announcementTime) || 0,
+        title,
+        url: src && src.adjunctUrl ? `http://static.cninfo.com.cn/${src.adjunctUrl}` : '',
       };
     });
 }

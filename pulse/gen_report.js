@@ -2,6 +2,8 @@
 /*
  * pulse/gen_report.js —— 生成单文件 HTML 报告（零外部资源，风格对齐现有报告）
  */
+const cfg = require('./config');
+
 const esc = (s) => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -44,7 +46,7 @@ function buildReport(snapshot, analysis) {
         ${b.pct != null ? `<span class="muted">涨 ${b.pct}%</span>` : ''}
         ${b.flow != null ? `<span class="muted">主力 ${b.flow} 亿</span>` : ''}</div>
       ${b.leaders && b.leaders.length ? `<div class="news"><span class="tag">领涨股</span>${b.leaders.map((l) => `${esc(l.name)}<span class="${(l.pct || 0) >= 0 ? 'up' : 'down'}">${l.pct != null ? l.pct + '%' : ''}</span>`).join(' · ')}</div>` : ''}
-      ${b.items.map((n) => `<div class="news"><span class="time">${fmtBJ(n.timeMs)}</span><span class="tag">${esc(n.source)}</span>${esc(n.text).slice(0, 160)}</div>`).join('')}
+      ${b.items.map((n) => `<div class="news"><span class="time">${fmtBJ(n.timeMs)}</span><span class="tag">${esc(cfg.SOURCE_LABELS[n.source] || n.source)}</span>${esc(n.text).slice(0, 160)}</div>`).join('')}
     </div>`).join('');
 
   const stockRows = hotStocks.map((s, i) => `

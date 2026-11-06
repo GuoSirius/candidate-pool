@@ -32,10 +32,23 @@ function analyze(snapshot) {
   const byBoard = new Map();  // boardName -> { sources:Set, weight, items:[], pct, flow, lead, code }
   const stockHits = new Map(); // stockName -> { code, sector, sources:Set, boards:Set }
 
-  for (const n of deduped) {
+  // 巨潮公告并入评分流：官方信源（权重最高、计入多源验证），secCode 可直连个股
+  const items = [
+    ...deduped,
+    ...snapshot.announces.map((a) => ({ source: 'cninfo', timeMs: a.timeMs, title: a.title, text: `${a.name} ${a.title}`, secCode: a.code })),
+  ];
+
+  // 巨潮 secCode（6 位）→ 行业映射键（带交易所前缀）
+  const codeKey = (code) => /^6/.test(code) ? `sh${code}` : /^(0|3)/.test(code) ? `sz${code}` : /^(4|8|9)/.test(code) ? `bj${code}` : null;
+
+  for (const n of items) {
+    if (n.timeMs < cutoff) continue; // 公告可能来自昨日，窗口外不计
+    // 时间衰减：越旧权重越低（24h 后只剩 25%），热度=新近度
+    const ageH = Math.max(0, (snapshot.runAt - n.timeMs) / 3600e3);
+    const w = (cfg.SOURCE_WEIGHTS[n.source] || 0.5) * Math.max(0.25, 1 - ageH / cfg.WEIGHT_DECAY_HOURS);
     const hit = matchText(`${n.title ? n.title + ' ' : ''}${n.text}`, dict);
-    const w = cfg.SOURCE_WEIGHTS[n.source] || 0.5;
     const touch = (name, meta) => {
+      if (cfg.NOISE_BOARDS.includes(name)) return; // 属性/风格类伪板块不计分
       if (!byBoard.has(name)) byBoard.set(name, { name, sources: new Set(), weight: 0, items: [], ...meta });
       const b = byBoard.get(name);
       // 板块行情信息后到（sector 兜底先占位）时回填
@@ -51,6 +64,17 @@ function analyze(snapshot) {
       const s = stockHits.get(sn.name);
       s.sources.add(n.source);
       for (const bn of hit.boards) s.boards.add(bn);
+    }
+    // 公告：secCode 直连个股（公司简称可能不在词典/简称有差异，代码最可靠）
+    if (n.secCode) {
+      const key = codeKey(n.secCode);
+      const s0 = key && industryMap.stocks[key];
+      if (s0) {
+        if (!stockHits.has(s0.name)) stockHits.set(s0.name, { name: s0.name, code: key, sector: s0.sector || '', sources: new Set(), boards: new Set() });
+        const s = stockHits.get(s0.name);
+        s.sources.add(n.source);
+        if (s0.sector) s.boards.add(s0.sector);
+      }
     }
     // 未命中任何板块的行业兜底：个股命中的行业
     for (const sec of hit.sectors) {
@@ -85,6 +109,7 @@ function analyze(snapshot) {
   const newsBoardNames = new Set(hotBoards.map((b) => b.name));
   for (const b of snapshot.boards) {
     if (newsBoardNames.has(b.name)) continue;
+    if (cfg.NOISE_BOARDS.includes(b.name)) continue; // 属性/风格类伪板块不入纯行情异动榜
     const pct = b.pct, flow = flowYi(b.flow);
     if (pct !== null && pct >= cfg.PCT_ALERT) {
       hotBoards.push({

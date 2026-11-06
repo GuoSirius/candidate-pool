@@ -28,7 +28,7 @@ async function collect() {
     guard('jin10', () => news.fetchJin10(N)),
     guard('wscn', () => news.fetchWscn(N)),
     guard('boards', () => market.fetchBoards()),
-    guard('cninfo', () => announce.fetchAnnouncements(30, cfg.CNINFO_TITLE_KEYS)),
+    guard('cninfo', () => announce.fetchAnnouncements(30, cfg.CNINFO_TITLE_KEYS, cfg.CNINFO_EXCLUDE_KEYS)),
   ]);
 
   const sourcesStatus = {
