@@ -78,7 +78,7 @@ function buildState(analysis, prevState) {
 
 async function round() {
   const state = store.loadState();
-  const { snapshot, analysis } = await runOnce();
+  const { snapshot, analysis } = await runOnce({ archive: false }); // watch 轮次只更新 latest，不归档
   // 首轮（无基准状态）只建基准不通知，避免启动即弹屏
   const events = state.updatedAt ? diffEvents(analysis, state) : [];
   store.saveState(buildState(analysis, state));

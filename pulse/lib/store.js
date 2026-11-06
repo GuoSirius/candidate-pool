@@ -36,9 +36,15 @@ function pruneDays(base, keep) {
 function saveSnapshot(snapshot) {
   const file = path.join(dayDir(cfg.DATA_DIR, snapshot.runAt), `snap-${bjTime(snapshot.runAt)}.json`);
   fs.writeFileSync(file, JSON.stringify(snapshot));
-  fs.writeFileSync(path.join(cfg.DATA_DIR, 'latest.json'), JSON.stringify(snapshot));
+  updateLatest(snapshot);
   pruneDays(cfg.DATA_DIR, cfg.KEEP_SNAPSHOTS);
   return file;
+}
+
+/** 只更新 latest.json（watch 轮次用，避免高频归档撑爆日期目录） */
+function updateLatest(snapshot) {
+  ensureDir(cfg.DATA_DIR);
+  fs.writeFileSync(path.join(cfg.DATA_DIR, 'latest.json'), JSON.stringify(snapshot));
 }
 
 function loadLatest() {
@@ -67,4 +73,4 @@ function saveState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state));
 }
 
-module.exports = { saveSnapshot, loadLatest, saveReport, loadState, saveState };
+module.exports = { saveSnapshot, updateLatest, loadLatest, saveReport, loadState, saveState };

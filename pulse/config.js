@@ -14,9 +14,9 @@ module.exports = {
   REPORT_DIR,
 
   // 新闻回看窗口（小时）：只统计窗口内的消息
-  LOOKBACK_HOURS: 12,
-  // 单源单轮最多条数
-  NEWS_LIMIT: 40,
+  LOOKBACK_HOURS: 24,
+  // 单源单轮最多条数（金十源上限约 50）
+  NEWS_LIMIT: 60,
 
   // 信源权重（交叉验证计分用）
   SOURCE_WEIGHTS: { sina: 1.0, em: 1.0, jin10: 0.8, wscn: 0.8 },
@@ -35,11 +35,11 @@ module.exports = {
   NOTIFY_MIN_SCORE: 8,         // 板块热度分下限
   NOTIFY_PCT_DELTA: 1.0,       // 相比上一轮涨幅跳升（百分点）
   NOTIFY_NEW_VERIFY: 2,        // 新话题需 >=2 源验证
-  NOTIFY_COOLDOWN_MIN: 60,     // 同板块通知冷却（分钟），防止榜缘进出反复弹
+  NOTIFY_COOLDOWN_MIN: 20,     // 同板块通知冷却（分钟），防止榜缘进出反复弹
 
-  // 保留上限：超量清理旧快照/旧报告
+  // 保留上限：超量清理旧快照/旧报告（单位：天，按日期目录滚动）
   KEEP_SNAPSHOTS: 60,
-  KEEP_REPORTS: 40,
+  KEEP_REPORTS: 60,
 
   // 巨潮公告标题关键词过滤（只保留事件类，过滤海量例行披露）
   CNINFO_TITLE_KEYS: ['中标', '回购', '增持', '减持', '重组', '并购', '终止', '问询', '业绩', '预盈', '预亏', '涨停', '异动', '立案', '处罚', '澄清', '签订', '合同', '战略合作', '分红', '停牌', '复牌', '摘牌', '退市', '立案', '警示'],

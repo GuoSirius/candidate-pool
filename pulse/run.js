@@ -8,13 +8,20 @@ const { analyze } = require('./analyze');
 const { buildReport } = require('./gen_report');
 const store = require('./lib/store');
 
-async function runOnce() {
+/**
+ * 单次全流程：采集 → 分析 → 落盘 → 报告
+ * @param {object} opts
+ *   - archive {boolean=true} 是否归档日期快照/报告；watch 轮次传 false（只更新 latest，
+ *     避免每 3 分钟归档一张近重复快照把日期目录撑爆）
+ */
+async function runOnce(opts = {}) {
+  const { archive = true } = opts;
   const snapshot = await collect();
   const analysis = analyze(snapshot);
   await enrichLeaders(analysis.hotBoards); // 热点板块补充 3-5 只领涨股
-  const snapFile = store.saveSnapshot(snapshot);
+  const snapFile = archive ? store.saveSnapshot(snapshot) : (store.updateLatest(snapshot), null);
   const html = buildReport(snapshot, analysis);
-  const reportFile = store.saveReport(html, snapshot.runAt);
+  const reportFile = archive ? store.saveReport(html, snapshot.runAt) : null;
   return { snapshot, analysis, snapFile, reportFile };
 }
 
