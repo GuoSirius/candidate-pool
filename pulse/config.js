@@ -32,9 +32,10 @@ module.exports = {
   WATCH_ACTIVE_FROM: '08:30',  // 交易日活跃窗口（本地时间），窗口外静默
   WATCH_ACTIVE_TO: '15:35',
   // 通知阈值：新增热点需满足其一
-  NOTIFY_MIN_SCORE: 6,         // 板块热度分下限
+  NOTIFY_MIN_SCORE: 8,         // 板块热度分下限
   NOTIFY_PCT_DELTA: 1.0,       // 相比上一轮涨幅跳升（百分点）
   NOTIFY_NEW_VERIFY: 2,        // 新话题需 >=2 源验证
+  NOTIFY_COOLDOWN_MIN: 60,     // 同板块通知冷却（分钟），防止榜缘进出反复弹
 
   // 保留上限：超量清理旧快照/旧报告
   KEEP_SNAPSHOTS: 60,
