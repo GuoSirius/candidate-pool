@@ -7,6 +7,7 @@
  *   - 行情异动：涨幅相对上轮跳升（明确的盘中加速信号）
  * 防打扰：同板块通知冷却 NOTIFY_COOLDOWN_MIN 分钟（防榜缘进出反复弹）；首轮只建基准不通知。
  * 交易日活跃窗口外（默认 08:30–15:35）静默不请求。
+ * 每轮打印结构化摘要（信源/消息面/热点/通知），ANSI 颜色仅 TTY（重定向日志自动纯文本）。
  * 用法：node pulse/watch.js（手动启动，Ctrl+C 退出）
  */
 const dayjs = require('dayjs');
@@ -14,8 +15,10 @@ const cfg = require('./config');
 const { runOnce } = require('./run');
 const { notify } = require('./notify_win');
 const store = require('./lib/store');
+const ui = require('./lib/ui');
 
-const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
+const now = () => dayjs().format('HH:mm:ss');
+let roundNo = 0;
 
 /** 交易日活跃窗口判断（周一~周五） */
 function isActive() {
@@ -31,10 +34,10 @@ function flowText(flow) {
   return flow > 0 ? ` 主力净流入${flow}亿` : ` 主力净流出${Math.abs(flow)}亿`;
 }
 
-/** 涨跌文案：带方向符号 */
+/** 涨跌文案：带方向箭头 ▲▼（GBK 安全，Toast 也能正常显示） */
 function pctText(pct) {
   if (pct == null) return '';
-  return ` 涨${pct > 0 ? '+' : ''}${pct}%`;
+  return ` 涨${pct >= 0 ? '▲' : '▼'}${Math.abs(pct)}%`;
 }
 
 /**
@@ -76,31 +79,49 @@ function buildState(analysis, prevState) {
   };
 }
 
+/** 每轮结构化摘要（分块 + 着色，重定向日志时自动纯文本） */
+function printRound({ snapshot, analysis, events }, costS, hasError) {
+  roundNo++;
+  const failed = Object.values(snapshot.sourcesStatus).filter((v) => !v.startsWith('OK')).length;
+  console.log(`${ui.gray(ui.LINE)}`);
+  console.log(` ${ui.cyan(now())}  ${ui.bold('消息脉搏')} 第${roundNo}轮  ${failed ? ui.red(`${failed} 源失败`) : ui.green('信源全通')}  ${ui.gray(`${costS}s`)}`);
+  console.log(` ${ui.gray('信源')}   ${ui.sourcesLine(snapshot.sourcesStatus, { boards: '板块', ...cfg.SOURCE_LABELS })}`);
+  console.log(` ${ui.gray('消息面')} ${analysis.windowCount} 条 / ${analysis.lookbackHours}h   ${ui.gray('公告')} ${snapshot.announces.length} 条`);
+  console.log(` ${ui.gray('热点')}   ${ui.hotText(analysis.hotBoards, 4) || ui.gray('无')}`);
+  if (events.length) {
+    console.log(` ${ui.gray('通知')}   ${events.length} 条新异动`);
+    for (const e of events) console.log(`          ${ui.colorEvent(e)}`);
+  }
+  if (hasError) console.log(` ${ui.red('本轮执行有错误，详见上方日志')}`);
+}
+
 async function round() {
   const state = store.loadState();
-  const { snapshot, analysis } = await runOnce(); // watch 轮次同样归档快照/报告
+  const { snapshot, analysis } = await runOnce();
   // 首轮（无基准状态）只建基准不通知，避免启动即弹屏
   const events = state.updatedAt ? diffEvents(analysis, state) : [];
   store.saveState(buildState(analysis, state));
   if (events.length) {
     notify(`A股消息脉搏 · ${events.length} 条新异动`, events.slice(0, 3).join('；'));
   }
-  return { events, snapshot };
+  return { events, snapshot, analysis };
 }
 
 if (require.main === module) (async () => {
-  console.log(`[watch] 启动：每轮完成后计时 ${cfg.WATCH_INTERVAL_MIN} 分钟；活跃窗口 ${cfg.WATCH_ACTIVE_FROM}-${cfg.WATCH_ACTIVE_TO}（工作日）`);
+  console.log(`${ui.gray(ui.LINE)}`);
+  console.log(` ${ui.bold('A股消息脉搏 · 常驻监听')}  每轮完成后计时 ${cfg.WATCH_INTERVAL_MIN} 分钟`);
+  console.log(` ${ui.gray('活跃窗口')} ${cfg.WATCH_ACTIVE_FROM}-${cfg.WATCH_ACTIVE_TO}（工作日）  ${ui.gray('归档')} pulse/{data,report}  ${ui.gray('停止')} Ctrl+C`);
   for (;;) {
     if (!isActive()) {
-      console.log(`[${now()}] 窗口外静默，${cfg.WATCH_INTERVAL_MIN} 分钟后复查`);
+      console.log(` ${ui.dim(`${now()}  窗口外静默，${cfg.WATCH_INTERVAL_MIN} 分钟后复查`)}`);
       await new Promise((r) => setTimeout(r, cfg.WATCH_INTERVAL_MIN * 60e3));
       continue;
     }
     const t0 = Date.now();
     let ok = true;
-    try { await round(); } catch (e) { ok = false; console.error(`[${now()}] 本轮失败: ${e.message}`); }
-    const cost = ((Date.now() - t0) / 1000).toFixed(1);
-    console.log(`[${now()}] 轮次完成（${cost}s）${ok ? '' : ' [有错误]'}，${cfg.WATCH_INTERVAL_MIN} 分钟后开始下一轮`);
+    let result;
+    try { result = await round(); } catch (e) { ok = false; console.error(` ${ui.red(`[${now()}] 本轮失败: ${e.message}`)}`); }
+    if (result) printRound(result, ((Date.now() - t0) / 1000).toFixed(1), !ok);
     await new Promise((r) => setTimeout(r, cfg.WATCH_INTERVAL_MIN * 60e3));
   }
 })();

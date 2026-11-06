@@ -7,6 +7,8 @@ const { collect, enrichLeaders } = require('./collect');
 const { analyze } = require('./analyze');
 const { buildReport } = require('./gen_report');
 const store = require('./lib/store');
+const ui = require('./lib/ui');
+const cfg = require('./config');
 
 /**
  * 单次全流程：采集 → 分析 → 落盘 → 报告
@@ -28,13 +30,13 @@ async function runOnce(opts = {}) {
 if (require.main === module) {
   runOnce()
     .then(({ snapshot, analysis, snapFile, reportFile }) => {
-      console.log(`[pulse] 完成 ${snapshot.runAtText}`);
-      console.log(`[pulse] 信源: ${Object.entries(snapshot.sourcesStatus).map(([k, v]) => `${k}=${v}`).join(' | ')}`);
-      const top = analysis.hotBoards.slice(0, 5)
-        .map((b) => `${b.name}(分${b.score} ${b.verify}级)`).join(', ');
-      console.log(`[pulse] 热点: ${top || '无'}`);
-      console.log(`[pulse] 快照: ${snapFile}`);
-      console.log(`[pulse] 报告: ${reportFile}`);
+      console.log(`${ui.gray(ui.LINE)}`);
+      console.log(` ${ui.cyan(snapshot.runAtText.slice(11))}  ${ui.bold('消息脉搏')} · 手动执行`);
+      console.log(` ${ui.gray('信源')}   ${ui.sourcesLine(snapshot.sourcesStatus, { boards: '板块', ...cfg.SOURCE_LABELS })}`);
+      console.log(` ${ui.gray('消息面')} ${analysis.windowCount} 条 / ${analysis.lookbackHours}h   ${ui.gray('公告')} ${snapshot.announces.length} 条`);
+      console.log(` ${ui.gray('热点')}   ${ui.hotText(analysis.hotBoards, 5) || ui.gray('无')}`);
+      console.log(` ${ui.gray('快照')}   ${snapFile}`);
+      console.log(` ${ui.gray('报告')}   ${ui.cyan(reportFile)}`);
     })
     .catch((e) => { console.error('[pulse] 失败:', e); process.exitCode = 1; });
 }
