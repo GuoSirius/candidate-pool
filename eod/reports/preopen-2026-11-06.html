@@ -626,6 +626,495 @@
   
 
   
+  <h2><span data-zh="收盘回填（开盘买入当日验证）" data-en="Close Backfill (open-buy verification)">收盘回填（开盘买入当日验证）</span></h2>
+  <div class="callout">
+    <h3><span data-zh="收盘回填结论（开盘买入当日验证）" data-en="Close-backfill Summary (open-buy verification)">收盘回填结论（开盘买入当日验证）</span></h3>
+    <ul>
+      <li><span data-zh="入选 26 只 · 命中 10 只（当日涨幅 ≥ 2%）· 可买入 25 只（涨停 8 只：开板可买 6 / 一字 2，其中放量可买 1 / 很难买入 1）" data-en="26 picked · 10 hit (day chg ≥ 2%) · buyable 25 (limit-up 8: opened-buyable 6 / sealed 2, volume-buyable 1 / hard 1)">入选 26 只 · 命中 10 只（当日涨幅 ≥ 2%）· 可买入 25 只（涨停 8 只：开板可买 6 / 一字 2，其中放量可买 1 / 很难买入 1）</span></li>
+      <li><span data-zh="买入机会：非涨停可直接开盘买入；涨停开板（盘中曾跌破涨停价）开板可买；一字涨停但放量（换手 ≥ 1.5%）放量可买（可涨停价排板成交）；缩量一字很难买入。" data-en="Buyability: non-limit open-buyable; limit-up opened (intraday dip below limit) opened-buyable; sealed limit-up with volume (turnover ≥ 1.5%) volume-buyable (queueable at limit); thin sealed limit-up hard to buy.">买入机会：非涨停可直接开盘买入；涨停开板（盘中曾跌破涨停价）开板可买；一字涨停但放量（换手 ≥ 1.5%）放量可买（可涨停价排板成交）；缩量一字很难买入。</span></li>
+    </ul>
+  </div>
+  <div class="toolbar">
+    <div class="toolrow"><span class="cap"><span data-zh="标签" data-en="Label">标签</span></span><span class="chips" id="closeLchips"><button type="button" class="chip active" data-lfilter=""><span data-zh="全部 26" data-en="All 26">全部 26</span></button><button type="button" class="chip" data-lfilter="@best"><span data-zh="组内第一" data-en="Group #1">组内第一</span><i>22</i></button><button type="button" class="chip" data-lfilter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>26</i></button><button type="button" class="chip" data-lfilter="@billboard"><span data-zh="上榜" data-en="On list">上榜</span><i>4</i></button><button type="button" class="chip" data-lfilter="@p4"><span data-zh="P04 通道" data-en="P04 track">P04 通道</span><i>16</i></button><button type="button" class="chip" data-lfilter="@score"><span data-zh="打分轨 P1-P3" data-en="Score track">打分轨 P1-P3</span><i>10</i></button><button type="button" class="chip" data-lfilter="超预期"><span data-zh="超预期" data-en="超预期">超预期</span><i>7</i></button><button type="button" class="chip" data-lfilter="弱转强·符合"><span data-zh="弱转强·符合" data-en="弱转强·符合">弱转强·符合</span><i>3</i></button><button type="button" class="chip" data-lfilter="趋势放量"><span data-zh="趋势放量" data-en="趋势放量">趋势放量</span><i>16</i></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="行业" data-en="Industry">行业</span></span><span class="chips" id="closeSchips"><button type="button" class="chip active" data-sfilter=""><span data-zh="全部行业" data-en="All sectors">全部行业</span></button><button type="button" class="chip" data-sfilter="纺织制造"><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span><i>1</i></button><button type="button" class="chip" data-sfilter="光伏设备"><span data-zh="光伏设备" data-en="光伏设备">光伏设备</span><i>3</i></button><button type="button" class="chip" data-sfilter="休闲食品"><span data-zh="休闲食品" data-en="休闲食品">休闲食品</span><i>1</i></button><button type="button" class="chip" data-sfilter="消费电子"><span data-zh="消费电子" data-en="消费电子">消费电子</span><i>1</i></button><button type="button" class="chip" data-sfilter="工业金属"><span data-zh="工业金属" data-en="工业金属">工业金属</span><i>1</i></button><button type="button" class="chip" data-sfilter="专用设备"><span data-zh="专用设备" data-en="专用设备">专用设备</span><i>1</i></button><button type="button" class="chip" data-sfilter="照明设备Ⅱ"><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="通信服务"><span data-zh="通信服务" data-en="通信服务">通信服务</span><i>1</i></button><button type="button" class="chip" data-sfilter="软件开发"><span data-zh="软件开发" data-en="软件开发">软件开发</span><i>1</i></button><button type="button" class="chip" data-sfilter="出版"><span data-zh="出版" data-en="出版">出版</span><i>1</i></button><button type="button" class="chip" data-sfilter="电视广播Ⅱ"><span data-zh="电视广播Ⅱ" data-en="电视广播Ⅱ">电视广播Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="白酒Ⅱ"><span data-zh="白酒Ⅱ" data-en="白酒Ⅱ">白酒Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="炼化及贸易"><span data-zh="炼化及贸易" data-en="炼化及贸易">炼化及贸易</span><i>3</i></button><button type="button" class="chip" data-sfilter="铁路公路"><span data-zh="铁路公路" data-en="铁路公路">铁路公路</span><i>1</i></button><button type="button" class="chip" data-sfilter="医药商业"><span data-zh="医药商业" data-en="医药商业">医药商业</span><i>1</i></button><button type="button" class="chip" data-sfilter="饮料乳品"><span data-zh="饮料乳品" data-en="饮料乳品">饮料乳品</span><i>1</i></button><button type="button" class="chip" data-sfilter="IT服务Ⅱ"><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="服装家纺"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span><i>1</i></button><button type="button" class="chip" data-sfilter="专业服务"><span data-zh="专业服务" data-en="专业服务">专业服务</span><i>1</i></button><button type="button" class="chip" data-sfilter="航运港口"><span data-zh="航运港口" data-en="航运港口">航运港口</span><i>1</i></button><button type="button" class="chip" data-sfilter="房屋建设Ⅱ"><span data-zh="房屋建设Ⅱ" data-en="房屋建设Ⅱ">房屋建设Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="证券Ⅱ"><span data-zh="证券Ⅱ" data-en="证券Ⅱ">证券Ⅱ</span><i>1</i></button></span></div>
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>#</th><th><span data-zh="标的" data-en="Name">标的</span></th><th><span data-zh="行业" data-en="Industry">行业</span></th><th><span data-zh="板块" data-en="Board">板块</span></th>
+    <th><span data-zh="昨收%" data-en="PrevClose %">昨收%</span></th><th><span data-zh="今开%" data-en="Open %">今开%</span></th><th><span data-zh="今收%" data-en="Close %">今收%</span></th>
+    <th><span data-zh="买入收益%" data-en="Open-buy ret">买入收益%</span></th>
+    <th><span data-zh="今日净流入" data-en="Inflow">今日净流入</span></th><th><span data-zh="市值/流通" data-en="Cap/FLOAT">市值/流通</span></th>
+    <th><span data-zh="量比" data-en="Vol ratio">量比</span></th><th><span data-zh="换手%" data-en="Turnover %">换手%</span></th>
+    <th><span data-zh="涨停" data-en="Limit">涨停</span></th><th><span data-zh="可买" data-en="Buyable">可买</span></th><th><span data-zh="命中" data-en="Hit">命中</span></th>
+    <th><span data-zh="连板" data-en="Streak">连板</span></th><th><span data-zh="上榜" data-en="List">上榜</span></th>
+  </tr></thead><tbody id="closeBody"><tr data-sector="纺织制造" data-label="超预期" data-track="score" data-billboard="1">
+    <td>1</td>
+    <td><b>浙文影业</b><span class="src">601599</span></td>
+    <td><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+9.96%</td>
+    <td class="num up">+9.96%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">1.09亿</td>
+    <td class="num">59.0/59.0亿</td>
+    <td class="num">5.16</td>
+    <td class="num">21.97%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>5连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">量化打板(6704万)@二线 / 章盟主(7089万)@一线</span></td>
+  </tr><tr data-sector="光伏设备" data-label="超预期" data-track="score" data-billboard="1">
+    <td>2</td>
+    <td><b>永臻股份</b><span class="src">603381</span></td>
+    <td><span data-zh="光伏设备" data-en="光伏设备">光伏设备</span></td>
+    <td>主板</td>
+    <td class="num up">+9.98%</td>
+    <td class="num up">+10.03%</td>
+    <td class="num up">+10.03%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">4779万</td>
+    <td class="num">49.2/29.5亿</td>
+    <td class="num">1.00</td>
+    <td class="num">5.29%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag "><span data-zh="放量可买" data-en="Volume queue">放量可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>4连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="休闲食品" data-label="超预期" data-track="score" data-billboard="1">
+    <td>3</td>
+    <td><b>南侨食品</b><span class="src">605339</span></td>
+    <td><span data-zh="休闲食品" data-en="休闲食品">休闲食品</span></td>
+    <td>主板</td>
+    <td class="num up">+10.04%</td>
+    <td class="num up">+10.03%</td>
+    <td class="num up">+10.03%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">1583万</td>
+    <td class="num">67.0/67.0亿</td>
+    <td class="num">0.58</td>
+    <td class="num">0.60%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag gap"><span data-zh="很难买入" data-en="Hard to buy">很难买入</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>2连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="消费电子" data-label="超预期" data-track="score">
+    <td>4</td>
+    <td><b>国光电器</b><span class="src">002045</span></td>
+    <td><span data-zh="消费电子" data-en="消费电子">消费电子</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num down">-0.40%</td>
+    <td class="num down">-10.40%</td>
+    <td class="num up">9769万</td>
+    <td class="num">55.5/55.4亿</td>
+    <td class="num">3.95</td>
+    <td class="num">21.31%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>5天2板</td>
+    <td></td>
+  </tr><tr data-sector="工业金属" data-label="超预期" data-track="score" data-billboard="1">
+    <td>5</td>
+    <td><b>闽发铝业</b><span class="src">002578</span></td>
+    <td><span data-zh="工业金属" data-en="工业金属">工业金属</span></td>
+    <td>主板</td>
+    <td class="num up">+9.90%</td>
+    <td class="num up">+10.11%</td>
+    <td class="num up">+10.11%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num down">-7024万</td>
+    <td class="num">47.0/43.1亿</td>
+    <td class="num">1.79</td>
+    <td class="num">12.50%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>5连板·10天6板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="光伏设备" data-label="超预期" data-track="score" data-billboard="1">
+    <td>6</td>
+    <td><b>贝特利</b><span class="src">301697</span></td>
+    <td><span data-zh="光伏设备" data-en="光伏设备">光伏设备</span></td>
+    <td>创业板</td>
+    <td class="num up">+19.98%</td>
+    <td class="num up">+13.38%</td>
+    <td class="num up">+20.00%</td>
+    <td class="num up">+6.62%</td>
+    <td class="num up">4923万</td>
+    <td class="num">96.2/16.1亿</td>
+    <td class="num">2.15</td>
+    <td class="num">40.68%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>3连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="专用设备" data-label="超预期" data-track="score">
+    <td>7</td>
+    <td><b>海源复材</b><span class="src">002529</span></td>
+    <td><span data-zh="专用设备" data-en="专用设备">专用设备</span></td>
+    <td>主板</td>
+    <td class="num up">+9.98%</td>
+    <td class="num up">+9.97%</td>
+    <td class="num down">-1.79%</td>
+    <td class="num down">-11.76%</td>
+    <td class="num up">1517万</td>
+    <td class="num">17.2/17.2亿</td>
+    <td class="num">6.73</td>
+    <td class="num">21.21%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>3天2板</td>
+    <td></td>
+  </tr><tr data-sector="照明设备Ⅱ" data-label="弱转强·符合" data-track="score" data-billboard="1">
+    <td>8</td>
+    <td><b>阳光照明</b><span class="src">600261</span></td>
+    <td><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num up">+10.09%</td>
+    <td class="num up">+5.09%</td>
+    <td class="num up">+9.98%</td>
+    <td class="num up">+4.89%</td>
+    <td class="num up">657万</td>
+    <td class="num">72.1/72.1亿</td>
+    <td class="num">1.37</td>
+    <td class="num">18.01%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>2连板·7天6板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">章盟主(4226万)@一线</span></td>
+  </tr><tr data-sector="通信服务" data-label="弱转强·符合" data-track="score" data-billboard="1">
+    <td>9</td>
+    <td><b>润建股份</b><span class="src">002929</span></td>
+    <td><span data-zh="通信服务" data-en="通信服务">通信服务</span></td>
+    <td>主板</td>
+    <td class="num up">+10.01%</td>
+    <td class="num up">+4.10%</td>
+    <td class="num up">+10.01%</td>
+    <td class="num up">+5.91%</td>
+    <td class="num up">2.46亿</td>
+    <td class="num">180.7/136.7亿</td>
+    <td class="num">1.50</td>
+    <td class="num">19.55%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>2连板·5天3板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="光伏设备" data-label="弱转强·符合" data-track="score" data-billboard="1">
+    <td>10</td>
+    <td><b>时创能源</b><span class="src">688429</span></td>
+    <td><span data-zh="光伏设备" data-en="光伏设备">光伏设备</span></td>
+    <td>科创板</td>
+    <td class="num up">+19.98%</td>
+    <td class="num up">+5.14%</td>
+    <td class="num up">+15.62%</td>
+    <td class="num up">+10.48%</td>
+    <td class="num up">753万</td>
+    <td class="num">49.4/49.4亿</td>
+    <td class="num">6.85</td>
+    <td class="num">4.02%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>昨日首板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">拉萨散户(267万)@避坑 / 拉萨散户(274万)@避坑</span></td>
+  </tr><tr data-sector="软件开发" data-label="趋势放量" data-track="p4">
+    <td>11</td>
+    <td><b>新点软件</b><span class="src">688232</span></td>
+    <td><span data-zh="软件开发" data-en="软件开发">软件开发</span></td>
+    <td>科创板</td>
+    <td class="num up">+1.56%</td>
+    <td class="num down">-2.86%</td>
+    <td class="num down">-1.38%</td>
+    <td class="num up">+1.48%</td>
+    <td class="num down">-395万</td>
+    <td class="num">62.1/62.1亿</td>
+    <td class="num">0.58</td>
+    <td class="num">0.94%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="出版" data-label="趋势放量" data-track="p4">
+    <td>12</td>
+    <td><b>世纪天鸿</b><span class="src">300654</span></td>
+    <td><span data-zh="出版" data-en="出版">出版</span></td>
+    <td>创业板</td>
+    <td class="num up">+4.08%</td>
+    <td class="num down">-2.05%</td>
+    <td class="num down">-1.40%</td>
+    <td class="num up">+0.65%</td>
+    <td class="num down">-881万</td>
+    <td class="num">38.7/37.2亿</td>
+    <td class="num">0.81</td>
+    <td class="num">4.27%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="电视广播Ⅱ" data-label="趋势放量" data-track="p4">
+    <td>13</td>
+    <td><b>新媒股份</b><span class="src">300770</span></td>
+    <td><span data-zh="电视广播Ⅱ" data-en="电视广播Ⅱ">电视广播Ⅱ</span></td>
+    <td>创业板</td>
+    <td class="num up">+1.66%</td>
+    <td class="num down">-2.43%</td>
+    <td class="num up">+0.57%</td>
+    <td class="num up">+3.00%</td>
+    <td class="num down">-278万</td>
+    <td class="num">92.4/92.4亿</td>
+    <td class="num">1.04</td>
+    <td class="num">5.02%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="白酒Ⅱ" data-label="趋势放量" data-track="p4">
+    <td>14</td>
+    <td><b>贵州茅台</b><span class="src">600519</span></td>
+    <td><span data-zh="白酒Ⅱ" data-en="白酒Ⅱ">白酒Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num up">+0.38%</td>
+    <td class="num down">-0.14%</td>
+    <td class="num up">+0.07%</td>
+    <td class="num up">+0.21%</td>
+    <td class="num down">-3.19亿</td>
+    <td class="num">18163.7/18163.7亿</td>
+    <td class="num">0.65</td>
+    <td class="num">0.34%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="炼化及贸易" data-label="趋势放量" data-track="p4">
+    <td>15</td>
+    <td><b>中国石油</b><span class="src">601857</span></td>
+    <td><span data-zh="炼化及贸易" data-en="炼化及贸易">炼化及贸易</span></td>
+    <td>主板</td>
+    <td class="num down">-7.93%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">+1.28%</td>
+    <td class="num up">+1.28%</td>
+    <td class="num up">3204万</td>
+    <td class="num">23243.7/20564.1亿</td>
+    <td class="num">1.08</td>
+    <td class="num">0.15%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="铁路公路" data-label="趋势放量" data-track="p4" data-billboard="1">
+    <td>16</td>
+    <td><b>龙江交通</b><span class="src">601188</span></td>
+    <td><span data-zh="铁路公路" data-en="铁路公路">铁路公路</span></td>
+    <td>主板</td>
+    <td class="num down">-2.54%</td>
+    <td class="num down">-0.29%</td>
+    <td class="num up">+10.12%</td>
+    <td class="num up">+10.41%</td>
+    <td class="num up">3.66亿</td>
+    <td class="num">49.7/49.7亿</td>
+    <td class="num">1.37</td>
+    <td class="num">21.58%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>首板·7天3板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">章盟主(3051万)@一线</span></td>
+  </tr><tr data-sector="医药商业" data-label="趋势放量" data-track="p4">
+    <td>17</td>
+    <td><b>柳药集团</b><span class="src">603368</span></td>
+    <td><span data-zh="医药商业" data-en="医药商业">医药商业</span></td>
+    <td>主板</td>
+    <td class="num up">+3.69%</td>
+    <td class="num down">-0.86%</td>
+    <td class="num down">-1.72%</td>
+    <td class="num down">-0.86%</td>
+    <td class="num down">-70万</td>
+    <td class="num">68.0/68.0亿</td>
+    <td class="num">0.36</td>
+    <td class="num">1.90%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="饮料乳品" data-label="趋势放量" data-track="p4">
+    <td>18</td>
+    <td><b>伊利股份</b><span class="src">600887</span></td>
+    <td><span data-zh="饮料乳品" data-en="饮料乳品">饮料乳品</span></td>
+    <td>主板</td>
+    <td class="num up">+1.11%</td>
+    <td class="num up">+0.06%</td>
+    <td class="num up">+1.29%</td>
+    <td class="num up">+1.23%</td>
+    <td class="num up">7300万</td>
+    <td class="num">1989.3/1979.4亿</td>
+    <td class="num">0.70</td>
+    <td class="num">1.16%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="IT服务Ⅱ" data-label="趋势放量" data-track="p4">
+    <td>19</td>
+    <td><b>佳都科技</b><span class="src">600728</span></td>
+    <td><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num down">-0.20%</td>
+    <td class="num down">-2.81%</td>
+    <td class="num down">-0.20%</td>
+    <td class="num up">+2.61%</td>
+    <td class="num up">1847万</td>
+    <td class="num">106.2/106.2亿</td>
+    <td class="num">0.68</td>
+    <td class="num">2.66%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="服装家纺" data-label="趋势放量" data-track="p4">
+    <td>20</td>
+    <td><b>朗姿股份</b><span class="src">002612</span></td>
+    <td><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span></td>
+    <td>主板</td>
+    <td class="num up">+1.17%</td>
+    <td class="num up">+0.12%</td>
+    <td class="num up">+3.23%</td>
+    <td class="num up">+3.11%</td>
+    <td class="num up">2061万</td>
+    <td class="num">79.2/46.8亿</td>
+    <td class="num">0.97</td>
+    <td class="num">5.69%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="专业服务" data-label="趋势放量" data-track="p4">
+    <td>21</td>
+    <td><b>兰生股份</b><span class="src">600826</span></td>
+    <td><span data-zh="专业服务" data-en="专业服务">专业服务</span></td>
+    <td>主板</td>
+    <td class="num up">+1.16%</td>
+    <td class="num down">-2.53%</td>
+    <td class="num down">-0.23%</td>
+    <td class="num up">+2.30%</td>
+    <td class="num down">-85万</td>
+    <td class="num">62.9/62.9亿</td>
+    <td class="num">0.46</td>
+    <td class="num">1.33%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>10天2板</td>
+    <td></td>
+  </tr><tr data-sector="航运港口" data-label="趋势放量" data-track="p4">
+    <td>22</td>
+    <td><b>中远海控</b><span class="src">601919</span></td>
+    <td><span data-zh="航运港口" data-en="航运港口">航运港口</span></td>
+    <td>主板</td>
+    <td class="num down">-1.34%</td>
+    <td class="num down">-0.68%</td>
+    <td class="num down">-1.24%</td>
+    <td class="num down">-0.56%</td>
+    <td class="num up">1935万</td>
+    <td class="num">2658.6/2184.9亿</td>
+    <td class="num">0.71</td>
+    <td class="num">0.77%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="炼化及贸易" data-label="趋势放量" data-track="p4">
+    <td>23</td>
+    <td><b>上海石化</b><span class="src">600688</span></td>
+    <td><span data-zh="炼化及贸易" data-en="炼化及贸易">炼化及贸易</span></td>
+    <td>主板</td>
+    <td class="num up">+0.00%</td>
+    <td class="num down">-1.00%</td>
+    <td class="num down">-1.34%</td>
+    <td class="num down">-0.34%</td>
+    <td class="num down">-1655万</td>
+    <td class="num">311.0/216.2亿</td>
+    <td class="num">0.37</td>
+    <td class="num">0.75%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="炼化及贸易" data-label="趋势放量" data-track="p4">
+    <td>24</td>
+    <td><b>中国石化</b><span class="src">600028</span></td>
+    <td><span data-zh="炼化及贸易" data-en="炼化及贸易">炼化及贸易</span></td>
+    <td>主板</td>
+    <td class="num down">-0.87%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">+1.75%</td>
+    <td class="num up">+1.75%</td>
+    <td class="num up">1.71亿</td>
+    <td class="num">7001.4/5489.6亿</td>
+    <td class="num">0.83</td>
+    <td class="num">0.31%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="房屋建设Ⅱ" data-label="趋势放量" data-track="p4">
+    <td>25</td>
+    <td><b>中国建筑</b><span class="src">601668</span></td>
+    <td><span data-zh="房屋建设Ⅱ" data-en="房屋建设Ⅱ">房屋建设Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num down">-1.27%</td>
+    <td class="num up">+0.22%</td>
+    <td class="num up">+1.29%</td>
+    <td class="num up">+1.07%</td>
+    <td class="num up">7157万</td>
+    <td class="num">1946.2/1946.2亿</td>
+    <td class="num">0.67</td>
+    <td class="num">0.55%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr><tr data-sector="证券Ⅱ" data-label="趋势放量" data-track="p4">
+    <td>26</td>
+    <td><b>华林证券</b><span class="src">002945</span></td>
+    <td><span data-zh="证券Ⅱ" data-en="证券Ⅱ">证券Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num down">-4.00%</td>
+    <td class="num down">-0.52%</td>
+    <td class="num up">+0.65%</td>
+    <td class="num up">+1.17%</td>
+    <td class="num up">3029万</td>
+    <td class="num">418.0/418.0亿</td>
+    <td class="num">0.87</td>
+    <td class="num">1.90%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr></tbody></table></div>
 
   
   <h2><span data-zh="贴线未入选（10 只）" data-en="Near Miss (10)">贴线未入选（10 只）</span></h2>
@@ -835,9 +1324,7 @@
 
   <h2><span data-zh="数据缺口" data-en="Data Gaps">数据缺口</span></h2>
   <div class="card">
-    <details><summary><span data-zh="被剔除/缺数据明细（最多 40 条，共 813）" data-en="Excluded / missing-data details (up to 40 of 813)">被剔除/缺数据明细（最多 40 条，共 813）</span></summary>
-      <div class="table-wrap"><table><thead><tr><th><span data-zh="代码" data-en="Code">代码</span></th><th><span data-zh="名称" data-en="Name">名称</span></th><th><span data-zh="原因" data-en="Reason">原因</span></th></tr></thead>
-      <tbody><tr><td>600001</td><td>邯郸钢铁</td><td>停牌/无成交</td></tr><tr><td>600002</td><td>齐鲁石化</td><td>停牌/无成交</td></tr><tr><td>600003</td><td>ST东北高</td><td>ST/退市风险</td></tr><tr><td>600005</td><td>武钢股份</td><td>停牌/无成交</td></tr><tr><td>600053</td><td>*ST九鼎</td><td>ST/退市风险</td></tr><tr><td>600065</td><td>*ST联谊</td><td>ST/退市风险</td></tr><tr><td>600068</td><td>葛洲坝</td><td>停牌/无成交</td></tr><tr><td>600069</td><td>退市银鸽</td><td>ST/退市风险</td></tr><tr><td>600070</td><td>*ST富润</td><td>ST/退市风险</td></tr><tr><td>600074</td><td>退市保千</td><td>ST/退市风险</td></tr><tr><td>600077</td><td>*ST宋都</td><td>ST/退市风险</td></tr><tr><td>600079</td><td>ST人福</td><td>ST/退市风险</td></tr><tr><td>600080</td><td>ST金花</td><td>ST/退市风险</td></tr><tr><td>600082</td><td>ST海泰</td><td>ST/退市风险</td></tr><tr><td>600083</td><td>*ST博信</td><td>ST/退市风险</td></tr><tr><td>600084</td><td>*ST尼雅</td><td>ST/退市风险</td></tr><tr><td>600086</td><td>退市金钰</td><td>ST/退市风险</td></tr><tr><td>600087</td><td>退市长油</td><td>ST/退市风险</td></tr><tr><td>600090</td><td>退市济堂</td><td>ST/退市风险</td></tr><tr><td>600091</td><td>退市明科</td><td>ST/退市风险</td></tr><tr><td>600092</td><td>S*ST精密</td><td>ST/退市风险</td></tr><tr><td>600093</td><td>退市易见</td><td>ST/退市风险</td></tr><tr><td>600102</td><td>莱钢股份</td><td>停牌/无成交</td></tr><tr><td>600107</td><td>*ST尔雅</td><td>ST/退市风险</td></tr><tr><td>600112</td><td>*ST天成</td><td>ST/退市风险</td></tr><tr><td>600119</td><td>*ST长投</td><td>ST/退市风险</td></tr><tr><td>600122</td><td>*ST宏图</td><td>ST/退市风险</td></tr><tr><td>600136</td><td>ST明诚</td><td>ST/退市风险</td></tr><tr><td>600139</td><td>*ST西源</td><td>ST/退市风险</td></tr><tr><td>600145</td><td>退市新亿</td><td>ST/退市风险</td></tr><tr><td>600146</td><td>退市环球</td><td>ST/退市风险</td></tr><tr><td>600169</td><td>ST太重</td><td>ST/退市风险</td></tr><tr><td>600175</td><td>退市美都</td><td>ST/退市风险</td></tr><tr><td>600180</td><td>*ST瑞茂</td><td>ST/退市风险</td></tr><tr><td>600181</td><td>S*ST云大</td><td>ST/退市风险</td></tr><tr><td>600187</td><td>*ST国中</td><td>ST/退市风险</td></tr><tr><td>600190</td><td>退市锦港</td><td>ST/退市风险</td></tr><tr><td>600193</td><td>退市创兴</td><td>ST/退市风险</td></tr><tr><td>600200</td><td>退市苏吴</td><td>ST/退市风险</td></tr><tr><td>600205</td><td>S山东铝</td><td>停牌/无成交</td></tr></tbody></table></div></details>
+    <span data-zh="无数据缺口记录。" data-en="No data-gap records.">无数据缺口记录。</span>
   </div>
 
   <h2><span data-zh="数据口径与偏差声明" data-en="Data Provenance and Deviations">数据口径与偏差声明</span></h2>
