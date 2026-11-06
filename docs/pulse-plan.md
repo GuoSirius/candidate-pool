@@ -1,16 +1,53 @@
-# pulse/ 消息脉搏模块 · 实施方案（待确认）
+# pulse/ 消息脉搏模块
 
-> 状态：**方案阶段，未实施**。用户确认后按 P1→P5 推进。
+> 状态：**v1 已实施并实测跑通**（2026-11-06）。
 
-## 定位
+## v1 实测结果
 
-新增独立命令/任务：随时手动执行或定时执行，拉取消息面 + 行情/资金流，交叉分析，
-发现行业热点与异动，输出 HTML 报告（行业/板块/股票榜单）；另提供常驻监听模式，
-每 3-5 分钟增量扫描并对异动发系统通知。
+| 源 | 状态 | 说明 |
+|---|---|---|
+| 新浪 7×24 | ✅ | 40 条/轮 |
+| 东财快讯 | ✅ | newsapi kuaixun JSONP 变量格式 |
+| 金十数据 | ✅ | flash_newest.js |
+| 华尔街见闻 | ✅ | apiv1/content/lives |
+| 东财板块行情+主力资金流 | ✅ | 527 个板块（行业+概念） |
+| 巨潮公告 | ✅ | 标题关键词过滤事件类 |
+| 财联社电报 | ❌ v2 | nodeapi 全线 404（签名反爬），SSR 无数据 |
+| 韭研公社 | ❌ v2 | XHR 需 token，SSR 不含列表；需浏览器渲染或逆向，专项处理 |
 
-## 技术路线
+## 用法
 
-Node.js ESM + 内置 fetch，**零新增依赖**，不引入 akshare/efinance/Python：
+| 命令 | 用途 |
+|---|---|
+| `npm run pulse` | 手动单次：采集→交叉分析→快照落盘→HTML 报告 |
+| `npm run pulse:watch` | 常驻监听：每轮完成后计时 3 分钟再跑下一轮；交易日 08:30–15:35 活跃，发现新热点/加速异动弹 Windows Toast（无新异动静默；非 Windows 仅 console） |
+| `npm run pulse:probe` | 数据源探针（源接口变更时排查用） |
+
+产物（按日期分层）：
+- `pulse/data/YYYY-MM-DD/snap-HHmmss.json`（每轮快照，按日滚动保留 60 天）、`pulse/data/latest.json`（最近一轮）
+- `pulse/report/YYYY-MM-DD/pulse-HHmmss.html` + `pulse/report/latest.html`（按日滚动保留 40 天）
+- watch 基准状态：`pulse/data/watch-state.json`（首轮只建基准不通知）
+- 以上均不入库（.gitignore 已排除 pulse/data/ 与 pulse/report/）。
+
+## 交叉分析与评分
+
+- 去重：同源文本去重；跨源重复保留，作为交叉验证素材。
+- 交叉验证：按板块聚合回看窗口（12h）内新闻，命中源数 ≥2 视为验证；A(≥3源)/B(2源)/C(单源)。
+- 板块热度分 = 消息权重×2 + 源覆盖×1.5 + 主力净流入排名分×2 + 涨幅分 + 验证加成。
+- 个股榜 = 新闻命中（多源计分）+ 热点板块领涨股加成。
+- 纯行情异动（无消息命中但涨幅 ≥2%）单独入榜。
+- 词典匹配：东财板块名（行业+概念）+ eod 行业映射（个股名/行业），复用 `eod/lib/sector.js`。
+
+## 复用与分层
+
+- `eod/lib/http.js`：GET（重试+WAF 退避+GBK）直接复用；`pulse/lib/http.js` 只补 POST。
+- `eod/lib/sector.js`：行业映射加载（含包内种子兜底）直接复用。
+- 公共逻辑集中：配置 `pulse/config.js`、匹配 `pulse/lib/match.js`、落盘 `pulse/lib/store.js`。
+- 采集源独立容错：单源失败不影响整体，状态记入报告头。
+
+## 技术路线（定稿）
+
+Node.js（CJS，与 eod/ 一致）+ 内置 https/fetch，**零新增依赖**，不引入 akshare/efinance/Python：
 
 | 对比项 | 纯 HTTP（选定） | akshare/efinance |
 |---|---|---|
@@ -19,6 +56,7 @@ Node.js ESM + 内置 fetch，**零新增依赖**，不引入 akshare/efinance/Py
 | 稳定性 | 单源挂可切备源 | 上游改版连坐 |
 
 需 API Key 的服务（聚合数据 / Tavily / hithink / AShareHub / Tushare）一律不用，保持零凭据。
+补选平台结论：金十数据、华尔街见闻免费无 key，已纳入 v1；财联社、韭研公社 v2 专项处理。
 
 ## 数据源定级
 

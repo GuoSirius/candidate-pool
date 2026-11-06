@@ -46,3 +46,7 @@ release-notes.md
 
 # 本地临时诊断目录
 .tmp/
+
+# pulse 消息脉搏运行产物（快照/报告为本地运行产物，不入库；latest.json/latest.html 同理）
+pulse/data/
+pulse/report/
