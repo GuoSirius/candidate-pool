@@ -135,11 +135,12 @@ function analyze(snapshot) {
   }
   hotStocks.sort((a, b) => b.score - a.score);
 
+  const limit = (arr, n) => (n > 0 ? arr.slice(0, n) : arr); // n<=0 视为不限制
   return {
     windowCount: deduped.length,
     lookbackHours: cfg.LOOKBACK_HOURS,
-    hotBoards: hotBoards.slice(0, cfg.TOP_BOARDS),
-    hotStocks: hotStocks.slice(0, cfg.TOP_STOCKS),
+    hotBoards: limit(hotBoards, cfg.TOP_BOARDS),
+    hotStocks: limit(hotStocks, cfg.TOP_STOCKS),
   };
 }
 
