@@ -7,6 +7,9 @@ const cfg = require('./config');
 const news = require('./sources/news');
 const market = require('./sources/market');
 const announce = require('./sources/announce');
+const { mapLimit } = require('../eod/lib/http');
+
+const LEADER_BOARDS = 8; // 给热度前 N 的板块拉成分领涨股
 
 const fmtBJ = (ms) => new Date(ms + 8 * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
 
@@ -54,4 +57,19 @@ async function collect() {
   };
 }
 
-module.exports = { collect, fmtBJ };
+/**
+ * 给热点板块补充成分领涨股（3-5 只，按涨幅降序）。
+ * 只取热度榜前 LEADER_BOARDS 个、有板块代码的，控制请求数；单板块失败置空不影响整体。
+ */
+async function enrichLeaders(hotBoards) {
+  const targets = hotBoards.filter((b) => b.code).slice(0, LEADER_BOARDS);
+  const res = await mapLimit(targets, 4, (b) => market.fetchBoardLeaders(b.code, 5));
+  const byCode = new Map(targets.map((b, i) => [b.code, res[i]]));
+  for (const b of hotBoards) {
+    const r = byCode.get(b.code);
+    b.leaders = Array.isArray(r) ? r : [];
+  }
+  return hotBoards;
+}
+
+module.exports = { collect, enrichLeaders, fmtBJ };

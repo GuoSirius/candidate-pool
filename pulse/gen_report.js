@@ -20,6 +20,12 @@ function buildReport(snapshot, analysis) {
   const srcChips = Object.entries(snapshot.sourcesStatus)
     .map(([k, v]) => `<span class="chip ${v.startsWith('OK') ? 'ok' : 'bad'}">${esc(k)} · ${esc(v)}</span>`).join('');
 
+  const leadCell = (b) => {
+    if (b.leaders && b.leaders.length) {
+      return b.leaders.map((l) => `<span class="lead-item">${esc(l.name)}<span class="${(l.pct || 0) >= 0 ? 'up' : 'down'}">${l.pct != null ? l.pct + '%' : ''}</span></span>`).join('');
+    }
+    return esc(b.lead || '-');
+  };
   const boardRows = hotBoards.map((b, i) => `
     <tr>
       <td>${i + 1}</td>
@@ -28,7 +34,7 @@ function buildReport(snapshot, analysis) {
       <td><span class="badge ${VERIFY_BADGE[b.verify] || 'badge-d'}">${b.verify}${b.sourceCount ? ` · ${b.sourceCount}源` : ''}</span></td>
       <td>${b.pct != null ? b.pct + '%' : '-'}</td>
       <td>${b.flow != null ? b.flow + ' 亿' : '-'}</td>
-      <td>${esc(b.lead || '-')}</td>
+      <td>${leadCell(b)}</td>
     </tr>`).join('');
 
   const evidence = hotBoards.filter((b) => b.items.length).slice(0, 8).map((b) => `
@@ -37,6 +43,7 @@ function buildReport(snapshot, analysis) {
         <span class="badge ${VERIFY_BADGE[b.verify]}">${b.verify} 级验证 · ${b.sourceCount} 源</span>
         ${b.pct != null ? `<span class="muted">涨 ${b.pct}%</span>` : ''}
         ${b.flow != null ? `<span class="muted">主力 ${b.flow} 亿</span>` : ''}</div>
+      ${b.leaders && b.leaders.length ? `<div class="news"><span class="tag">领涨股</span>${b.leaders.map((l) => `${esc(l.name)}<span class="${(l.pct || 0) >= 0 ? 'up' : 'down'}">${l.pct != null ? l.pct + '%' : ''}</span>`).join(' · ')}</div>` : ''}
       ${b.items.map((n) => `<div class="news"><span class="time">${fmtBJ(n.timeMs)}</span><span class="tag">${esc(n.source)}</span>${esc(n.text).slice(0, 160)}</div>`).join('')}
     </div>`).join('');
 
@@ -94,6 +101,7 @@ function buildReport(snapshot, analysis) {
   .news .time { color:var(--muted); margin-right:8px; } .news .tag { display:inline-block; min-width:64px; color:var(--accent); margin-right:8px; font-size:12px; }
   a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
   .up { color:var(--red); } .down { color:var(--green); }
+  .lead-item { display:inline-block; margin-right:10px; white-space:nowrap; }
 </style></head><body><div class="wrap">
   <h1>消息脉搏 · 行业热点与异动交叉分析</h1>
   <div class="sub">执行时间：${esc(snapshot.runAtText)}（北京时间） · 回看窗口 ${analysis.lookbackHours} 小时 · 采集 ${analysis.windowCount} 条消息 · ${snapshot.boards.length} 个板块 · ${snapshot.announces.length} 条公告</div>

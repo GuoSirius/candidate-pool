@@ -31,6 +31,20 @@ async function fetchBoardType(fs) {
   return out;
 }
 
+/** 拉某板块成分股，按涨幅降序取前 n 只（领涨股列表） */
+async function fetchBoardLeaders(bkCode, n = 5) {
+  const j = await httpGet(
+    `https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=${n}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=b:${bkCode}&fields=f3,f12,f14,f62`,
+    { json: true, referer: 'https://quote.eastmoney.com/' }
+  );
+  const diff = (j && j.data && j.data.diff) || [];
+  return diff.map((d) => ({
+    code: d.f12, name: d.f14,
+    pct: typeof d.f3 === 'number' ? d.f3 : null,
+    flow: typeof d.f62 === 'number' ? +(d.f62 / 1e8).toFixed(2) : null,
+  }));
+}
+
 /** 行业+概念合并快照 */
 async function fetchBoards() {
   const [industry, concept] = await Promise.all([
@@ -41,4 +55,4 @@ async function fetchBoards() {
   return [...industry, ...concept].filter((b) => (seen.has(b.code) ? false : (seen.add(b.code), true)));
 }
 
-module.exports = { fetchBoards };
+module.exports = { fetchBoards, fetchBoardLeaders };

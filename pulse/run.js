@@ -3,7 +3,7 @@
  * pulse/run.js —— 单次全流程：采集 → 分析 → 落盘 → 报告
  * 用法：node pulse/run.js（或 npm run pulse）
  */
-const { collect } = require('./collect');
+const { collect, enrichLeaders } = require('./collect');
 const { analyze } = require('./analyze');
 const { buildReport } = require('./gen_report');
 const store = require('./lib/store');
@@ -11,6 +11,7 @@ const store = require('./lib/store');
 async function runOnce() {
   const snapshot = await collect();
   const analysis = analyze(snapshot);
+  await enrichLeaders(analysis.hotBoards); // 热点板块补充 3-5 只领涨股
   const snapFile = store.saveSnapshot(snapshot);
   const html = buildReport(snapshot, analysis);
   const reportFile = store.saveReport(html, snapshot.runAt);
