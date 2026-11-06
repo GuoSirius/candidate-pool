@@ -63,7 +63,7 @@ chore: <任务中文名> $(date +%F)
 
 各任务的报告路径以小节内 Prompt 里写死的为准（盘前/回填 `eod/reports/preopen-<日>.html`、尾盘观察 `eod-<日>-obs.html`、尾盘正式 `eod-<日>.html`、盘中 `eod-<日>-intraday.html`、次日初筛 `reports/stock_list_<日>.html`）。
 
-> **同步状态（2026-11-06）**：本约定为本日新增。下文各任务 Prompt 模板均已含预览步骤；**本机 6 个任务（2/3/4/5/6/7/8 小节）的线上 prompt 需按新模板在自动化面板重贴一次**（本次因 automation_update 工具不可用，由用户手动重贴；重贴后删除本行的「需重贴」提示）。
+> **同步状态（2026-11-06）**：本约定为本日新增，下文各任务 Prompt 模板均已含预览步骤；本机 7 条记录（2/3/4/5/6/7/8 小节）的线上 prompt 已于同日用 `automation_update` 逐条同步完成。
 
 ---
 
