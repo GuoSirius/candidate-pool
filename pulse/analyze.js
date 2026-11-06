@@ -138,8 +138,8 @@ function analyze(snapshot) {
   return {
     windowCount: deduped.length,
     lookbackHours: cfg.LOOKBACK_HOURS,
-    hotBoards: hotBoards.slice(0, 25),
-    hotStocks: hotStocks.slice(0, 25),
+    hotBoards: hotBoards.slice(0, cfg.TOP_BOARDS),
+    hotStocks: hotStocks.slice(0, cfg.TOP_STOCKS),
   };
 }
 
