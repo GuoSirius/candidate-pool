@@ -23,7 +23,7 @@ module.exports = {
   SOURCE_LABELS: { sina: '新浪7×24', em: '东财快讯', jin10: '金十数据', wscn: '华尔街见闻' },
 
   // 板块热度分中行情项占比
-  FLOW_TOP_N: 20,          // 主力净流入前 N 名计入排名分
+  FLOW_TOP_N: 12,          // 主力净流入前 N 名计入排名分
   PCT_ALERT: 2.0,          // 板块涨幅 >= 2% 视为纯行情异动
   VERIFY_A_SOURCES: 3,     // >=3 源 → 验证级别 A
 
