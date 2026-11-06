@@ -13,13 +13,13 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
-    "dayjs": "^1.11.23",
-    "hono": "^4.13.8"
+    "dayjs": "latest",
+    "hono": "latest"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260920.1",
-    "typescript": "^6.0.3",
-    "wrangler": "^4.134.0"
+    "@cloudflare/workers-types": "latest",
+    "typescript": "latest",
+    "wrangler": "latest"
   },
   "engines": {
     "node": ">=24"
