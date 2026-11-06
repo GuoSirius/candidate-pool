@@ -21,5 +21,8 @@
     "vite": "^8.3.0",
     "vite-plugin-pwa": "^2.0.0",
     "vue-tsc": "^3.3.11"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
