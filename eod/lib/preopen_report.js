@@ -47,13 +47,13 @@ function fmtAmt(v) {
 
 function trendStr(t) {
   if (!t) return '—';
-  // 纯文字标记（不用 ✓/✗：部分字体渲染成 X// 造成歧义）；分隔符统一「·」；斜率带显式正负号
-  const parts = [t.maBull ? '多头' : '非多头'];
-  if (t.newHigh20) parts.push('20日新高');
-  if (t.newHigh60) parts.push('60日新高');
+  // √/× 为 GBK 安全字符，与 ✓/✗ 不同（✓✗ 在部分字体渲染成 / 和 X 造成歧义）
+  const parts = [t.maBull ? '多头√' : '多头×'];
+  if (t.newHigh20) parts.push('20新√');
+  if (t.newHigh60) parts.push('60新√');
   const s = num(t.slope20, 1);
   parts.push(`斜率${s >= 0 ? '+' : ''}${s}%/d`);
-  return parts.join(' · ');
+  return parts.join(' ');
 }
 function labelCls(l) {
   const s = String(l || '');
