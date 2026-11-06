@@ -43,7 +43,7 @@ module.exports = {
   FLOW_TOP_N: 12,          // 主力净流入前 N 名计入排名分
   PCT_ALERT: 2.0,          // 板块涨幅 >= 2% 视为纯行情异动
   VERIFY_A_SOURCES: 3,     // >=3 源 → 验证级别 A
-  TOP_BOARDS: 12,          // 报告展示热点板块条数（<=0 不限制）
+  TOP_BOARDS: 24,          // 报告展示热点板块条数（<=0 不限制）
   TOP_STOCKS: 0,          // 报告展示个股热度条数（<=0 不限制）
 
   // watch

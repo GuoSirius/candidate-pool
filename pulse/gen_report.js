@@ -28,14 +28,17 @@ function buildReport(snapshot, analysis) {
     }
     return esc(b.lead || '-');
   };
+  // 排序键：data-v 为数值（null 落底），无 data-v 时按文本
+  const vAttr = (val, nullVal = -999) => ` data-v="${val == null ? nullVal : val}"`;
+  const verifyRank = { A: 3, B: 2, C: 1 };
   const boardRows = hotBoards.map((b, i) => `
     <tr>
       <td>${i + 1}</td>
       <td class="strong">${esc(b.name)}</td>
-      <td>${b.score}</td>
-      <td><span class="badge ${VERIFY_BADGE[b.verify] || 'badge-d'}">${b.verify}${b.sourceCount ? ` · ${b.sourceCount}源` : ''}</span></td>
-      <td>${b.pct != null ? b.pct + '%' : '-'}</td>
-      <td>${b.flow != null ? b.flow + ' 亿' : '-'}</td>
+      <td${vAttr(b.score, 0)}>${b.score}</td>
+      <td${vAttr(verifyRank[b.verify] || 0)}><span class="badge ${VERIFY_BADGE[b.verify] || 'badge-d'}">${b.verify}${b.sourceCount ? ` · ${b.sourceCount}源` : ''}</span></td>
+      <td${vAttr(b.pct)}>${b.pct != null ? b.pct + '%' : '-'}</td>
+      <td${vAttr(b.flow)}>${b.flow != null ? b.flow + ' 亿' : '-'}</td>
       <td>${leadCell(b)}</td>
     </tr>`).join('');
 
@@ -55,7 +58,7 @@ function buildReport(snapshot, analysis) {
       <td class="strong">${esc(s.name)}</td>
       <td>${esc(s.code || '-')}</td>
       <td>${esc(s.sector || '-')}</td>
-      <td>${s.score}</td>
+      <td${vAttr(s.score, 0)}>${s.score}</td>
       <td>${s.isLead ? '<span class="badge badge-b">热点板块领涨</span>' : ''} ${s.sources.map(esc).join(' / ') || '-'}</td>
     </tr>`).join('');
 
@@ -104,6 +107,9 @@ function buildReport(snapshot, analysis) {
   a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
   .up { color:var(--red); } .down { color:var(--green); }
   .lead-item { display:inline-block; margin-right:10px; white-space:nowrap; }
+  table.sortable th[data-s] { cursor:pointer; user-select:none; white-space:nowrap; }
+  table.sortable th[data-s].asc::after { content:' ▲'; color:var(--accent); }
+  table.sortable th[data-s].desc::after { content:' ▼'; color:var(--accent); }
 </style></head><body><div class="wrap">
   <h1>消息脉搏 · 行业热点与异动交叉分析</h1>
   <div class="sub">执行时间：${esc(snapshot.runAtText)}（北京时间） · 回看窗口 ${analysis.lookbackHours} 小时 · 采集 ${analysis.windowCount} 条消息 · ${snapshot.boards.length} 个板块 · ${snapshot.announces.length} 条公告</div>
@@ -111,20 +117,48 @@ function buildReport(snapshot, analysis) {
   <div class="summary">${esc(summary)}</div>
 
   <h2>一、热点板块榜（消息 + 资金流 + 涨幅综合评分）</h2>
-  <table><thead><tr><th>#</th><th>板块</th><th>热度分</th><th>验证级别</th><th>涨跌幅</th><th>主力净流入</th><th>领涨股</th></tr></thead><tbody>${boardRows || '<tr><td colspan="7">暂无</td></tr>'}</tbody></table>
+  <table class="sortable"><thead><tr><th>#</th><th>板块</th><th>热度分 ⇅</th><th>验证级别 ⇅</th><th>涨跌幅 ⇅</th><th>主力净流入 ⇅</th><th>领涨股</th></tr></thead><tbody>${boardRows || '<tr><td colspan="7">暂无</td></tr>'}</tbody></table>
 
   <h2>二、热点证据链（多源消息交叉比对）</h2>
   ${evidence || '<div class="muted">暂无消息命中的板块</div>'}
 
   <h2>三、个股热度榜（新闻命中 + 热点板块领涨股）</h2>
-  <table><thead><tr><th>#</th><th>股票</th><th>代码</th><th>行业</th><th>热度分</th><th>依据</th></tr></thead><tbody>${stockRows || '<tr><td colspan="6">暂无</td></tr>'}</tbody></table>
+  <table class="sortable"><thead><tr><th>#</th><th>股票</th><th>代码</th><th>行业</th><th>热度分 ⇅</th><th>依据</th></tr></thead><tbody>${stockRows || '<tr><td colspan="6">暂无</td></tr>'}</tbody></table>
 
   <h2>四、事件类公告（巨潮资讯 · 关键词过滤）</h2>
   <table><thead><tr><th>时间</th><th>代码</th><th>公司</th><th>公告</th></tr></thead><tbody>${annRows || '<tr><td colspan="4">暂无</td></tr>'}</tbody></table>
 
   <h2>五、全部消息流（按时间倒序）</h2>
   <table><thead><tr><th>时间</th><th>来源</th><th>内容</th></tr></thead><tbody>${newsRows || '<tr><td colspan="3">暂无</td></tr>'}</tbody></table>
-</div></body></html>`;
+</div>
+<script>
+// 表头点击排序：优先取 td[data-v]（数值，null 落底），否则按文本；再次点击切换升降序
+document.querySelectorAll('table.sortable').forEach(function (table) {
+  var ths = table.querySelectorAll('thead th');
+  ths.forEach(function (th, i) {
+    if (!th.textContent.includes('⇅')) return; // 仅 ⇅ 标记的列可排序
+    th.setAttribute('data-s', '1');
+    th.addEventListener('click', function () {
+      var tbody = table.querySelector('tbody');
+      var rows = Array.prototype.slice.call(tbody.rows);
+      var dir = th.classList.contains('desc') ? 'asc' : 'desc';
+      ths.forEach(function (h) { h.classList.remove('asc', 'desc'); });
+      th.classList.add(dir);
+      rows.sort(function (a, b) {
+        var x = a.cells[i], y = b.cells[i];
+        var vx = x.hasAttribute('data-v') ? parseFloat(x.getAttribute('data-v')) : NaN;
+        var vy = y.hasAttribute('data-v') ? parseFloat(y.getAttribute('data-v')) : NaN;
+        var cmp;
+        if (!isNaN(vx) && !isNaN(vy)) cmp = vx - vy;
+        else cmp = x.textContent.trim().localeCompare(y.textContent.trim(), 'zh');
+        return dir === 'desc' ? -cmp : cmp;
+      });
+      rows.forEach(function (r) { tbody.appendChild(r); });
+    });
+  });
+});
+</script>
+</body></html>`;
 }
 
 module.exports = { buildReport };
