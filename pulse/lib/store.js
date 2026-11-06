@@ -41,7 +41,7 @@ function saveSnapshot(snapshot) {
   return file;
 }
 
-/** 只更新 latest.json（watch 轮次用，避免高频归档撑爆日期目录） */
+/** 只更新 latest.json（saveSnapshot 内部调用，亦可供跳过归档的场景单独使用） */
 function updateLatest(snapshot) {
   ensureDir(cfg.DATA_DIR);
   fs.writeFileSync(path.join(cfg.DATA_DIR, 'latest.json'), JSON.stringify(snapshot));
