@@ -11,9 +11,9 @@
 | 任务 | 自动化 ID | 调度（RRULE） | 人类可读 | 状态 | 产物 |
 |---|---|---|---|---|---|
 | 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen-baseline-*.json`（不入库） |
+| pulse 消息脉搏 · 一键报告 | `6d84d676-9d4c-4880-a205-b99383cfb74f` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=0` | 每日 08:00 | PAUSED | `pulse/report/latest.html`（不入库） |
 | 盘前纪要每日早间分析（附录 A1） | `automation-1784254142442` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=8;BYMINUTE=30` | 工作日 08:30 | ACTIVE | 仅对话输出（cwd 不在本仓库） |
 | pulse watch · 常驻监听启动 | `87f8f966-f5f4-41d6-a5b7-04a6c45059ea` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=30` | 每日 08:30 | PAUSED | `pulse/data/watch-console.log` + 归档（不入库） |
-| pulse 消息脉搏 · 一键报告 | `6d84d676-9d4c-4880-a205-b99383cfb74f` | `FREQ=DAILY;BYHOUR=9;BYMINUTE=0` | 每日 09:00 | PAUSED | `pulse/report/latest.html`（不入库） |
 | 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen-<日>.json` + html |
 | 早盘机会（10:30） | `437fc164-152b-431c-b5bf-8a7a211f8f47` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30` | 工作日 10:30 | ACTIVE | 同 `--intraday` 产物 |
 | 午盘机会（11:30） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
@@ -373,10 +373,10 @@ git push
 
 ---
 
-## 10. pulse 消息脉搏 · 一键报告（09:00，PAUSED）
+## 10. pulse 消息脉搏 · 一键报告（08:00，PAUSED）
 
 - **ID**：`6d84d676-9d4c-4880-a205-b99383cfb74f`
-- **调度**：`FREQ=DAILY;BYHOUR=9;BYMINUTE=0`（每日 09:00）
+- **调度**：`FREQ=DAILY;BYHOUR=8;BYMINUTE=0`（每日 08:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：PAUSED
 - **产物**：`pulse/report/latest.html` + 快照归档（被 `.gitignore` 忽略，不入库）
