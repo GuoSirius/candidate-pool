@@ -54,6 +54,17 @@ chore: <任务中文名> $(date +%F)
 
 **盘前选股 / 盘前回填**：日常以 WorkBuddy 自动化面板**手动触发**为主（名义 rrule 仅占位，不依赖其自动运行）；状态随本机对齐为 ACTIVE。
 
+### 📑 任务内预览报告（所有产出 HTML 的任务 · 铁律）
+
+凡是运行后产出 HTML 报告的任务，Prompt 必须包含一步：**调用 `present_files` 工具打开当日报告**（传绝对路径），让报告直接在任务对话的预览面板里展示——用户不需要去翻 `eod/reports/` 目录，也不用再开口要链接。要求：
+
+- 报告文件存在 → `present_files(<报告绝对路径>)`，一句话说明报告内容要点；
+- 文件不存在 → **如实说明**（时段跳过 / 当日无候选 / 回填失败），把脚本日志尾部的关键错误贴出来，**不要编造路径**。
+
+各任务的报告路径以小节内 Prompt 里写死的为准（盘前/回填 `eod/reports/preopen-<日>.html`、尾盘观察 `eod-<日>-obs.html`、尾盘正式 `eod-<日>.html`、盘中 `eod-<日>-intraday.html`、次日初筛 `reports/stock_list_<日>.html`）。
+
+> **同步状态（2026-11-06）**：本约定为本日新增。下文各任务 Prompt 模板均已含预览步骤；**本机 6 个任务（2/3/4/5/6/7/8 小节）的线上 prompt 需按新模板在自动化面板重贴一次**（本次因 automation_update 工具不可用，由用户手动重贴；重贴后删除本行的「需重贴」提示）。
+
 ---
 
 ## 1. 盘前基线预计算 (preopen baseline)
@@ -96,6 +107,8 @@ chore: <任务中文名> $(date +%F)
 ~~~text
 在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前选股：npm run preopen（等价 node eod/preopen_screener.js，默认全市场 universe 口径）。09:20-09:35 交易窗口内运行有效，窗口外需补跑时加 --force（node eod/preopen_screener.js --force）。完成后汇总：候选数量、TOP5 名称与总分、贴线样本（nearMiss）条数；若被时段守卫跳过或零候选，说明原因。
 
+生成成功后，必须调用 present_files 工具打开当日报告 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool\eod\reports\preopen-<当日>.html（YYYY-MM-DD 替换 <当日>），让报告直接在任务预览面板展示；文件不存在则如实说明原因，不要编造路径。
+
 生成成功后，把产物提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行）：
 
 ```bash
@@ -135,7 +148,7 @@ git push
 - 一字涨停但换手率 ≥ sealedTurnoverMin(1.5%)（放量）→ 放量可买
 - 一字缩量涨停 → 很难买入
 
-完成后在对话里向用户汇总（不要只给路径）：回填总数、命中数、命中率、上榜只数，并贴出 HTML 中那张「收盘回填」逐票表的精简版（代码/名称/今开%/今收%/买入收益%/买入机会/连板/上榜/命中）。若当日无盘前归档则说明。
+完成后在对话里向用户汇总（不要只给路径）：回填总数、命中数、命中率、上榜只数，并贴出 HTML 中那张「收盘回填」逐票表的精简版（代码/名称/今开%/今收%/买入收益%/买入机会/连板/上榜/命中）。随后必须调用 present_files 工具打开重渲染后的报告 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool\eod\reports\preopen-<当日>.html（YYYY-MM-DD 替换 <当日>），让完整报告（含收盘回填段、轨道过滤、nearMiss 折叠表）直接在任务预览面板展示。若当日无盘前归档或文件不存在则说明原因，不要编造路径。
 
 生成成功后，把更新后的归档与重渲染的 html 一并提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行）：
 
@@ -193,7 +206,7 @@ git push
 3. 涨跌幅% = chgPct；尾盘段% = tail.segPct；量比 = volRatio；总分 = total（保留 1 位）。涨跌幅与尾盘段按红涨绿跌语义展示数值即可，无需颜色。
 4. 若 records 为空，直接说「今日（<交易日>）无尾盘观察候选」即可，不要编造。
 
-完成后向用户报告：观察产物路径、候选数量、上面这张入选票表格，以及 git push 结果。
+完成后向用户报告：观察产物路径、候选数量、上面这张入选票表格，以及 git push 结果。最后必须调用 present_files 工具打开观察报告 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool\eod\reports\eod-<交易日>-obs.html（YYYY-MM-DD 替换 <交易日>），让报告直接在任务预览面板展示；文件不存在则如实说明，不要编造路径。
 ~~~
 
 ### git 推送块（本任务）
@@ -242,7 +255,7 @@ git push
 3. 涨跌幅% = chgPct；尾盘段% = tail.segPct；量比 = volRatio；总分 = total（保留 1 位）。涨跌幅与尾盘段按红涨绿跌语义展示数值即可，无需颜色。
 4. 若 records 为空，直接说「今日（<交易日>）无尾盘正式候选」即可，不要编造。
 
-完成后向用户报告：正式产物路径、候选数量、上面这张入选票表格，以及 git push 结果。
+完成后向用户报告：正式产物路径、候选数量、上面这张入选票表格，以及 git push 结果。最后必须调用 present_files 工具打开正式报告 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool\eod\reports\eod-<交易日>.html（YYYY-MM-DD 替换 <交易日>），让报告直接在任务预览面板展示；文件不存在则如实说明，不要编造路径。
 ~~~
 
 ### git 推送块（本任务）
@@ -269,6 +282,8 @@ git push
 
 ~~~text
 在 candidate-pool 项目目录（D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）下，执行尾盘选股命令：运行 `npm run tail:intraday`（等价于 `node eod/tail_screener.js --intraday`）。等待命令执行完成，捕获并打印关键输出（候选股列表、报告路径、任何报错），用简洁中文向用户汇报结果。若命令执行失败，给出根因与可执行建议，不要隐瞒错误。
+
+生成成功后，必须调用 present_files 工具打开盘中报告（eod/reports/ 下当天修改时间最新的 eod-<交易日>-intraday.html，用绝对路径），让报告直接在任务预览面板展示；文件不存在则如实说明，不要编造路径。
 
 生成成功后，把盘中候选提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行；`--intraday` 盘中模式强制 `--no-notify` 且不写 D1，仅入库本仓库 git）：
 
@@ -318,6 +333,7 @@ git push
    推送依赖本机已缓存的 Git 凭据（GitHub），无需交互。
 3. 完成后向用户报告：生成的报告路径、硬触发数量（R01/R07/R05）、重点关注/次级关注数量，以及 git push 结果。本机已静默，不需要报告微信/邮件推送结果。若某步失败，如实转述异常，不要编造数据。
 4. 你把整理出来的数据中R01 量能验证突破、R07 板块内补涨、R05 尾盘异动核验、重点关注、次级关注、条件观察这几类的股票名称、代码一起给我列出来，方便我查看。
+5. 生成成功后，必须调用 present_files 工具打开当日初筛报告 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool\reports\stock_list_<锚定日>.html（YYYY-MM-DD 替换 <锚定日>），让报告直接在任务预览面板展示；文件不存在则如实说明，不要编造路径。
 
 注意事项：
 - 仅在工作日收盘后运行（调度已设为周一至周五 16:00）。
