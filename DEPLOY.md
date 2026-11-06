@@ -44,7 +44,7 @@
 
 | 项 | 要求 | 说明 |
 |----|------|------|
-| Node.js | **>= 18**（本地跑 SQLite 需 **>= 22**） | `node:sqlite` 是 Node 22 才有的内置模块，`db/backfill.js --local` 依赖它 |
+| Node.js | **>= 24** | `node:sqlite` 等内置模块依赖；三包 `engines` 已统一声明 `>=24`（2026-11-06） |
 | Cloudflare 账号 | 已开通 Workers / Pages / D1 | 免费额度足够本项目 |
 | 仓库 | 已 clone 到本地 | `git clone https://github.com/GuoSirius/candidate-pool.git` |
 
@@ -207,7 +207,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | 浏览器打不开 `*.workers.dev` | DNS 污染 / SNI 拦截，**链路问题非服务故障**（本项目已不使用该域名） | 统一走 `*.pages.dev` 同源地址 |
 | 改了 `worker/src/` 但线上没变化 | `worker/` 不是发布产物，改它**不会**被自动带上线 | 重新执行 `npm run deploy`（Pages Functions 打包时会一并更新） |
 | `wrangler d1 execute` 报 binding 相关错误 | 漏了 `--remote` | 补上 `--remote` |
-| 本地 `db/backfill.js --local` 报模块不存在 | Node < 22 无 `node:sqlite` | 升级到 Node 22+ |
+| 本地 `db/backfill.js --local` 报模块不存在 | Node < 22 无 `node:sqlite` | 升级到 Node 24+（engines 已统一要求 >=24） |
 
 ---
 
