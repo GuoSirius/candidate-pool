@@ -20,7 +20,7 @@
 | 命令 | 用途 |
 |---|---|
 | `npm run pulse` | 手动单次：采集→交叉分析→快照落盘→HTML 报告 |
-| `npm run pulse:watch` | 常驻监听：每轮完成后计时 3 分钟再跑下一轮；交易日 08:30–15:35 活跃，发现新热点/加速异动弹 Windows Toast（无新异动静默；非 Windows 仅 console） |
+| `npm run pulse:watch` | 常驻监听：每轮完成后计时 3 分钟再跑下一轮；交易日 08:30–15:35 活跃；事件分「消息热点」（多源新话题）/「消息+行情共振」/「行情异动」（涨幅跳升）三类，弹 Windows Toast；同板块 60min 冷却；无新异动静默；非 Windows 仅 console |
 | `npm run pulse:probe` | 数据源探针（源接口变更时排查用） |
 
 产物（按日期分层）：
