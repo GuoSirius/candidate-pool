@@ -30,6 +30,9 @@ const argv = process.argv.slice(2);
 const OPT = { date: (() => { const i = argv.indexOf('--date'); return i >= 0 ? argv[i + 1] : null; })(), force: argv.includes('--force') };
 function log(m) { console.log(m); }
 
+// 日志统一归位：脚本自镜像到 eod/logs/preopen-backfill-<日期>.log
+require('./lib/runlog').startRunLog('preopen-backfill');
+
 function boardLimitPct(code) {
   return PR.limitUpPct(code); // 板性唯一真相源在 preopen_rules.js
 }

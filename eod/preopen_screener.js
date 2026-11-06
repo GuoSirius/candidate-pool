@@ -57,6 +57,9 @@ const OPT = {
 const RUNNER = process.env.GITHUB_ACTIONS ? 'github' : 'local';
 function log(m) { if (!OPT.json) console.log(m); }
 
+// 日志统一归位：脚本自镜像到 eod/logs/preopen-<日期>.log（不依赖外部重定向；--paths 纯打印不记）
+if (!OPT.paths) require('./lib/runlog').startRunLog('preopen');
+
 function fail(msg, err) {
   log(`[失败] ${msg}` + (err ? `\n${err && err.stack || err}` : ''));
   if (cfg.notify.enabled && cfg.notify.alertOnFailure && !OPT.noNotify) {

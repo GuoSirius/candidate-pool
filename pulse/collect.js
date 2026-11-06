@@ -9,7 +9,8 @@ const market = require('./sources/market');
 const announce = require('./sources/announce');
 const { mapLimit } = require('../eod/lib/http');
 
-const LEADER_BOARDS = 8; // 给热度前 N 的板块拉成分领涨股
+// 给热度前 N 的板块拉成分领涨股（与 FLOW_TOP_N 对齐，资金流榜单规模一致）
+const LEADER_BOARDS = cfg.FLOW_TOP_N;
 
 const fmtBJ = (ms) => new Date(ms + 8 * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
 
