@@ -11,13 +11,16 @@
 | 任务 | 自动化 ID | 调度（RRULE） | 人类可读 | 状态 | 产物 |
 |---|---|---|---|---|---|
 | 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen-baseline-*.json`（不入库） |
+| 盘前纪要每日早间分析（附录 A1） | `automation-1784254142442` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=8;BYMINUTE=30` | 工作日 08:30 | ACTIVE | 仅对话输出（cwd 不在本仓库） |
+| pulse watch · 常驻监听启动 | `87f8f966-f5f4-41d6-a5b7-04a6c45059ea` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=30` | 每日 08:30 | PAUSED | `pulse/data/watch-console.log` + 归档（不入库） |
+| pulse 消息脉搏 · 一键报告 | `6d84d676-9d4c-4880-a205-b99383cfb74f` | `FREQ=DAILY;BYHOUR=9;BYMINUTE=0` | 每日 09:00 | PAUSED | `pulse/report/latest.html`（不入库） |
 | 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen-<日>.json` + html |
-| 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen-<日>.json` close 段 |
+| 早盘机会（10:30） | `437fc164-152b-431c-b5bf-8a7a211f8f47` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30` | 工作日 10:30 | ACTIVE | 同 `--intraday` 产物 |
+| 午盘机会（11:30） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
 | 尾盘选股-观察模式(1430) | `f46d3c1c-a803-4e43-a2a7-7db8ede8b5ba` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod-<交易日>-obs.json` + html |
 | 尾盘选股-正式口径(1450) | `6cda9d58-4ba9-4c1d-ac2c-476c2459d879` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod-<交易日>.json` + html |
-| 午盘机会（11:30） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
-| 早盘机会（10:30） | `437fc164-152b-431c-b5bf-8a7a211f8f47` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30` | 工作日 10:30 | ACTIVE | 同 `--intraday` 产物 |
 | A股次日候选池初筛 | `automation-1786328116138` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
+| 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen-<日>.json` close 段 |
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
 
@@ -29,7 +32,7 @@
 
 - **本地自动化（本机 WorkBuddy）**：**所有任务**的提交都由下方各节 Prompt 里的「git 推送块」显式负责（`git add` → `git commit` → `git push`）。脚本内部**不再写 git**——原先盘前选股 / 回填在 `preopen_screener.js` / `preopen_backfill.js` 内自动 commit，已于 2026-10-23 移除，统一收归 Prompt，避免重复提交。
 - **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
-- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1/A2 的 cwds 不在本仓库，不提交本仓库。
+- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/report/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库。
 
 #### 统一提交信息格式（规范 · 中文描述 + 时间）
 
@@ -96,9 +99,9 @@ chore: <任务中文名> $(date +%F)
 ## 2. 盘前选股 preopen（手动触发）
 
 - **ID**：`ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a`
-- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25`（名义 09:25，**PAUSED 仅手动触发**）
+- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25`（名义 09:25，日常以手动触发为主，名义 rrule 仅占位）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
-- **状态**：PAUSED
+- **状态**：ACTIVE
 - **产物**：`eod/data/preopen-<当日>.json` + `eod/reports/preopen-<当日>.html`
 - **推送**：脚本自身会推送通知与 git 溯源，无需额外提交
 
@@ -353,6 +356,40 @@ git push
 
 ---
 
+## 9. pulse watch · 常驻监听启动（08:30，PAUSED）
+
+- **ID**：`87f8f966-f5f4-41d6-a5b7-04a6c45059ea`
+- **调度**：`FREQ=DAILY;BYHOUR=8;BYMINUTE=30`（每日 08:30）
+- **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
+- **状态**：PAUSED
+- **产物**：`pulse/data/watch-console.log` + `pulse/data/`、`pulse/report/` 归档（均被 `.gitignore` 忽略，不入库）
+- **推送**：无（prompt 未含 git 推送块，本地留存）
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+~~~text
+启动 pulse 常驻监听（仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）。步骤：1) 先查重：powershell 执行 Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'pulse.watch' }，若已有进程在跑，报告 PID 并结束（绝不重复启动第二个）。2) 不存在则后台启动：cmd //c start "pulse-watch" /min cmd /c "cd /d D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool && npm run pulse:watch >> pulse\data\watch-console.log 2>&1"（最小化窗口独立运行，退出本会话不影响）。3) 等 15 秒后查看 pulse/data/watch-console.log 末尾，确认出现「[watch] 启动」字样；每轮完成会有「轮次完成」日志，异动时会弹 Windows Toast。4) 汇报：PID、日志路径、归档目录 pulse/data 与 pulse/report。附带停止方法：taskkill /PID <pid> /F 或关闭那个最小化窗口。
+~~~
+
+---
+
+## 10. pulse 消息脉搏 · 一键报告（09:00，PAUSED）
+
+- **ID**：`6d84d676-9d4c-4880-a205-b99383cfb74f`
+- **调度**：`FREQ=DAILY;BYHOUR=9;BYMINUTE=0`（每日 09:00）
+- **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
+- **状态**：PAUSED
+- **产物**：`pulse/report/latest.html` + 快照归档（被 `.gitignore` 忽略，不入库）
+- **推送**：无（prompt 未含 git 推送块，本地留存）
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+~~~text
+在仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool 执行 `npm run pulse`（pulse 消息脉搏单次全流程：采集 6 源快讯/板块资金流/公告 → 交叉分析 → 归档快照与 HTML 报告）。成功后向用户简要汇报：1) 信源状态一行；2) 热点板块 top5（名称+热度分+验证级别+涨跌幅+领涨股）；3) 用 present_files 打开 pulse/report/latest.html 给用户看。若失败，汇报失败的信源与错误信息（脚本自身会输出各源 OK/FAIL）。
+~~~
+
+---
+
 ## 附录：A 股工作流相关、但 cwd 不在本仓库的自动化
 
 > 换设备重建时一并照抄即可；它们的 cwds 指向其他工作区，需按新设备实际路径调整。
@@ -379,28 +416,6 @@ git push
 6）列表最新三条链接也发送给我，方便阅读详情
 
 不要推送、不要发布任何内容，仅把分析结果作为本次任务的输出。
-~~~
-
-### A2. A股每日市场情绪日报（23:30，PAUSED）
-
-- **ID**：`automation-1786325369523`
-- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=23;BYMINUTE=30`
-- **cwds**：`D:\workspace\workbuddy\2026-08-10-08-24-44`（独立项目：龙虎榜+题材+行业轮动日报，Python 实现）
-- **推送**：`--notify`（依赖该项目 notify_config.json）
-
-~~~text
-生成最近交易日的 A 股「龙虎榜 + 题材热点 + 行业轮动」市场情绪日报，并在生成后推送微信/邮件。
-
-执行步骤：
-1. 用虚拟环境解释器运行 D:\workspace\workbuddy\2026-08-10-08-24-44\run_daily.py --notify（默认取最近交易日，周末自动回退到周五；--notify 会在报告生成后按 notify_config.json 推送）。
-   命令示例：
-   C:/Users/Admin/.workbuddy/binaries/python/envs/default/Scripts/python.exe D:/workspace/workbuddy/2026-08-10-08-24-44/run_daily.py --notify
-2. 脚本自动完成：刷新/复用参考库、抓取龙虎榜与同花顺题材、抓取全市场行情序列、北交所补齐、计算行业板块、渲染单文件 HTML，最后推送。
-3. 完成后向用户报告：生成的 HTML 文件路径（output/A股市场情绪日报_YYYY-MM-DD.html）、关键概览（上榜家数、净买入合计、最热题材、领涨行业、全市场涨跌家数），以及微信/邮件推送结果。若 notify_config.json 未配置则跳过推送并提示用户如何配置。
-
-注意事项：
-- 推送依赖本地 notify_config.json（Server酱/PushPlus 的 key + 163 邮箱授权码），缺配置时不影响报告生成。
-- 依赖本地网络（通达信 TCP、东方财富、同花顺、新浪、腾讯）与虚拟环境（含 requests、mootdx）。某步失败脚本仍尽量产出报告，请如实转述异常。
 ~~~
 
 > 「知了窝」两个同步自动化属于 zhiliaowo-proxy 项目，记录在该项目自己的文档里，此处不收录。
