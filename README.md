@@ -20,6 +20,7 @@
 | [`docs/web/01-方案.md`](docs/web/01-方案.md) | Web 前端：页面与口径、排序/移动端等硬约定 |
 | [`docs/release/01-方案.md`](docs/release/01-方案.md) | 发布流程：八阶段、三条硬规则、常用命令 |
 | [`docs/eod-tail-screener/`](docs/eod-tail-screener/) | 尾盘选股：需求 / 方案 / 计划 / 待确认 / 上线后复盘 |
+| [`docs/pattern/01-方案.md`](docs/pattern/01-方案.md) | 形态选股：双引擎、四类形态、参考价位、过滤项与表头、新增形态操作 |
 | [`docs/npm-publish/`](docs/npm-publish/) | 独立发布（npm 包 / 免拉代码运行） |
 | [`docs/notes-groups/`](docs/notes-groups/) | 评论（备注）与分组管理 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 由 changelogen 自动生成，勿手改 |
@@ -184,6 +185,39 @@ npm run weekly:winrate     # 管道 / 分项 / 游资三维度；<20 交易日�
 | **R05** 尾盘异动 | 尾盘资金抢筹 | 14:30–15:00 涨幅≥2% 且 尾盘量能占比≥20% 且 全天涨幅<7%（净流入需 L2，分时接口不含） |
 
 报告按「重点关注（R01 全部门槛达标）/ 次级关注（核心3/4且市值达标）/ 条件观察 / 排除」四档分类。
+
+---
+
+## 形态选股（手动触发）
+
+独立于次日候选池 / 盘前 / 尾盘的第四条流水线，**默认全市场盲扫**，找出「当下处于指定形态」的票。
+形态定义是唯一裁决方 [`eod/pattern.templates.json`](eod/pattern.templates.json)，新增形态优先只改这份 JSON。
+
+| 形态 | 引擎 | 说明 |
+|---|---|---|
+| 强势平台 | 模板 | 智能自控自 2026-10-22 起：低位缩量横盘 → 单日巨量突破 → 高位窄幅平台不破 MA20 |
+| N字二波 | 模板 | 亚玛顿自 2026-09-16 起：启动 → 主升 → 缩量回踩 → 再放量上攻 |
+| 老鸭头 | 规则 | 60 日线上行 + 前波拉升 → 缩量鸭鼻孔 → 不破 MA60 → MA5 上穿 MA10 |
+| VCP突破 | 规则 | 波动与量能逐级收缩 + 均线粘合 → 单日放量突破平台上沿 |
+
+```bash
+npm run pattern                              # 全市场正式跑（手动入口，不自动定时）
+npm run pattern -- --scope watchlist         # 观察池快速调试
+npm run pattern -- --date 2026-11-06         # 指定锚定日
+npm run pattern:replay                      # 从当日 K 线缓存零网络重算（调阈值用）
+npm run pattern:calibrate                   # 改了模板票/起止日后重算标尺
+npm run pattern:backfill                    # 补 T+1/T+3 并按形态聚合胜率
+npm run pattern:selftest                    # 23 项离线自测（模板票必须满分）
+```
+
+| 产物 | 内容 |
+|---|---|
+| `eod/data/pattern/pattern-<日>.json` | 命中明细 + 贴线样本 + 漏斗统计 |
+| `eod/reports/pattern/pattern-<日>.html` | 单文件可过滤报告：形态/阶段/匹配分/上榜/游资/行业过滤、三视图、双语、mini K 线、推荐买入区间与止盈止损 |
+| `eod/data/pattern/pattern-kline-<日>.json` | 日 K 缓存（gitignore，供 `--replay`） |
+
+> 参考价位为形态支撑位推导的**量化参考位**（盈亏比 2:1），不是投资建议；模板起点属事后视角，存在前视偏差。
+> 完整口径见 [`docs/pattern/01-方案.md`](docs/pattern/01-方案.md)。
 
 ---
 
