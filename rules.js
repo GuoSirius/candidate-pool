@@ -9,7 +9,7 @@
  *   - R05 尾盘异动核验（verifyR05）
  *   - 行业涨幅中位数（computeSectors）
  *   - 成交量单位 / 换手率推算（volLotSize / calcTurnover）
- *   - 交易日锚定（ymd / isWeekendD / lastClosedTradingDay / nextTradingDay）
+ *   - 交易日锚定（ymd / isWeekendD / isTradingDay / previousTradingDay / nextTradingDay / lastClosedTradingDay，含法定节假日；周六/周日与调休补班日永远休市）
  *
  * 所有函数均为纯函数：相同入参恒得相同出参，不读网络、不改全局。
  * gen_candidates.js 改为 require('./rules') 后调用，避免两处逻辑漂移。
@@ -38,24 +38,89 @@ function ymd(d) {
   return dayjs.isDayjs(d) ? d.format('YYYY-MM-DD') : dayjs.tz(d).format('YYYY-MM-DD');
 }
 function isWeekendD(d) { const g = d.day(); return g === 0 || g === 6; }
-/** dateStr（YYYY-MM-DD）之后的下一个交易日（仅剔除周末，不含节假日日历）。 */
+
+// ---------- 交易日历（法定节假日）----------
+// 设计说明：trading.js 用「行情时间戳众数」判定今天是否交易日（零维护、覆盖周末/节假日/临时休市）。
+// 但纯日期函数（lastClosedTradingDay / nextTradingDay / previousTradingDay）没有行情上下文，
+// 必须有一张日历才能正确剔除法定节假日。
+// 重要：A 股周六/周日永远休市；调休补班日即使落在周末也休市，对开市判定无任何影响，
+// 因此本表只登记「法定节假日」，不登记调休补班。
+// 这里只维护「已知年份」，未知年份回退为「仅剔周末」（与旧行为一致），避免无数据时崩。
+// 数据来源：国务院办公厅 2025-11-04 公布的 2026 年放假安排。
+const TRADING_CALENDAR = {
+  '2026': {
+    // 法定节假日（休市）
+    holidays: [
+      '2026-01-01', '2026-01-02', '2026-01-03', // 元旦
+      '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20', '2026-02-21', '2026-02-22', '2026-02-23', // 春节
+      '2026-04-04', '2026-04-05', '2026-04-06', // 清明
+      '2026-05-01', '2026-05-02', '2026-05-03', '2026-05-04', '2026-05-05', // 劳动节
+      '2026-06-19', '2026-06-20', '2026-06-21', // 端午
+      '2026-09-25', '2026-09-26', '2026-09-27', // 中秋
+      '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07', // 国庆
+    ],
+  },
+  '2027': {
+    // 法定节假日（休市）—— 国务院办公厅 2026-11-05 公布
+    holidays: [
+      '2027-01-01', '2027-01-02', '2027-01-03', // 元旦（周五~周日）
+      '2027-02-05', '2027-02-06', '2027-02-07', '2027-02-08', '2027-02-09', '2027-02-10', '2027-02-11', '2027-02-12', '2027-02-13', // 春节（除夕周五~正月初八周六）
+      '2027-04-03', '2027-04-04', '2027-04-05', // 清明（周六~周一）
+      '2027-05-01', '2027-05-02', '2027-05-03', '2027-05-04', '2027-05-05', // 劳动节（周六~周三）
+      '2027-06-09', // 端午（周三单日）
+      '2027-09-15', // 中秋（周三单日）
+      '2027-10-01', '2027-10-02', '2027-10-03', '2027-10-04', '2027-10-05', '2027-10-06', '2027-10-07', // 国庆（周五~周四）
+    ],
+  },
+  // 2028 及以后：国务院办公厅通常于前一年 11 月前后公布，届时补录本表。
+  // 未收录年份运行时仅告警、不终止，回退为「仅剔周末」的旧 lastClosedTradingDay 实现。
+};
+// 缺年份时只告警一次，避免刷屏（每年首触达时提醒维护者更新日历）。
+const _calWarned = new Set();
+function calendarFor(year) {
+  const c = TRADING_CALENDAR[String(year)];
+  if (!c) {
+    if (!_calWarned.has(year)) {
+      _calWarned.add(year);
+      process.stderr.write(
+        `[交易日历] 未收录 ${year} 年法定节假日安排，回退为「仅剔周末」` +
+        `（可能把法定节假日误判为交易日）。\n` +
+        `          请更新 rules.js 的 TRADING_CALENDAR（国务院办公厅通常每年 11 月前后公布次年安排）。\n` +
+        `          注：形态选股/盘前/尾盘等实时报告的锚定走「行情时间戳众数」(marketDate)，不依赖此表；\n` +
+        `          此表仅用于次日池目标日/离线/--date 等无行情上下文的纯日期推算。\n`
+      );
+    }
+    return null;
+  }
+  return { holidays: new Set(c.holidays) };
+}
+/** 某日是否为交易日：剔除法定节假日；周六/周日永远休市（调休补班即使落在周末也休市，不另开市）。 */
+function isTradingDay(d) {
+  const x = dayjs.isDayjs(d) ? d : dayjs.tz(d + ' 00:00:00');
+  const ymdStr = x.format('YYYY-MM-DD');
+  const cal = calendarFor(x.year());
+  if (cal && cal.holidays.has(ymdStr)) return false; // 法定节假日休市
+  return x.day() !== 0 && x.day() !== 6;              // 周六/周日永远休市
+}
+/** dateStr（YYYY-MM-DD）之前最近的交易日（含节假日/调休修正）。 */
+function previousTradingDay(d) {
+  let x = dayjs.isDayjs(d) ? d : dayjs.tz(d + ' 00:00:00');
+  x = x.subtract(1, 'day');
+  while (!isTradingDay(x)) x = x.subtract(1, 'day');
+  return ymd(x);
+}
+/** dateStr（YYYY-MM-DD）之后最近的交易日（含节假日/调休修正）。 */
 function nextTradingDay(dateStr) {
-  let d = dayjs.tz(dateStr + ' 00:00:00').add(1, 'day');
-  while (isWeekendD(d)) d = d.add(1, 'day');
+  let d = dayjs.isDayjs(dateStr) ? dateStr : dayjs.tz(dateStr + ' 00:00:00');
+  d = d.add(1, 'day');
+  while (!isTradingDay(d)) d = d.add(1, 'day');
   return ymd(d);
 }
-/** 最近一个「已收盘」的交易日：周六 → 周五，周日 → 周五，交易日 15:00 前 → 前一交易日。 */
+/** 最近一个「已收盘」的交易日：今天交易日且 15:00 后 → 今天；其余（盘中/今天非交易日）→ 之前最近交易日（节假日正确）。 */
 function lastClosedTradingDay(nowD) {
   const d = dayjs.isDayjs(nowD) ? nowD : dayjs.tz(nowD);
-  const day = d.day();
-  const hour = d.hour();
-  let back = 0;
-  if (day === 6) back = 1;        // 周六 -> 周五
-  else if (day === 0) back = 2;   // 周日 -> 周五
-  else if (hour < 15) back = 1;   // 交易日盘中 -> 前一交易日
-  let x = d.subtract(back, 'day');
-  while (isWeekendD(x)) x = x.subtract(1, 'day');
-  return ymd(x);
+  if (isTradingDay(d) && d.hour() >= 15) return ymd(d);
+  return previousTradingDay(d);
 }
 
 // ---------- 成交量单位 / 换手率 ----------
@@ -186,7 +251,7 @@ function computeSectors(stocks) {
 
 module.exports = {
   G,
-  ymd, isWeekendD, nextTradingDay, lastClosedTradingDay,
+  ymd, isWeekendD, isTradingDay, previousTradingDay, nextTradingDay, lastClosedTradingDay,
   volLotSize, calcTurnover,
   calcR01, isLaggard, verifyR05, computeSectors,
 };

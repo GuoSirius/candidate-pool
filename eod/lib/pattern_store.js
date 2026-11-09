@@ -100,4 +100,17 @@ function loadKlineCache(cfg, tradeDate) {
   };
 }
 
-module.exports = { dirOf, dataFile, klineFile, loadRun, saveRun, saveKlineCache, loadKlineCache };
+/** 最近一份 K 线日档缓存的日期（用于 --replay 无 --date 时定位锚定日）；无缓存返回 null */
+function latestKlineCacheDate(cfg) {
+  const dir = dirOf(cfg);
+  if (!fs.existsSync(dir)) return null;
+  let latest = null;
+  const re = new RegExp(`^${cfg.store.klinePrefix}-(\\d{4}-\\d{2}-\\d{2})\\.json$`);
+  for (const f of fs.readdirSync(dir)) {
+    const m = f.match(re);
+    if (m && (!latest || m[1] > latest)) latest = m[1];
+  }
+  return latest;
+}
+
+module.exports = { dirOf, dataFile, klineFile, loadRun, saveRun, saveKlineCache, loadKlineCache, latestKlineCacheDate };

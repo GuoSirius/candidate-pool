@@ -179,7 +179,7 @@ async function run() {
     ? dayjs.tz(OPT.now.replace(' ', 'T') + '+08:00')
     : dayjs.tz();
   if (OPT.now && !now.isValid()) throw new Error(`--now 格式非法："${OPT.now}"（应为 "YYYY-MM-DD HH:mm"）`);
-  const anchor = lastClosedTradingDay(now);   // 前一日 K 线锚定日
+  let anchor = lastClosedTradingDay(now);   // 初始值（供 --baseline 观察池等无快照分支兜底；主流程会被 marketDate 覆盖）
 
   // 仅预计算基线缓存（供全市场次日盘前用，建议收盘后定时跑）
   if (OPT.baseline) {
@@ -195,6 +195,7 @@ async function run() {
       const snap = await market.fullMarketSnapshot(cfg, log);
       codes = snap.quotes.map((q) => q.code);
       log(`[基线] 活跃代码 ${codes.length} 只（交易日 ${snap.meta.marketDate}）`);
+      anchor = snap.meta.marketDate; // 基线锚定日直接取行情日（数据驱动，不依赖日历）
     } else {
       codes = readCandidates().map((c) => c.code);
     }
@@ -258,6 +259,7 @@ async function run() {
     if (!ss.ok) { log('[结束] 跳过'); return { skipped: ss.reason }; }
   }
   const tradeDate = ss.tradeDate;
+  anchor = tradeDate; // 主流程锚定日 = 行情日（开盘前=上一交易日；数据驱动，不依赖日历）
 
   // 基线
   log('[2/4] 计算基线（昨涨 + 趋势）…');

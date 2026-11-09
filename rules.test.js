@@ -189,6 +189,47 @@ test('nextTradingDay: 跳过周末', () => {
   assert.equal(R.nextTradingDay('2026-09-19'), '2026-09-21'); // 周六 → 下周一
 });
 
+// ---------- 交易日历（法定节假日）回归 ----------
+// 规则：周一~周五且非法定节假日 → 交易日；周六/周日永远休市（调休补班日即使落在周末也休市）。
+test('isTradingDay: 节假日/周末/工作日', () => {
+  assert.equal(R.isTradingDay('2026-10-01'), false);          // 国庆休市
+  assert.equal(R.isTradingDay('2026-10-08'), true);           // 国庆后首交易日（周四）
+  assert.equal(R.isTradingDay('2026-10-10'), false);          // 周六：永远休市（调休补班也不开市）
+  assert.equal(R.isTradingDay('2026-10-11'), false);          // 周日休市
+  assert.equal(R.isTradingDay('2026-11-08'), false);          // 周日
+  assert.equal(R.isTradingDay('2026-11-09'), true);           // 周一（已知年份）
+  assert.equal(R.isTradingDay('2027-02-05'), false);          // 春节休市
+  assert.equal(R.isTradingDay('2027-02-14'), false);          // 周日：永远休市（调休补班也不开市）
+  assert.equal(R.isTradingDay('2027-06-09'), false);          // 端午（周三单日）
+  assert.equal(R.isTradingDay('2027-01-31'), false);          // 周日：永远休市（调休补班也不开市）
+  // 未收录年份：回退为仅剔周末，不抛错
+  assert.equal(R.isTradingDay('2030-01-05'), false);          // 周六
+  assert.equal(R.isTradingDay('2030-01-04'), true);           // 周五（无节日信息，按工作日）
+});
+
+test('previousTradingDay: 跳过国庆/春节（周末永远休市）', () => {
+  assert.equal(R.previousTradingDay('2026-10-01'), '2026-09-30'); // 国庆前
+  assert.equal(R.previousTradingDay('2026-10-08'), '2026-09-30'); // 国庆后首交易日，跳过 10-01~10-07
+  assert.equal(R.previousTradingDay('2026-10-11'), '2026-10-09'); // 周日 → 前一个周五
+  assert.equal(R.previousTradingDay('2026-01-04'), '2025-12-31'); // 周日，其前跨元旦假期
+  assert.equal(R.previousTradingDay('2027-02-14'), '2027-02-04'); // 周日，其前跨春节 02-05~02-13
+});
+
+test('nextTradingDay: 跳过国庆/春节（周末永远休市）', () => {
+  assert.equal(R.nextTradingDay('2026-09-30'), '2026-10-08'); // 跳过国庆 10-01~10-07
+  assert.equal(R.nextTradingDay('2026-10-07'), '2026-10-08');
+  assert.equal(R.nextTradingDay('2026-10-09'), '2026-10-12'); // 周五 → 下周一（10-10 六、10-11 日休市）
+  assert.equal(R.nextTradingDay('2026-10-10'), '2026-10-12'); // 周六 → 下周一
+  assert.equal(R.nextTradingDay('2027-02-13'), '2027-02-15'); // 春节末（周六）→ 下周一（02-14 周日休市）
+});
+
+test('lastClosedTradingDay: 国庆/春节后首交易日', () => {
+  assert.equal(R.lastClosedTradingDay(dayjs.tz('2026-10-08 09:00:00')), '2026-09-30'); // 国庆后首交易日盘中 → 前一交易日
+  assert.equal(R.lastClosedTradingDay(dayjs.tz('2026-10-08 16:00:00')), '2026-10-08'); // 收盘 → 当日
+  assert.equal(R.lastClosedTradingDay(dayjs.tz('2026-10-11 10:00:00')), '2026-10-09'); // 周日 → 前一个周五
+  assert.equal(R.lastClosedTradingDay(dayjs.tz('2027-02-15 09:00:00')), '2027-02-04'); // 春节后首交易日盘中 → 春节前周四
+});
+
 test('regression: rules 模块可被 gen_candidates 直接 require 且不抛错', () => {
   assert.ok(typeof R.calcR01 === 'function');
   assert.ok(typeof R.verifyR05 === 'function');

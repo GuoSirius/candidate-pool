@@ -3,18 +3,19 @@
  * eod/pattern_screener.js —— 形态选股入口（编排层）
  * ---------------------------------------------------------------------------
  * 流程：
- *   1. 锚定最近已收盘交易日（盘中运行自动用前一日，口径不漂移）
+ *   1. 锚定实时行情实际交易日（marketDate）：开盘前停在上一交易日→锚定上一交易日（完整 K、走缓存）；
+ *      开盘后行情日切到当日→锚定当日（含实时 K、不读/不写缓存）。天然覆盖法定节假日/调休/临时休市。
  *   2. 全市场快照 → 宽松粗筛（只排除明确不可能的，形态票常缩量整理，按活跃度排序会误杀）
  *   3. 仅对入围票抓前复权日 K（两阶段漏斗，避免 ~5000 次请求触发 WAF），日档缓存
  *   4. 双引擎跑四类形态 → 参考价位 → 行业分组 → 上榜/游资（低频，失败留空）
  *   5. 落库(JSON) → HTML 报告（可过滤）→ 通知（默认关）
  *
  * 用法：
- *   node eod/pattern_screener.js                    # 默认全市场，锚定最近已收盘交易日
+ *   node eod/pattern_screener.js                    # 默认全市场，锚定实时行情实际交易日（开盘前=上一交易日，开盘后=当日实时）
  *   node eod/pattern_screener.js --scope watchlist  # 观察池（快速调试）
  *   node eod/pattern_screener.js --date 2026-11-09  # 指定锚定日
  *   node eod/pattern_screener.js --limit 300        # 粗筛后只取前 N 只（调试）
- *   node eod/pattern_screener.js --replay           # 从当日 K 线缓存零网络重算（调阈值用）
+ *   node eod/pattern_screener.js --replay           # 从 K 线缓存零网络重算（无 --date 时取最新缓存日，调阈值用）
  *   node eod/pattern_screener.js --refresh          # 忽略缓存强制重抓 K 线
  *   node eod/pattern_screener.js --no-notify --json --paths --init
  * ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ const { lastClosedTradingDay } = require('../rules');
 const market = require('./lib/market');
 const PR = require('./lib/preopen_rules');
 const store = require('./lib/pattern_store');
+const { stampToDate } = require('./lib/trading');
 const E = require('./lib/pattern_engine');
 const F = require('./lib/pattern_features');
 const { loadIndustryMap, sectorOf, listedOf, UNKNOWN } = require('./lib/sector');
@@ -121,8 +123,9 @@ function coarseFilter(quotes, map, tradeDate) {
 
 /** 抓 K 线（或复用日档缓存）；失败率超红线直接中止，绝不产出假的「0 命中」 */
 async function getKlines(codes, quotesByCode, anchor, funnel = {}) {
-  const useCache = cfg.kline.cache && !OPT.refresh;
-  if (useCache || OPT.replay) {
+  const allowCacheRead = funnel.allowCacheRead;
+  const allowCacheWrite = funnel.allowCacheWrite;
+  if (allowCacheRead || OPT.replay) {
     const cache = store.loadKlineCache(cfg, anchor);
     if (cache) {
       log(`[K线] 复用缓存 ${path.basename(store.klineFile(cfg, anchor))}（${cache.count} 只，${cache.generatedAt}）`);
@@ -156,8 +159,12 @@ async function getKlines(codes, quotesByCode, anchor, funnel = {}) {
   if (failRate > cfg.kline.maxFailRate) {
     throw new Error(`K线失败率 ${(failRate * 100).toFixed(1)}% 超过红线 ${(cfg.kline.maxFailRate * 100).toFixed(0)}%，疑似数据源拦截，中止（不生成报告/不覆盖归档）`);
   }
-  const saved = store.saveKlineCache(cfg, anchor, ok, { scope: OPT.scope, source: 'live', ...funnel });
-  log(`[K线] 已缓存 ${saved.count} 只 → ${path.basename(saved.file)}`);
+  if (allowCacheWrite) {
+    const saved = store.saveKlineCache(cfg, anchor, ok, { scope: OPT.scope, source: 'live', ...funnel });
+    log(`[K线] 已缓存 ${saved.count} 只 → ${path.basename(saved.file)}`);
+  } else {
+    log(`[K线] 盘中实时模式，不写缓存（避免半截当日 K 线）`);
+  }
   return { entries: ok, fromCache: false, quotesByCode };
 }
 
@@ -294,6 +301,35 @@ async function emitResult(p) {
 
 function numScore(v) { return Number(v || 0).toFixed(1); }
 
+/** 从报价戳众数推出行情日（与 trading.js 同一口径；观察池无全市场众数时退化为最多出现的日期）。 */
+function marketDateFromQuotes(quotes) {
+  const byDate = new Map();
+  for (const q of quotes) {
+    const d = stampToDate(q.stamp);
+    if (d) byDate.set(d, (byDate.get(d) || 0) + 1);
+  }
+  let best = null, n = 0;
+  for (const [d, c] of byDate) if (c > n) { n = c; best = d; }
+  return best;
+}
+
+/** 抓全市场 / 观察池快照，返回 { quotes, marketDate }；marketDate 由报价时间戳众数推出。 */
+async function fetchSnapshot(cfg, log) {
+  if (OPT.scope === 'watchlist') {
+    const cs = readCandidates();
+    log(`[1/4] 抓观察池快照（${cs.length} 只）…`);
+    const quotes = (await market.fetchBatch(cs, cfg)).filter(Boolean);
+    return { quotes, marketDate: marketDateFromQuotes(quotes) };
+  }
+  log('[1/4] 抓全市场快照…');
+  const snap = await market.fullMarketSnapshot(cfg, log);
+  if (snap.meta.valid < cfg.market.minValidQuotes) {
+    throw new Error(`有效报价 ${snap.meta.valid} 低于红线 ${cfg.market.minValidQuotes}`);
+  }
+  log(`      快照 ${snap.meta.valid} 只（行情日 ${snap.meta.marketDate}）`);
+  return { quotes: snap.quotes, marketDate: snap.meta.marketDate || null };
+}
+
 async function run() {
   const t0 = Date.now();
   if (OPT.paths) {
@@ -312,39 +348,56 @@ async function run() {
 
   const now = OPT.now ? dayjs.tz(OPT.now.replace(' ', 'T') + '+08:00') : dayjs.tz();
   if (OPT.now && !now.isValid()) throw new Error(`--now 格式非法："${OPT.now}"`);
-  const anchor = OPT.date || lastClosedTradingDay(now);
-  log(`[锚定] ${anchor}（范围 ${OPT.scope}）`);
+  const calendarToday = now.format('YYYY-MM-DD');
+
+  // ---- 锚定（第一步）----
+  // 口径统一为「实时行情实际交易日」：开盘前行情日停在上一交易日 → 锚定上一交易日（完整 K、走缓存）；
+  // 开盘后行情日切到当日 → 锚定当日（含实时 K，不读/不写缓存）。天然覆盖法定节假日 / 调休 / 临时休市。
+  //   --date 显式优先（调试/回放目标日）；--replay 无 --date → 最新 K 线缓存日；否则取实时快照的行情日。
+  let anchor = null;
+  let marketDate = null;
+  let intraday = false; // 锚定日 == 今日历日 → 盘中实时
+  if (OPT.date) {
+    anchor = OPT.date;
+    marketDate = anchor;
+    intraday = (anchor === calendarToday);
+  } else if (OPT.replay) {
+    anchor = store.latestKlineCacheDate(cfg) || lastClosedTradingDay(now);
+    marketDate = anchor;
+  }
+  log(`[锚定] ${anchor || '(待快照)'}（范围 ${OPT.scope}）`);
 
   const defs = E.loadDefs(cfg);
   log(`[形态] ${defs.patterns.map((p) => p.name).join(' / ')} ← ${path.basename(defs.source)}`);
   const map = loadIndustryMap();
   if (map.count < 3000) log(`[警告] 行业映射仅 ${map.count} 只，分组可能失真`);
 
-  let quotesByCode = {}, codes = [], snapshotCount = 0, coarseCount = 0, marketDate = anchor, rejByReason = {};
-  const cached = (cfg.kline.cache && !OPT.refresh) || OPT.replay ? store.loadKlineCache(cfg, anchor) : null;
-  if (cached && !OPT.refresh) {
-    log(`[缓存] 命中 ${anchor} 日档（${cached.count} 只），跳过全市场快照`);
-    // 复用上次归档的漏斗计数，避免 --replay 报告里「快照 0」这种假数字
+  let quotesByCode = {}, codes = [], snapshotCount = 0, coarseCount = 0, rejByReason = {};
+  let quotes = null; // 本次现抓的快照报价（非 --replay 且需粗筛时有值）
+
+  // live 无 --date：先抓快照拿到行情日，再锚定（必须在 K 线缓存判定之前）
+  if (!OPT.replay && !OPT.date) {
+    const snap = await fetchSnapshot(cfg, log); // { quotes, marketDate }
+    quotes = snap.quotes;
+    marketDate = snap.marketDate;
+    anchor = marketDate || lastClosedTradingDay(now);
+    intraday = (anchor === calendarToday);
+    log(`[锚定] ${anchor}（行情日 ${marketDate || '—'}，${intraday ? '盘中实时' : '已收盘/休市'}）`);
+  }
+
+  // K 线缓存开关：盘中实时（锚定当日）不读/不写，避免缓存半截当日 K；
+  // 上一交易日 / 显式历史日 / --replay 正常走缓存。
+  const cacheRead = (cfg.kline.cache && !OPT.refresh && !intraday) || OPT.replay;
+  const cache = cacheRead ? store.loadKlineCache(cfg, anchor) : null;
+  if (cache && !OPT.refresh) {
+    log(`[缓存] 命中 ${anchor} 日档（${cache.count} 只），跳过全市场快照`);
     const pm = ((store.loadRun(cfg, anchor) || {}).meta) || {};
-    const cm = cached.meta || {};
+    const cm = cache.meta || {};
     snapshotCount = cm.snapshotCount || pm.snapshotCount || 0;
-    coarseCount = cm.coarseCount || pm.coarseCount || cached.count;
+    coarseCount = cm.coarseCount || pm.coarseCount || cache.count;
+    quotesByCode = cache.quotes || {};
   } else {
-    let quotes;
-    if (OPT.scope === 'watchlist') {
-      codes = readCandidates();
-      log(`[1/4] 抓观察池快照（${codes.length} 只）…`);
-      quotes = (await market.fetchBatch(codes, cfg)).filter(Boolean);
-    } else {
-      log('[1/4] 抓全市场快照…');
-      const snap = await market.fullMarketSnapshot(cfg, log);
-      quotes = snap.quotes;
-      marketDate = snap.meta.marketDate || anchor;
-      if (snap.meta.valid < cfg.market.minValidQuotes) {
-        throw new Error(`有效报价 ${snap.meta.valid} 低于红线 ${cfg.market.minValidQuotes}`);
-      }
-      log(`      快照 ${snap.meta.valid} 只（行情日 ${marketDate}）`);
-    }
+    if (!quotes) quotes = (await fetchSnapshot(cfg, log)).quotes;
     snapshotCount = quotes.length;
     const cf = coarseFilter(quotes, map, anchor);
     codes = cf.kept.map((q) => q.code);
@@ -355,7 +408,10 @@ async function run() {
     if (!codes.length) throw new Error('粗筛后无标的，检查 funnel 门槛');
   }
 
-  const kl = await getKlines(codes, quotesByCode, anchor, { snapshotCount, coarseCount });
+  const kl = await getKlines(codes, quotesByCode, anchor, {
+    snapshotCount, coarseCount,
+    allowCacheRead: cacheRead, allowCacheWrite: !intraday && !OPT.replay,
+  });
   if (kl.fromCache) quotesByCode = kl.quotesByCode || quotesByCode;
 
   log('[3/4] 跑形态引擎…');
