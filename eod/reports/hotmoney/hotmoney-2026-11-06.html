@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游资席位扫描 — 2026-11-06</title>
+<style>  :root, :root[data-theme="light"] {
+    --bg: #fffbeb; --card: #fff; --text: #1c1917; --muted: #92400e;
+    --border: #fde68a; --accent: #b45309; --red: #dc2626; --green: #16a34a;
+    --blue: #2563eb; --amber: #d97706; --gold: #ca8a04; --slate: #64748b;
+    --btn-bg: #fff; --btn-fg: #b45309; --callout-bg: #fff7ed; --th-bg: #fefce8;
+    --grp-self-bg: #fed7aa; --grp-self-fg: #7c2d12; --grp-sub-self-bg: #fff7ed;
+    --tag-bg: #eff6ff; --tag-pass-bg: #fef2f2; --tag-gap-bg: #fff7ed; --score-bg: #fffbeb;
+    --sc-self-bg: rgba(217, 119, 6, 0.06); --note-fg: #57534e;
+    --disc-bg: #fef2f2; --disc-border: #fecaca; --disc-fg: #991b1b; --card-empty-bg: #fafaf9;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1419; --card: #1a2129; --text: #e6edf3; --muted: #c9a684;
+    --border: #2a323c; --accent: #f59e0b; --red: #ff5b5b; --green: #26a69a;
+    --blue: #60a5fa; --amber: #fbbf24; --gold: #ffb74d; --slate: #94a3b8;
+    --btn-bg: #222b35; --btn-fg: #f59e0b; --callout-bg: #1f1c17; --th-bg: #222b35;
+    --grp-self-bg: #3a2a1a; --grp-self-fg: #fcd34d; --grp-sub-self-bg: #1f1c17;
+    --tag-bg: #1b2533; --tag-pass-bg: #2a1e1e; --tag-gap-bg: #1f1c17; --score-bg: #211d14;
+    --sc-self-bg: rgba(245, 158, 11, 0.10); --note-fg: #b9b3a8;
+    --disc-bg: #2a1e1e; --disc-border: #5b2a2a; --disc-fg: #fca5a5; --card-empty-bg: #14171c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px 16px; }
+  .container { max-width: 1320px; margin: 0 auto; }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
+  h1 { font-size: 1.55rem; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 14px; }
+  .topbtn { flex: none; cursor: pointer; border: 1px solid var(--accent); background: var(--btn-bg); color: var(--btn-fg); font-weight: 600; font-size: 0.85rem; padding: 7px 14px; border-radius: 999px; font-family: inherit; transition: all .15s; white-space: nowrap; }
+  .topbtn:hover { background: var(--accent); color: var(--btn-bg); }
+  .topbar .btns { display: flex; gap: 8px; }
+  .meta-bar { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.88rem; margin-bottom: 18px; }
+  .meta-bar .label { color: var(--muted); }
+  .meta-bar .value { font-weight: 600; }
+  .callout { background: var(--callout-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 16px 20px; margin-bottom: 18px; }
+  .callout h3 { color: var(--accent); margin-bottom: 8px; }
+  .callout ul { margin: 6px 0 0 18px; font-size: 0.9rem; }
+  .callout li { margin-bottom: 5px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+  .up { color: var(--red); } .down { color: var(--green); } .flat { color: var(--slate); }
+  .score { display: inline-block; font-size: 0.95rem; font-weight: 700; padding: 2px 12px; border-radius: 6px; background: var(--score-bg); color: var(--gold); }
+  .tag { display: inline-block; font-size: 0.78rem; padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; background: var(--tag-bg); color: var(--blue); }
+  .tag.pass { background: var(--tag-pass-bg); color: var(--red); }
+  .tag.gap { background: var(--tag-gap-bg); color: var(--amber); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; background: var(--th-bg); }
+  th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); background: var(--grp-self-bg); color: var(--grp-self-fg); font-weight: 700; }
+  th.grp-sub { background: var(--grp-sub-self-bg); color: var(--accent); }
+  td.num { text-align: center; font-variant-numeric: tabular-nums; }
+  td.sc { background: var(--sc-self-bg); }
+  .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: var(--note-fg); background: var(--callout-bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
+  td.wrap { white-space: normal; min-width: 130px; }
+  td .src { display: block; color: var(--slate); font-size: 0.72rem; }
+  td.trend { color: var(--muted); font-size: 0.8rem; }
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0 0 12px; }
+  .toolrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+  .toolrow .cap { font-size: 0.8rem; color: var(--muted); font-weight: 600; flex: none; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; flex: none; }
+  .segbtn { border: 0; background: var(--btn-bg); color: var(--btn-fg); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 6px 16px; cursor: pointer; white-space: nowrap; }
+  .segbtn + .segbtn { border-left: 1px solid var(--border); }
+  .segbtn.active { background: var(--accent); color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font: inherit; font-size: 0.8rem; padding: 3px 11px; border-radius: 999px; cursor: pointer; }
+  .chip i { font-style: normal; color: var(--muted); margin-left: 3px; }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.active i { color: inherit; opacity: 0.85; }
+  .bd-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); cursor: pointer; white-space: nowrap; flex: none; }
+  tr.sector-row td { background: var(--th-bg); color: var(--accent); font-weight: 700; font-size: 0.88rem; }
+  table.hide-bd th.grp, table.hide-bd th.grp-sub, table.hide-bd td.sc { display: none; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; font-weight: 600; }
+  .src { font-size: 0.78rem; color: var(--slate); margin-top: 8px; }
+  .disclaimer { margin-top: 26px; padding: 14px 18px; background: var(--disc-bg); border: 1px solid var(--disc-border); border-radius: 8px; font-size: 0.85rem; color: var(--disc-fg); }
+  .footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; text-align: center; }</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div>
+      <h1><span data-zh="游资席位扫描" data-en="Hot-Money Seat Scan">游资席位扫描</span> · 2026-11-06</h1>
+      <div class="sub"><span data-zh="榜单已出齐口径（17:30 后）· 窗口 1 个交易日 · 金额单位：龙虎榜席位买卖额" data-en="Board-ready basis (after 17:30) · window 1 trading days · amounts = seat billboard turnover">榜单已出齐口径（17:30 后）· 窗口 1 个交易日 · 金额单位：龙虎榜席位买卖额</span></div>
+    </div>
+    <div class="btns">
+      <button id="themeBtn" type="button" class="topbtn" title="切换深浅色">☀</button>
+      <button id="langBtn" type="button" class="topbtn">EN</button>
+    </div>
+  </div>
+
+  <div class="meta-bar">
+    <div><span class="label"><span data-zh="锚定日：" data-en="Anchor:">锚定日：</span></span><span class="value">2026-11-06</span></div>
+    <div><span class="label"><span data-zh="榜单：" data-en="Board:">榜单：</span></span><span class="value">63</span></div>
+    <div><span class="label"><span data-zh="游资命中：" data-en="Hit stocks:">游资命中：</span></span><span class="value up">37</span></div>
+    <div><span class="label"><span data-zh="当日记录：" data-en="Day trades:">当日记录：</span></span><span class="value">72</span></div>
+    <div><span class="label"><span data-zh="窗口：" data-en="Window:">窗口：</span></span><span class="value">1<span data-zh="天" data-en="d">天</span></span></div>
+    <div><span class="label"><span data-zh="席位变更：" data-en="Seat changes:">席位变更：</span></span><span class="value ">0</span></div>
+    <div><span class="label"><span data-zh="观察席位：" data-en="Watch seats:">观察席位：</span></span><span class="value">20</span></div>
+  </div>
+
+  <div class="callout">
+    <h3><span data-zh="核心结论（先行）" data-en="Key Conclusions (Up Front)">核心结论（先行）</span></h3>
+    <ul><li><span data-zh="席位快照比对：当日无新席位，名单内游资席位无变动。" data-en="Seat snapshot: no new seats, no registry changes detected.">席位快照比对：当日无新席位，名单内游资席位无变动。</span></li><li><span data-zh="当日游资净额前三：章盟主（一线）净 +5.3万、孙哥（一线）净 +1.8万、拉萨散户（避坑）净 +1.2万。" data-en="Top 3 by net: 章盟主 (一线) net 5.29亿, 孙哥 (一线) net 1.82亿, 拉萨散户 (避坑) net 1.23亿.">当日游资净额前三：章盟主（一线）净 +5.3万、孙哥（一线）净 +1.8万、拉萨散户（避坑）净 +1.2万。</span></li><li><span data-zh="观察名单：20 个未识别席位出现 ≥3 天（见文末表），高频者建议晋升进 registry。" data-en="Watchlist: 20 unmatched seats appeared ≥3 days (see table below).">观察名单：20 个未识别席位出现 ≥3 天（见文末表），高频者建议晋升进 registry。</span></li></ul>
+  </div>
+
+  <h2><span data-zh="当日交易明细（72 条）" data-en="Anchor-Day Trades (72)">当日交易明细（72 条）</span></h2>
+  <p class="src"><span data-zh="同一批「游资×票」记录的两种排法：按游资 = 同一个人的买卖聚在一起（组间按其当日净额降序）；按票 = 同一只票上的游资聚在一起（组间按该票游资净额合计降序）。两视图数据完全相同，只是分组维度不同。" data-en="The same trader×stock records in two groupings: by trader (one person's trades together) or by stock (all traders on one stock together); data identical, grouping differs.">同一批「游资×票」记录的两种排法：按游资 = 同一个人的买卖聚在一起（组间按其当日净额降序）；按票 = 同一只票上的游资聚在一起（组间按该票游资净额合计降序）。两视图数据完全相同，只是分组维度不同。</span></p>
+  <div class="toolbar">
+    <div class="seg" role="tablist">
+      <button type="button" id="viewTrader" class="segbtn active"><span data-zh="按游资" data-en="By trader">按游资</span></button>
+      <button type="button" id="viewStock" class="segbtn"><span data-zh="按票" data-en="By stock">按票</span></button>
+    </div>
+    <div class="toolrow"><span class="cap"><span data-zh="层级" data-en="Tier">层级</span></span><span class="chips" id="fTier"><button type="button" class="chip active" data-fkey="tier" data-fval=""><span data-zh="全部" data-en="All">全部</span><i>72</i></button><button type="button" class="chip" data-fkey="tier" data-fval="一线"><span data-zh="一线" data-en="一线">一线</span><i>27</i></button><button type="button" class="chip" data-fkey="tier" data-fval="二线"><span data-zh="二线" data-en="二线">二线</span><i>4</i></button><button type="button" class="chip" data-fkey="tier" data-fval="避坑"><span data-zh="避坑" data-en="避坑">避坑</span><i>41</i></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="方向" data-en="Side">方向</span></span><span class="chips" id="fDir"><button type="button" class="chip active" data-fkey="dir" data-fval=""><span data-zh="全部方向" data-en="All">全部方向</span></button><button type="button" class="chip" data-fkey="dir" data-fval="in"><span data-zh="净买入" data-en="Net buy">净买入</span></button><button type="button" class="chip" data-fkey="dir" data-fval="out"><span data-zh="净卖出" data-en="Net sell">净卖出</span></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="游资" data-en="Trader">游资</span></span><span class="chips" id="fName"><button type="button" class="chip active" data-fkey="name" data-fval=""><span data-zh="全部游资" data-en="All">全部游资</span><i>72</i></button><button type="button" class="chip" data-fkey="name" data-fval="章盟主"><span data-zh="章盟主" data-en="章盟主">章盟主</span><i>17</i></button><button type="button" class="chip" data-fkey="name" data-fval="量化打板"><span data-zh="量化打板" data-en="量化打板">量化打板</span><i>1</i></button><button type="button" class="chip" data-fkey="name" data-fval="孙哥"><span data-zh="孙哥" data-en="孙哥">孙哥</span><i>6</i></button><button type="button" class="chip" data-fkey="name" data-fval="炒股养家"><span data-zh="炒股养家" data-en="炒股养家">炒股养家</span><i>1</i></button><button type="button" class="chip" data-fkey="name" data-fval="作手新一"><span data-zh="作手新一" data-en="作手新一">作手新一</span><i>2</i></button><button type="button" class="chip" data-fkey="name" data-fval="桑田路"><span data-zh="桑田路" data-en="桑田路">桑田路</span><i>2</i></button><button type="button" class="chip" data-fkey="name" data-fval="赵老哥"><span data-zh="赵老哥" data-en="赵老哥">赵老哥</span><i>1</i></button><button type="button" class="chip" data-fkey="name" data-fval="拉萨散户"><span data-zh="拉萨散户" data-en="拉萨散户">拉萨散户</span><i>41</i></button><button type="button" class="chip" data-fkey="name" data-fval="上塘路"><span data-zh="上塘路" data-en="上塘路">上塘路</span><i>1</i></button></span></div>
+  </div>
+  <div class="table-wrap"><table id="dayTable"><thead><tr>
+    <th><span data-zh="游资" data-en="Trader">游资</span></th><th><span data-zh="标的" data-en="Stock">标的</span></th>
+    <th><span data-zh="买入" data-en="Buy">买入</span></th><th><span data-zh="卖出" data-en="Sell">卖出</span></th><th><span data-zh="净额" data-en="Net">净额</span></th>
+    <th><span data-zh="席位" data-en="Seat">席位</span></th><th><span data-zh="标记" data-en="Marks">标记</span></th>
+  </tr></thead><tbody id="dayBody"><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="600327" data-net="72880608">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>大东方</b><span class="src">600327</span></td>
+    <td class="num up">7288万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>7288万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="600327" data-net="72880608">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>大东方</b><span class="src">600327</span></td>
+    <td class="num up">7288万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>7288万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="量化打板" data-tier="二线" data-dir="in" data-stock="601599" data-net="67035160">
+    
+    <td><b>量化打板</b> <span class="tag ">二线</span></td>
+    <td><b>浙文影业</b><span class="src">601599</span></td>
+    <td class="num up">6704万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>6704万</b></td>
+    <td class="wrap src">华鑫证券有限责任公司深圳分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="601599" data-net="70892014">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>浙文影业</b><span class="src">601599</span></td>
+    <td class="num up">7089万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>7089万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-stock="603083" data-net="99942251.47">
+    
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>剑桥科技</b><span class="src">603083</span></td>
+    <td class="num up">9994万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>9994万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="002388" data-net="30853890">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>新亚制程</b><span class="src">002388</span></td>
+    <td class="num up">3145万</td>
+    <td class="num up">60万</td>
+    <td class="num up"><b>3085万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="002388" data-net="28020552">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>新亚制程</b><span class="src">002388</span></td>
+    <td class="num up">3173万</td>
+    <td class="num up">371万</td>
+    <td class="num up"><b>2802万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="002388" data-net="30853890">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>新亚制程</b><span class="src">002388</span></td>
+    <td class="num up">3145万</td>
+    <td class="num up">60万</td>
+    <td class="num up"><b>3085万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="炒股养家" data-tier="一线" data-dir="in" data-stock="000525" data-net="11255638">
+    
+    <td><b>炒股养家</b> <span class="tag pass">一线</span></td>
+    <td><b>红太阳</b><span class="src">000525</span></td>
+    <td class="num up">1171万</td>
+    <td class="num up">45万</td>
+    <td class="num up"><b>1126万</b></td>
+    <td class="wrap src">华鑫证券有限责任公司上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="000525" data-net="49608786">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>红太阳</b><span class="src">000525</span></td>
+    <td class="num up">4988万</td>
+    <td class="num up">27万</td>
+    <td class="num up"><b>4961万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="作手新一" data-tier="一线" data-dir="in" data-stock="000525" data-net="28785782.86">
+    
+    <td><b>作手新一</b> <span class="tag pass">一线</span></td>
+    <td><b>红太阳</b><span class="src">000525</span></td>
+    <td class="num up">2885万</td>
+    <td class="num up">7万</td>
+    <td class="num up"><b>2879万</b></td>
+    <td class="wrap src">国泰海通证券南京太平南路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="600127" data-net="65971889.76">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>金健米业</b><span class="src">600127</span></td>
+    <td class="num up">6597万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>6597万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="300686" data-net="29952014">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>智动力</b><span class="src">300686</span></td>
+    <td class="num up">3051万</td>
+    <td class="num up">56万</td>
+    <td class="num up"><b>2995万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="300686" data-net="29883014">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>智动力</b><span class="src">300686</span></td>
+    <td class="num up">3114万</td>
+    <td class="num up">126万</td>
+    <td class="num up"><b>2988万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="桑田路" data-tier="二线" data-dir="in" data-stock="600371" data-net="27168698">
+    
+    <td><b>桑田路</b> <span class="tag ">二线</span></td>
+    <td><b>万向德农</b><span class="src">600371</span></td>
+    <td class="num up">2717万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2717万</b></td>
+    <td class="wrap src">国盛证券宁波桑田路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="作手新一" data-tier="一线" data-dir="in" data-stock="600371" data-net="32578429">
+    
+    <td><b>作手新一</b> <span class="tag pass">一线</span></td>
+    <td><b>万向德农</b><span class="src">600371</span></td>
+    <td class="num up">3258万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>3258万</b></td>
+    <td class="wrap src">国泰海通证券南京太平南路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="601595" data-net="50890852.08">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>上海电影</b><span class="src">601595</span></td>
+    <td class="num up">5089万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>5089万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="600261" data-net="42260185">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>阳光照明</b><span class="src">600261</span></td>
+    <td class="num up">4226万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>4226万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-stock="603598" data-net="20110336">
+    
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>引力传媒</b><span class="src">603598</span></td>
+    <td class="num up">2011万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2011万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-stock="603598" data-net="20110336">
+    
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>引力传媒</b><span class="src">603598</span></td>
+    <td class="num up">2011万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2011万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="桑田路" data-tier="二线" data-dir="in" data-stock="300118" data-net="32894271.67">
+    
+    <td><b>桑田路</b> <span class="tag ">二线</span></td>
+    <td><b>东方日升</b><span class="src">300118</span></td>
+    <td class="num up">3456万</td>
+    <td class="num up">166万</td>
+    <td class="num up"><b>3289万</b></td>
+    <td class="wrap src">国盛证券宁波桑田路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="601188" data-net="30506585">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>龙江交通</b><span class="src">601188</span></td>
+    <td class="num up">3051万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>3051万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="赵老哥" data-tier="一线" data-dir="in" data-stock="600537" data-net="2838249">
+    
+    <td><b>赵老哥</b> <span class="tag pass">一线</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">284万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>284万</b></td>
+    <td class="wrap src">浙商证券绍兴平江路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="600537" data-net="2061043">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">206万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>206万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="600537" data-net="3393900">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">339万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>339万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="600537" data-net="6905112.14">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">691万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>691万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="600537" data-net="5977856">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">598万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>598万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="600537" data-net="4385083">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">439万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>439万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-stock="605100" data-net="20691564.8">
+    
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>华丰股份</b><span class="src">605100</span></td>
+    <td class="num up">2069万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2069万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-stock="600278" data-net="20383201">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方创业</b><span class="src">600278</span></td>
+    <td class="num up">2038万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2038万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="601566" data-net="9572845.41">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>九牧王</b><span class="src">601566</span></td>
+    <td class="num up">957万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>957万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="601566" data-net="8448174">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>九牧王</b><span class="src">601566</span></td>
+    <td class="num up">845万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>845万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="上塘路" data-tier="二线" data-dir="in" data-stock="002903" data-net="16555401">
+    
+    <td><b>上塘路</b> <span class="tag ">二线</span></td>
+    <td><b>宇环数控</b><span class="src">002903</span></td>
+    <td class="num up">1656万</td>
+    <td class="num up">0万</td>
+    <td class="num up"><b>1656万</b></td>
+    <td class="wrap src">联储证券浙江分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-stock="600892" data-net="8198559">
+    
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>大晟文化</b><span class="src">600892</span></td>
+    <td class="num up">820万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>820万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="600892" data-net="7809337">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>大晟文化</b><span class="src">600892</span></td>
+    <td class="num up">781万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>781万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-stock="600838" data-net="12691776.17">
+    
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>上海九百</b><span class="src">600838</span></td>
+    <td class="num up">1269万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>1269万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="603278" data-net="8457815.8">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>大业股份</b><span class="src">603278</span></td>
+    <td class="num up">846万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>846万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="000995" data-net="4535293">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>皇台酒业</b><span class="src">000995</span></td>
+    <td class="num up">1141万</td>
+    <td class="num up">688万</td>
+    <td class="num up"><b>454万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="000995" data-net="3897517">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>皇台酒业</b><span class="src">000995</span></td>
+    <td class="num up">1321万</td>
+    <td class="num up">931万</td>
+    <td class="num up"><b>390万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="002343" data-net="8373425">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>慈文传媒</b><span class="src">002343</span></td>
+    <td class="num up">1861万</td>
+    <td class="num up">1023万</td>
+    <td class="num up"><b>837万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="605058" data-net="8195366.75">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>澳弘电子</b><span class="src">605058</span></td>
+    <td class="num up">820万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>820万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-stock="301052" data-net="-2425486.12">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">904万</td>
+    <td class="num up">1146万</td>
+    <td class="num down"><b>-243万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301052" data-net="2157747.2">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1187万</td>
+    <td class="num up">971万</td>
+    <td class="num up"><b>216万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301052" data-net="626278.08">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1208万</td>
+    <td class="num up">1145万</td>
+    <td class="num up"><b>63万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301052" data-net="4396264.94">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1861万</td>
+    <td class="num up">1421万</td>
+    <td class="num up"><b>440万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301052" data-net="1826245.12">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1347万</td>
+    <td class="num up">1164万</td>
+    <td class="num up"><b>183万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="002088" data-net="3135638.34">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>鲁阳节能</b><span class="src">002088</span></td>
+    <td class="num up">693万</td>
+    <td class="num up">379万</td>
+    <td class="num up"><b>314万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="002088" data-net="3135638.34">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>鲁阳节能</b><span class="src">002088</span></td>
+    <td class="num up">693万</td>
+    <td class="num up">379万</td>
+    <td class="num up"><b>314万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="688429" data-net="2666477.19">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>时创能源</b><span class="src">688429</span></td>
+    <td class="num up">267万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>267万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="688429" data-net="2740093.31">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>时创能源</b><span class="src">688429</span></td>
+    <td class="num up">274万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>274万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="603578" data-net="1606541">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>三星新材</b><span class="src">603578</span></td>
+    <td class="num up">161万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>161万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="603578" data-net="1177464">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>三星新材</b><span class="src">603578</span></td>
+    <td class="num up">118万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>118万</b></td>
+    <td class="wrap src">东方财富证券拉萨东城区江苏大道证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="603578" data-net="1591208.19">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>三星新材</b><span class="src">603578</span></td>
+    <td class="num up">159万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>159万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="000530" data-net="3699341.09">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>冰山冷热</b><span class="src">000530</span></td>
+    <td class="num up">2009万</td>
+    <td class="num up">1639万</td>
+    <td class="num up"><b>370万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-stock="301569" data-net="-781842.65">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">853万</td>
+    <td class="num up">932万</td>
+    <td class="num down"><b>-78万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301569" data-net="600316.94">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">851万</td>
+    <td class="num up">791万</td>
+    <td class="num up"><b>60万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301569" data-net="650424.62">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">892万</td>
+    <td class="num up">827万</td>
+    <td class="num up"><b>65万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301569" data-net="2669907.46">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">849万</td>
+    <td class="num up">582万</td>
+    <td class="num up"><b>267万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="920007" data-net="118360.74">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>酉立智能</b><span class="src">920007</span></td>
+    <td class="num up">208万</td>
+    <td class="num up">196万</td>
+    <td class="num up"><b>12万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="920007" data-net="2541067.57">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>酉立智能</b><span class="src">920007</span></td>
+    <td class="num up">320万</td>
+    <td class="num up">66万</td>
+    <td class="num up"><b>254万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="000678" data-net="2637418">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>襄阳轴承</b><span class="src">000678</span></td>
+    <td class="num up">1578万</td>
+    <td class="num up">1314万</td>
+    <td class="num up"><b>264万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="920196" data-net="622428.89">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>南方乳业</b><span class="src">920196</span></td>
+    <td class="num up">190万</td>
+    <td class="num up">128万</td>
+    <td class="num up"><b>62万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="920196" data-net="1138023.06">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>南方乳业</b><span class="src">920196</span></td>
+    <td class="num up">217万</td>
+    <td class="num up">103万</td>
+    <td class="num up"><b>114万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="920196" data-net="732524.77">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>南方乳业</b><span class="src">920196</span></td>
+    <td class="num up">214万</td>
+    <td class="num up">141万</td>
+    <td class="num up"><b>73万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="920895" data-net="2609908.71">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>花溪科技</b><span class="src">920895</span></td>
+    <td class="num up">351万</td>
+    <td class="num up">90万</td>
+    <td class="num up"><b>261万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-stock="920895" data-net="-1599398.09">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>花溪科技</b><span class="src">920895</span></td>
+    <td class="num up">210万</td>
+    <td class="num up">370万</td>
+    <td class="num down"><b>-160万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="920895" data-net="1349331.45">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>花溪科技</b><span class="src">920895</span></td>
+    <td class="num up">221万</td>
+    <td class="num up">86万</td>
+    <td class="num up"><b>135万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-stock="301688" data-net="1251282">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>格林生物</b><span class="src">301688</span></td>
+    <td class="num up">412万</td>
+    <td class="num up">286万</td>
+    <td class="num up"><b>125万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-stock="920770" data-net="-194550.94">
+    
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>艾能聚</b><span class="src">920770</span></td>
+    <td class="num up">453万</td>
+    <td class="num up">473万</td>
+    <td class="num down"><b>-19万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="out" data-stock="002086" data-net="-28106326.99">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td class="num up">4451万</td>
+    <td class="num up">7261万</td>
+    <td class="num down"><b>-2811万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="out" data-stock="002086" data-net="-40182604.46">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td class="num up">1.12亿</td>
+    <td class="num up">1.52亿</td>
+    <td class="num down"><b>-4018万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="out" data-stock="002086" data-net="-28106326.99">
+    
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td class="num up">4451万</td>
+    <td class="num up">7261万</td>
+    <td class="num down"><b>-2811万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr></tbody></table></div>
+
+  <h2><span data-zh="游资 · 近1日汇总（9 人）" data-en="Traders · 1-Day Summary (9)">游资 · 近1日汇总（9 人）</span></h2>
+  <p class="src"><span data-zh="依据 = 窗口内（近 1 个交易日日档）的全部游资记录按人聚合：净额 = 买入合计 − 卖出合计；活跃天数 = 出现过的交易日数；涉票数 = 去重标的数。列表按净额降序。逐日买卖去「近1日交易明细」表用游资 chip 圈定。" data-en="Aggregated per trader over the window: net = total buy − total sell; days = distinct trading days seen; stocks = distinct names. Sorted by net. Per-day detail: use the trader chip in the window-trades table.">依据 = 窗口内（近 1 个交易日日档）的全部游资记录按人聚合：净额 = 买入合计 − 卖出合计；活跃天数 = 出现过的交易日数；涉票数 = 去重标的数。列表按净额降序。逐日买卖去「近1日交易明细」表用游资 chip 圈定。</span></p>
+  <div class="toolrow"><span class="cap"><span data-zh="层级" data-en="Tier">层级</span></span><span class="chips" id="fTier2"><button type="button" class="chip active" data-fkey="tier" data-fval=""><span data-zh="全部" data-en="All">全部</span><i>9</i></button><button type="button" class="chip" data-fkey="tier" data-fval="一线"><span data-zh="一线" data-en="一线">一线</span><i>5</i></button><button type="button" class="chip" data-fkey="tier" data-fval="二线"><span data-zh="二线" data-en="二线">二线</span><i>3</i></button><button type="button" class="chip" data-fkey="tier" data-fval="避坑"><span data-zh="避坑" data-en="避坑">避坑</span><i>1</i></button></span></div>
+  <div class="table-wrap"><table><thead><tr>
+    <th><span data-zh="游资" data-en="Trader">游资</span></th><th><span data-zh="层级" data-en="Tier">层级</span></th>
+    <th><span data-zh="净额" data-en="Net">净额</span></th><th><span data-zh="买入" data-en="Buy">买入</span></th><th><span data-zh="卖出" data-en="Sell">卖出</span></th>
+    <th><span data-zh="活跃天数" data-en="Days">活跃天数</span></th><th><span data-zh="涉票数" data-en="Stocks">涉票数</span></th>
+  </tr></thead><tbody id="traderBody"><tr data-tier="一线" data-name="章盟主">
+    <td><b>章盟主</b></td><td><span class="tag pass">一线</span></td>
+    <td class="num up"><b>5.29亿</b></td>
+    <td class="num up">8.34亿</td>
+    <td class="num up">3.04亿</td>
+    <td class="num">1</td><td class="num">11</td>
+  </tr><tr data-tier="一线" data-name="孙哥">
+    <td><b>孙哥</b></td><td><span class="tag pass">一线</span></td>
+    <td class="num up"><b>1.82亿</b></td>
+    <td class="num up">1.82亿</td>
+    <td class="num ">0万</td>
+    <td class="num">1</td><td class="num">5</td>
+  </tr><tr data-tier="避坑" data-name="拉萨散户">
+    <td><b>拉萨散户</b></td><td><span class="tag gap">避坑</span></td>
+    <td class="num up"><b>1.23亿</b></td>
+    <td class="num up">2.95亿</td>
+    <td class="num up">1.73亿</td>
+    <td class="num">1</td><td class="num">19</td>
+  </tr><tr data-tier="二线" data-name="量化打板">
+    <td><b>量化打板</b></td><td><span class="tag ">二线</span></td>
+    <td class="num up"><b>6704万</b></td>
+    <td class="num up">6704万</td>
+    <td class="num ">0万</td>
+    <td class="num">1</td><td class="num">1</td>
+  </tr><tr data-tier="一线" data-name="作手新一">
+    <td><b>作手新一</b></td><td><span class="tag pass">一线</span></td>
+    <td class="num up"><b>6136万</b></td>
+    <td class="num up">6143万</td>
+    <td class="num up">7万</td>
+    <td class="num">1</td><td class="num">2</td>
+  </tr><tr data-tier="二线" data-name="桑田路">
+    <td><b>桑田路</b></td><td><span class="tag ">二线</span></td>
+    <td class="num up"><b>6006万</b></td>
+    <td class="num up">6173万</td>
+    <td class="num up">166万</td>
+    <td class="num">1</td><td class="num">2</td>
+  </tr><tr data-tier="二线" data-name="上塘路">
+    <td><b>上塘路</b></td><td><span class="tag ">二线</span></td>
+    <td class="num up"><b>1656万</b></td>
+    <td class="num up">1656万</td>
+    <td class="num up">0万</td>
+    <td class="num">1</td><td class="num">1</td>
+  </tr><tr data-tier="一线" data-name="炒股养家">
+    <td><b>炒股养家</b></td><td><span class="tag pass">一线</span></td>
+    <td class="num up"><b>1126万</b></td>
+    <td class="num up">1171万</td>
+    <td class="num up">45万</td>
+    <td class="num">1</td><td class="num">1</td>
+  </tr><tr data-tier="一线" data-name="赵老哥">
+    <td><b>赵老哥</b></td><td><span class="tag pass">一线</span></td>
+    <td class="num up"><b>284万</b></td>
+    <td class="num up">284万</td>
+    <td class="num ">0万</td>
+    <td class="num">1</td><td class="num">1</td>
+  </tr></tbody></table></div>
+
+  <h2><span data-zh="近1日交易明细（72 条）" data-en="Window Trades (72)">近1日交易明细（72 条）</span></h2>
+  <p class="src"><span data-zh="窗口内（近 1 个交易日）的每一条游资买卖记录，结构与当日表相同、多一列日期；用 chips 圈定某游资 / 某天 / 某方向。当日表的数据就是本表中日期 = 锚定日的子集。" data-en="Every trader trade in the window (same layout as the day table plus a date column); use chips to isolate a trader / date / side.">窗口内（近 1 个交易日）的每一条游资买卖记录，结构与当日表相同、多一列日期；用 chips 圈定某游资 / 某天 / 某方向。当日表的数据就是本表中日期 = 锚定日的子集。</span></p>
+  <div class="toolbar">
+    <div class="toolrow"><span class="cap"><span data-zh="游资" data-en="Trader">游资</span></span><span class="chips" id="fName3"><button type="button" class="chip active" data-fkey="name" data-fval=""><span data-zh="全部游资" data-en="All">全部游资</span><i>72</i></button><button type="button" class="chip" data-fkey="name" data-fval="章盟主"><span data-zh="章盟主" data-en="章盟主">章盟主</span><i>17</i></button><button type="button" class="chip" data-fkey="name" data-fval="量化打板"><span data-zh="量化打板" data-en="量化打板">量化打板</span><i>1</i></button><button type="button" class="chip" data-fkey="name" data-fval="孙哥"><span data-zh="孙哥" data-en="孙哥">孙哥</span><i>6</i></button><button type="button" class="chip" data-fkey="name" data-fval="炒股养家"><span data-zh="炒股养家" data-en="炒股养家">炒股养家</span><i>1</i></button><button type="button" class="chip" data-fkey="name" data-fval="作手新一"><span data-zh="作手新一" data-en="作手新一">作手新一</span><i>2</i></button><button type="button" class="chip" data-fkey="name" data-fval="桑田路"><span data-zh="桑田路" data-en="桑田路">桑田路</span><i>2</i></button><button type="button" class="chip" data-fkey="name" data-fval="赵老哥"><span data-zh="赵老哥" data-en="赵老哥">赵老哥</span><i>1</i></button><button type="button" class="chip" data-fkey="name" data-fval="拉萨散户"><span data-zh="拉萨散户" data-en="拉萨散户">拉萨散户</span><i>41</i></button><button type="button" class="chip" data-fkey="name" data-fval="上塘路"><span data-zh="上塘路" data-en="上塘路">上塘路</span><i>1</i></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="日期" data-en="Date">日期</span></span><span class="chips" id="fDate"><button type="button" class="chip active" data-fkey="date" data-fval=""><span data-zh="全部日期" data-en="All">全部日期</span><i>72</i></button><button type="button" class="chip" data-fkey="date" data-fval="2026-11-06">11-06<i>72</i></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="方向" data-en="Side">方向</span></span><span class="chips" id="fDir3"><button type="button" class="chip active" data-fkey="dir" data-fval=""><span data-zh="全部方向" data-en="All">全部方向</span></button><button type="button" class="chip" data-fkey="dir" data-fval="in"><span data-zh="净买入" data-en="Net buy">净买入</span></button><button type="button" class="chip" data-fkey="dir" data-fval="out"><span data-zh="净卖出" data-en="Net sell">净卖出</span></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="层级" data-en="Tier">层级</span></span><span class="chips" id="fTier3"><button type="button" class="chip active" data-fkey="tier" data-fval=""><span data-zh="全部" data-en="All">全部</span><i>72</i></button><button type="button" class="chip" data-fkey="tier" data-fval="一线"><span data-zh="一线" data-en="一线">一线</span><i>27</i></button><button type="button" class="chip" data-fkey="tier" data-fval="二线"><span data-zh="二线" data-en="二线">二线</span><i>4</i></button><button type="button" class="chip" data-fkey="tier" data-fval="避坑"><span data-zh="避坑" data-en="避坑">避坑</span><i>41</i></button></span></div>
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th><span data-zh="日期" data-en="Date">日期</span></th><th><span data-zh="游资" data-en="Trader">游资</span></th><th><span data-zh="标的" data-en="Stock">标的</span></th>
+    <th><span data-zh="买入" data-en="Buy">买入</span></th><th><span data-zh="卖出" data-en="Sell">卖出</span></th><th><span data-zh="净额" data-en="Net">净额</span></th>
+    <th><span data-zh="席位" data-en="Seat">席位</span></th><th><span data-zh="标记" data-en="Marks">标记</span></th>
+  </tr></thead><tbody id="winBody"><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600327" data-net="72880608">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>大东方</b><span class="src">600327</span></td>
+    <td class="num up">7288万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>7288万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600327" data-net="72880608">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>大东方</b><span class="src">600327</span></td>
+    <td class="num up">7288万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>7288万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="量化打板" data-tier="二线" data-dir="in" data-date="2026-11-06" data-stock="601599" data-net="67035160">
+    <td class="src">11-06</td>
+    <td><b>量化打板</b> <span class="tag ">二线</span></td>
+    <td><b>浙文影业</b><span class="src">601599</span></td>
+    <td class="num up">6704万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>6704万</b></td>
+    <td class="wrap src">华鑫证券有限责任公司深圳分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="601599" data-net="70892014">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>浙文影业</b><span class="src">601599</span></td>
+    <td class="num up">7089万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>7089万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="603083" data-net="99942251.47">
+    <td class="src">11-06</td>
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>剑桥科技</b><span class="src">603083</span></td>
+    <td class="num up">9994万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>9994万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="002388" data-net="30853890">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>新亚制程</b><span class="src">002388</span></td>
+    <td class="num up">3145万</td>
+    <td class="num up">60万</td>
+    <td class="num up"><b>3085万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="002388" data-net="28020552">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>新亚制程</b><span class="src">002388</span></td>
+    <td class="num up">3173万</td>
+    <td class="num up">371万</td>
+    <td class="num up"><b>2802万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="002388" data-net="30853890">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>新亚制程</b><span class="src">002388</span></td>
+    <td class="num up">3145万</td>
+    <td class="num up">60万</td>
+    <td class="num up"><b>3085万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="炒股养家" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="000525" data-net="11255638">
+    <td class="src">11-06</td>
+    <td><b>炒股养家</b> <span class="tag pass">一线</span></td>
+    <td><b>红太阳</b><span class="src">000525</span></td>
+    <td class="num up">1171万</td>
+    <td class="num up">45万</td>
+    <td class="num up"><b>1126万</b></td>
+    <td class="wrap src">华鑫证券有限责任公司上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="000525" data-net="49608786">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>红太阳</b><span class="src">000525</span></td>
+    <td class="num up">4988万</td>
+    <td class="num up">27万</td>
+    <td class="num up"><b>4961万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="作手新一" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="000525" data-net="28785782.86">
+    <td class="src">11-06</td>
+    <td><b>作手新一</b> <span class="tag pass">一线</span></td>
+    <td><b>红太阳</b><span class="src">000525</span></td>
+    <td class="num up">2885万</td>
+    <td class="num up">7万</td>
+    <td class="num up"><b>2879万</b></td>
+    <td class="wrap src">国泰海通证券南京太平南路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600127" data-net="65971889.76">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>金健米业</b><span class="src">600127</span></td>
+    <td class="num up">6597万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>6597万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="300686" data-net="29952014">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>智动力</b><span class="src">300686</span></td>
+    <td class="num up">3051万</td>
+    <td class="num up">56万</td>
+    <td class="num up"><b>2995万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="300686" data-net="29883014">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>智动力</b><span class="src">300686</span></td>
+    <td class="num up">3114万</td>
+    <td class="num up">126万</td>
+    <td class="num up"><b>2988万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="桑田路" data-tier="二线" data-dir="in" data-date="2026-11-06" data-stock="600371" data-net="27168698">
+    <td class="src">11-06</td>
+    <td><b>桑田路</b> <span class="tag ">二线</span></td>
+    <td><b>万向德农</b><span class="src">600371</span></td>
+    <td class="num up">2717万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2717万</b></td>
+    <td class="wrap src">国盛证券宁波桑田路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="作手新一" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600371" data-net="32578429">
+    <td class="src">11-06</td>
+    <td><b>作手新一</b> <span class="tag pass">一线</span></td>
+    <td><b>万向德农</b><span class="src">600371</span></td>
+    <td class="num up">3258万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>3258万</b></td>
+    <td class="wrap src">国泰海通证券南京太平南路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="601595" data-net="50890852.08">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>上海电影</b><span class="src">601595</span></td>
+    <td class="num up">5089万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>5089万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600261" data-net="42260185">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>阳光照明</b><span class="src">600261</span></td>
+    <td class="num up">4226万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>4226万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="603598" data-net="20110336">
+    <td class="src">11-06</td>
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>引力传媒</b><span class="src">603598</span></td>
+    <td class="num up">2011万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2011万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="603598" data-net="20110336">
+    <td class="src">11-06</td>
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>引力传媒</b><span class="src">603598</span></td>
+    <td class="num up">2011万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2011万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="桑田路" data-tier="二线" data-dir="in" data-date="2026-11-06" data-stock="300118" data-net="32894271.67">
+    <td class="src">11-06</td>
+    <td><b>桑田路</b> <span class="tag ">二线</span></td>
+    <td><b>东方日升</b><span class="src">300118</span></td>
+    <td class="num up">3456万</td>
+    <td class="num up">166万</td>
+    <td class="num up"><b>3289万</b></td>
+    <td class="wrap src">国盛证券宁波桑田路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="601188" data-net="30506585">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>龙江交通</b><span class="src">601188</span></td>
+    <td class="num up">3051万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>3051万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="赵老哥" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600537" data-net="2838249">
+    <td class="src">11-06</td>
+    <td><b>赵老哥</b> <span class="tag pass">一线</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">284万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>284万</b></td>
+    <td class="wrap src">浙商证券绍兴平江路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="600537" data-net="2061043">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">206万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>206万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="600537" data-net="3393900">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">339万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>339万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="600537" data-net="6905112.14">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">691万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>691万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="600537" data-net="5977856">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">598万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>598万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="600537" data-net="4385083">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>*ST亿晶</b><span class="src">600537</span></td>
+    <td class="num up">439万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>439万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="605100" data-net="20691564.8">
+    <td class="src">11-06</td>
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>华丰股份</b><span class="src">605100</span></td>
+    <td class="num up">2069万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2069万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600278" data-net="20383201">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方创业</b><span class="src">600278</span></td>
+    <td class="num up">2038万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>2038万</b></td>
+    <td class="wrap src">国泰海通证券长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="601566" data-net="9572845.41">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>九牧王</b><span class="src">601566</span></td>
+    <td class="num up">957万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>957万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="601566" data-net="8448174">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>九牧王</b><span class="src">601566</span></td>
+    <td class="num up">845万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>845万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="上塘路" data-tier="二线" data-dir="in" data-date="2026-11-06" data-stock="002903" data-net="16555401">
+    <td class="src">11-06</td>
+    <td><b>上塘路</b> <span class="tag ">二线</span></td>
+    <td><b>宇环数控</b><span class="src">002903</span></td>
+    <td class="num up">1656万</td>
+    <td class="num up">0万</td>
+    <td class="num up"><b>1656万</b></td>
+    <td class="wrap src">联储证券浙江分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600892" data-net="8198559">
+    <td class="src">11-06</td>
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>大晟文化</b><span class="src">600892</span></td>
+    <td class="num up">820万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>820万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="600892" data-net="7809337">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>大晟文化</b><span class="src">600892</span></td>
+    <td class="num up">781万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>781万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="孙哥" data-tier="一线" data-dir="in" data-date="2026-11-06" data-stock="600838" data-net="12691776.17">
+    <td class="src">11-06</td>
+    <td><b>孙哥</b> <span class="tag pass">一线</span></td>
+    <td><b>上海九百</b><span class="src">600838</span></td>
+    <td class="num up">1269万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>1269万</b></td>
+    <td class="wrap src">中信证券上海分公司</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="603278" data-net="8457815.8">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>大业股份</b><span class="src">603278</span></td>
+    <td class="num up">846万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>846万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="000995" data-net="4535293">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>皇台酒业</b><span class="src">000995</span></td>
+    <td class="num up">1141万</td>
+    <td class="num up">688万</td>
+    <td class="num up"><b>454万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="000995" data-net="3897517">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>皇台酒业</b><span class="src">000995</span></td>
+    <td class="num up">1321万</td>
+    <td class="num up">931万</td>
+    <td class="num up"><b>390万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="002343" data-net="8373425">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>慈文传媒</b><span class="src">002343</span></td>
+    <td class="num up">1861万</td>
+    <td class="num up">1023万</td>
+    <td class="num up"><b>837万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="605058" data-net="8195366.75">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>澳弘电子</b><span class="src">605058</span></td>
+    <td class="num up">820万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>820万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-date="2026-11-06" data-stock="301052" data-net="-2425486.12">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">904万</td>
+    <td class="num up">1146万</td>
+    <td class="num down"><b>-243万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301052" data-net="2157747.2">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1187万</td>
+    <td class="num up">971万</td>
+    <td class="num up"><b>216万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301052" data-net="626278.08">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1208万</td>
+    <td class="num up">1145万</td>
+    <td class="num up"><b>63万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301052" data-net="4396264.94">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1861万</td>
+    <td class="num up">1421万</td>
+    <td class="num up"><b>440万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301052" data-net="1826245.12">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>果麦文化</b><span class="src">301052</span></td>
+    <td class="num up">1347万</td>
+    <td class="num up">1164万</td>
+    <td class="num up"><b>183万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="002088" data-net="3135638.34">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>鲁阳节能</b><span class="src">002088</span></td>
+    <td class="num up">693万</td>
+    <td class="num up">379万</td>
+    <td class="num up"><b>314万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="002088" data-net="3135638.34">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>鲁阳节能</b><span class="src">002088</span></td>
+    <td class="num up">693万</td>
+    <td class="num up">379万</td>
+    <td class="num up"><b>314万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="688429" data-net="2666477.19">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>时创能源</b><span class="src">688429</span></td>
+    <td class="num up">267万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>267万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="688429" data-net="2740093.31">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>时创能源</b><span class="src">688429</span></td>
+    <td class="num up">274万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>274万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="603578" data-net="1606541">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>三星新材</b><span class="src">603578</span></td>
+    <td class="num up">161万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>161万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="603578" data-net="1177464">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>三星新材</b><span class="src">603578</span></td>
+    <td class="num up">118万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>118万</b></td>
+    <td class="wrap src">东方财富证券拉萨东城区江苏大道证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="603578" data-net="1591208.19">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>三星新材</b><span class="src">603578</span></td>
+    <td class="num up">159万</td>
+    <td class="num ">—</td>
+    <td class="num up"><b>159万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="000530" data-net="3699341.09">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>冰山冷热</b><span class="src">000530</span></td>
+    <td class="num up">2009万</td>
+    <td class="num up">1639万</td>
+    <td class="num up"><b>370万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-date="2026-11-06" data-stock="301569" data-net="-781842.65">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">853万</td>
+    <td class="num up">932万</td>
+    <td class="num down"><b>-78万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301569" data-net="600316.94">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">851万</td>
+    <td class="num up">791万</td>
+    <td class="num up"><b>60万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301569" data-net="650424.62">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">892万</td>
+    <td class="num up">827万</td>
+    <td class="num up"><b>65万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301569" data-net="2669907.46">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>联亚药业</b><span class="src">301569</span></td>
+    <td class="num up">849万</td>
+    <td class="num up">582万</td>
+    <td class="num up"><b>267万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="920007" data-net="118360.74">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>酉立智能</b><span class="src">920007</span></td>
+    <td class="num up">208万</td>
+    <td class="num up">196万</td>
+    <td class="num up"><b>12万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="920007" data-net="2541067.57">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>酉立智能</b><span class="src">920007</span></td>
+    <td class="num up">320万</td>
+    <td class="num up">66万</td>
+    <td class="num up"><b>254万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="000678" data-net="2637418">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>襄阳轴承</b><span class="src">000678</span></td>
+    <td class="num up">1578万</td>
+    <td class="num up">1314万</td>
+    <td class="num up"><b>264万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="920196" data-net="622428.89">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>南方乳业</b><span class="src">920196</span></td>
+    <td class="num up">190万</td>
+    <td class="num up">128万</td>
+    <td class="num up"><b>62万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="920196" data-net="1138023.06">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>南方乳业</b><span class="src">920196</span></td>
+    <td class="num up">217万</td>
+    <td class="num up">103万</td>
+    <td class="num up"><b>114万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="920196" data-net="732524.77">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>南方乳业</b><span class="src">920196</span></td>
+    <td class="num up">214万</td>
+    <td class="num up">141万</td>
+    <td class="num up"><b>73万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="920895" data-net="2609908.71">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>花溪科技</b><span class="src">920895</span></td>
+    <td class="num up">351万</td>
+    <td class="num up">90万</td>
+    <td class="num up"><b>261万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-date="2026-11-06" data-stock="920895" data-net="-1599398.09">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>花溪科技</b><span class="src">920895</span></td>
+    <td class="num up">210万</td>
+    <td class="num up">370万</td>
+    <td class="num down"><b>-160万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="920895" data-net="1349331.45">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>花溪科技</b><span class="src">920895</span></td>
+    <td class="num up">221万</td>
+    <td class="num up">86万</td>
+    <td class="num up"><b>135万</b></td>
+    <td class="wrap src">东方财富证券拉萨团结路第一证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="in" data-date="2026-11-06" data-stock="301688" data-net="1251282">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>格林生物</b><span class="src">301688</span></td>
+    <td class="num up">412万</td>
+    <td class="num up">286万</td>
+    <td class="num up"><b>125万</b></td>
+    <td class="wrap src">东方财富证券拉萨东环路第二证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="拉萨散户" data-tier="避坑" data-dir="out" data-date="2026-11-06" data-stock="920770" data-net="-194550.94">
+    <td class="src">11-06</td>
+    <td><b>拉萨散户</b> <span class="tag gap">避坑</span></td>
+    <td><b>艾能聚</b><span class="src">920770</span></td>
+    <td class="num up">453万</td>
+    <td class="num up">473万</td>
+    <td class="num down"><b>-19万</b></td>
+    <td class="wrap src">东方财富证券拉萨金融城南环路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="out" data-date="2026-11-06" data-stock="002086" data-net="-28106326.99">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td class="num up">4451万</td>
+    <td class="num up">7261万</td>
+    <td class="num down"><b>-2811万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="out" data-date="2026-11-06" data-stock="002086" data-net="-40182604.46">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td class="num up">1.12亿</td>
+    <td class="num up">1.52亿</td>
+    <td class="num down"><b>-4018万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr><tr data-name="章盟主" data-tier="一线" data-dir="out" data-date="2026-11-06" data-stock="002086" data-net="-28106326.99">
+    <td class="src">11-06</td>
+    <td><b>章盟主</b> <span class="tag pass">一线</span></td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td class="num up">4451万</td>
+    <td class="num up">7261万</td>
+    <td class="num down"><b>-2811万</b></td>
+    <td class="wrap src">国泰海通证券上海长宁区江苏路证券营业部</td>
+    <td class="wrap"></td>
+  </tr></tbody></table></div>
+
+  <h2><span data-zh="未识别席位观察名单（≥3 天，Top 20）" data-en="Unmatched Seat Watchlist (≥3 days, top 20)">未识别席位观察名单（≥3 天，Top 20）</span></h2>
+  <div class="table-wrap"><table><thead><tr>
+    <th><span data-zh="席位" data-en="Seat">席位</span></th><th><span data-zh="出现天数" data-en="Days">出现天数</span></th><th><span data-zh="累计买入" data-en="Buy">累计买入</span></th><th><span data-zh="累计卖出" data-en="Sell">累计卖出</span></th>
+  </tr></thead><tbody><tr><td class="wrap src">机构专用</td><td class="num">10</td>
+    <td class="num up">358.33亿</td><td class="num up">241.91亿</td></tr><tr><td class="wrap src">深股通专用</td><td class="num">10</td>
+    <td class="num up">245.51亿</td><td class="num up">239.44亿</td></tr><tr><td class="wrap src">沪股通专用</td><td class="num">10</td>
+    <td class="num up">156.67亿</td><td class="num ">0万</td></tr><tr><td class="wrap src">国泰海通证券股份有限公司总部</td><td class="num">10</td>
+    <td class="num up">61.97亿</td><td class="num ">0万</td></tr><tr><td class="wrap src">华宝证券股份有限公司上海东大名路证券营业部</td><td class="num">6</td>
+    <td class="num up">32.80亿</td><td class="num up">10.91亿</td></tr><tr><td class="wrap src">国信证券股份有限公司浙江互联网分公司</td><td class="num">10</td>
+    <td class="num up">30.09亿</td><td class="num up">11.12亿</td></tr><tr><td class="wrap src">高盛(中国)证券有限责任公司上海浦东新区世纪大道证券营业部</td><td class="num">10</td>
+    <td class="num up">40.59亿</td><td class="num ">0万</td></tr><tr><td class="wrap src">中国国际金融股份有限公司上海分公司</td><td class="num">10</td>
+    <td class="num up">28.94亿</td><td class="num up">10.54亿</td></tr><tr><td class="wrap src">开源证券股份有限公司西安西大街证券营业部</td><td class="num">10</td>
+    <td class="num up">31.69亿</td><td class="num up">3.93亿</td></tr><tr><td class="wrap src">国新证券股份有限公司北京分公司</td><td class="num">10</td>
+    <td class="num up">23.80亿</td><td class="num up">2.52亿</td></tr><tr><td class="wrap src">瑞银证券有限责任公司上海花园石桥路证券营业部</td><td class="num">10</td>
+    <td class="num up">21.35亿</td><td class="num ">0万</td></tr><tr><td class="wrap src">国泰海通证券股份有限公司北京知春路证券营业部</td><td class="num">9</td>
+    <td class="num up">16.90亿</td><td class="num up">4.00亿</td></tr><tr><td class="wrap src">国泰海通证券股份有限公司武汉紫阳东路证券营业部</td><td class="num">8</td>
+    <td class="num up">17.78亿</td><td class="num up">1.34亿</td></tr><tr><td class="wrap src">华鑫证券有限责任公司上海徐汇区瑞平路证券营业部</td><td class="num">10</td>
+    <td class="num up">14.09亿</td><td class="num up">1.43亿</td></tr><tr><td class="wrap src">东方财富证券股份有限公司山南香曲东路证券营业部</td><td class="num">10</td>
+    <td class="num up">11.58亿</td><td class="num up">3.54亿</td></tr><tr><td class="wrap src">华鑫证券有限责任公司上海陆家嘴证券营业部</td><td class="num">8</td>
+    <td class="num up">14.27亿</td><td class="num up">6889万</td></tr><tr><td class="wrap src">国泰海通证券股份有限公司上海分公司</td><td class="num">7</td>
+    <td class="num up">13.55亿</td><td class="num up">1.19亿</td></tr><tr><td class="wrap src">摩根大通证券(中国)有限公司上海银城中路证券营业部</td><td class="num">10</td>
+    <td class="num up">13.04亿</td><td class="num ">0万</td></tr><tr><td class="wrap src">平安证券股份有限公司浙江分公司</td><td class="num">9</td>
+    <td class="num up">8.24亿</td><td class="num up">2.16亿</td></tr><tr><td class="wrap src">国泰海通证券股份有限公司湛江万豪世家证券营业部</td><td class="num">8</td>
+    <td class="num up">9.79亿</td><td class="num up">4904万</td></tr></tbody></table></div>
+  <p class="src"><span data-zh="高频新席位建议晋升：在 eod/data/hotmoney-registry.json 增加 { "name": "…", "seat": "正则", "tier": "一线/二线", "action": "add" }，下次运行即生效（不改代码）。" data-en="To promote a seat: add { name, seat(regex), tier, action:"add" } to eod/data/hotmoney-registry.json; takes effect next run.">高频新席位建议晋升：在 eod/data/hotmoney-registry.json 增加 { "name": "…", "seat": "正则", "tier": "一线/二线", "action": "add" }，下次运行即生效（不改代码）。</span></p>
+
+  <div class="callout">
+    <h3><span data-zh="数据口径与偏差" data-en="Provenance & Caveats">数据口径与偏差</span></h3>
+    <p><span data-zh="数据来自东方财富 datacenter 龙虎榜接口（RPT_DAILYBILLBOARD_DETAILSNEW / RPT_BILLBOARD_DAILYDETAILSBUY）：全榜名单 1 次请求/日，席位明细逐票抓取（买卖金额为该席位当日龙虎榜口径，非全日成交）。游资归属靠席位名正则匹配（唯一真相源 eod/hotmoney.config.js registry，可经 eod/data/hotmoney-registry.json 动态增删），公开常见整理仅供参考，游资会换马甲。席位变更感知 = 锚定日席位与本地快照（hotmoney-seats-snapshot.json）比对；未识别席位观察名单 = hotmoney-watchlist.json 按天累计。近 N 日明细来自本地日档缓存（缺档自动回补抓取）。锚定日 2026-11-06；17:30 前运行自动回退上一交易日。运行环境：local。" data-en="Data: Eastmoney datacenter billboard APIs (board list once per day; per-stock seat details). Seat-to-trader mapping via regex registry (eod/hotmoney.config.js; dynamic overrides in eod/data/hotmoney-registry.json). Change detection compares anchor-day seats against the local snapshot. N-day details aggregate cached daily archives. Anchor: 2026-11-06; before 17:30 it rolls back to the previous trading day. Runner: local.">数据来自东方财富 datacenter 龙虎榜接口（RPT_DAILYBILLBOARD_DETAILSNEW / RPT_BILLBOARD_DAILYDETAILSBUY）：全榜名单 1 次请求/日，席位明细逐票抓取（买卖金额为该席位当日龙虎榜口径，非全日成交）。游资归属靠席位名正则匹配（唯一真相源 eod/hotmoney.config.js registry，可经 eod/data/hotmoney-registry.json 动态增删），公开常见整理仅供参考，游资会换马甲。席位变更感知 = 锚定日席位与本地快照（hotmoney-seats-snapshot.json）比对；未识别席位观察名单 = hotmoney-watchlist.json 按天累计。近 N 日明细来自本地日档缓存（缺档自动回补抓取）。锚定日 2026-11-06；17:30 前运行自动回退上一交易日。运行环境：local。</span></p>
+  </div>
+  <div class="callout"><p><span data-zh="本报告为程序化观察输出，仅供个人研究参考，不构成投资建议。龙虎榜席位归属为公开整理、可能滞后或错标；游资买入不代表股价必然上涨；避坑层标注仅为风险提示。请自行核实与决策。" data-en="Programmatic observation output for personal research only, not investment advice. Seat-to-trader attribution is crowd-sourced and may be stale or wrong; hot-money buying does not guarantee gains. Verify on your own.">本报告为程序化观察输出，仅供个人研究参考，不构成投资建议。龙虎榜席位归属为公开整理、可能滞后或错标；游资买入不代表股价必然上涨；避坑层标注仅为风险提示。请自行核实与决策。</span></p></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // ---- 主题 ----
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('themeBtn');
+  function syncThemeLabel() { themeBtn.textContent = (root.getAttribute('data-theme') === 'dark') ? '☀' : '🌙'; }
+  try { var saved = localStorage.getItem('report-theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+  syncThemeLabel();
+  themeBtn.addEventListener('click', function () {
+    var t = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem('report-theme', t); } catch (e) {}
+    syncThemeLabel();
+  });
+  var lang = 'zh';
+  var btn = document.getElementById('langBtn');
+  var nodes = document.querySelectorAll('[data-zh]');
+  nodes.forEach(function (el) { if (!el.getAttribute('data-zh')) el.setAttribute('data-zh', el.innerHTML); });
+  function apply(target) {
+    nodes.forEach(function (el) {
+      var val = el.getAttribute('data-' + target);
+      if (val !== null && val !== '') el.innerHTML = val;
+    });
+    document.documentElement.lang = (target === 'zh') ? 'zh-CN' : 'en';
+    document.title = (target === 'zh') ? '游资席位扫描 — 2026-11-06' : 'Hot-Money Seat Scan — 2026-11-06';
+    btn.textContent = (target === 'zh') ? 'EN' : '中文';
+  }
+  btn.addEventListener('click', function () { lang = (lang === 'zh') ? 'en' : 'zh'; apply(lang); });
+  apply(lang);
+
+  // ---- 通用：chip 组绑定（单选；fval 为该组当前值） ----
+  function bindChips(id, onPick) {
+    var wrap = document.getElementById(id);
+    if (!wrap) return;
+    wrap.addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip) return;
+      Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function (c) { c.classList.toggle('active', c === chip); });
+      onPick(chip.getAttribute('data-fval') || '');
+    });
+  }
+
+  // ---- 当日明细：三组 chip（层级/方向/游资）AND 过滤 + 按游资/按票双视图重排 ----
+  var dayBody = document.getElementById('dayBody');
+  if (dayBody) {
+    var dayRows = Array.prototype.slice.call(dayBody.querySelectorAll('tr'));
+    var dayT = '', dayD = '', dayN = '', dayView = 'trader';
+    function dayWant(tr) {
+      if (dayT && tr.getAttribute('data-tier') !== dayT) return false;
+      if (dayD && tr.getAttribute('data-dir') !== dayD) return false;
+      if (dayN && tr.getAttribute('data-name') !== dayN) return false;
+      return true;
+    }
+    // 组净值（供排序）：按 data-net 原始值（元）对 游资/票 两个维度分别合计
+    var groupNet = { trader: {}, stock: {} };
+    dayRows.forEach(function (tr) {
+      var v = parseFloat(tr.getAttribute('data-net')) || 0;
+      var kn = tr.getAttribute('data-name'), ks = tr.getAttribute('data-stock');
+      groupNet.trader[kn] = (groupNet.trader[kn] || 0) + v;
+      groupNet.stock[ks] = (groupNet.stock[ks] || 0) + v;
+    });
+    function renderDay() {
+      var frag = document.createDocumentFragment();
+      var key = dayView === 'trader' ? 'data-name' : 'data-stock';
+      var visible = dayRows.filter(dayWant);
+      visible.sort(function (a, b2) {
+        var g = groupNet[dayView];
+        var ka = a.getAttribute(key), kb = b2.getAttribute(key);
+        if (g[kb] !== g[ka]) return g[kb] - g[ka];
+        return (parseFloat(b2.getAttribute('data-net')) || 0) - (parseFloat(a.getAttribute('data-net')) || 0);
+      });
+      visible.forEach(function (tr) { frag.appendChild(tr); });
+      while (dayBody.firstChild) dayBody.removeChild(dayBody.firstChild);
+      dayBody.appendChild(frag);
+    }
+    bindChips('fTier', function (v) { dayT = v; renderDay(); });
+    bindChips('fDir', function (v) { dayD = v; renderDay(); });
+    bindChips('fName', function (v) { dayN = v; renderDay(); });
+    var vT = document.getElementById('viewTrader'), vS = document.getElementById('viewStock');
+    function setView(v) {
+      dayView = v;
+      vT.classList.toggle('active', v === 'trader');
+      vS.classList.toggle('active', v === 'stock');
+      renderDay();
+    }
+    vT.addEventListener('click', function () { setView('trader'); });
+    vS.addEventListener('click', function () { setView('stock'); });
+    renderDay();
+  }
+
+  // ---- 游资汇总表：层级过滤 ----
+  var traderBody = document.getElementById('traderBody');
+  if (traderBody) {
+    var traderRows = Array.prototype.slice.call(traderBody.querySelectorAll('tr'));
+    bindChips('fTier2', function (v) {
+      traderRows.forEach(function (tr) { tr.hidden = !!(v && tr.getAttribute('data-tier') !== v); });
+    });
+  }
+
+  // ---- 近N日明细：游资/日期/方向/层级 四组 AND 过滤 ----
+  var winBody = document.getElementById('winBody');
+  if (winBody) {
+    var winRows = Array.prototype.slice.call(winBody.querySelectorAll('tr'));
+    var wN = '', wD = '', wDir = '', wT = '';
+    function winWant(tr) {
+      if (wN && tr.getAttribute('data-name') !== wN) return false;
+      if (wD && tr.getAttribute('data-date') !== wD) return false;
+      if (wDir && tr.getAttribute('data-dir') !== wDir) return false;
+      if (wT && tr.getAttribute('data-tier') !== wT) return false;
+      return true;
+    }
+    function renderWin() { winRows.forEach(function (tr) { tr.hidden = !winWant(tr); }); }
+    bindChips('fName3', function (v) { wN = v; renderWin(); });
+    bindChips('fDate', function (v) { wD = v; renderWin(); });
+    bindChips('fDir3', function (v) { wDir = v; renderWin(); });
+    bindChips('fTier3', function (v) { wT = v; renderWin(); });
+    renderWin();
+  }
+})();
+</script>
+</body>
+</html>

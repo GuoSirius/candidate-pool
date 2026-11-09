@@ -3,10 +3,34 @@
  "tradeDate": "2026-11-06",
  "mode": "cut",
  "cutAt": "1450",
- "updatedAt": "2026-11-06 14:53:29",
+ "updatedAt": "2026-11-09 11:31:22",
  "runs": [
   {
    "at": "2026-11-06 14:53:29",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 2,
+   "groupCount": 2,
+   "prePassCount": 34,
+   "snapshotCount": 6181,
+   "runner": "local"
+  },
+  {
+   "at": "2026-11-09 11:08:48",
+   "mode": "cut",
+   "cutAt": "1450",
+   "segFrom": "1430",
+   "segMinutes": null,
+   "candidateCount": 2,
+   "groupCount": 2,
+   "prePassCount": 34,
+   "snapshotCount": 6181,
+   "runner": "local"
+  },
+  {
+   "at": "2026-11-09 11:31:22",
    "mode": "cut",
    "cutAt": "1450",
    "segFrom": "1430",
@@ -52,7 +76,7 @@
    "chgPct": 3.69,
    "turnover": 6.82,
    "volRatio": 2.69,
-   "volRatioEst": 2.7708154506437768,
+   "volRatioEst": null,
    "floatCapYi": 57.42,
    "totalCapYi": 79.14,
    "avgPrice": 12.140720179195572,
@@ -79,11 +103,7 @@
     "turnoverFit": 11
    },
    "total": 62.93882150167272,
-   "boards": {
-    "streak": 0,
-    "days": 0,
-    "count": 0
-   },
+   "boards": null,
    "sectorMedianChg": 3.69,
    "sectorRank": 19,
    "sectorTotal": 27,
@@ -101,7 +121,7 @@
    "chgPct": 4.01,
    "turnover": 4.66,
    "volRatio": 1.4,
-   "volRatioEst": 1.4420600858369097,
+   "volRatioEst": null,
    "floatCapYi": 81.98,
    "totalCapYi": 123.45,
    "avgPrice": 66.81869916264813,
@@ -128,11 +148,7 @@
     "turnoverFit": 11
    },
    "total": 49.45598095488799,
-   "boards": {
-    "streak": 0,
-    "days": 0,
-    "count": 0
-   },
+   "boards": null,
    "sectorMedianChg": 3.9749999999999996,
    "sectorRank": 13,
    "sectorTotal": 27,
