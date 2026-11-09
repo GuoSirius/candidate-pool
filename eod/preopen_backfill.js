@@ -15,18 +15,12 @@
  *   node eod/preopen_backfill.js --no-push        # 不推送归档
  * ---------------------------------------------------------------------------
  */
-const fs = require('fs');
-const path = require('path');
 const { dayjs } = require('../time');
 const cfg = require('./preopen.config');
 const market = require('./lib/market');
 const store = require('./lib/preopen_store');
 const PR = require('./lib/preopen_rules');
 const { mapLimit } = require('./lib/http');
-const paths = require('../paths');
-const { minifyHTML } = require('./lib/report_fmt');
-const { lastClosedTradingDay } = require('../rules');
-const { buildHTML } = require('./lib/preopen_report');
 const argv = process.argv.slice(2);
 const OPT = {
   date: (() => {
@@ -133,32 +127,12 @@ async function run() {
   log(`[回填] 命中 ${close.hit}/${close.total}（开盘买入当日涨≥${cfg.backfill.hitDayChgMin}%）= ${close.hitRate}%`);
 
   // 重渲染 HTML（补充收盘区块：昨收%/今开%/今收%/买入收益% + 量比/换手%/涨停/买入机会/命中），覆盖盘前生成的旧报告
+  // ——逻辑抽到 lib/rerender.js，nextday_backfill 的 verdict 回填也走同一函数（口径只有一份）
   try {
-    const doc = store.loadRun(cfg, tradeDate);
-    const recs = Object.values(doc.records).sort((a, b) => b.total - a.total);
-    const bySector = new Map();
-    for (const c of recs) { if (!bySector.has(c.sector)) bySector.set(c.sector, []); bySector.get(c.sector).push(c); }
-    const groups = [];
-    for (const [sector, list] of bySector) {
-      list.sort((a, b) => b.total - a.total);
-      list.forEach((c, i) => { c.groupRank = i + 1; c.bestInGroup = i === 0; c.groupSize = list.length; });
-      groups.push({ sector, size: list.length, shown: list.slice(0, cfg.group.maxPerGroup > 0 ? cfg.group.maxPerGroup : list.length), best: list[0] });
-    }
-    groups.sort((a, b) => b.best.total - a.best.total);
-    const top = recs.slice(0, cfg.group.topN > 0 ? cfg.group.topN : recs.length);
-    const rej = doc.meta && doc.meta.rejByReason ? Object.values(doc.meta.rejByReason).reduce((a, b) => a + b, 0) : 0;
-    const stats = {
-      snapshotCount: (doc.meta && doc.meta.snapshotCount) || 0,
-      baselineCount: (doc.meta && doc.meta.baselineCount) || 0,
-      candidateCount: recs.length, groupCount: groups.length, gapCount: rej,
-      rejByReason: (doc.meta && doc.meta.rejByReason) || {},
-    };
-    const result = { candidates: recs, groups, top, stats, gaps: [], nearMiss: doc.nearMiss || [] };
-    const reportDir = path.join(paths.eodDir(), cfg.store.reportDir);
-    fs.mkdirSync(reportDir, { recursive: true });
-    const reportFile = path.join(reportDir, `${cfg.store.prefix}-${tradeDate}.html`);
-    fs.writeFileSync(reportFile, minifyHTML(buildHTML({ cfg, tradeDate, scope: doc.scope, anchor: doc.anchor || lastClosedTradingDay(dayjs.tz(tradeDate)), result, marketDate: doc.marketDate, runner: 'local', close: doc.close, regime: (doc.meta && doc.meta.regime) || null })), 'utf8');
-    log(`[报告] 已重渲染（含收盘区块）${reportFile}`);
+    const { rerenderPreopen } = require('./lib/rerender');
+    const r = rerenderPreopen(tradeDate);
+    if (typeof r === 'string') log(`[报告] 已重渲染（含收盘区块）${r}`);
+    else log(`[报告] 跳过重渲染：${(r && r.skipped) || '无候选'}`);
   } catch (e) { log(`[警告] HTML 重渲染失败（不影响归档）：${e && e.message || e}`); }
 
   return close;

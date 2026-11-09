@@ -12,7 +12,8 @@
  *   3. 游资票   eod/data/hotmoney/hotmoney-<日>.json      basis = T+1 开盘
  * verdicts 一律追加段：旧归档缺段不报错；t3 已齐的记录跳过（幂等，不重抓）。
  *
- * 产出：eod/data/perf-weekly.json 滚动聚合（按管道 × 命中率/均值），周六简报（批次 D）从这读。
+ * 产出：eod/data/perf-weekly.json 滚动聚合（按管道 × 命中率/均值），周六简报（批次 D）从这读；
+ *       回填后重渲染各管道最新一份正式报告（eod/lib/rerender.js）并打印改动 HTML 清单。
  *
  * 用法：
  *   node eod/nextday_backfill.js            # 常规补齐
@@ -218,9 +219,34 @@ async function run() {
   atomicWriteJSON(perfFile, perf);
   log(`[聚合] ${perfFile}`);
 
-  const summary = { filled, pending, kErr, elapsedMs: Date.now() - t0, perfFile };
+  // 5) 重渲染受影响报告（批次 A 收尾）：命中率区块 / 游资 T+1·T+3 列只有重渲染才可见。
+  //    只重渲染各管道最新一份正式报告——历史报告是冻结的复盘快照，不悄悄改写；
+  //    旧游资档缺 seatChanges 会跳过（rerender.js 内说明，宁缺毋滥）。
+  const changedHtml = [];
+  if (filled > 0 || OPT.force) {
+    const { rerenderTail, rerenderPreopen, rerenderHotmoney } = require('./lib/rerender');
+    const tailEntry = pipelines.tail.find((e) => e.kind === 'tail');   // 最新正式档（排除 -obs）
+    const jobs = [
+      tailEntry && ['尾盘', () => rerenderTail(path.join(tailEntry.dir, tailEntry.file))],
+      pipelines.preopen[0] && ['盘前', () => rerenderPreopen(pipelines.preopen[0].date)],
+      pipelines.hotmoney[0] && ['游资', () => rerenderHotmoney(pipelines.hotmoney[0].date)],
+    ].filter(Boolean);
+    for (const [name, fn] of jobs) {
+      try {
+        const r = fn();
+        if (typeof r === 'string') { changedHtml.push(r); log(`[HTML] ${name} 已重渲染：${r}`); }
+        else log(`[HTML] ${name} 跳过：${(r && r.skipped) || '无数据'}`);
+      } catch (e) { log(`[HTML] ${name} 重渲染失败（不影响归档）：${(e && e.message) || e}`); }
+    }
+  }
+
+  const summary = { filled, pending, kErr, elapsedMs: Date.now() - t0, perfFile, changedHtml };
   for (const [p, a] of Object.entries(perf.pipelines)) {
     if (a && a.t1) log(`[胜率] ${p}: n=${a.n} T1命中 ${a.t1.rate}%（均值 ${a.t1.avg}%）${a.t3 ? ` · T3命中 ${a.t3.rate3}%（均值 ${a.t3.avg}% / 期间最高均值 ${a.t3.avgMax}%）` : ''}`);
+  }
+  if (changedHtml.length) {
+    log('[HTML] 本次改动清单（可逐个点开查看）：');
+    for (const f of changedHtml) log(`  ${f}`);
   }
   if (OPT.json) console.log(JSON.stringify(summary, null, 2));
   return summary;

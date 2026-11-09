@@ -183,6 +183,10 @@ async function run() {
     }
   }
   store.saveSeatSnapshot(snap);
+  // 锚定日席位变更落档：这是 rerender 从归档重渲染时还原「新席位」标注的唯一来源
+  // （席位快照已 union 更新，事后无法复现比对 → 扫描当刻必须存下来；旧档无此字段则重渲染跳过）
+  anchorDoc.seatChanges = seatChanges;
+  store.saveDay(anchor, anchorDoc);
   log(`[感知] 席位变更 ${seatChanges.length} 条${seatChanges.length ? '：' + [...new Set(seatChanges.map((c) => c.name))].join('、') : ''}`);
 
   // 观察名单合并（各日未识别席位按天累计；同日重复合并只计一次）
