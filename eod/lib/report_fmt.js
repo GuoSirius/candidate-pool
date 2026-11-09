@@ -50,6 +50,36 @@ function billboardCell(bb) {
   return `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
 }
 
+/** 游资层级细分（2026-11-09）：凡带「游资」过滤项的报告，都要能按 一线/二线/避坑 圈定。
+ *  层级取自 billboard.hot[].tier，顺序与 hotmoney.config 的三档口径一致；
+ *  属性与 chip 值统一 encodeURIComponent，中文/特殊字符不会破坏 data-* 属性。 */
+const HOT_TIER_ORDER = ['一线', '二线', '避坑'];
+const HOT_TIER_PREFIX = '@htier:';
+
+/** 单票 → 行 data-hm-tier 属性值（去重、编码、| 分隔）；无游资返回空串 */
+function hotTierAttr(bb) {
+  const tiers = [...new Set(((bb && bb.hot) || []).map((h) => h && h.tier).filter(Boolean))];
+  return tiers.map(encodeURIComponent).join('|');
+}
+
+/** 一批候选 → { order, counts }；固定三档恒出现（含 0），归档里冒出的其它层级追加在后 */
+function hotTierCounts(recs, bbOf) {
+  const pick = bbOf || ((c) => c.billboard);
+  const counts = {};
+  for (const c of recs || []) {
+    const bb = pick(c);
+    for (const t of new Set(((bb && bb.hot) || []).map((h) => h && h.tier).filter(Boolean))) {
+      counts[t] = (counts[t] || 0) + 1;
+    }
+  }
+  const order = HOT_TIER_ORDER.concat(Object.keys(counts).filter((t) => !HOT_TIER_ORDER.includes(t)).sort());
+  for (const t of order) if (counts[t] == null) counts[t] = 0;
+  return { order, counts };
+}
+
+/** 生成层级 chips 的 data 值（报告侧只负责套自己的 chip 外壳） */
+function hotTierChipValue(tier) { return HOT_TIER_PREFIX + encodeURIComponent(tier); }
+
 /** HTML 安全压缩（用户要求减小入库体积，2026-11-09）：
  *  只做 <style> 内空白折叠、逐行去首部缩进、去空行。
  *  不合并标签间空白（inline 元素间距会变）、不删行内 JS 换行（// 注释会串行）。
@@ -65,4 +95,7 @@ function minifyHTML(html) {
     .join('\n');
 }
 
-module.exports = { b, num, pct, esc, boardsTxt, fmtAmt, billboardCell, minifyHTML };
+module.exports = {
+  b, num, pct, esc, boardsTxt, fmtAmt, billboardCell, minifyHTML,
+  HOT_TIER_ORDER, HOT_TIER_PREFIX, hotTierAttr, hotTierCounts, hotTierChipValue,
+};

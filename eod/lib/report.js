@@ -17,7 +17,7 @@ const { BOARD_LABEL } = require('./screen');
 
 /** 双语片段：默认渲染中文，点击右上角按钮切换 */
 // 共享格式化纯函数（唯一真相源：report_fmt.js；yi 仅本报告使用，留在本地）
-const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
+const { b, num, pct, esc, boardsTxt, billboardCell, hotTierAttr, hotTierCounts, hotTierChipValue } = require('./report_fmt');
 const { KLINE_CSS, sparkCell, sparkOf, loadSparkIndex } = require('./kline_spark');
 const fs = require('fs');
 const path = require('path');
@@ -119,7 +119,8 @@ function rowHtml(c, i, cfg, withBreakdown, sparkIdx) {
     : '';
   const btxt = boardsTxt(c.boards);
   const hasHot = !!(c.billboard && (c.billboard.hot || []).length);
-  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${btxt ? ' data-boards="1"' : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ' data-hot="1"' : ''}>
+  const hmTiers = hotTierAttr(c.billboard);
+  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${btxt ? ' data-boards="1"' : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ' data-hot="1"' : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     ${sparkCell(sparkOf(c.code, sparkIdx))}
@@ -341,6 +342,9 @@ function buildHTML(m) {
   const boardsCount = listed.filter((c) => boardsTxt(c.boards)).length;
   const bbCount = listed.reduce((n, c) => n + (c.billboard ? 1 : 0), 0);
   const hotCount = listed.reduce((n, c) => n + (c.billboard && (c.billboard.hot || []).length ? 1 : 0), 0);
+  const tierStat = hotTierCounts(listed, (c) => c.billboard);
+  const tierChipHtml = tierStat.order.map((t) =>
+    `<button type="button" class="chip" data-filter="${esc(hotTierChipValue(t))}">${b(esc(t), esc(t))}<i>${tierStat.counts[t]}</i></button>`);
   const chipsHtml = [`<button type="button" class="chip active" data-filter="">${b(`全部 ${listed.length}`, `All ${listed.length}`)}</button>`]
     .concat([
       `<button type="button" class="chip" data-filter="@best">${b('只看组内第一', 'Group #1 only')}<i>${bestCount}</i></button>`,
@@ -348,6 +352,7 @@ function buildHTML(m) {
       `<button type="button" class="chip" data-filter="@boards">${b('连板', 'Boards')}<i>${boardsCount}</i></button>`,
       `<button type="button" class="chip" data-filter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
       `<button type="button" class="chip" data-filter="@hotmoney">${b('游资', 'Hot money')}<i>${hotCount}</i></button>`,
+      ...tierChipHtml,
     ])
     .concat(chipOrder.map((s) =>
       `<button type="button" class="chip" data-filter="${esc(s)}">${b(esc(s), esc(s))}<i>${chipCounts[s]}</i></button>`))
@@ -515,6 +520,7 @@ function buildHTML(m) {
         if (candFilter === '@boards') return tr.hasAttribute('data-boards');
         if (candFilter === '@billboard') return tr.hasAttribute('data-billboard');
         if (candFilter === '@hotmoney') return tr.getAttribute('data-hot') === '1';
+        if (candFilter.indexOf('@htier:') === 0) return (tr.getAttribute('data-hm-tier') || '').split('|').indexOf(candFilter.replace('@htier:', '')) >= 0;
         return !candFilter || tr.getAttribute('data-sector') === candFilter;
       }
       var shown = [];
@@ -525,7 +531,7 @@ function buildHTML(m) {
       } else {
         sepOrder.forEach(function (sep) {
           var sec = sep.getAttribute('data-sep');
-          // @ 前缀为伪过滤（@best/@top3/@boards/@billboard/@hotmoney），交由 want() 判行，不参与行业组筛选
+          // @ 前缀为伪过滤（@best/@top3/@boards/@billboard/@hotmoney/@htier:），交由 want() 判行，不参与行业组筛选
           if (!bestOnly && !top3 && candFilter && candFilter.charAt(0) !== '@' && sec !== candFilter) return;
           // 先收集该组本次要显示的行：空组（如组内第一被 maxRows 截断）不渲染分隔行
           var groupRows = [];

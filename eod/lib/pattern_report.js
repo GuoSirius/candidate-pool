@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
-const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
+const { b, num, pct, esc, boardsTxt, billboardCell, hotTierAttr, hotTierCounts, hotTierChipValue } = require('./report_fmt');
 const { CSS } = require('./preopen_report');
 // mini K 线是全报告共享能力（kline_spark.js），本文件只保留形态特有的「启动日虚线」参数
 const { KLINE_CSS, sparkCell } = require('./kline_spark');
@@ -61,6 +61,7 @@ function rowHtml(c, i, cfg, withDetail) {
   const f = (c.patterns[0] && c.patterns[0].features) || {};
   const hmNames = [...new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name).filter(Boolean))]
     .map(encodeURIComponent).join('|');
+  const hmTiers = hotTierAttr(c.billboard);
   const detail = withDetail
     ? DETAIL_COLS.map(([k]) => {
       const v = f[k];
@@ -71,7 +72,7 @@ function rowHtml(c, i, cfg, withDetail) {
   return `<tr data-sector="${esc(c.sector)}" data-patterns="${esc(c.patternIds.join('|'))}" data-stage="${esc(c.stage)}"`
     + ` data-score="${num(c.score, 1)}" data-resonance="${c.resonance}"`
     + `${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"`
-    + `${c.billboard ? ' data-billboard="1"' : ''}${hmNames ? ` data-hot="1" data-hm="${hmNames}"` : ''}>
+    + `${c.billboard ? ' data-billboard="1"' : ''}${hmNames ? ` data-hot="1" data-hm="${hmNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${esc(c.code.replace(/^[a-z]+/, ''))}</span></td>
     ${sparkCell(c.spark, { width: cfg.report.sparkWidth, height: cfg.report.sparkHeight, launchDate: w.launchDate })}
@@ -168,9 +169,11 @@ function buildHTML(m) {
   const top3Count = listed.filter((c) => (c.groupRank || 99) <= 3).length;
   const hmCounts = {};
   for (const c of listed) for (const n of new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name).filter(Boolean))) hmCounts[n] = (hmCounts[n] || 0) + 1;
+  const tierStat = hotTierCounts(listed, (c) => c.billboard);
   const qualityChips = [chipBtn('quality', '', '全部', 'All', null, true),
     chipBtn('quality', '@billboard', '上榜', 'On list', bbCount, false),
     chipBtn('quality', '@hotmoney', '游资', 'Hot money', hotCount, false)]
+    .concat(tierStat.order.map((t) => chipBtn('quality', hotTierChipValue(t), esc(t), esc(t), tierStat.counts[t], false)))
     .concat(Object.keys(hmCounts).sort((a, z) => hmCounts[z] - hmCounts[a]).map((n) => chipBtn('quality', '@hm:' + encodeURIComponent(n), n, n, hmCounts[n], false)))
     .concat([chipBtn('quality', '@best', '组内第一', 'Group #1', bestCount, false),
       chipBtn('quality', '@top3', '组内前三', 'Group top 3', top3Count, false)]).join('');
@@ -317,6 +320,7 @@ function buildHTML(m) {
     else if (q === '@billboard') ok = ok && tr.hasAttribute('data-billboard');
     else if (q === '@hotmoney') ok = ok && tr.getAttribute('data-hot') === '1';
     else if (q.indexOf('@hm:') === 0) ok = ok && (tr.getAttribute('data-hm') || '').split('|').indexOf(q.slice(4)) >= 0;
+    else if (q.indexOf('@htier:') === 0) ok = ok && (tr.getAttribute('data-hm-tier') || '').split('|').indexOf(q.replace('@htier:', '')) >= 0;
     if (filters.sector) ok = ok && tr.getAttribute('data-sector') === filters.sector;
     return ok;
   }
