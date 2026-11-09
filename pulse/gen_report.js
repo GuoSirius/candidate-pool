@@ -3,6 +3,8 @@
  * pulse/gen_report.js —— 生成单文件 HTML 报告（零外部资源，风格对齐现有报告）
  */
 const cfg = require('./config');
+// mini K 线：与 eod/ 各报告共用同一套内联 SVG 与日档缓存；个股热度榜的 code 常为空，缺码自动降级
+const { KLINE_CSS, sparkCell, sparkOf, loadSparkIndex } = require('../eod/lib/kline_spark');
 
 const esc = (s) => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -12,6 +14,7 @@ const VERIFY_BADGE = { A: 'badge-a', B: 'badge-b', C: 'badge-c', '-': 'badge-d' 
 
 function buildReport(snapshot, analysis) {
   const { hotBoards, hotStocks } = analysis;
+  const sparkIdx = loadSparkIndex(String(snapshot.runAtText || '').slice(0, 10));
   const top3 = hotBoards.filter((b) => b.verify === 'A' || b.verify === 'B').slice(0, 3);
   const summary = top3.length
     ? `过去 ${analysis.lookbackHours} 小时共采集 ${analysis.windowCount} 条消息。多源交叉验证热点：` +
@@ -57,6 +60,7 @@ function buildReport(snapshot, analysis) {
       <td>${i + 1}</td>
       <td class="strong">${esc(s.name)}</td>
       <td>${esc(s.code || '-')}</td>
+      ${sparkCell(sparkOf(s.code, sparkIdx), { width: 96, height: 26 })}
       <td>${esc(s.sector || '-')}</td>
       <td${vAttr(s.score, 0)}>${s.score}</td>
       <td>${s.isLead ? '<span class="badge badge-b">热点板块领涨</span>' : ''} ${s.sources.map(esc).join(' / ') || '-'}</td>
@@ -107,6 +111,7 @@ function buildReport(snapshot, analysis) {
   a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
   .up { color:var(--red); } .down { color:var(--green); }
   .lead-item { display:inline-block; margin-right:10px; white-space:nowrap; }
+  ${KLINE_CSS}
   table.sortable th[data-s] { cursor:pointer; user-select:none; white-space:nowrap; }
   table.sortable th[data-s].asc::after { content:' ▲'; color:var(--accent); }
   table.sortable th[data-s].desc::after { content:' ▼'; color:var(--accent); }
@@ -123,7 +128,7 @@ function buildReport(snapshot, analysis) {
   ${evidence || '<div class="muted">暂无消息命中的板块</div>'}
 
   <h2>三、个股热度榜（新闻命中 + 热点板块领涨股）</h2>
-  <table class="sortable"><thead><tr><th>#</th><th>股票</th><th>代码</th><th>行业</th><th>热度分 ⇅</th><th>依据</th></tr></thead><tbody>${stockRows || '<tr><td colspan="6">暂无</td></tr>'}</tbody></table>
+  <table class="sortable"><thead><tr><th>#</th><th>股票</th><th>代码</th><th>mini K线</th><th>行业</th><th>热度分 ⇅</th><th>依据</th></tr></thead><tbody>${stockRows || '<tr><td colspan="7">暂无</td></tr>'}</tbody></table>
 
   <h2>四、事件类公告（巨潮资讯 · 关键词过滤）</h2>
   <table><thead><tr><th>时间</th><th>代码</th><th>公司</th><th>公告</th></tr></thead><tbody>${annRows || '<tr><td colspan="4">暂无</td></tr>'}</tbody></table>

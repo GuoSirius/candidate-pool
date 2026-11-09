@@ -54,6 +54,8 @@ const scaffold = require('./scaffold');
 // 规则引擎纯函数（R01/R07/R05/行业中位数/成交量单位/时区锚定）统一走 rules.js，
 // 单测见 rules.test.js，避免与 gen_candidates 内联实现漂移导致双份真相。
 const { lastClosedTradingDay, nextTradingDay, calcTurnover, computeSectors, calcR01, isLaggard, verifyR05, G } = require('./rules');
+// mini K 线：与 eod/ 各报告共用一套内联 SVG 实现与日档缓存（缺档自动降级为「—」）
+const { KLINE_CSS, sparkCell, sparkOf, loadSparkIndex } = require('./eod/lib/kline_spark');
 
 // ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
 const QT_QUOTE = 'https://qt.gtimg.cn/q=';
@@ -511,6 +513,7 @@ function gateCell(pass) {
 function buildHTML(m) {
   const { anchor, target, limit, universe, breadth, breadthIsAnchor, overview,
     high, secondary, conditional, excluded, r01Triggers, r07Triggers, r05Hard } = m;
+  const sparkIdx = loadSparkIndex(anchor);
 
   // 核心结论
   const best = [...universe].sort((a, b) => (b.r01.core || 0) - (a.r01.core || 0))[0];
@@ -551,6 +554,7 @@ function buildHTML(m) {
     matrixRows += `<tr data-tier="${tier}"${cls}>` +
       `<td>${s.code.replace(/^(sh|sz|bj)/, '')}</td>` +
       `<td>${b(s.name, s.name)}</td>` +
+      sparkCell(sparkOf(s.code, sparkIdx), { width: 104, height: 28 }) +
       `<td><span class="tag tier-${tier}">${TIER_LABEL[tier]}</span></td>` +
       `<td>${num(r.close)}</td>` +
       `<td class="${r.chg >= 0 ? 'up' : 'down'}">${pct(r.chg)}</td>` +
@@ -772,7 +776,7 @@ function buildHTML(m) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${b(`A股次日候选池 — ${anchor} 收盘后初筛`, `A-Share Next-Day Candidate Pool — Post-Close Screening, ${anchor}`)}</title>
-<style>${css}</style>
+<style>${css}${KLINE_CSS}</style>
 </head>
 <body>
 <div class="container">
@@ -809,7 +813,7 @@ function buildHTML(m) {
     <div class="toolbar"><div class="chips" id="tierChips">${tierChips}</div></div>
     <div class="table-wrap"><table id="matrixTable">
       <thead><tr>
-        <th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('档位', 'Tier')}</th>
+        <th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('mini K线', 'mini K')}</th><th>${b('档位', 'Tier')}</th>
         <th>${b('收盘', 'Close')}</th><th>${b('涨幅', 'Chg')}</th><th>${b('换手', 'Turn.')}</th>
         <th>${b('量能/5日', 'Vol/5d')}</th><th>${b('前10日高', 'Prior 10d high')}</th>
         <th>C1</th><th>C2</th><th>C3</th><th>C4</th>

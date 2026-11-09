@@ -71,6 +71,7 @@
     "pattern:calibrate": "node eod/pattern_calibrate.js",
     "pattern:backfill": "node eod/pattern_backfill.js",
     "pattern:selftest": "node eod/lib/pattern.selftest.js",
+    "report:rerender": "node eod/rerender_all.js",
     "pulse": "node pulse/run.js",
     "pulse:watch": "node pulse/watch.js",
     "pulse:probe": "node pulse/probe.mjs",

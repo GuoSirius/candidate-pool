@@ -18,6 +18,7 @@ const { BOARD_LABEL } = require('./screen');
 /** 双语片段：默认渲染中文，点击右上角按钮切换 */
 // 共享格式化纯函数（唯一真相源：report_fmt.js；yi 仅本报告使用，留在本地）
 const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
+const { KLINE_CSS, sparkCell, sparkOf, loadSparkIndex } = require('./kline_spark');
 const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
@@ -100,7 +101,7 @@ function scoreHeadSub() {
 }
 
 /** 单条候选的行（用于 TOP 表 / 分组卡片） */
-function rowHtml(c, i, cfg, withBreakdown) {
+function rowHtml(c, i, cfg, withBreakdown, sparkIdx) {
   const tail = c.tail || {};
   const warn = cfg.score.tailUpRatioWarn;
   const tagBits = [];
@@ -121,6 +122,7 @@ function rowHtml(c, i, cfg, withBreakdown) {
   return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${btxt ? ' data-boards="1"' : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ' data-hot="1"' : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
+    ${sparkCell(sparkOf(c.code, sparkIdx))}
     <td>${b(esc(c.sector), esc(c.sector))}</td>
     <td class="up">${pct(c.chgPct)}</td>
     <td>${btxt}</td>
@@ -264,6 +266,8 @@ const CSS = `  :root, :root[data-theme="light"] {
 function buildHTML(m) {
   const { cfg, tradeDate, mode, cutHHMM, segFrom, result, meta, runner } = m;
   const { candidates, groups, top, stats } = result;
+  // mini K 线：当日日档缓存（尾盘/盘中/观察三种模式共用同一交易日）
+  const sparkIdx = loadSparkIndex(tradeDate);
   // 近 N 日入选票命中率（批次 A5，2026-11-09）：尾盘口径 = 尾盘价买入，T+1/T+3 收盘卖出。
   // 数据来自 nextday_backfill（工作日 18:30）滚动聚合；攒样本阶段口径不动权重（plan §A5）。
   const perfHit = loadPerf('tail');
@@ -305,7 +309,7 @@ function buildHTML(m) {
 
   // 两级表头：第一行把五个子分切成「个股自身 77 / 环境与质量 23」两块，
   // 第一行列宽靠 colspan 自动对齐到下面的子分列，不需要额外配 colgroup。
-  const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
+  const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('mini K线', 'mini K')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('连板', 'Streak')}</th><th rowspan="2">${b('上榜', 'List')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
     <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('价格', 'Price')}</th>
     <th rowspan="2">${b('流通值', 'Float cap')}</th><th rowspan="2">${b('总市值', 'Total cap')}</th>
@@ -359,9 +363,9 @@ function buildHTML(m) {
   // 分组分隔行：默认隐藏，「按行业」视图由前端插入到各组行首（含行业中位涨幅与组内数量）
   // colspan = 基础 10 列（# 标的 行业 涨幅 尾盘段 量比 换手 价格 流通值 总市值）+ 分项 6 列 + 总分/标记 2 列
   const sepRows = groups.map((g) =>
-    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${14 + SCORE_COLS.length + 2}">${
+    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${15 + SCORE_COLS.length + 2}">${
       b(esc(g.sector), esc(g.sector))} · ${b('中位涨幅', 'median')} ${pct(g.best.sectorMedianChg)} · ${b(`组内 ${g.size} 只`, `${g.size} picked`)}</td></tr>`).join('');
-  const candRows = listed.map((c, i) => rowHtml(c, i, cfg, true)).join('');
+  const candRows = listed.map((c, i) => rowHtml(c, i, cfg, true, sparkIdx)).join('');
 
   // ---- 淘汰漏斗 ----
   const funnelRows = Object.entries(stats.preByReason)
@@ -388,7 +392,7 @@ function buildHTML(m) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
-<style>${CSS}</style>
+<style>${CSS}${KLINE_CSS}</style>
 </head>
 <body>
 <div class="container">

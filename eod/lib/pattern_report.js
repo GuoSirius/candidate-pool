@@ -17,13 +17,10 @@ const path = require('path');
 const paths = require('../../paths');
 const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
 const { CSS } = require('./preopen_report');
+// mini K 线是全报告共享能力（kline_spark.js），本文件只保留形态特有的「启动日虚线」参数
+const { KLINE_CSS, sparkCell } = require('./kline_spark');
 
 const EXTRA_CSS = `
-  .spark svg { display: block; margin: 0 auto; }
-  .k-wick { stroke: var(--slate); stroke-width: 1; fill: none; opacity: .55; }
-  .k-up { stroke: var(--red); stroke-width: 2.4; fill: none; stroke-linecap: round; }
-  .k-down { stroke: var(--green); stroke-width: 2.4; fill: none; stroke-linecap: round; }
-  .k-launch { stroke: var(--amber); stroke-width: 1; stroke-dasharray: 2 2; fill: none; }
   .buy-range { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--accent); }
   .tag.wait { background: var(--tag-gap-bg); color: var(--amber); }
   .tag.res { background: var(--tag-pass-bg); color: var(--red); }
@@ -47,34 +44,6 @@ const DETAIL_COLS = [
 function capTxt(cap) {
   if (!cap || cap.total == null) return '—';
   return `${num(cap.total, 1)}/${cap.float != null ? num(cap.float, 1) : '—'}亿`;
-}
-
-/** 内联 SVG mini K 线：影线 + 开收实体（涨跌分色），启动日画竖虚线 */
-function sparkSVG(spark, window, cfg) {
-  if (!Array.isArray(spark) || spark.length < 2) return '';
-  const W = cfg.report.sparkWidth, H = cfg.report.sparkHeight;
-  const pad = 2, n = spark.length;
-  let hi = -Infinity, lo = Infinity;
-  for (const r of spark) { hi = Math.max(hi, r[2]); lo = Math.min(lo, r[3]); }
-  if (!(hi > lo)) return '';
-  const x = (i) => pad + i * (W - 2 * pad) / (n - 1);
-  const y = (v) => pad + (hi - v) / (hi - lo) * (H - 2 * pad);
-  const wicks = [], ups = [], downs = [];
-  for (let i = 0; i < n; i++) {
-    const [, o, h, l, c] = spark[i];
-    const xx = +x(i).toFixed(1);
-    wicks.push(`M${xx},${y(h).toFixed(1)}V${y(l).toFixed(1)}`);
-    (c >= o ? ups : downs).push(`M${xx},${y(o).toFixed(1)}V${y(c).toFixed(1)}`);
-  }
-  let launch = '';
-  if (window && window.launchDate) {
-    const i = spark.findIndex((r) => r[0] === window.launchDate);
-    if (i >= 0) launch = `<path class="k-launch" d="M${x(i).toFixed(1)},${pad}V${H - pad}"/>`;
-  }
-  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="mini K-line">`
-    + `<path class="k-wick" d="${wicks.join('')}"/>`
-    + `<path class="k-up" d="${ups.join('')}"/><path class="k-down" d="${downs.join('')}"/>`
-    + launch + '</svg>';
 }
 
 function patternTags(c) {
@@ -105,6 +74,7 @@ function rowHtml(c, i, cfg, withDetail) {
     + `${c.billboard ? ' data-billboard="1"' : ''}${hmNames ? ` data-hot="1" data-hm="${hmNames}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${esc(c.code.replace(/^[a-z]+/, ''))}</span></td>
+    ${sparkCell(c.spark, { width: cfg.report.sparkWidth, height: cfg.report.sparkHeight, launchDate: w.launchDate })}
     <td>${esc(c.sector)}</td>
     <td>${esc(c.board)}</td>
     <td class="num">${num(c.price)}</td>
@@ -121,7 +91,6 @@ function rowHtml(c, i, cfg, withDetail) {
     <td class="num ${f.cumChg >= 0 ? 'up' : 'down'}">${pct(f.cumChg)}</td>
     <td class="num ${f.aboveMA20Now >= 0 ? 'up' : 'down'}">${pct(f.aboveMA20Now)}</td>
     <td><span class="tag ${c.stage === '二次启动' ? 'pass' : ''}">${esc(c.stage)}</span></td>
-    <td class="spark">${sparkSVG(c.spark, w, cfg)}</td>
     <td>${boardsTxt(c.boards)}</td>
     <td class="wrap">${billboardCell(c.billboard)}</td>
     ${detail}
@@ -139,12 +108,12 @@ function loadPerf() {
 }
 
 const headCols = () => [
-  ['#'], [b('标的', 'Name')], [b('行业', 'Industry')], [b('板块', 'Board')],
+  ['#'], [b('标的', 'Name')], [b('mini K线', 'mini K')], [b('行业', 'Industry')], [b('板块', 'Board')],
   [b('现价', 'Price')], [b('涨跌%', 'Chg%')], [b('量比', 'VolR')], [b('换手%', 'Turn%')], [b('市值/流通', 'Cap/FLOAT')],
   [b('推荐买入区间', 'Buy range')], [b('止损', 'Stop')], [b('止盈', 'Target')],
   [b('形态', 'Patterns')], [b('匹配分', 'Match')], [b('窗口', 'Window')],
-  [b('累计涨幅', 'Cum chg')], [b('距MA20', 'vs MA20')], [b('阶段', 'Stage')],
-  [b('mini K线', 'mini K')], [b('连板', 'Streak')], [b('上榜/游资', 'List / Hot money')],
+  [b('累计涨幅', 'Cum chg')], [b('距MA20', 'vs MA20')],   [b('阶段', 'Stage')],
+  [b('连板', 'Streak')], [b('上榜/游资', 'List / Hot money')],
 ];
 
 function buildHTML(m) {
@@ -250,7 +219,7 @@ function buildHTML(m) {
   return `<!DOCTYPE html>
 <html lang="zh-CN" data-theme="dark">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title}</title><style>${CSS}${EXTRA_CSS}</style></head>
+<title>${title}</title><style>${CSS}${EXTRA_CSS}${KLINE_CSS}</style></head>
 <body><div class="container">
   <div class="topbar"><div>
     <h1>${b(cfg.report.title, cfg.report.titleEn)} · ${tradeDate}</h1>
@@ -417,4 +386,4 @@ function buildHTML(m) {
 </body></html>`;
 }
 
-module.exports = { buildHTML, CSS: CSS + EXTRA_CSS, DETAIL_COLS, sparkSVG };
+module.exports = { buildHTML, CSS: CSS + EXTRA_CSS + KLINE_CSS, DETAIL_COLS };

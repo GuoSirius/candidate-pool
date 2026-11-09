@@ -16,6 +16,7 @@
  */
 const { b, num, esc } = require('./report_fmt');
 const { CSS } = require('./preopen_report');
+const { KLINE_CSS, sparkCell, sparkOf, loadSparkIndex } = require('./kline_spark');
 const { badgeHTML: regimeBadgeHTML } = require('./regime');
 const fs = require('fs');
 const path = require('path');
@@ -63,6 +64,7 @@ function tradeRowHtml(t, opts) {
     ${opts.withDate ? `<td class="src">${esc(t.date.slice(5))}</td>` : ''}
     <td><b>${esc(t.name)}</b> ${tierTag(t.tier)}</td>
     <td><b>${esc(t.stock)}</b><span class="src">${esc(t.code)}</span></td>
+    ${sparkCell(sparkOf(t.code, opts.sparkIdx), { width: 104, height: 28, until: opts.withDate ? t.date : null })}
     <td class="num ${buy.cls}">${buy.txt}</td>
     <td class="num ${sell.cls}">${sell.txt}</td>
     <td class="num ${net.cls}"><b>${net.txt}</b></td>
@@ -135,11 +137,13 @@ function buildHTML({ cfg, anchor, result, runner }) {
   ];
 
   // ---- 当日明细行（双视图共用同一批行；按游资/按票由 JS 重排） ----
+  // 聚合表（按游资汇总 / 未识别席位观察名单）没有股票维度，不加 K 线；只给逐票明细加。
+  const sparkIdx = loadSparkIndex(anchor);
   const dayRows = anchorTrades
-    .map((t) => tradeRowHtml(t, { withDate: false }))
+    .map((t) => tradeRowHtml(t, { withDate: false, sparkIdx }))
     .join('');
   const winRows = trades
-    .map((t) => tradeRowHtml(t, { withDate: true }))
+    .map((t) => tradeRowHtml(t, { withDate: true, sparkIdx }))
     .join('');
 
   const provenance = b(
@@ -160,7 +164,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
-<style>${CSS}</style>
+<style>${CSS}${KLINE_CSS}</style>
 </head>
 <body>
 <div class="container">
@@ -204,7 +208,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     ${filterChipRow('fName', '游资', 'Trader', nameChips(anchorTrades))}
   </div>
   <div class="table-wrap"><table id="dayTable"><thead><tr>
-    <th>${b('游资', 'Trader')}</th><th>${b('标的', 'Stock')}</th>
+    <th>${b('游资', 'Trader')}</th><th>${b('标的', 'Stock')}</th><th>${b('mini K线', 'mini K')}</th>
     <th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th><th>${b('净额', 'Net')}</th>
     <th>${b('席位', 'Seat')}</th><th>${b('标记', 'Marks')}</th>
   </tr></thead><tbody id="dayBody">${dayRows}</tbody></table></div>`
@@ -243,7 +247,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     ${filterChipRow('fTier3', '层级', 'Tier', tierChips(trades))}
   </div>
   <div class="table-wrap"><table><thead><tr>
-    <th>${b('日期', 'Date')}</th><th>${b('游资', 'Trader')}</th><th>${b('标的', 'Stock')}</th>
+    <th>${b('日期', 'Date')}</th><th>${b('游资', 'Trader')}</th><th>${b('标的', 'Stock')}</th><th>${b('mini K线', 'mini K')}</th>
     <th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th><th>${b('净额', 'Net')}</th>
     <th>${b('席位', 'Seat')}</th><th>${b('标记', 'Marks')}</th>
   </tr></thead><tbody id="winBody">${winRows}</tbody></table></div>`

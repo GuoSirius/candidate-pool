@@ -20,6 +20,7 @@
 // 注意：report_fmt.fmtAmt 返回字符串（上游已用）；hotmoney_report 的 fmtAmtCell
 // 返回 {txt,cls}，二者签名不同不可互换（评审 #22）。
 const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
+const { KLINE_CSS, sparkCell, sparkOf, loadSparkIndex } = require('./kline_spark');
 const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
@@ -73,7 +74,7 @@ const SCORE_GROUP = { key: 'sig', zh: '信号分项', en: 'Signals', cols: [['p1
 const SCORE_COLS = SCORE_GROUP.cols;
 
 /** 候选行（列序：标的/行业/板块/今开价/今开/昨涨/昨日净流入/市值流通/竞价量能比/昨量比/昨换手/趋势/分项/总分/标签）。 */
-function rowHtml(c, i, withBreakdown) {
+function rowHtml(c, i, withBreakdown, sparkIdx) {
   const cells = withBreakdown
     ? SCORE_COLS.map(([k, , w]) => `<td class="num sc">${num((c.scoreItems ? c.scoreItems[k] : 0) * w, 1)}</td>`).join('')
     : '';
@@ -85,6 +86,7 @@ function rowHtml(c, i, withBreakdown) {
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
+    ${sparkCell(sparkOf(c.code, sparkIdx))}
     <td>${b(esc(c.sector), esc(c.sector))}</td>
     <td>${esc(c.board)}</td>
     <td class="num">${num(c.open)}</td>
@@ -105,7 +107,7 @@ function rowHtml(c, i, withBreakdown) {
 }
 
 /** 收盘回填行：昨收%/今开%/今收%/买入收益%（今收−今开，模拟开盘买入持有到收盘）+ 量比/换手%/涨停/买入机会/命中 */
-function closeRowHtml(c, i, sealedMin) {
+function closeRowHtml(c, i, sealedMin, sparkIdx) {
   const cl = c.close || {};
   const yChg = c.yesterdayChgPct;   // 昨收涨跌幅（昨日 vs 前日）
   const openChg = c.auctionChgPct;  // 今开涨跌幅（今开 vs 昨收）
@@ -135,6 +137,7 @@ function closeRowHtml(c, i, sealedMin) {
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${cl.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
+    ${sparkCell(sparkOf(c.code, sparkIdx))}
     <td>${b(esc(c.sector), esc(c.sector))}</td>
     <td>${esc(c.board)}</td>
     <td class="num ${yCls}">${pct(yChg)}</td>
@@ -258,13 +261,17 @@ const CSS = `  :root, :root[data-theme="light"] {
 function buildHTML(m) {
   const { cfg, tradeDate, scope, anchor, result, marketDate, runner, close, regime } = m;
   const { candidates, groups, top, stats } = result;
+  // mini K 线：读当日日档缓存，但截断到盘前锚定的「上一交易日」，避免画出当天收盘（前视偏差）
+  const sparkIdx = loadSparkIndex(tradeDate, { until: anchor || null });
   // ---- 贴线未入选（nearMiss）：总分落在入选线下 10 分内的归档样本，供回溯调参 ----
   const nearMissList = result.nearMiss || [];
-  const nearMissRows = nearMissList.map((c, i) => rowHtml(c, i, true)).join('');
+  const nearMissRows = nearMissList.map((c, i) => rowHtml(c, i, true, sparkIdx)).join('');
   // ---- 收盘回填区块（仅收盘回填重渲染时传入 close 才展示）----
   const sealedMin = (cfg.backfill && cfg.backfill.sealedTurnoverMin) || 1.5;
   const showClose = !!close;
-  const closeRows = showClose ? candidates.map((c, i) => closeRowHtml(c, i, sealedMin)).join('') : '';
+  // 收盘回填区块是收盘后生成，K 线可以画到当日；与盘前主表分用两个索引，口径各自正确
+  const closeSparkIdx = showClose ? loadSparkIndex(tradeDate) : sparkIdx;
+  const closeRows = showClose ? candidates.map((c, i) => closeRowHtml(c, i, sealedMin, closeSparkIdx)).join('') : '';
   const closeCallout = showClose ? buildCloseSummary(candidates, close, sealedMin) : '';
   const scopeLabel = scope === 'universe' ? b('全市场', 'Full market') : b('观察池', 'Watchlist');
   // 近 N 日三口径命中率（批次 A2，2026-11-09）：开盘买入口径，T+1/T+3 收盘卖出
@@ -289,7 +296,7 @@ function buildHTML(m) {
   ];
 
   // ---- 两级表头：合并「信号分项」到 P1/P2/P3 ----（基础9含今开价 + 分项3 + 总分/标签2 = 14 列）
-  const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
+  const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('mini K线', 'mini K')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开价', 'Open px')}</th><th rowspan="2">${b('今开', 'Open%')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
     <th rowspan="2">${b('昨日净流入', 'Prev inflow')}</th><th rowspan="2">${b('市值/流通', 'Cap/FLOAT')}</th>
     <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('昨量比', 'Prev volR')}</th><th rowspan="2">${b('昨换手%', 'Prev turn')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
@@ -356,12 +363,12 @@ function buildHTML(m) {
   </div>`;
 
   // 分组分隔行：默认隐藏，「按行业」视图前端插入各组行首
-  const baseCols = 15 + SCORE_COLS.length + 2; // 基础15(标的~趋势 + 连板/上榜) + 分项3 + 总分/标签2 = 20
+  const baseCols = 16 + SCORE_COLS.length + 2; // 基础16(含 mini K线) + 分项3 + 总分/标签2 = 21
   const sepRows = groups.map((g) =>
     `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${baseCols}">${
       b(esc(g.sector), esc(g.sector))} · ${b(`组内 ${g.size} 只，最优 ${esc(g.best.name)}（${num(g.best.total, 1)}）`,
         `${g.size} picked; top ${esc(g.best.name)} (${num(g.best.total, 1)})`)}</td></tr>`).join('');
-  const candRows = listed.map((c, i) => rowHtml(c, i, true)).join('');
+  const candRows = listed.map((c, i) => rowHtml(c, i, true, sparkIdx)).join('');
 
   // ---- 数据缺口 ----
   const gapRows = (result.gaps || []).slice(0, 40)
@@ -380,7 +387,7 @@ function buildHTML(m) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
-<style>${CSS}</style>
+<style>${CSS}${KLINE_CSS}</style>
 </head>
 <body>
 <div class="container">
@@ -429,7 +436,7 @@ function buildHTML(m) {
     <div class="toolrow"><span class="cap">${b('行业', 'Industry')}</span><span class="chips" id="closeSchips">${sectorChips}</span></div>
   </div>
   <div class="table-wrap"><table><thead><tr>
-    <th>#</th><th>${b('标的', 'Name')}</th><th>${b('行业', 'Industry')}</th><th>${b('板块', 'Board')}</th>
+    <th>#</th><th>${b('标的', 'Name')}</th><th>${b('mini K线', 'mini K')}</th><th>${b('行业', 'Industry')}</th><th>${b('板块', 'Board')}</th>
     <th>${b('昨收%', 'PrevClose %')}</th><th>${b('今开%', 'Open %')}</th><th>${b('今收%', 'Close %')}</th>
     <th>${b('买入收益%', 'Open-buy ret')}</th>
     <th>${b('今日净流入', 'Inflow')}</th><th>${b('市值/流通', 'Cap/FLOAT')}</th>
