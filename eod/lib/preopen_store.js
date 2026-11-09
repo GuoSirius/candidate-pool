@@ -2,7 +2,7 @@
 /*
  * eod/lib/preopen_store.js —— 盘前选股落库（JSON 归档，溯源用）
  * ---------------------------------------------------------------------------
- * 一天一份文件：preopen/data/preopen-YYYYMMDD.json
+ * 一天一份文件：eod/data/preopen/preopen-YYYY-MM-DD.json（2026-11-09 起按流水线子目录归位）
  *   - records: code -> 候选明细（含 P1/P2/P3 分项、基线、标签、总分）
  *   - nearMiss: 贴线样本（总分落在 [minTotal-10, minTotal) 的 Top10，带完整分项）——
  *     竞价特征无法事后从 K 线重建，被拒样本不留就无法回溯调「入选线」（2026-10-22 补）

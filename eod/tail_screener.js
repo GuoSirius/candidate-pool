@@ -25,9 +25,9 @@
  *   node eod/tail_screener.js --now "2026-09-18 14:55" # 指定时刻（测试 / 补跑）
  *   node eod/tail_screener.js --force                  # 忽略时段，按 14:50 口径取数
  *   node eod/tail_screener.js --no-notify              # 不推送（测试用）
- *   node eod/tail_screener.js --replay data/eod-2026-09-18.json
+ *   node eod/tail_screener.js --replay data/eod/eod-2026-09-18.json
  *                                                      # 离线回放：从存档重建报告，不抓行情
- *   node eod/tail_screener.js --resync data/eod-2026-09-21.json
+ *   node eod/tail_screener.js --resync data/eod/eod-2026-09-21.json
  *                                                      # 把存档**重新同步到 D1**（不抓行情、不改本地
  *                                                      #   归档、不推送）。落库链路修好后用它补历史；
  *                                                      #   可传多份；会先清掉 mode 非 formal/observe
@@ -134,19 +134,23 @@ async function runReplay(file) {
     const minutesMap = new Map(Object.entries(raw.minutes).map(([code, m]) => [code, {
       rows: m.rows || [], date: m.date || null, error: m.error || null,
     }]));
-    const now = dayjs.tz(`${doc.tradeDate} ${doc.cutAt || '1450'}`, TZ);
-    const ssRe = sessionState({ cfg, now, marketDate: doc.tradeDate });
+    // 口径取存档里真实记录的 segFrom（盘中滚动窗口起点在回放时刻已无法复现，
+    // 现算 sessionState 会把盘中 cutAt 当成尾盘窗口 → segFrom=1430 → 全部 data_gap）。
+    const recsRaw = Object.values(doc.records);
+    const segFromRe = (recsRaw[0] && recsRaw[0].tail && recsRaw[0].tail.segFrom) || lastRun.segFrom
+      || cfg.session.observeFrom.replace(':', '');
     const result = buildCandidates({
       quotes: raw.quotes, minutes: minutesMap, cfg, map: map(),
-      tradeDate: doc.tradeDate, cutHHMM: doc.cutAt || '1450', segFrom: ssRe.segFrom,
+      tradeDate: doc.tradeDate, cutHHMM: doc.cutAt || '1450', segFrom: segFromRe,
       makeTail: (rows, code, cut, seg) => market.tailMetrics(rows, code, cut, seg),
     });
     log(`[回放] 从原始存档离线重算（不抓行情）：${result.candidates.length} 候选 / 初筛 ${result.stats.prePassCount} 只`);
     return emitResult({
       tradeDate: doc.tradeDate, mode: doc.mode || 'cut', cutHHMM: doc.cutAt || '1450',
-      segFrom: ssRe.segFrom, segMinutes: ssRe.segMinutes ?? null, result,
+      segFrom: segFromRe, segMinutes: lastRun.segMinutes ?? null, result,
       meta: { slots: 0, batches: 0, failedBatches: 0, valid: raw.quotes.length, marketDate: doc.tradeDate, elapsedMs: 0, outlierDates: [] },
-      quotes: raw.quotes, minutes: minutesMap, _t0: Date.now(), skipRaw: true,
+      quotes: raw.quotes, minutes: minutesMap, _t0: Date.now(),
+      skipRaw: true, skipStore: true, noNotify: true,
       stamp: doc.stamp || false,
     });
   }
@@ -185,7 +189,7 @@ async function runReplay(file) {
     tradeDate: doc.tradeDate, mode: doc.mode || 'cut', cutHHMM: doc.cutAt || '1450',
     segFrom: segFromRe, result,
     meta: { slots: 0, batches: 0, failedBatches: 0, valid: candidates.length, marketDate: doc.tradeDate, elapsedMs: 0, outlierDates: [] },
-    skipStore: true, stamp: doc.stamp || false,
+    skipStore: true, noNotify: true, stamp: doc.stamp || false,
   });
 }
 
@@ -272,6 +276,16 @@ async function run() {
     }
   }
 
+  // --now 严格校验：非法值（如 "2026-13-99 99:99"）会产出 Invalid Date 绕过全部时段守卫
+  if (OPT.now) {
+    const re = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+    const probe = nowBjt().year(OPT.now.slice(0, 4)).month(+OPT.now.slice(5, 7) - 1)
+      .date(+OPT.now.slice(8, 10)).hour(+OPT.now.slice(11, 13)).minute(+OPT.now.slice(14, 16)).second(0);
+    if (!re.test(OPT.now) || !probe.isValid()
+      || probe.format('YYYY-MM-DD HH:mm') !== OPT.now) {
+      throw new Error(`--now 格式非法："${OPT.now}"（应为 "YYYY-MM-DD HH:mm"，且为真实存在的时刻）`);
+    }
+  }
   const now = OPT.now ? nowBjt().year(OPT.now.slice(0, 4)).month(+OPT.now.slice(5, 7) - 1)
     .date(+OPT.now.slice(8, 10)).hour(+OPT.now.slice(11, 13)).minute(+OPT.now.slice(14, 16)).second(0)
     : nowBjt();
@@ -410,8 +424,8 @@ async function emitResult(p) {
   }), 'utf8');
   log(`[报告] ${reportFile}`);
 
-  // 通知
-  if (cfg.notify.enabled && !OPT.noNotify) {
+  // 通知（replay / resync 等离线路径由调用方传 noNotify 抑制，避免重发）
+  if (cfg.notify.enabled && !OPT.noNotify && !p.noNotify) {
     const top = result.top.slice(0, cfg.notify.topInMessage);
     const lines = top.map((c, i) =>
       `${i + 1}. ${c.name}（${c.code.replace(/^[a-z]+/, '')}）${c.sector} · 涨${c.chgPct?.toFixed(2)}% · 尾盘段${c.tail?.segPct?.toFixed(2)}% · 量比${c.volRatio?.toFixed(1)} · 总分${c.total.toFixed(1)}`);
@@ -421,7 +435,7 @@ async function emitResult(p) {
       '',
       ...lines,
       '',
-      `完整报告见附件（邮件）/ 本地：eod/reports/eod-${tradeDate}${suffix}.html`,
+      `完整报告见附件（邮件）/ 本地：eod/reports/${cfg.store.reportDir.split('/').pop()}/eod-${tradeDate}${suffix}.html`,
     ].join('\n');
     const res = await notify({ title: `尾盘选股 ${tradeDate}（${result.stats.candidateCount} 只候选）`, content, htmlPath: reportFile });
     for (const [ch, [ok, info]] of res) log(`[notify] ${ch}: ${ok ? 'OK' : '失败 ' + JSON.stringify(info)}`);

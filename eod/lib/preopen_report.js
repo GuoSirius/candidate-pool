@@ -433,8 +433,8 @@ function buildHTML(m) {
   <h2>${b('数据口径与偏差声明', 'Data Provenance and Deviations')}</h2>
   <div class="card"><p class="body-text">${provenance}</p></div>
 
-  <div class="disclaimer">${b('本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen-' + tradeDate + '.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。',
-    'This report is programmatic observation output for personal research only and is not investment advice. Pre-open candidates are screened on the auction snapshot; prices may still move after 09:25, and limit-up / one-word boards may be unbuyable — verify tradability and liquidity yourself. The snapshot is archived to eod/data/preopen-' + tradeDate + '.json; after close preopen_backfill.js back-fills the day change / limit-up and computes the hit rate.')}</div>
+  <div class="disclaimer">${b('本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen/preopen-' + tradeDate + '.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。',
+    'This report is programmatic observation output for personal research only and is not investment advice. Pre-open candidates are screened on the auction snapshot; prices may still move after 09:25, and limit-up / one-word boards may be unbuyable — verify tradability and liquidity yourself. The snapshot is archived to eod/data/preopen/preopen-' + tradeDate + '.json; after close preopen_backfill.js back-fills the day change / limit-up and computes the hit rate.')}</div>
   <div class="footer">candidate-pool · preopen screener v${cfg.version} · ${scopeLabel} · ${tradeDate}</div>
 </div>
 <script>

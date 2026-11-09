@@ -185,7 +185,7 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null
     stats: result.stats,
     records,
     // 原始快照（quotes/minutes）不进主存档：体积大（全市场 ~6MB/日），
-    // 单独存 eod/data/raw/ 并 gitignore，仅供 --replay 离线重算（见 saveRaw）。
+    // 单独存 eod/data/eod/raw/ 并 gitignore，仅供 --replay 离线重算（见 saveRaw）。
     // 主存档保持精简 records，按原约定提交 git。
   };
   fs.writeFileSync(file, JSON.stringify(doc, null, 1), 'utf8');
@@ -196,7 +196,7 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null
  * 原始数据存档（供 --replay 离线重算，无需重新抓行情）：
  *   quotes = 全市场快照（初筛 preFilter + 板块强度统计用）
  *   minutes = 初筛通过票的分时 K 线（Map<code,{rows,date,error}>）
- * 与主存档同「交易日+口径」命名，落到 eod/data/raw/（.raw.json），
+ * 与主存档同「交易日+口径」命名，落到 eod/data/eod/raw/（.raw.json），
  * 体积大（全市场 ~6MB/日）→ .gitignore 忽略、不进 git；换机器靠 D1 库。
  * 主存档缺原始文件时，runReplay 退化为「仅重渲染已存 records」。
  */

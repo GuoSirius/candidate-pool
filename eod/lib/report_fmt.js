@@ -11,8 +11,14 @@
  * ---------------------------------------------------------------------------
  */
 
-/** 双语片段：默认中文，点右上角 EN 切换 */
-function b(zh, en) { return `<span data-zh="${zh}" data-en="${en}">${zh}</span>`; }
+/** 双语片段：默认中文，点右上角 EN 切换
+ *  参数约定：zh/en 为「未转义文本」（可含 HTML 片段，切换时经 innerHTML 回填）。
+ *  属性值必须 esc：否则内容里的裸双引号会提前闭合 data-zh/data-en（2026-11-09 评审 2.3）。
+ *  浏览器解析属性时会自动解码实体，dataset 拿到的仍是原始字符串，行为不变。 */
+function b(zh, en) {
+  const z = String(zh ?? ''), e = String(en ?? zh ?? '');
+  return `<span data-zh="${esc(z)}" data-en="${esc(e)}">${z}</span>`;
+}
 function num(n, d = 2) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(d); }
 function pct(n) { return (n == null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%'; }
 function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }

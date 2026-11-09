@@ -77,6 +77,11 @@ function sessionState({ now, marketDate, force }) {
   const hhmm = now.hour() * 100 + now.minute();
   const today = now.format('YYYY-MM-DD');
   if (force) return { ok: true, reason: '--force 忽略时段', tradeDate: marketDate || today };
+  // 周末粗筛：不等行情数据即可拒掉，避免周末用陈旧报价打分（法定节假日仍靠行情日期第二遍守卫）
+  const dow = now.day();
+  if (dow === 0 || dow === 6) {
+    return { ok: false, reason: `周末非交易日（周${['日', '一', '二', '三', '四', '五', '六'][dow]}），跳过（--force 可强制）` };
+  }
   if (hhmm < from) return { ok: false, reason: `未到盘前窗口（${cfg.session.openFrom} 起）` };
   if (hhmm > to) return { ok: false, reason: `已过盘前窗口（${cfg.session.openTo} 止，可用 --force 补跑）` };
   if (marketDate && marketDate !== today) {
@@ -171,6 +176,7 @@ async function run() {
   const now = OPT.now
     ? dayjs.tz(OPT.now.replace(' ', 'T') + '+08:00')
     : dayjs.tz();
+  if (OPT.now && !now.isValid()) throw new Error(`--now 格式非法："${OPT.now}"（应为 "YYYY-MM-DD HH:mm"）`);
   const anchor = lastClosedTradingDay(now);   // 前一日 K 线锚定日
 
   // 仅预计算基线缓存（供全市场次日盘前用，建议收盘后定时跑）
@@ -221,6 +227,17 @@ async function run() {
     codes = watch.map((w) => w.code);
     log(`[1/4] 抓观察池竞价快照（${codes.length} 只）…`);
     quotes = (await market.fetchBatch(codes, cfg)).filter((q) => q);
+    // 第二遍时段守卫：观察池路径没有全市场 meta，用报价时间戳众数推行情日期（同口径）
+    const byDate = new Map();
+    for (const q of quotes) {
+      const d = String(q.stamp || '').slice(0, 8);
+      if (d) byDate.set(d, (byDate.get(d) || 0) + 1);
+    }
+    let mkStamp = '', best = 0;
+    for (const [d, n] of byDate) if (n > best) { best = n; mkStamp = d; }
+    const wlMarketDate = mkStamp ? `${mkStamp.slice(0, 4)}-${mkStamp.slice(4, 6)}-${mkStamp.slice(6, 8)}` : '';
+    ss = sessionState({ now, marketDate: wlMarketDate || undefined, force: OPT.force });
+    if (!ss.ok) { log('[结束] 跳过'); return { skipped: ss.reason }; }
   } else {
     log('[1/4] 抓全市场竞价快照…');
     const snap = await market.fullMarketSnapshot(cfg, log);
@@ -368,7 +385,7 @@ async function emitResult(p) {
       `交易日 ${tradeDate} · 盘前选股（${scope === 'universe' ? '全市场' : '观察池'}）`,
       `候选 ${result.stats.candidateCount} 只 / ${result.stats.groupCount} 行业（快照 ${result.stats.snapshotCount} → 基线 ${result.stats.baselineCount}）`,
       '', ...lines, '',
-      `完整报告见本地：eod/reports/${cfg.store.prefix}-${tradeDate}${suffix}.html`,
+      `完整报告见本地：eod/reports/${cfg.store.reportDir.split('/').pop()}/${cfg.store.prefix}-${tradeDate}${suffix}.html`,
     ].join('\n');
     const res = await notify({ title: `盘前选股 ${tradeDate}（${result.stats.candidateCount} 只）`, content, htmlPath: reportFile });
     for (const [ch, [ok, info]] of res) log(`[notify] ${ch}: ${ok ? 'OK' : '失败 ' + JSON.stringify(info)}`);

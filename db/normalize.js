@@ -54,7 +54,9 @@ function reasonOf(s) {
 // 入参 snap：{ anchor, target, stocks:[...], sectors:[...], ... }
 function normalizeSnap(snap) {
   const { anchor, target, stocks = [] } = snap;
-  const ts = fmtNow();   // 北京时间 YYYY-MM-DD HH:mm:ss
+  // run_at 必须是「数据生成时刻」（快照 generatedAt），不是入库时刻：
+  // 否则离线补跑/延迟入库会把 recency guard（陈旧数据拒绝写入）整个绕过。
+  const ts = snap.generatedAt || fmtNow();   // 北京时间 YYYY-MM-DD HH:mm:ss
   const picks = [], prices = [], base = [];
   let high = 0, secondary = 0, conditional = 0, excluded = 0;
   let r01 = 0, r07 = 0, r05 = 0, err = 0;
