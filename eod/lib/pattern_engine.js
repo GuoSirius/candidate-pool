@@ -37,8 +37,16 @@ function loadDefs(cfg) {
   for (const p of doc.patterns) {
     if (!p.id || !p.name || ids.has(p.id)) throw new Error(`形态 id 缺失或重复：${p.id}`);
     ids.add(p.id);
-    if (p.engine === 'template' && (!p.features || !Object.keys(p.features).length)) {
-      throw new Error(`模板形态 ${p.id} 的 features 为空，请先跑 npm run pattern:calibrate`);
+    if (p.engine === 'template') {
+      if (!p.features || !Object.keys(p.features).length) {
+        throw new Error(`模板形态 ${p.id} 的 features 为空，请先跑 npm run pattern:calibrate`);
+      }
+    } else if (p.engine === 'rule') {
+      if (!RULES[p.rule]) {
+        throw new Error(`形态 ${p.id} 的规则引擎未注册：${p.rule}（支持 ${Object.keys(RULES).join('/')}）`);
+      }
+    } else {
+      throw new Error(`形态 ${p.id} 的 engine 非法：${p.engine}（支持 template / rule）`);
     }
   }
   return { ...doc, source: file };
@@ -152,8 +160,12 @@ function ruleVCP(asc, ser, def, code) {
   const segN = g.segments || 3;
   const segLen = Math.floor(baseDays / segN);
   const amps = [], vols = [];
+  // 收缩段仅度量「整理区间」(ci-baseDays .. ci-1)，刻意排除突破日 ci：
+  // 突破日通常是放量长阳，若并入末段会把末段振幅/量抬高，导致 contractAmp/contractVol
+  // 永不成立，使真正的 VCP 突破反而判不中。突破日仍留在 window 内供 breakout/baseChg/aboveMA 判定。
+  const baseStart = ci - baseDays;
   for (let s = 0; s < segN; s++) {
-    const seg = asc.slice(ci + 1 - baseDays + s * segLen, ci + 1 - baseDays + (s + 1) * segLen);
+    const seg = asc.slice(baseStart + s * segLen, baseStart + (s + 1) * segLen);
     if (!seg.length) return null;
     const hi = Math.max(...seg.map((r) => r.high));
     const lo = Math.min(...seg.map((r) => r.low));
@@ -253,7 +265,7 @@ function matchAll(asc, ser, defs, cfg, code) {
       });
     } else {
       const fn = RULES[def.rule];
-      if (!fn) throw new Error(`未知规则形态：${def.id} → ${def.rule}`);
+      if (!fn) { console.warn(`[matchAll] 跳过未注册规则形态 ${def.id} → ${def.rule}`); continue; }
       const r = fn(asc, ser, def, code);
       if (!r || !r.hit) continue;
       out.push({

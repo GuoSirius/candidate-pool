@@ -53,6 +53,51 @@ for (const def of defs.patterns.filter((p) => p.engine === 'rule')) {
   check(`${def.name}：窗口元数据完整`, !!r && !!r.window && Number.isFinite(r.window.price) && Number.isFinite(r.window.minClose));
 }
 
+// 规则引擎回归：合成一段「三段收缩 + 末日放量突破」的有效 VCP，必须命中。
+// 重点锁住 2026-11-09 修复的 bug —— 收缩段若把突破日 ci 并入末段，会抬高末段
+// 振幅/量，导致 contractAmp/contractVol 永不成立，真正的 VCP 突破反而判不中。
+function makeVCPBars() {
+  const n = 70;
+  const bars = [];
+  // 1) 前 25 根温和爬升（8→10），建立均线历史
+  for (let i = 0; i < 25; i++) {
+    const close = 8 + (i / 24) * 2;
+    bars.push({ date: `2026-01-${String(i + 1).padStart(2, '0')}`, open: close - 0.02, close, high: close + 0.03, low: close - 0.03, vol: 0.8 });
+  }
+  // 2) 45 根箱体（ci=69 为突破日，不在收缩段内）：三段振幅/量逐级收敛
+  const baseStart = 25, segLen = 15;
+  const segAmp = [16, 8, 3.5], segVol = [1.0, 0.7, 0.45];
+  for (let i = baseStart; i < n - 1; i++) {
+    const s = Math.min(2, Math.floor((i - baseStart) / segLen));
+    const phase = ((i - baseStart - s * segLen) / segLen) * Math.PI * 2;
+    const center = 10.0;
+    const close = +(center + center * (segAmp[s] / 2) / 100 * Math.sin(phase)).toFixed(3);
+    bars.push({
+      date: `2026-02-${String(i - baseStart + 1).padStart(2, '0')}`,
+      open: close - 0.02, close, high: +(close + 0.05).toFixed(3), low: +(close - 0.05).toFixed(3), vol: segVol[s],
+    });
+  }
+  // 3) 突破日：跳空长阳 + 巨量
+  bars.push({ date: '2026-03-01', open: 10.1, close: 11.0, high: 11.25, low: 10.05, vol: 2.5 });
+  return bars;
+}
+const vcpAsc = makeVCPBars();
+const vcpSer = F.series(vcpAsc);
+const vcpDef = defs.patterns.find((p) => p.id === 'vcp');
+const vcpR = E.RULES.vcp(vcpAsc, vcpSer, vcpDef, 'sh600000');
+check('VCP：合成有效形态命中', !!vcpR && vcpR.hit, vcpR ? vcpR.gates.map((g) => `${g.key}:${g.ok ? 1 : 0}`).join(' ') : 'null');
+check('VCP：命中带完整窗口元数据', !!vcpR && vcpR.hit && Number.isFinite(vcpR.window.price) && Number.isFinite(vcpR.window.minClose));
+check('VCP：收缩段不含突破日（末段振幅逐级收敛）', !!vcpR && vcpR.hit && vcpR.features.amps
+  && vcpR.features.amps[0] > vcpR.features.amps[1] && vcpR.features.amps[1] > vcpR.features.amps[2]);
+
+// 防御：未知 rule 不应让 matchAll 抛错（降级跳过该形态，而非整条流水线崩）
+const flatBars = Array.from({ length: 70 }, (_, i) => ({ date: `2026-01-${String(i + 1).padStart(2, '0')}`, open: 10, close: 10, high: 10.1, low: 9.9, vol: 1 }));
+const flatSer = F.series(flatBars);
+const badDefs = { patterns: [{ id: 'x', name: 'X', engine: 'rule', rule: 'nope' }] };
+let crash = false;
+try { E.matchAll(flatBars, flatSer, badDefs, cfg, 'sh600000'); } catch (e) { crash = true; }
+check('未知规则形态：matchAll 降级跳过不抛错', !crash);
+
 // 边界：空特征不得静默给高分；破位判定；支撑位不得高于现价
 const empty = E.scoreTemplate({}, { weights: { cumChg: 10 }, features: {} });
 check('空特征不产生虚高分', empty.score === 0, JSON.stringify(empty));

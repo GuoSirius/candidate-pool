@@ -172,10 +172,18 @@ function buildCandidates(entries, defs, quotesByCode, map) {
     const name = q.name || code;
     if (asc.length < cfg.kline.minBars) { gaps.push({ code, name, reason: `K线不足 ${asc.length}/${cfg.kline.minBars}` }); continue; }
     const ser = F.series(asc);
-    const all = E.matchAll(asc, ser, defs, cfg, code);
+    let all, sum;
+    try {
+      all = E.matchAll(asc, ser, defs, cfg, code);
+    } catch (e) {
+      // 单票引擎异常不应拖垮整条流水线（否则零产物、零归档）。
+      // 记缺口放行，保证其余标的照常产出。
+      gaps.push({ code, name, reason: `引擎异常：${(e && e.message) || e}` });
+      continue;
+    }
     const matches = all.filter((m) => m.stage !== '已破位');
     if (!matches.length) continue;
-    const sum = E.summarize(matches, cfg);
+    sum = E.summarize(matches, cfg);
     const rec = {
       code, name,
       sector: q.sector || sectorOf(map, code) || UNKNOWN,
