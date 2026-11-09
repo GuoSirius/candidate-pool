@@ -11,7 +11,7 @@
 | 任务 | 自动化 ID | 调度（RRULE） | 人类可读 | 状态 | 产物 |
 |---|---|---|---|---|---|
 | 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen/preopen-baseline-*.json`（不入库） |
-| pulse 消息脉搏 · 一键报告 | `6d84d676-9d4c-4880-a205-b99383cfb74f` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=0` | 每日 08:00 | PAUSED | `pulse/report/latest.html`（不入库） |
+| pulse 消息脉搏 · 一键报告 | `6d84d676-9d4c-4880-a205-b99383cfb74f` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=0` | 每日 08:00 | PAUSED | `pulse/reports/latest.html`（不入库） |
 | 盘前纪要每日早间分析（附录 A1） | `automation-1784254142442` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=8;BYMINUTE=30` | 工作日 08:30 | ACTIVE | 仅对话输出（cwd 不在本仓库） |
 | pulse watch · 常驻监听启动 | `87f8f966-f5f4-41d6-a5b7-04a6c45059ea` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=30` | 每日 08:30 | PAUSED | `pulse/data/watch-console.log` + 归档（不入库） |
 | 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen/preopen-<日>.json` + html |
@@ -33,7 +33,7 @@
 
 - **本地自动化（本机 WorkBuddy）**：**所有任务**的提交都由下方各节 Prompt 里的「git 推送块」显式负责（`git add` → `git commit` → `git push`）。脚本内部**不再写 git**——原先盘前选股 / 回填在 `preopen_screener.js` / `preopen_backfill.js` 内自动 commit，已于 2026-10-23 移除，统一收归 Prompt，避免重复提交。
 - **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
-- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/report/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库。
+- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/reports/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库。
 
 #### 统一提交信息格式（规范 · 中文描述 + 时间）
 
@@ -363,13 +363,13 @@ git push
 - **调度**：`FREQ=DAILY;BYHOUR=8;BYMINUTE=30`（每日 08:30）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：PAUSED
-- **产物**：`pulse/data/watch-console.log` + `pulse/data/`、`pulse/report/` 归档（均被 `.gitignore` 忽略，不入库）
+- **产物**：`pulse/data/watch-console.log` + `pulse/data/`、`pulse/reports/` 归档（均被 `.gitignore` 忽略，不入库）
 - **推送**：无（prompt 未含 git 推送块，本地留存）
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-启动 pulse 常驻监听（仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）。步骤：1) 先查重：powershell 执行 Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'pulse.watch' }，若已有进程在跑，报告 PID 并结束（绝不重复启动第二个）。2) 不存在则后台启动：cmd //c start "pulse-watch" /min cmd /c "cd /d D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool && npm run pulse:watch >> pulse\data\watch-console.log 2>&1"（最小化窗口独立运行，退出本会话不影响）。3) 等 15 秒后查看 pulse/data/watch-console.log 末尾，确认出现「[watch] 启动」字样；每轮完成会有「轮次完成」日志，异动时会弹 Windows Toast。4) 汇报：PID、日志路径、归档目录 pulse/data 与 pulse/report。附带停止方法：taskkill /PID <pid> /F 或关闭那个最小化窗口。
+启动 pulse 常驻监听（仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）。步骤：1) 先查重：powershell 执行 Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'pulse.watch' }，若已有进程在跑，报告 PID 并结束（绝不重复启动第二个）。2) 不存在则后台启动：cmd //c start "pulse-watch" /min cmd /c "cd /d D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool && npm run pulse:watch >> pulse\data\watch-console.log 2>&1"（最小化窗口独立运行，退出本会话不影响）。3) 等 15 秒后查看 pulse/data/watch-console.log 末尾，确认出现「[watch] 启动」字样；每轮完成会有「轮次完成」日志，异动时会弹 Windows Toast。4) 汇报：PID、日志路径、归档目录 pulse/data 与 pulse/reports。附带停止方法：taskkill /PID <pid> /F 或关闭那个最小化窗口。
 ~~~
 
 ---
@@ -380,13 +380,13 @@ git push
 - **调度**：`FREQ=DAILY;BYHOUR=8;BYMINUTE=0`（每日 08:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：PAUSED
-- **产物**：`pulse/report/latest.html` + 快照归档（被 `.gitignore` 忽略，不入库）
+- **产物**：`pulse/reports/latest.html` + 快照归档（被 `.gitignore` 忽略，不入库）
 - **推送**：无（prompt 未含 git 推送块，本地留存）
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-在仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool 执行 `npm run pulse`（pulse 消息脉搏单次全流程：采集 6 源快讯/板块资金流/公告 → 交叉分析 → 归档快照与 HTML 报告）。成功后向用户简要汇报：1) 信源状态一行；2) 热点板块 top5（名称+热度分+验证级别+涨跌幅+领涨股）；3) 用 present_files 打开 pulse/report/latest.html 给用户看。若失败，汇报失败的信源与错误信息（脚本自身会输出各源 OK/FAIL）。
+在仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool 执行 `npm run pulse`（pulse 消息脉搏单次全流程：采集 6 源快讯/板块资金流/公告 → 交叉分析 → 归档快照与 HTML 报告）。成功后向用户简要汇报：1) 信源状态一行；2) 热点板块 top5（名称+热度分+验证级别+涨跌幅+领涨股）；3) 用 present_files 打开 pulse/reports/latest.html 给用户看。若失败，汇报失败的信源与错误信息（脚本自身会输出各源 OK/FAIL）。
 ~~~
 
 ---

@@ -10,14 +10,14 @@ reports/_*.html
 
 # pulse 消息脉搏运行产物（快照/报告为本地运行产物，不入库；latest.json/latest.html 同理）
 pulse/data/
-pulse/report/
+pulse/reports/
 
 # 尾盘选股运行产物（2026-11-09 起按流水线分子目录：data|reports 的 eod|preopen|hotmoney/）
 #   - 主存档 eod/data/eod/eod-*.json（精简 records，**按约定提交 git**，网页/D1 不依赖）
 #   - 原始快照 eod/data/eod/raw/（全市场 quotes + 分时 minutes，~6MB/日，体积大 → 不入库）
 #   - 报告 eod/reports/{eod,preopen,hotmoney}/（提交 git，便于查看历史）
 eod/data/*/_*.json
-eod/report/*/_*.html
+eod/reports/*/_*.html
 
 eod/data/eod/raw/
 # 盘前基线缓存（前一日 K 线指标，由 --baseline 重建，非溯源必需）

@@ -7,7 +7,7 @@ const paths = require('../paths');
 
 const PKG_ROOT = paths.PKG_ROOT;
 const DATA_DIR = path.join(PKG_ROOT, 'pulse', 'data');
-const REPORT_DIR = path.join(PKG_ROOT, 'pulse', 'report');
+const REPORT_DIR = path.join(PKG_ROOT, 'pulse', 'reports');
 
 module.exports = {
   DATA_DIR,

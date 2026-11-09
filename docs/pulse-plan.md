@@ -25,9 +25,9 @@
 
 产物（按日期分层）：
 - `pulse/data/YYYY-MM-DD/snap-HHmmss.json`（每轮快照，按日滚动保留 60 天）、`pulse/data/latest.json`（最近一轮）
-- `pulse/report/YYYY-MM-DD/pulse-HHmmss.html` + `pulse/report/latest.html`（按日滚动保留 40 天）
+- `pulse/reports/YYYY-MM-DD/pulse-HHmmss.html` + `pulse/reports/latest.html`（按日滚动保留 40 天）
 - watch 基准状态：`pulse/data/watch-state.json`（首轮只建基准不通知）
-- 以上均不入库（.gitignore 已排除 pulse/data/ 与 pulse/report/）。
+- 以上均不入库（.gitignore 已排除 pulse/data/ 与 pulse/reports/）。
 
 ## 交叉分析与评分
 

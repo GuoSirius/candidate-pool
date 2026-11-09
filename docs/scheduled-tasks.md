@@ -28,7 +28,7 @@
 
 | 任务名 | 预约时间（仅占位） | 执行内容 |
 |---|---|---|
-| pulse 消息脉搏 · 一键报告 | 09:00 | `npm run pulse`：6 源采集 → 交叉分析 → 归档 → 打开 `pulse/report/latest.html` |
+| pulse 消息脉搏 · 一键报告 | 09:00 | `npm run pulse`：6 源采集 → 交叉分析 → 归档 → 打开 `pulse/reports/latest.html` |
 | pulse watch · 常驻监听启动 | 08:30（PAUSED） | 查重后最小化窗口后台启动 `npm run pulse:watch`（每轮完成计时 3 分钟；异动弹 Windows Toast）；停止：taskkill PID |
 
 **pulse watch 停用记录（2026-11-09）**：Windows 计划任务 `pulse-watch`（登录触发）已 `Disable-ScheduledTask` 禁用，
@@ -36,7 +36,7 @@
 停止用 taskkill 对应 node PID。如需恢复开机自启：`Enable-ScheduledTask -TaskName 'pulse-watch'`。
 | A股每日市场情绪日报 | 23:30 | 情绪日报生成（WorkBuddy 侧编排） |
 
-pulse 数据/报告归档：`pulse/data/YYYY-MM-DD/`、`pulse/report/YYYY-MM-DD/`（latest.json / latest.html 留根目录）；watch 控制台日志 `pulse/data/watch-console.log`。
+pulse 数据/报告归档：`pulse/data/YYYY-MM-DD/`、`pulse/reports/YYYY-MM-DD/`（latest.json / latest.html 留根目录）；watch 控制台日志 `pulse/data/watch-console.log`。
 
 ## 三、远程 · GitHub Actions（workflow_dispatch 均可手动触发）
 

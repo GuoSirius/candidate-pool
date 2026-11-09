@@ -5,8 +5,8 @@
  *   pulse/data/YYYY-MM-DD/snap-HHmmss.json   每轮快照
  *   pulse/data/latest.json                    最近一轮（watch 对比基准入口）
  *   pulse/data/watch-state.json               watch 基准状态
- *   pulse/report/YYYY-MM-DD/pulse-HHmmss.html 每轮报告
- *   pulse/report/latest.html                  最近一轮报告
+ *   pulse/reports/YYYY-MM-DD/pulse-HHmmss.html 每轮报告
+ *   pulse/reports/latest.html                  最近一轮报告
  * 清理：按日期目录滚动，保留最近 KEEP_* 个交易日目录。
  */
 const fs = require('fs');
