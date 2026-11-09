@@ -28,4 +28,20 @@ function boardsTxt(bd) {
   return '';
 }
 
-module.exports = { b, num, pct, esc, boardsTxt };
+/** 金额（元）→ 「1.2亿」「3000万」，涨红跌绿 */
+function fmtAmt(v) {
+  if (v == null || isNaN(v)) return '';
+  const a = Math.abs(v);
+  return (v < 0 ? '-' : '') + (a >= 1e8 ? num(a / 1e8, 1) + '亿' : num(a / 1e4, 0) + '万');
+}
+
+/** 上榜单元格（2026-11-09 从 preopen_report.js 迁入共享）：tag + 游资标注（金额+分层，如「章盟主(1.2亿)@一线」） */
+function billboardCell(bb) {
+  if (!bb) return '';
+  const hotTxt = (bb.hot || [])
+    .map((h) => `${esc(h.name)}${h.amt != null ? '(' + fmtAmt(h.amt) + ')' : ''}${h.tier ? '@' + esc(h.tier) : ''}`)
+    .join(' / ');
+  return `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
+}
+
+module.exports = { b, num, pct, esc, boardsTxt, fmtAmt, billboardCell };

@@ -17,7 +17,7 @@ const { BOARD_LABEL } = require('./screen');
 
 /** 双语片段：默认渲染中文，点击右上角按钮切换 */
 // 共享格式化纯函数（唯一真相源：report_fmt.js；yi 仅本报告使用，留在本地）
-const { b, num, pct, esc, boardsTxt } = require('./report_fmt');
+const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
 function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + ' 亿'; }
 
 /*
@@ -87,12 +87,14 @@ function rowHtml(c, i, cfg, withBreakdown) {
     ? SCORE_COLS.map(([k], idx) => `<td class="${SCORE_CELL_CLS[idx]}">${num(c.score ? c.score[k] : null, 1)}</td>`).join('')
     : '';
   const btxt = boardsTxt(c.boards);
-  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${btxt ? ' data-boards="1"' : ''}>
+  const hasHot = !!(c.billboard && (c.billboard.hot || []).length);
+  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${btxt ? ' data-boards="1"' : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ' data-hot="1"' : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
     <td class="up">${pct(c.chgPct)}</td>
     <td>${btxt}</td>
+    <td class="wrap">${billboardCell(c.billboard)}</td>
     <td>${num(tail.segPct, 2)}%</td>
     <td>${num(c.volRatio)}</td>
     <td>${num(c.turnover, 1)}%</td>
@@ -270,7 +272,7 @@ function buildHTML(m) {
   // 两级表头：第一行把五个子分切成「个股自身 77 / 环境与质量 23」两块，
   // 第一行列宽靠 colspan 自动对齐到下面的子分列，不需要额外配 colgroup。
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
-    <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('连板', 'Streak')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
+    <th rowspan="2">${b('涨幅', 'Chg')}</th><th rowspan="2">${b('连板', 'Streak')}</th><th rowspan="2">${b('上榜', 'List')}</th><th rowspan="2">${b('尾盘段', 'Tail seg')}</th><th rowspan="2">${b('量比', 'Vol ratio')}</th>
     <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('价格', 'Price')}</th>
     <th rowspan="2">${b('流通值', 'Float cap')}</th><th rowspan="2">${b('总市值', 'Total cap')}</th>
     ${scoreHeadTop()}
@@ -298,11 +300,15 @@ function buildHTML(m) {
   const bestCount = listed.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
   const top3Count = listed.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
   const boardsCount = listed.filter((c) => boardsTxt(c.boards)).length;
+  const bbCount = listed.reduce((n, c) => n + (c.billboard ? 1 : 0), 0);
+  const hotCount = listed.reduce((n, c) => n + (c.billboard && (c.billboard.hot || []).length ? 1 : 0), 0);
   const chipsHtml = [`<button type="button" class="chip active" data-filter="">${b(`全部 ${listed.length}`, `All ${listed.length}`)}</button>`]
     .concat([
       `<button type="button" class="chip" data-filter="@best">${b('只看组内第一', 'Group #1 only')}<i>${bestCount}</i></button>`,
       `<button type="button" class="chip" data-filter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
       `<button type="button" class="chip" data-filter="@boards">${b('连板', 'Boards')}<i>${boardsCount}</i></button>`,
+      `<button type="button" class="chip" data-filter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
+      `<button type="button" class="chip" data-filter="@hotmoney">${b('游资', 'Hot money')}<i>${hotCount}</i></button>`,
     ])
     .concat(chipOrder.map((s) =>
       `<button type="button" class="chip" data-filter="${esc(s)}">${b(esc(s), esc(s))}<i>${chipCounts[s]}</i></button>`))
@@ -318,7 +324,7 @@ function buildHTML(m) {
   // 分组分隔行：默认隐藏，「按行业」视图由前端插入到各组行首（含行业中位涨幅与组内数量）
   // colspan = 基础 10 列（# 标的 行业 涨幅 尾盘段 量比 换手 价格 流通值 总市值）+ 分项 6 列 + 总分/标记 2 列
   const sepRows = groups.map((g) =>
-    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${11 + SCORE_COLS.length + 2}">${
+    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${12 + SCORE_COLS.length + 2}">${
       b(esc(g.sector), esc(g.sector))} · ${b('中位涨幅', 'median')} ${pct(g.best.sectorMedianChg)} · ${b(`组内 ${g.size} 只`, `${g.size} picked`)}</td></tr>`).join('');
   const candRows = listed.map((c, i) => rowHtml(c, i, cfg, true)).join('');
 
@@ -462,6 +468,8 @@ function buildHTML(m) {
           return g >= 1 && g <= 3;
         }
         if (candFilter === '@boards') return tr.hasAttribute('data-boards');
+        if (candFilter === '@billboard') return tr.hasAttribute('data-billboard');
+        if (candFilter === '@hotmoney') return tr.getAttribute('data-hot') === '1';
         return !candFilter || tr.getAttribute('data-sector') === candFilter;
       }
       var shown = [];
@@ -472,7 +480,8 @@ function buildHTML(m) {
       } else {
         sepOrder.forEach(function (sep) {
           var sec = sep.getAttribute('data-sep');
-          if (!bestOnly && !top3 && candFilter && sec !== candFilter) return;
+          // @ 前缀为伪过滤（@best/@top3/@boards/@billboard/@hotmoney），交由 want() 判行，不参与行业组筛选
+          if (!bestOnly && !top3 && candFilter && candFilter.charAt(0) !== '@' && sec !== candFilter) return;
           // 先收集该组本次要显示的行：空组（如组内第一被 maxRows 截断）不渲染分隔行
           var groupRows = [];
           candRows.forEach(function (tr) {

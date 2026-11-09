@@ -15,9 +15,9 @@
  *     / P1 竞价 / P2 弱转强 / P3 趋势 / 总分 / 标签
  */
 
-// 共享格式化纯函数（唯一真相源：report_fmt.js；fmtFlow/capTxt/billboardCell/fmtAmt
-// 仅本报告使用，留在本地）
-const { b, num, pct, esc, boardsTxt } = require('./report_fmt');
+// 共享格式化纯函数（唯一真相源：report_fmt.js；fmtAmt/billboardCell 2026-11-09 迁入共享，
+// 尾盘报告 report.js 同用）；fmtFlow/capTxt 仅本报告使用，留在本地
+const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
 /** 主力净流入（元 → 万/亿），涨红跌绿 */
 function fmtFlow(v) {
   if (v == null || isNaN(v)) return { txt: '—', cls: '' };
@@ -29,20 +29,6 @@ function fmtFlow(v) {
 function capTxt(cap) {
   if (!cap || cap.total == null) return '—';
   return `${num(cap.total, 1)}/${cap.float != null ? num(cap.float, 1) : '—'}亿`;
-}
-/** 上榜单元格：tag + 游资标注（金额+分层，如「章盟主(1.2亿)@一线」；旧归档无 tier 只显名+额） */
-function billboardCell(bb) {
-  if (!bb) return '';
-  const hotTxt = (bb.hot || [])
-    .map((h) => `${esc(h.name)}${h.amt != null ? '(' + fmtAmt(h.amt) + ')' : ''}${h.tier ? '@' + esc(h.tier) : ''}`)
-    .join(' / ');
-  return `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
-}
-/** 金额（元）→ 「1.2亿」「3000万」 */
-function fmtAmt(v) {
-  if (v == null || isNaN(v)) return '';
-  const a = Math.abs(v);
-  return (v < 0 ? '-' : '') + (a >= 1e8 ? num(a / 1e8, 1) + '亿' : num(a / 1e4, 0) + '万');
 }
 
 function trendStr(t) {

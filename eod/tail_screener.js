@@ -322,7 +322,7 @@ async function run() {
   });
   // 收盘预估量比（参考值）
   for (const c of result.candidates) c.volRatioEst = estimateFullDayVolRatio(c.volRatio, ss.elapsed);
-  // 连板/几天几板（日K含当日实时 bar；低频候选级调用，失败留空）
+  // 连板/几天几板（日K含当日实时 bar；低频候选级调用，失败留空）+ 昨日龙虎榜上榜/游资标注
   if (result.candidates.length) {
     log(`[4/4] 候选连板信息（${result.candidates.length} 只）…`);
     const PR = require('./lib/preopen_rules');
@@ -331,6 +331,16 @@ async function run() {
         const kl = await market.fetchKline(c.code, ss.tradeDate);
         if (kl && kl.rows.length) c.boards = PR.boardsInfo(kl.rows, c.code);
       } catch (e) { /* 留空 */ }
+    });
+    // 昨日龙虎榜（盘中当日榜未出齐，用最近已收盘交易日；失败留空不阻断）
+    const { lastClosedTradingDay } = require('../rules');
+    const bbAnchor = lastClosedTradingDay(dayjs.tz());
+    const bb = await market.fetchBillboard(bbAnchor);
+    const bbHits = result.candidates.filter((c) => bb[c.code.slice(2)]);
+    log(`[4.5/4] 候选昨日(${bbAnchor})龙虎榜：${bbHits.length}/${result.candidates.length} 只上榜，抓席位…`);
+    await mapLimit(bbHits, 4, async (c) => {
+      const seats = await market.fetchBillboardSeats(c.code.slice(2), bbAnchor);
+      c.billboard = { net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
     });
   }
 

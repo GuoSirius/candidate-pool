@@ -174,6 +174,8 @@ function buildHTML({ cfg, anchor, result, runner }) {
   </div>
 
   <h2>${b(`当日交易明细（${anchorTrades.length} 条）`, `Anchor-Day Trades (${anchorTrades.length})`)}</h2>
+  <p class="src">${b('同一批「游资×票」记录的两种排法：按游资 = 同一个人的买卖聚在一起（组间按其当日净额降序）；按票 = 同一只票上的游资聚在一起（组间按该票游资净额合计降序）。两视图数据完全相同，只是分组维度不同。',
+    'The same trader×stock records in two groupings: by trader (one person\'s trades together) or by stock (all traders on one stock together); data identical, grouping differs.')}</p>
   ${anchorTrades.length ? `<div class="toolbar">
     <div class="seg" role="tablist">
       <button type="button" id="viewTrader" class="segbtn active">${b('按游资', 'By trader')}</button>
@@ -191,6 +193,8 @@ function buildHTML({ cfg, anchor, result, runner }) {
     : `<div class="card">${b('当日榜单未匹配到知名游资席位。', 'No known hot-money seat matched on the anchor-day board.')}</div>`}
 
   <h2>${b(`游资 · 近${dayCount}日汇总（${byTrader.length} 人）`, `Traders · ${dayCount}-Day Summary (${byTrader.length})`)}</h2>
+  <p class="src">${b(`依据 = 窗口内（近 ${dayCount} 个交易日日档）的全部游资记录按人聚合：净额 = 买入合计 − 卖出合计；活跃天数 = 出现过的交易日数；涉票数 = 去重标的数。列表按净额降序。逐日买卖去「近${dayCount}日交易明细」表用游资 chip 圈定。`,
+    'Aggregated per trader over the window: net = total buy − total sell; days = distinct trading days seen; stocks = distinct names. Sorted by net. Per-day detail: use the trader chip in the window-trades table.')}</p>
   ${byTrader.length ? `${filterChipRow('fTier2', '层级', 'Tier', tierChips(byTrader))}
   <div class="table-wrap"><table><thead><tr>
     <th>${b('游资', 'Trader')}</th><th>${b('层级', 'Tier')}</th>
@@ -208,6 +212,8 @@ function buildHTML({ cfg, anchor, result, runner }) {
     : `<div class="card">${b('窗口内无游资记录。', 'No trader records in the window.')}</div>`}
 
   <h2>${b(`近${dayCount}日交易明细（${trades.length} 条）`, `Window Trades (${trades.length})`)}</h2>
+  <p class="src">${b(`窗口内（近 ${dayCount} 个交易日）的每一条游资买卖记录，结构与当日表相同、多一列日期；用 chips 圈定某游资 / 某天 / 某方向。当日表的数据就是本表中日期 = 锚定日的子集。`,
+    'Every trader trade in the window (same layout as the day table plus a date column); use chips to isolate a trader / date / side.')}</p>
   ${trades.length ? `<div class="toolbar">
     ${filterChipRow('fName3', '游资', 'Trader', nameChips(trades, nameCountW))}
     ${filterChipRow('fDate', '日期', 'Date', dateChips())}
@@ -222,6 +228,8 @@ function buildHTML({ cfg, anchor, result, runner }) {
     : `<div class="card">${b('窗口内无游资记录。', 'No records in the window.')}</div>`}
 
   <h2>${b(`票 · 近${dayCount}日游资汇总（${byStock.length} 只）`, `Stocks · ${dayCount}-Day Summary (${byStock.length})`)}</h2>
+  <p class="src">${b('把窗口内记录按「票」聚合：这只票近 N 天被哪些游资做过、各自买/卖多少（游资按其在该票上的净额排序）。用于回答「这只票是谁在玩、是不是同一个游资反复做」。',
+    'Aggregated per stock over the window: which traders played it and how much each bought/sold (sorted by per-stock net). Answers "who is behind this name, and is anyone repeating it".')}</p>
   ${byStock.length ? `<div class="table-wrap"><table><thead><tr>
     <th>${b('标的', 'Stock')}</th>
     <th>${b('净额', 'Net')}</th><th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th>
