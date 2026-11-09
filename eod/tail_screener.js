@@ -147,6 +147,12 @@ async function runReplay(file) {
       makeTail: (rows, code, cut, seg) => market.tailMetrics(rows, code, cut, seg),
     });
     log(`[回放] 从原始存档离线重算（不抓行情）：${result.candidates.length} 候选 / 初筛 ${result.stats.prePassCount} 只`);
+    // 回填的逐票 verdicts 存在权威归档 records 里，raw 重算候选不携带 → 按 code 合并回来，
+    // 否则重渲染报告的 T+1/T+3 列全是 —（回填结果不可见）
+    for (const c of result.candidates) {
+      const r = doc.records[c.code];
+      if (r && r.verdicts) c.verdicts = r.verdicts;
+    }
     return emitResult({
       tradeDate: doc.tradeDate, mode: doc.mode || 'cut', cutHHMM: doc.cutAt || '1450',
       segFrom: segFromRe, segMinutes: lastRun.segMinutes ?? null, result,

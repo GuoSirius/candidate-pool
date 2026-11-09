@@ -31,6 +31,21 @@ function loadPerf(pipe) {
 }
 function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + ' 亿'; }
 
+/** 逐票 T+1/T+3 列（verdicts 由 nextday_backfill 18:30 回填进归档；实时渲染 / 未回填时无段 → —）。
+ *  T+1 = T+1 收盘 vs 买入基准（尾盘口径 = T 日尾盘价）；T+3 = T+3 收盘，括号里是期间最高（波段口径） */
+function verdictCells(c) {
+  const v = c.verdicts;
+  if (!v || !(v.t1 || v.t3)) return `<td>—</td><td>—</td>`;
+  const t1 = v.t1 && v.t1.buyRet != null
+    ? `<span class="${v.t1.buyRet >= 0 ? 'up' : 'down'}">${num(v.t1.buyRet, 2)}%</span>`
+    : '—';
+  const t3 = v.t3 && v.t3.buyRet != null
+    ? `<span class="${v.t3.buyRet >= 0 ? 'up' : 'down'}">${num(v.t3.buyRet, 2)}%</span>`
+      + (v.t3.maxRet != null ? `<span class="src">${b('峰', 'max')} ${num(v.t3.maxRet, 2)}%</span>` : '')
+    : '—';
+  return `<td>${t1}</td><td>${t3}</td>`;
+}
+
 /*
  * 五个分项按「这分是谁给的」分两组（2026-10-22 回溯调参后）：
  *   · 个股自身 77 分 = 尾盘动能 35 + 量能 24 + 位置 18 —— 这只票「自己在走」的证据，**重点看这组**；
@@ -115,6 +130,7 @@ function rowHtml(c, i, cfg, withBreakdown) {
     ${cells}
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap">${tagBits.join('') || '—'}</td>
+    ${verdictCells(c)}
   </tr>`;
 }
 
@@ -290,7 +306,8 @@ function buildHTML(m) {
     <th rowspan="2">${b('换手', 'Turnover')}</th><th rowspan="2">${b('价格', 'Price')}</th>
     <th rowspan="2">${b('流通值', 'Float cap')}</th><th rowspan="2">${b('总市值', 'Total cap')}</th>
     ${scoreHeadTop()}
-    <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标记', 'Flags')}</th></tr>
+    <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标记', 'Flags')}</th>
+    <th rowspan="2">${b('T+1', 'T+1')}</th><th rowspan="2">${b('T+3', 'T+3')}</th></tr>
     <tr>${scoreHeadSub()}</tr>`;
 
   // 读分说明：不解释这一步，用户只会看到一堆等宽数字，不知道哪几个该当真。
@@ -338,7 +355,7 @@ function buildHTML(m) {
   // 分组分隔行：默认隐藏，「按行业」视图由前端插入到各组行首（含行业中位涨幅与组内数量）
   // colspan = 基础 10 列（# 标的 行业 涨幅 尾盘段 量比 换手 价格 流通值 总市值）+ 分项 6 列 + 总分/标记 2 列
   const sepRows = groups.map((g) =>
-    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${12 + SCORE_COLS.length + 2}">${
+    `<tr class="sector-row" data-sep="${esc(g.sector)}" hidden><td colspan="${14 + SCORE_COLS.length + 2}">${
       b(esc(g.sector), esc(g.sector))} · ${b('中位涨幅', 'median')} ${pct(g.best.sectorMedianChg)} · ${b(`组内 ${g.size} 只`, `${g.size} picked`)}</td></tr>`).join('');
   const candRows = listed.map((c, i) => rowHtml(c, i, cfg, true)).join('');
 
