@@ -129,6 +129,7 @@ async function dispatch(owner, repo, file, ref, inputs, token, retries) {
           'User-Agent': 'trigger-github-dispatch',
         },
         body,
+        signal: AbortSignal.timeout(30000),   // 半开连接兜底（2026-11-09 评审 #11）
       });
       if (res.status === 204) return { ok: true, status: 204 };
       const text = (await res.text().catch(() => '')) || '';

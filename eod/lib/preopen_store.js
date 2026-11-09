@@ -17,16 +17,17 @@ const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
 const { now } = require('../../time');
+const { atomicWriteJSON, readJSONSafe } = require('./atomic');
+
+const warn = (m) => process.stderr.write(`${m}\n`);
 
 function dataFile(cfg, tradeDate) {
   return path.join(paths.eodDir(), cfg.store.dataDir, `${cfg.store.prefix}-${tradeDate}.json`);
 }
 
-/** 读已有归档（无则返回 null） */
+/** 读已有归档（无则返回 null；损坏文件自动隔离为 .corrupt-*，评审 #10） */
 function loadRun(cfg, tradeDate) {
-  const f = dataFile(cfg, tradeDate);
-  if (!fs.existsSync(f)) return null;
-  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; }
+  return readJSONSafe(dataFile(cfg, tradeDate), null, warn);
 }
 
 /**
@@ -70,7 +71,7 @@ function saveRun({ cfg, tradeDate, scope, candidates, nearMiss, rejByReason, met
     records,
   };
   if (rejByReason && Object.keys(rejByReason).length) doc.meta.rejByReason = rejByReason;
-  fs.writeFileSync(f, JSON.stringify(doc, null, 2), 'utf8');
+  atomicWriteJSON(f, doc);
   return { file: f, recordCount: doc.meta.recordCount, runCount: runs.length };
 }
 
@@ -81,6 +82,9 @@ function saveRun({ cfg, tradeDate, scope, candidates, nearMiss, rejByReason, met
 function mergeBackfill(cfg, tradeDate, closeMap, summary) {
   const doc = loadRun(cfg, tradeDate);
   if (!doc) throw new Error(`未找到盘前归档 ${tradeDate}，无法回填`);
+  // 重建 close 前先清掉历史回填挂在 records[*].close 上的旧值：
+  // 否则二次回填时汇总（doc.close.perCode）与明细（records[*].close）口径不一致（评审 #24）
+  for (const rec of Object.values(doc.records)) delete rec.close;
   doc.close = {
     backfilledAt: now(),
     marketDate: tradeDate,
@@ -100,7 +104,7 @@ function mergeBackfill(cfg, tradeDate, closeMap, summary) {
   doc.close.total = total;
   doc.close.hit = hit;
   doc.close.hitRate = total ? +(hit / total * 100).toFixed(1) : 0;
-  fs.writeFileSync(dataFile(cfg, tradeDate), JSON.stringify(doc, null, 2), 'utf8');
+  atomicWriteJSON(dataFile(cfg, tradeDate), doc);
   return doc.close;
 }
 

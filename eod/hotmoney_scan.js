@@ -201,6 +201,8 @@ async function run() {
 
   // 汇总：明细 trades（窗口内全部匹配记录）+ 按游资 + 按票
   const preopenSets = new Map(days.map((d) => [d.date, preopenCodes(d.date)]));
+  // name+seat 组合 Set：内层 some O(trades×changes) → O(1) 查询（评审 #24）
+  const changeKeys = new Set(seatChanges.map((c) => `${c.name}\u0000${c.seat}`));
   const trades = [];
   for (const doc of days) {
     const pset = preopenSets.get(doc.date);
@@ -211,7 +213,7 @@ async function run() {
           name: h.name, tier: h.tier, seat: h.seat,
           buy: h.buy, sell: h.sell, net: h.net,
           preopen: pset.has(rec.code),
-          newSeat: doc.date === anchor && seatChanges.some((c) => c.name === h.name && c.seat === h.seat),
+          newSeat: doc.date === anchor && changeKeys.has(`${h.name}\u0000${h.seat}`),
         });
       }
     }

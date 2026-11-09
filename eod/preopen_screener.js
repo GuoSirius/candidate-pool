@@ -182,6 +182,9 @@ async function run() {
   // 仅预计算基线缓存（供全市场次日盘前用，建议收盘后定时跑）
   if (OPT.baseline) {
     const scope = argOf('--scope') || (OPT.universe ? 'universe' : cfg.scope.default);
+    if (!['watchlist', 'universe'].includes(scope)) {
+      throw new Error(`--scope 仅支持 watchlist | universe，收到："${scope}"`);
+    }
     let codes;
     if (scope === 'universe') {
       // 全市场：先抓快照枚举「活跃」代码（~5000），只对活跃票抓 K 线；
@@ -219,8 +222,11 @@ async function run() {
   log(`[时段] ${ss.reason}`);
   if (!ss.ok) { log('[结束] 跳过'); return { skipped: ss.reason }; }
 
-  // 范围与代码
+  // 范围与代码（--scope 白名单校验：拼错值静默降级全市场盲扫太危险，评审 #20）
   const scope = argOf('--scope') || (OPT.universe ? 'universe' : cfg.scope.default);
+  if (!['watchlist', 'universe'].includes(scope)) {
+    throw new Error(`--scope 仅支持 watchlist | universe，收到："${scope}"`);
+  }
   let codes, quotes;
   if (scope === 'watchlist') {
     const watch = readCandidates();
@@ -323,12 +329,14 @@ async function run() {
       if (f && f[anchor] != null) c.yesterdayMainInflow = f[anchor];
     });
     const bb = await market.fetchBillboard(anchor);
-    for (const c of candidates) {
-      const info = bb[c.code.slice(2)];
-      if (!info) continue;
-      const seats = await market.fetchBillboardSeats(c.code.slice(2), anchor);
-      c.billboard = { net: info.net, hot: PR.matchHotMoney(seats) };
-    }
+    // 席位明细并行抓（评审 #8：串行 40 只上榜最坏 ~10 分钟 → 4 并发 ~1.5 分钟）
+    const bbCands = candidates.filter((c) => bb[c.code.slice(2)]);
+    await mapLimit(bbCands, 4, async (c) => {
+      try {
+        const seats = await market.fetchBillboardSeats(c.code.slice(2), anchor);
+        c.billboard = { net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
+      } catch (e) { /* 容错：席位抓取失败留空 */ }
+    });
   }
 
   // 各淘汰原因计数（gaps 明细不落盘，只留统计——6000+ 只/天的明细太肥且没用）

@@ -14,6 +14,8 @@ const path = require('path');
 const cfg = require('../config');
 const { ensureDir } = require('../../paths');
 
+const { atomicWriteJSON, readJSONSafe } = require('../../eod/lib/atomic');
+
 const bjDate = (ms) => new Date(ms + 8 * 3600e3).toISOString().slice(0, 10); // YYYY-MM-DD（北京）
 const bjTime = (ms) => new Date(ms + 8 * 3600e3).toISOString().slice(11, 19).replace(/:/g, ''); // HHmmss
 const DATE_DIR_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,7 +37,7 @@ function pruneDays(base, keep) {
 
 function saveSnapshot(snapshot) {
   const file = path.join(dayDir(cfg.DATA_DIR, snapshot.runAt), `snap-${bjTime(snapshot.runAt)}.json`);
-  fs.writeFileSync(file, JSON.stringify(snapshot));
+  atomicWriteJSON(file, snapshot);
   updateLatest(snapshot);
   pruneDays(cfg.DATA_DIR, cfg.KEEP_SNAPSHOTS);
   return file;
@@ -43,13 +45,11 @@ function saveSnapshot(snapshot) {
 
 /** 只更新 latest.json（saveSnapshot 内部调用，亦可供跳过归档的场景单独使用） */
 function updateLatest(snapshot) {
-  ensureDir(cfg.DATA_DIR);
-  fs.writeFileSync(path.join(cfg.DATA_DIR, 'latest.json'), JSON.stringify(snapshot));
+  atomicWriteJSON(path.join(cfg.DATA_DIR, 'latest.json'), snapshot);
 }
 
 function loadLatest() {
-  try { return JSON.parse(fs.readFileSync(path.join(cfg.DATA_DIR, 'latest.json'), 'utf8')); }
-  catch (e) { return null; }
+  return readJSONSafe(path.join(cfg.DATA_DIR, 'latest.json'), null);
 }
 
 function saveReport(html, runAt) {
@@ -64,13 +64,11 @@ function saveReport(html, runAt) {
 const STATE_FILE = path.join(cfg.DATA_DIR, 'watch-state.json');
 
 function loadState() {
-  try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); }
-  catch (e) { return { seenNewsIds: [], boardPct: {}, hotBoards: [] }; }
+  return readJSONSafe(STATE_FILE, { seenNewsIds: [], boardPct: {}, hotBoards: [] }) || { seenNewsIds: [], boardPct: {}, hotBoards: [] };
 }
 
 function saveState(state) {
-  ensureDir(cfg.DATA_DIR);
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state));
+  atomicWriteJSON(STATE_FILE, state);
 }
 
 module.exports = { saveSnapshot, updateLatest, loadLatest, saveReport, loadState, saveState };

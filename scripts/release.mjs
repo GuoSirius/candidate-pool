@@ -15,7 +15,7 @@
  *       worker、web 各自有 deploy；changelogen / husky / commitlint 已装(devDep)。
  * 纯 Node 内置能力（无第三方依赖），交互部分用 raw mode 处理方向键。
  */
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
@@ -162,7 +162,8 @@ async function main() {
       process.exit(1);
     }
     run('git add -A');
-    execSync(`git commit -m ${JSON.stringify(msg)}`, { stdio: 'inherit' });
+    // execFileSync 直传 argv：JSON.stringify 拼双引号内的 $(...) 仍会被 shell 执行（评审 #21）
+    execFileSync('git', ['commit', '-m', msg], { stdio: 'inherit' });
   }
 
   // ③ 发版选择
@@ -200,7 +201,7 @@ async function main() {
 
   // ⑦ 提交 + 打 tag + 推送（本机到此为止，发布动作在 CI）
   run('git add package.json worker/package.json web/package.json CHANGELOG.md');
-  execSync(`git commit -m ${JSON.stringify(`chore(release): v${newVersion}`)}`, { stdio: 'inherit' });
+  execFileSync('git', ['commit', '-m', `chore(release): v${newVersion}`], { stdio: 'inherit' });
   run(`git tag v${newVersion}`);
   const branch = sh('git rev-parse --abbrev-ref HEAD');
   run(`git push origin ${branch}`);

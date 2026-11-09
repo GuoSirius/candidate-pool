@@ -50,7 +50,14 @@ async function ensureColumns(client) {
     'ALTER TABLE pick_record ADD COLUMN vol_ratio REAL',
     'ALTER TABLE price_daily ADD COLUMN run_at TEXT',
   ]) {
-    try { await client.query(sql); } catch (_) { /* 列已存在则忽略 */ }
+    try {
+      await client.query(sql);
+    } catch (e) {
+      // 只忽略「列已存在」（SQLite: duplicate column name / D1: already exists）；
+      // 其余 ALTER 失败（权限/语法/网络）必须抛出，否则真实迁移失败被掩盖（评审 #19）
+      const msg = String((e && e.message) || e);
+      if (!/duplicate column|already exists/i.test(msg)) throw e;
+    }
   }
 }
 

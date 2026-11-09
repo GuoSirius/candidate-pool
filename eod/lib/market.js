@@ -112,20 +112,24 @@ function parseQuote(code, inner) {
   };
 }
 
-/** 抓一批代码（60 只左右），返回解析后的报价数组；代码不存在会被响应省略 */
+/** 抓一批代码（60 只左右），返回解析后的报价数组；代码不存在会被响应省略。
+ *  超过 cfg.market.batch（默认 60）自动切块：观察池 ~378 只拼单 URL 会超长被截断（评审 #6） */
 async function fetchBatch(codes, cfg) {
-  const txt = await httpGet(QT_QUOTE + codes.join(','), {
-    enc: 'gbk',
-    json: false,
-    retries: cfg.market.retries,
-    timeout: cfg.market.timeoutMs,
-  });
+  const B = (cfg && cfg.market && cfg.market.batch) || 60;
   const out = [];
-  for (const seg of txt.split(';')) {
-    const m = seg.match(/v_([a-z]{2}\d{6})="([^"]*)"/);
-    if (!m) continue;
-    const q = parseQuote(m[1], m[2]);
-    if (q) out.push(q);
+  for (let i = 0; i < codes.length; i += B) {
+    const txt = await httpGet(QT_QUOTE + codes.slice(i, i + B).join(','), {
+      enc: 'gbk',
+      json: false,
+      retries: cfg.market.retries,
+      timeout: cfg.market.timeoutMs,
+    });
+    for (const seg of txt.split(';')) {
+      const m = seg.match(/v_([a-z]{2}\d{6})="([^"]*)"/);
+      if (!m) continue;
+      const q = parseQuote(m[1], m[2]);
+      if (q) out.push(q);
+    }
   }
   return out;
 }
@@ -158,6 +162,13 @@ async function fullMarketSnapshot(cfg, log = () => {}) {
   for (const r of results) {
     if (r && r.__error) { failedBatches++; continue; }
     quotes.push(...r);
+  }
+
+  // 失败率熔断（评审 #7）：WAF 拦截时全市场 ~85 批 × retries 会烧掉 ~26 分钟 / 2000 次无效请求，
+  // 不如尽快中止让调用方走失败告警。阈值取 cfg.market.maxBatchFailRate（默认 30%）。
+  const maxFailRate = (cfg.market && cfg.market.maxBatchFailRate) != null ? cfg.market.maxBatchFailRate : 0.3;
+  if (batches.length >= 10 && failedBatches / batches.length > maxFailRate) {
+    throw new Error(`行情批次失败率 ${(failedBatches / batches.length * 100).toFixed(0)}% 超过熔断线 ${(maxFailRate * 100).toFixed(0)}%（${failedBatches}/${batches.length}），疑似数据源拦截，中止本次快照`);
   }
 
   // 行情时间戳众数 -> 交易日

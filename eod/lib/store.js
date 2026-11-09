@@ -20,6 +20,10 @@ const fs = require('fs');
 const path = require('path');
 const { now: nowBJ } = require('../../time');
 const paths = require('../../paths');
+const { atomicWriteJSON, readJSONSafe } = require('./atomic');
+
+/** 落盘点日志（store 层无 logger，损坏/隔离事件打到 stderr 以便排障） */
+const warn = (m) => process.stderr.write(`${m}\n`);
 
 /** Map<code,{rows,date,error}> → 纯对象（存档用，JSON 可序列化） */
 function minutesToObj(map) {
@@ -117,11 +121,9 @@ function dayFile(cfg, tradeDate, mode, cutHHMM, opts) {
   return path.join(paths.eodDir(), cfg.store.dataDir, `eod-${tradeDate}${daySuffix(mode, cutHHMM, opts)}.json`);
 }
 
-/** 读取某交易日的正式存档（无则 null） */
+/** 读取某交易日的正式存档（无则 null；损坏文件自动隔离为 .corrupt-*，评审 #10） */
 function loadDay(cfg, tradeDate) {
-  const f = dayFile(cfg, tradeDate, 'cut');
-  if (!fs.existsSync(f)) return null;
-  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; }
+  return readJSONSafe(dayFile(cfg, tradeDate, 'cut'), null, warn);
 }
 
 /**
@@ -137,9 +139,7 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null
   fs.mkdirSync(dir, { recursive: true });
   const file = dayFile(cfg, tradeDate, mode, cutHHMM, { stamp, segMinutes });
 
-  const old = fs.existsSync(file) ? (() => {
-    try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
-  })() : null;
+  const old = fs.existsSync(file) ? readJSONSafe(file, null, warn) : null;
 
   const run = {
     at: nowBJ(),
@@ -188,7 +188,7 @@ function saveRun({ cfg, tradeDate, mode, cutHHMM, result, runner, segFrom = null
     // 单独存 eod/data/eod/raw/ 并 gitignore，仅供 --replay 离线重算（见 saveRaw）。
     // 主存档保持精简 records，按原约定提交 git。
   };
-  fs.writeFileSync(file, JSON.stringify(doc, null, 1), 'utf8');
+  atomicWriteJSON(file, doc);
   return { file, doc, recordCount: Object.keys(records).length, runCount: runs.length, replacedFill };
 }
 
@@ -215,7 +215,7 @@ function saveRaw({ cfg, tradeDate, mode, cutHHMM, quotes, minutes, stamp = false
     minutes: minutesToObj(minutes),
   };
   const file = rawFile(cfg, tradeDate, mode, cutHHMM, { stamp, segMinutes });
-  fs.writeFileSync(file, JSON.stringify(doc), 'utf8');
+  atomicWriteJSON(file, doc);
   return file;
 }
 function loadRaw(cfg, tradeDate, mode, cutHHMM, opts) {
@@ -231,8 +231,8 @@ function loadRaw(cfg, tradeDate, mode, cutHHMM, opts) {
  */
 function applyFill(cfg, tradeDate, patch) {
   const file = dayFile(cfg, tradeDate, 'cut');
-  if (!fs.existsSync(file)) return { updated: 0, missing: Object.keys(patch) };
-  const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const doc = readJSONSafe(file, null, warn);
+  if (!doc) return { updated: 0, missing: Object.keys(patch) };
   const missing = [];
   let updated = 0;
   for (const [code, fill] of Object.entries(patch)) {
@@ -245,7 +245,7 @@ function applyFill(cfg, tradeDate, patch) {
   }
   if (updated) {
     doc.updatedAt = nowBJ();
-    fs.writeFileSync(file, JSON.stringify(doc, null, 1), 'utf8');
+    atomicWriteJSON(file, doc);
   }
   return { updated, missing };
 }

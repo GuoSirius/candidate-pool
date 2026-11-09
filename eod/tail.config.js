@@ -80,7 +80,8 @@ module.exports = {
   market: {
     batch: 60,              // 每次批量报价的代码数（实测 60 稳定，过大易被截断）
     concurrency: 6,         // 并发；实测 6 并发 ≈ 62 请求/秒，再高易触发腾讯反爬
-    retries: 4,             // 单批重试次数（命中 WAF 走长退避，见 lib/http.js）
+    retries: 2,             // 单批重试次数（2026-11-09 评审 #7：4 次长退避遇 WAF 会烧 ~26 分钟；压到 2 快速失败，配合 maxBatchFailRate 熔断）
+    maxBatchFailRate: 0.3,  // 全市场快照批次失败率熔断线：超过即中止本次快照（疑似 WAF 拦截）
     timeoutMs: 15000,
     ranges: RANGES,
     // 北交所提示：快照抓取正常，但**分时接口对北交所返回的累计量额常为 0**，

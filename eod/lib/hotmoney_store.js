@@ -15,57 +15,41 @@ const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
 const cfg = require('../hotmoney.config');
+const { atomicWriteJSON, readJSONSafe } = require('./atomic');
 
 function dataDir() { return path.join(paths.eodDir(), cfg.store.dataDir); }
 function dayFile(date) { return path.join(dataDir(), `${cfg.store.prefix}-${date}.json`); }
 
 function loadDay(date) {
-  const f = dayFile(date);
-  if (!fs.existsSync(f)) return null;
-  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; }
+  return readJSONSafe(dayFile(date), null);
 }
 
 function saveDay(date, doc) {
-  fs.mkdirSync(dataDir(), { recursive: true });
   const f = dayFile(date);
-  const tmp = `${f}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(doc), 'utf8');
-  fs.renameSync(tmp, f);
+  atomicWriteJSON(f, doc);
   return f;
 }
 
 function snapshotFile() { return path.join(dataDir(), 'hotmoney-seats-snapshot.json'); }
 
 function loadSeatSnapshot() {
-  const f = snapshotFile();
-  if (!fs.existsSync(f)) return { seatsByPerson: {}, updatedAt: null };
-  try {
-    const o = JSON.parse(fs.readFileSync(f, 'utf8'));
-    return { seatsByPerson: (o && o.seatsByPerson) || {}, updatedAt: (o && o.updatedAt) || null };
-  } catch (e) { return { seatsByPerson: {}, updatedAt: null }; }
+  const o = readJSONSafe(snapshotFile(), null);
+  return { seatsByPerson: (o && o.seatsByPerson) || {}, updatedAt: (o && o.updatedAt) || null };
 }
 
 function saveSeatSnapshot(snap) {
-  fs.mkdirSync(dataDir(), { recursive: true });
   snap.updatedAt = new Date().toISOString();
-  const tmp = `${snapshotFile()}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(snap), 'utf8');
-  fs.renameSync(tmp, snapshotFile());
+  atomicWriteJSON(snapshotFile(), snap);
 }
 
 function watchFile() { return path.join(dataDir(), 'hotmoney-watchlist.json'); }
 
 function loadWatchlist() {
-  const f = watchFile();
-  if (!fs.existsSync(f)) return {};
-  try { return JSON.parse(fs.readFileSync(f, 'utf8')) || {}; } catch (e) { return {}; }
+  return readJSONSafe(watchFile(), {}) || {};
 }
 
 function saveWatchlist(w) {
-  fs.mkdirSync(dataDir(), { recursive: true });
-  const tmp = `${watchFile()}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(w), 'utf8');
-  fs.renameSync(tmp, watchFile());
+  atomicWriteJSON(watchFile(), w);
 }
 
 module.exports = { dayFile, loadDay, saveDay, loadSeatSnapshot, saveSeatSnapshot, loadWatchlist, saveWatchlist };

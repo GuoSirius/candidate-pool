@@ -66,6 +66,8 @@ function postForm(urlStr, form, json) {
       res.on('data', c => (data += c));
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
     });
+    // 半开连接兜底：无超时会让定时链路在 await notify() 上永久挂死（2026-11-09 评审 #11）
+    req.setTimeout(15000, () => req.destroy(new Error('HTTP 请求超时(15s)')));
     req.on('error', reject);
     req.write(body);
     req.end();
@@ -101,6 +103,17 @@ async function pushWechat(title, content, cfg) {
 function smtpSend({ host, port, user, pass, from, to, subject, text, htmlPath }) {
   return new Promise((resolve, reject) => {
     const socket = tls.connect({ host, port: Number(port), rejectUnauthorized: true });
+    // 双层超时：socket 空闲 30s / 整个会话硬上限 60s，半开连接不再挂死定时链路（评审 #11）
+    let settled = false;
+    const hardTimer = setTimeout(() => done(false, new Error('SMTP 会话超时(60s)')), 60000);
+    function done(ok, v) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(hardTimer);
+      socket.destroy();
+      (ok ? resolve : reject)(v);
+    }
+    socket.setTimeout(30000, () => done(false, new Error('SMTP 网络空闲超时(30s)')));
     let leftover = '';
     let current = null;
     let ready = false;
@@ -108,7 +121,7 @@ function smtpSend({ host, port, user, pass, from, to, subject, text, htmlPath })
     function send(cmd) { socket.write(cmd + '\r\n'); }
     function next() {
       current = queue.shift();
-      if (!current) { socket.end(); return resolve(true); }
+      if (!current) { return done(true, true); }
       send(current.cmd);
     }
     function onReady() { if (ready) return; ready = true; next(); }
@@ -128,11 +141,11 @@ function smtpSend({ host, port, user, pass, from, to, subject, text, htmlPath })
         if (isNaN(code) || !final) continue;      // 多行续行 / 非响应，忽略
         const ok = current.codes.includes(code) ||
           current.codes.some(c => Math.floor(code / 100) === Math.floor(c / 100));
-        if (!ok) { socket.destroy(); return reject(new Error(`SMTP ${code}: ${line}`)); }
+        if (!ok) { return done(false, new Error(`SMTP ${code}: ${line}`)); }
         setTimeout(next, 30);
       }
     });
-    socket.on('error', reject);
+    socket.on('error', (e) => done(false, e));
 
     // 组装邮件（multipart/mixed，HTML 报告作附件）
     //

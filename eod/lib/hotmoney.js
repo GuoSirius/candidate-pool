@@ -29,8 +29,13 @@ function loadOverrides() {
   try { return JSON.parse(fs.readFileSync(f, 'utf8')) || []; } catch (e) { return []; }
 }
 
-/** 生效名单：config entries + 本地 add/remove → [[名称, RegExp, 分层], ...] */
+// mtime 缓存：逐票匹配不该重读 override + 重编译全部正则（单日 ~120 次、回补 20 日 ~2400 次，评审 #5）
+let _regCache = null;   // { mtime, registry }
 function effectiveRegistry() {
+  const f = registryOverrideFile();
+  let mtime = 0;
+  try { mtime = fs.statSync(f).mtimeMs; } catch (e) { /* 无 override 文件 → 0 */ }
+  if (_regCache && _regCache.mtime === mtime) return _regCache.registry;
   const adds = [];
   const removes = [];
   for (const o of loadOverrides()) {
@@ -43,7 +48,9 @@ function effectiveRegistry() {
   const base = cfg.registry.entries
     .filter(([n]) => !removes.includes(n) && !adds.some(([an]) => an === n))
     .map(([n, src, tier]) => [n, new RegExp(src, 'i'), tier]);
-  return base.concat(adds);
+  const registry = base.concat(adds);
+  _regCache = { mtime, registry };
+  return registry;
 }
 
 /** 席位 → 游资（含买卖明细）。seats: [{ seat, buy, sell, net }] → [{ name, tier, seat, buy, sell, net }] */

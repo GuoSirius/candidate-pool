@@ -15,8 +15,10 @@
  *     / P1 竞价 / P2 弱转强 / P3 趋势 / 总分 / 标签
  */
 
-// 共享格式化纯函数（唯一真相源：report_fmt.js；fmtAmt/billboardCell 2026-11-09 迁入共享，
-// 尾盘报告 report.js 同用）；fmtFlow/capTxt 仅本报告使用，留在本地
+// 共享格式化纯函数（唯一真相源：report_fmt.js；billboardCell 2026-11-09 迁入共享，
+// 尾盘报告 report.js 同用）；fmtFlow/capTxt 仅本报告使用，留在本地。
+// 注意：report_fmt.fmtAmt 返回字符串（上游已用）；hotmoney_report 的 fmtAmtCell
+// 返回 {txt,cls}，二者签名不同不可互换（评审 #22）。
 const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
 /** 主力净流入（元 → 万/亿），涨红跌绿 */
 function fmtFlow(v) {
@@ -64,7 +66,8 @@ function rowHtml(c, i, withBreakdown) {
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
   const yFlow = fmtFlow(c.yesterdayMainInflow);
   const hasHot = !!(c.billboard && (c.billboard.hot || []).length);
-  const hotNames = hasHot ? [...new Set((c.billboard.hot || []).map((h) => esc(h.name)))].join('|') : '';
+  // data-hm 存 encodeURIComponent 后的游资名（| 分隔）：名字含特殊字符也不会破坏属性/过滤（评审 #13）
+  const hotNames = hasHot ? [...new Set((c.billboard.hot || []).map((h) => h.name).filter(Boolean))].map(encodeURIComponent).join('|') : '';
   return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
@@ -113,8 +116,9 @@ function closeRowHtml(c, i, sealedMin) {
   const tFlow = fmtFlow(cl.mainInflow);
   const bbCell = billboardCell(cl.billboard);
   const hasHot = !!(cl.billboard && (cl.billboard.hot || []).length);
-  const hotNames = hasHot ? [...new Set((cl.billboard.hot || []).map((h) => esc(h.name)))].join('|') : '';
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${cl.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}>
+  const hotNames = hasHot ? [...new Set((cl.billboard.hot || []).map((h) => h.name).filter(Boolean))].map(encodeURIComponent).join('|') : '';
+  // 带 @best/@top3 所需的排序属性：收盘区 chips 与候选区共用一份，行缺属性会一点就全空（评审 #12）
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${cl.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -300,7 +304,7 @@ function buildHTML(m) {
   const hotCount = listed.reduce((n, c) => n + (c.billboard && (c.billboard.hot || []).length ? 1 : 0), 0);
   // 游资明细 chips：按当天实际命中的游资名动态生成（只在有命中时出现），计数=命中的票数（同票多席位去重），按命中票数降序
   const hotNameCounts = {};
-  for (const c of listed) for (const n of new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name))) hotNameCounts[n] = (hotNameCounts[n] || 0) + 1;
+  for (const c of listed) for (const n of new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name).filter(Boolean))) hotNameCounts[n] = (hotNameCounts[n] || 0) + 1;
   const hotNameOrder = Object.keys(hotNameCounts).sort((a, b) => hotNameCounts[b] - hotNameCounts[a]);
   // 轨道计数：p4/both 算 P04 通道；score/both 算打分轨（历史数据无 track 字段 → 默认 score）
   const trackOf = (c) => c.track || 'score';
@@ -313,7 +317,7 @@ function buildHTML(m) {
       `<button type="button" class="chip" data-lfilter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@hotmoney">${b('游资', 'Hot money')}<i>${hotCount}</i></button>`,
-      ...hotNameOrder.map((n) => `<button type="button" class="chip" data-lfilter="${esc('@hm:' + n)}">${b(esc(n), esc(n))}<i>${hotNameCounts[n]}</i></button>`),
+      ...hotNameOrder.map((n) => `<button type="button" class="chip" data-lfilter="${esc('@hm:' + encodeURIComponent(n))}">${b(esc(n), esc(n))}<i>${hotNameCounts[n]}</i></button>`),
       `<button type="button" class="chip" data-lfilter="@p4">${b('P04 通道', 'P04 track')}<i>${p4Count}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@score">${b('打分轨 P1-P3', 'Score track')}<i>${scoreCount}</i></button>`,
     ])

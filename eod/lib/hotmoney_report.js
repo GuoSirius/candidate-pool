@@ -17,8 +17,8 @@
 const { b, num, esc } = require('./report_fmt');
 const { CSS } = require('./preopen_report');
 
-/** 金额（元）→ 「1.2亿」「3000万」，涨红跌绿 */
-function fmtAmt(v) {
+/** 金额（元）→ 「1.2亿」「3000万」，涨红跌绿；返回 {txt,cls}（与 report_fmt 共享版 fmtAmt 签名不同，故改名区分，评审 #22） */
+function fmtAmtCell(v) {
   if (v == null || isNaN(v)) return { txt: '—', cls: '' };
   const a = Math.abs(v);
   const txt = (v < 0 ? '-' : '') + (a >= 1e8 ? num(a / 1e8, 2) + '亿' : num(a / 1e4, 0) + '万');
@@ -37,9 +37,9 @@ function tierTag(tier) {
 
 /** 当日/近N日交易记录行（当日表与近N日表共用；近N日多一列日期） */
 function tradeRowHtml(t, opts) {
-  const buy = fmtAmt(t.buy);
-  const sell = fmtAmt(t.sell);
-  const net = fmtAmt(t.net);
+  const buy = fmtAmtCell(t.buy);
+  const sell = fmtAmtCell(t.sell);
+  const net = fmtAmtCell(t.net);
   const dir = (t.net == null ? 0 : t.net) >= 0 ? 'in' : 'out';
   const marks = [
     t.preopen ? `<span class="tag pass">${b('盘前候选', 'Preopen')}</span>` : '',
@@ -77,14 +77,9 @@ function buildHTML({ cfg, anchor, result, runner }) {
     for (const t of rows) m[t.tier] = (m[t.tier] || 0) + 1;
     return m;
   };
-  const nameOrder = [...new Set(anchorTrades.map((t) => t.name))];
-  const nameCountA = {};
-  for (const t of anchorTrades) nameCountA[t.name] = (nameCountA[t.name] || 0) + 1;
   const dateOrder = win.days.map((d) => d.date);
   const dateCount = {};
   for (const t of trades) dateCount[t.date] = (dateCount[t.date] || 0) + 1;
-  const nameCountW = {};
-  for (const t of trades) nameCountW[t.name] = (nameCountW[t.name] || 0) + 1;
 
   const tierChips = (rows) => {
     const m = tierCount(rows);
@@ -94,8 +89,14 @@ function buildHTML({ cfg, anchor, result, runner }) {
   const dirChips = () => chipHtml('dir', '', b('全部方向', 'All'), null, true)
     + chipHtml('dir', 'in', b('净买入', 'Net buy'))
     + chipHtml('dir', 'out', b('净卖出', 'Net sell'));
-  const nameChips = (rows, counts) => chipHtml('name', '', b('全部游资', 'All'), rows.length, true)
-    + nameOrder.map((n) => chipHtml('name', n, b(esc(n), esc(n)), counts[n])).join('');
+  // 游资 chips 从传入行自己统计（评审 #14：近 N 日表不再只列锚定日名单，历史游资也能圈定）
+  const nameChips = (rows) => {
+    const cnt = {};
+    for (const t of rows) cnt[t.name] = (cnt[t.name] || 0) + 1;
+    const order = Object.keys(cnt).sort((a, b2) => cnt[b2] - cnt[a]);
+    return chipHtml('name', '', b('全部游资', 'All'), rows.length, true)
+      + order.map((n) => chipHtml('name', n, b(esc(n), esc(n)), cnt[n])).join('');
+  };
   const dateChips = () => chipHtml('date', '', b('全部日期', 'All'), trades.length, true)
     + dateOrder.map((d) => chipHtml('date', d, esc(d.slice(5)), dateCount[d])).join('');
 
@@ -108,8 +109,8 @@ function buildHTML({ cfg, anchor, result, runner }) {
         `⚠ Seat changes: ${esc(changeNames.join(', '))} showed seats never seen before (marked "New seat").`)
       : b('席位快照比对：当日无新席位，名单内游资席位无变动。', 'Seat snapshot: no new seats, no registry changes detected.'),
     topTraders.length
-      ? b(`当日游资净额前三：${esc(topTraders.map((t) => `${t.name}（${t.tier}）净 ${t.net >= 0 ? '+' : ''}${(t.net / 1e4 / 10000).toFixed(1)}万`).join('、'))}。`,
-        `Top 3 by net: ${esc(topTraders.map((t) => `${t.name} (${t.tier}) net ${fmtAmt(t.net).txt}`).join(', '))}.`)
+      ? b(`当日游资净额前三：${esc(topTraders.map((t) => `${t.name}（${t.tier}）净 ${fmtAmtCell(t.net).txt}`).join('、'))}。`,
+        `Top 3 by net: ${esc(topTraders.map((t) => `${t.name} (${t.tier}) net ${fmtAmtCell(t.net).txt}`).join(', '))}.`)
       : b('当日榜单未匹配到任何知名游资席位。', 'No known hot-money seat matched on this board.'),
     watchTop.length
       ? b(`观察名单：${watchTop.length} 个未识别席位出现 ≥${cfg.watch.minDays} 天（见文末表），高频者建议晋升进 registry。`,
@@ -183,7 +184,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     </div>
     ${filterChipRow('fTier', '层级', 'Tier', tierChips(anchorTrades))}
     ${filterChipRow('fDir', '方向', 'Side', dirChips())}
-    ${filterChipRow('fName', '游资', 'Trader', nameChips(anchorTrades, nameCountA))}
+    ${filterChipRow('fName', '游资', 'Trader', nameChips(anchorTrades))}
   </div>
   <div class="table-wrap"><table id="dayTable"><thead><tr>
     <th>${b('游资', 'Trader')}</th><th>${b('标的', 'Stock')}</th>
@@ -201,7 +202,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     <th>${b('净额', 'Net')}</th><th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th>
     <th>${b('活跃天数', 'Days')}</th><th>${b('涉票数', 'Stocks')}</th>
   </tr></thead><tbody id="traderBody">${byTrader.map((t) => {
-    const net = fmtAmt(t.net); const buy = fmtAmt(t.buy); const sell = fmtAmt(t.sell);
+    const net = fmtAmtCell(t.net); const buy = fmtAmtCell(t.buy); const sell = fmtAmtCell(t.sell);
     return `<tr data-tier="${esc(t.tier || '')}" data-name="${esc(t.name)}">
     <td><b>${esc(t.name)}</b></td><td>${tierTag(t.tier)}</td>
     <td class="num ${net.cls}"><b>${net.txt}</b></td>
@@ -215,7 +216,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
   <p class="src">${b(`窗口内（近 ${dayCount} 个交易日）的每一条游资买卖记录，结构与当日表相同、多一列日期；用 chips 圈定某游资 / 某天 / 某方向。当日表的数据就是本表中日期 = 锚定日的子集。`,
     'Every trader trade in the window (same layout as the day table plus a date column); use chips to isolate a trader / date / side.')}</p>
   ${trades.length ? `<div class="toolbar">
-    ${filterChipRow('fName3', '游资', 'Trader', nameChips(trades, nameCountW))}
+    ${filterChipRow('fName3', '游资', 'Trader', nameChips(trades))}
     ${filterChipRow('fDate', '日期', 'Date', dateChips())}
     ${filterChipRow('fDir3', '方向', 'Side', dirChips())}
     ${filterChipRow('fTier3', '层级', 'Tier', tierChips(trades))}
@@ -231,7 +232,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
   ${watchTop.length ? `<div class="table-wrap"><table><thead><tr>
     <th>${b('席位', 'Seat')}</th><th>${b('出现天数', 'Days')}</th><th>${b('累计买入', 'Buy')}</th><th>${b('累计卖出', 'Sell')}</th>
   </tr></thead><tbody>${watchTop.map((w) => {
-    const buy = fmtAmt(w.buy); const sell = fmtAmt(w.sell);
+    const buy = fmtAmtCell(w.buy); const sell = fmtAmtCell(w.sell);
     return `<tr><td class="wrap src">${esc(w.seat)}</td><td class="num">${w.dayCount}</td>
     <td class="num ${buy.cls}">${buy.txt}</td><td class="num ${sell.cls}">${sell.txt}</td></tr>`;
   }).join('')}</tbody></table></div>

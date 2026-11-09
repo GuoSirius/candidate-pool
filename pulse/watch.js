@@ -10,19 +10,19 @@
  * 每轮打印结构化摘要（信源/消息面/热点/通知），ANSI 颜色仅 TTY（重定向日志自动纯文本）。
  * 用法：node pulse/watch.js（手动启动，Ctrl+C 退出）
  */
-const dayjs = require('dayjs');
+const { dayjs } = require('../time');   // 统一时区 Asia/Shanghai：UTC runner 上裸 dayjs 会把交易时段判成窗口外（评审 #17）
 const cfg = require('./config');
 const { runOnce } = require('./run');
 const { notify } = require('./notify_win');
 const store = require('./lib/store');
 const ui = require('./lib/ui');
 
-const now = () => dayjs().format('HH:mm:ss');
+const now = () => dayjs.tz().format('HH:mm:ss');
 let roundNo = 0;
 
 /** 交易日活跃窗口判断（周一~周五） */
 function isActive() {
-  const d = dayjs();
+  const d = dayjs.tz();
   if (d.day() === 0 || d.day() === 6) return false;
   const hm = d.format('HH:mm');
   return hm >= cfg.WATCH_ACTIVE_FROM && hm <= cfg.WATCH_ACTIVE_TO;

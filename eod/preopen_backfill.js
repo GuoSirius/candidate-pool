@@ -27,7 +27,19 @@ const paths = require('../paths');
 const { lastClosedTradingDay } = require('../rules');
 const { buildHTML } = require('./lib/preopen_report');
 const argv = process.argv.slice(2);
-const OPT = { date: (() => { const i = argv.indexOf('--date'); return i >= 0 ? argv[i + 1] : null; })(), force: argv.includes('--force') };
+const OPT = {
+  date: (() => {
+    const i = argv.indexOf('--date');
+    const v = i >= 0 ? argv[i + 1] : null;
+    // 白名单校验：--date 吃掉下一个 flag（如 `--date --force`）或格式错 → 立即退出码 2（评审 #20）
+    if (v != null && !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      console.error(`--date 非法："${v}"（应为 YYYY-MM-DD，且不能是另一个 flag）`);
+      process.exit(2);
+    }
+    return v;
+  })(),
+  force: argv.includes('--force'),
+};
 function log(m) { console.log(m); }
 
 // 日志统一归位：脚本自镜像到 eod/logs/preopen-backfill-<日期>.log
@@ -85,6 +97,13 @@ async function run() {
   ]);
   log(`[回填] 净流入 ${Object.keys(flows).length}/${codes.length} · 龙虎榜全榜 ${Object.keys(bbMap).length} 只 · K线 ${Object.keys(klines).length}/${codes.length}`);
 
+  // 席位明细并行抓（评审 #8：串行 40 只上榜最坏 ~10 分钟 → 4 并发）；失败留空，不在主循环里逐个 await
+  const bbCodes = codes.filter((code) => bbMap[code.slice(2)]);
+  const seatsMap = {};
+  await mapLimit(bbCodes, 4, async (code) => {
+    try { seatsMap[code] = await market.fetchBillboardSeats(code.slice(2), tradeDate); } catch (e) { /* 容错留空 */ }
+  });
+
   const closeMap = {};
   for (const code of codes) {
     const q = qmap.get(code);
@@ -102,7 +121,7 @@ async function run() {
       mainInflow: flows[code] != null ? flows[code] : null,
     };
     const bb = bbMap[code.slice(2)];
-    if (bb) closeMap[code].billboard = { net: bb.net, hot: PR.matchHotMoney(await market.fetchBillboardSeats(code.slice(2), tradeDate)) };
+    if (bb) closeMap[code].billboard = { net: bb.net, hot: PR.matchHotMoney(seatsMap[code] || []) };
     if (klines[code]) closeMap[code].boards = PR.boardsInfo(klines[code].rows, code);
   }
   const bbHits = codes.filter((c) => closeMap[c] && closeMap[c].billboard);
