@@ -367,6 +367,11 @@ git push
 - **产物**：`pulse/data/watch-console.log` + `pulse/data/`、`pulse/reports/` 归档（均被 `.gitignore` 忽略，不入库）
 - **推送**：无（prompt 未含 git 推送块，本地留存）
 
+> **Windows 计划任务停用记录（2026-11-09）**：原开机自启的 Windows 计划任务 `pulse-watch`
+>（登录触发，延迟 30s）已 `Disable-ScheduledTask` 禁用，运行中的 watch 进程已终止。
+> 此后完全手动：最小化窗口跑 `npm run pulse:watch`，停止用 taskkill 对应 node PID。
+> 如需恢复开机自启：`Enable-ScheduledTask -TaskName 'pulse-watch'`。（原 scheduled-tasks.md 记录并入此处）
+
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
