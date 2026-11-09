@@ -12,9 +12,9 @@ function check(name, cond, detail) {
   if (!cond) failed++;
 }
 
-console.log('\n[1] 涨跌幅制度（先板块后 ST：创业/科创 ST 是 20%，不是 5%）');
+console.log('\n[1] 涨跌幅制度（先板块后 ST：创业/科创 ST 是 20%；主板 ST 2026-07-06 起与普通股一致 10%）');
 check('主板普通 10', limitPctOf('sh600000', 'X') === 10);
-check('主板 ST 5', limitPctOf('sz000001', 'ST某某') === 5);
+check('主板 ST 10（2026 新规，原 5%）', limitPctOf('sz000001', 'ST某某') === 10);
 check('创业板普通 20', limitPctOf('sz300750', '宁德时代') === 20);
 check('创业板 ST 20', limitPctOf('sz300001', 'ST某某') === 20);
 check('科创 ST 20', limitPctOf('sh688001', 'ST某某') === 20);
