@@ -10,7 +10,7 @@
  * 输出 = 单文件、资源全内联、无外链的双语 HTML（右上角中英切换）
  *
  * 用法:
- *   node gen_candidates.js                 # 在线：锚定日 = 最近一个已收盘交易日
+ *   node gen_candidates.js                 # 在线：锚定日 = 行情日 marketDate（全市场报价时间戳众数，覆盖节假日/调休/临时休市）
  *   node gen_candidates.js --date 2026-08-07
  *   node gen_candidates.js --limit 20 --out report.html --quiet
  *   node gen_candidates.js --date 2026-08-07 --dump data/snapshot-2026-08-07.json   # 在线抓取后导出快照到指定路径
@@ -321,18 +321,34 @@ async function main() {
   }
   if (args.offline) { await runOffline(args); return; }
   const now = dayjs.tz();            // 当前北京时间（dayjs 对象；交易日推算与机器时区无关）
-  const anchor = args.date || lastClosedTradingDay(now);
+  // 锚定日：--date 指定优先；否则取全市场报价时间戳众数 marketDate（数据驱动，天然覆盖
+  // 法定节假日/调休/临时休市，零维护）；快照失败则回退 lastClosedTradingDay。
+  let marketDate = null, marketSnap = null;
+  if (!args.date) {
+    try {
+      const tcfg = require('./eod/tail.config');
+      const market = require('./eod/lib/market');
+      marketSnap = await market.fullMarketSnapshot(tcfg, log);
+      marketDate = marketSnap.meta.marketDate;
+      log(`[0/8] 行情日 ${marketDate}（全市场快照 ${marketSnap.meta.valid} 只）`);
+    } catch (e) {
+      log(`[0/8] 全市场快照失败（${e && e.message || e}），回退日历锚定`);
+    }
+  }
+  const calAnchor = lastClosedTradingDay(now);
+  const anchor = args.date || marketDate || calAnchor;
   const target = nextTradingDay(anchor);
   let limit = args.limit || 0; // 0 = 不限制，筛查观察池全部标的
   const outPath = args.out || path.join(paths.reportsDir(), `stock_list_${anchor.replace(/-/g, '')}.html`);
 
-  log(`[1/8] 锚定日 ${anchor}（面向 ${target} 交易日），候选上限 ${limit}`);
+  log(`[1/8] 锚定日 ${anchor}${marketDate ? '（行情日 marketDate）' : ''}（面向 ${target} 交易日），候选上限 ${limit}`);
 
   // ---- 1. 候选观察池（candidates.json，可编辑；替代 westock ranking CompScore）----
   log(`[1/8] 载入候选观察池（candidates.json），上限 ${limit > 0 ? limit : '全部'} 只`);
   const universe = loadUniverse(limit);
   limit = universe.length;
-  const minuteForAnchor = (anchor === lastClosedTradingDay(now));
+  // 仅当锚定日 = 行情最新交易日（marketDate）或 = 日历最新收盘日时，分时(最新交易日)才与锚定日口径一致
+  const minuteForAnchor = (anchor === (marketDate || calAnchor));
   log(`      已载入候选 ${universe.length} 只: ${universe.map(u => u.name).join('、')}`);
 
   // ---- 2. 逐只: kline + quote + minute（腾讯接口）----
@@ -421,7 +437,7 @@ async function main() {
     const tcfg = require('./eod/tail.config');           // 全市场槽位/批量/并发口径与尾盘一致
     const market = require('./eod/lib/market');
     const { calcRegime } = require('./eod/lib/regime');
-    const snap = await market.fullMarketSnapshot(tcfg, log);
+    const snap = marketSnap || await market.fullMarketSnapshot(tcfg, log);
     marketRegime = calcRegime(snap.quotes);
     if (marketRegime) {
       breadth = {

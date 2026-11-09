@@ -64,10 +64,11 @@ function fail(msg, err) {
 }
 
 // ---------- 锚定日 ----------
-/** --date 优先；否则最近已收盘交易日；当天 15:00–boardReadyFrom 之间榜单未出齐 → 回退上一交易日 */
-function pickAnchor(now) {
+/** --date 优先；否则行情日 marketDate（全市场报价时间戳众数，数据驱动，天然覆盖节假日/调休/临时休市）；
+ *  快照失败兜底 lastClosedTradingDay；当天 boardReadyFrom 前榜单未出齐 → 回退上一交易日 */
+function pickAnchor(now, marketDate) {
   if (OPT.date) return OPT.date;
-  const anchor = lastClosedTradingDay(now);
+  const anchor = marketDate || lastClosedTradingDay(now);
   const hhmm = now.hour() * 100 + now.minute();
   const boardReady = parseInt(cfg.session.boardReadyFrom.replace(':', ''), 10);
   if (anchor === now.format('YYYY-MM-DD') && hhmm < boardReady) {
@@ -142,7 +143,16 @@ async function run() {
 
   const t0 = Date.now();
   const now = dayjs.tz();
-  const anchor = pickAnchor(now);
+  // 行情日（数据驱动）：抓全市场快照取报价时间戳众数；失败回退日历锚定
+  let marketDate = null;
+  try {
+    const mkt = require('./lib/market');
+    const tcfg = require('./tail.config');
+    const msnap = await mkt.fullMarketSnapshot(tcfg, log);
+    marketDate = msnap.meta.marketDate;
+    log(`[锚定] 行情日 ${marketDate}（全市场快照 ${msnap.meta.valid} 只）`);
+  } catch (e) { log(`[锚定] 全市场快照失败（${e && e.message || e}），回退日历锚定`); }
+  const anchor = pickAnchor(now, marketDate);
   log(`[锚定] ${anchor}${OPT.date ? '（--date 指定）' : ''}`);
 
   const nDays = OPT.noHistory ? 1 : OPT.history;
