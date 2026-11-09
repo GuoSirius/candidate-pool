@@ -2,6 +2,117 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.3.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.2.0...v3.3.0)
+
+### 🚀 新功能 (Features)
+
+- Pulse 消息脉搏模块 v1（6 源采集+交叉验证+html 报告+watch 系统通知） ([4dea5f2](https://github.com/GuoSirius/candidate-pool/commit/4dea5f2))
+- Pulse 热点板块补充成分领涨股前5只（报告表格+证据链卡片） ([52e93d9](https://github.com/GuoSirius/candidate-pool/commit/52e93d9))
+- Eod 日志统一归位（runlog 自镜像到 logs 目录）+ pulse 领涨股范围对齐资金流榜单规模 ([b824b26](https://github.com/GuoSirius/candidate-pool/commit/b824b26))
+- Pulse 评分优化（信源重定权+公告入评分流+时间衰减+噪声板块黑名单+公告双表过滤） ([c743ab7](https://github.com/GuoSirius/candidate-pool/commit/c743ab7))
+- Add pulse watch boot script for scheduled-task launch ([ace26ea](https://github.com/GuoSirius/candidate-pool/commit/ace26ea))
+- Guard boot-watch against duplicate watch instance ([e8faed0](https://github.com/GuoSirius/candidate-pool/commit/e8faed0))
+- Pulse 控制台与通知美化（结构化分块+涨跌箭头+tty 感知着色） ([53ef595](https://github.com/GuoSirius/candidate-pool/commit/53ef595))
+- Top_boards/top_stocks 支持 0=不限制（含注释说明） ([8ed1eb2](https://github.com/GuoSirius/candidate-pool/commit/8ed1eb2))
+- 报告热点板块榜/个股榜表头点击排序（热度分/验证级别/涨跌幅/主力净流入） ([bfedbf8](https://github.com/GuoSirius/candidate-pool/commit/bfedbf8))
+- 盘前/回填报告新增游资过滤 chip（@hotmoney，识别知名席位上榜行） ([4ff010a](https://github.com/GuoSirius/candidate-pool/commit/4ff010a))
+- 游资过滤细化到个人（章盟主/赵老哥等按命中动态生成 chip） ([3dbf898](https://github.com/GuoSirius/candidate-pool/commit/3dbf898))
+- 游资席位扫描 hotmoney_scan 四件套（名单动态化+席位变更感知+近N日窗口报告） ([b55bff1](https://github.com/GuoSirius/candidate-pool/commit/b55bff1))
+- 尾盘报告新增上榜列+上榜/游资过滤；hotmoney 报告各区块加口径说明；fmtAmt/billboardCell 迁入共享 ([ae68f93](https://github.com/GuoSirius/candidate-pool/commit/ae68f93))
+- **eod:** 批次a核心——verdict三口径判定+nextday_backfill统一次日回填 ([25782e2](https://github.com/GuoSirius/candidate-pool/commit/25782e2))
+- **eod:** 批次a收尾——四管道verdict回填、游资胜率列与名单建议、尾盘/盘前命中率区块 ([710c0da](https://github.com/GuoSirius/candidate-pool/commit/710c0da))
+- **eod:** 批次b——regime环境闸四档标签接入四报告，gen_candidates真实宽度，报告html安全压缩 ([f72a87b](https://github.com/GuoSirius/candidate-pool/commit/f72a87b))
+- **eod:** 回填后重渲染最新报告并列出改动html清单 ([1e3012d](https://github.com/GuoSirius/candidate-pool/commit/1e3012d))
+- **eod:** 尾盘报告候选表加逐票T+1/T+3列 ([17d73b4](https://github.com/GuoSirius/candidate-pool/commit/17d73b4))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- Pulse watch 通知语义区分消息热点/行情异动，加冷却防反复弹 ([8a87c28](https://github.com/GuoSirius/candidate-pool/commit/8a87c28))
+- Pulse watch 轮次恢复归档日期快照与报告 ([8d6c70e](https://github.com/GuoSirius/candidate-pool/commit/8d6c70e))
+- 热点板块/个股展示条数提为配置项（top_boards/top_stocks），与资金流排名分参数解耦 ([f461d6f](https://github.com/GuoSirius/candidate-pool/commit/f461d6f))
+- Vite-plugin-pwa 升级 2.0.0 根治 minimatch 漏洞依赖链 ([06b382e](https://github.com/GuoSirius/candidate-pool/commit/06b382e))
+- 趋势显示规范化（去 ✓✗ 歧义符号，改文字标记+· 分隔+斜率显式正负号） ([dd38823](https://github.com/GuoSirius/candidate-pool/commit/dd38823))
+- 趋势标记改用 gbk 安全的 √×（替代渲染歧义的 ✓✗），恢复紧凑排版 ([69ab91c](https://github.com/GuoSirius/candidate-pool/commit/69ab91c))
+- Gitignore 适配流水线子目录（基线缓存出库、raw 新路径、清理失效规则） ([bb24cfb](https://github.com/GuoSirius/candidate-pool/commit/bb24cfb))
+- **eod:** 评审阻塞项修复——replay skipStore/segFrom、run_at 取快照时刻、b() 属性编码、盘前周末守卫、--now 校验、过时路径注释 ([0aedc62](https://github.com/GuoSirius/candidate-pool/commit/0aedc62))
+- **eod:** 评审二三批修复（详见 docs/code-review/03 对应条目） ([2848b5c](https://github.com/GuoSirius/candidate-pool/commit/2848b5c))
+- **eod:** 主板ST涨跌幅5%改10%对齐2026新规 ([06c95e2](https://github.com/GuoSirius/candidate-pool/commit/06c95e2))
+- **eod:** 回填无条件重渲染清单+自动化转ACTIVE并递送html ([5ad025c](https://github.com/GuoSirius/candidate-pool/commit/5ad025c))
+- 修复回填窗口口径与全市场快照渲染缺陷 ([790ab03](https://github.com/GuoSirius/candidate-pool/commit/790ab03))
+- 收敛报告渲染与游资聚合的确定性缺陷 ([d04c28f](https://github.com/GuoSirius/candidate-pool/commit/d04c28f))
+
+### ♻️ 代码重构 (Refactors)
+
+- Eod data/reports 按流水线分子目录（eod ([preopen](https://github.com/GuoSirius/candidate-pool/commit/preopen))
+
+### 📚 文档 (Documentation)
+
+- Pulse 消息脉搏模块实施方案 ([bc57a05](https://github.com/GuoSirius/candidate-pool/commit/bc57a05))
+- 同步 pulse watch 事件语义说明 ([6b465a3](https://github.com/GuoSirius/candidate-pool/commit/6b465a3))
+- 修正 store.updateLatest 注释 ([1591b95](https://github.com/GuoSirius/candidate-pool/commit/1591b95))
+- 新增项目定时任务清单（workbuddy 任务 + 远程兜底 + 日志归位说明） ([9cb95a3](https://github.com/GuoSirius/candidate-pool/commit/9cb95a3))
+- Deploy 文档 node 版本要求同步为 24+ ([849f66e](https://github.com/GuoSirius/candidate-pool/commit/849f66e))
+- Readme node 版本要求同步为 24+ ([7170138](https://github.com/GuoSirius/candidate-pool/commit/7170138))
+- Pulse watch 开机启动已禁用，改为手动触发并记录恢复方式 ([972d418](https://github.com/GuoSirius/candidate-pool/commit/972d418))
+- 选股体系全量审计（六管道核对+横向缺口+路线图） ([2871000](https://github.com/GuoSirius/candidate-pool/commit/2871000))
+- 体系完善实施方案与任务节点（批次A闭环/B环境/C协同/D配置，待审） ([d402863](https://github.com/GuoSirius/candidate-pool/commit/d402863))
+- 新增 2026-11-09 代码评审报告 ([c6535a2](https://github.com/GuoSirius/candidate-pool/commit/c6535a2))
+- 批次c三任务时刻调整 1830/1840/1850 ([7fffe50](https://github.com/GuoSirius/candidate-pool/commit/7fffe50))
+- 文档规整——散落文档归位、审计并入plan、任务清单并入ops ([78289a8](https://github.com/GuoSirius/candidate-pool/commit/78289a8))
+- 评审24b标记已处置 ([3825c70](https://github.com/GuoSirius/candidate-pool/commit/3825c70))
+- 增量评审——批次A/B新功能性能瓶颈与潜在Bug ([f1c924e](https://github.com/GuoSirius/candidate-pool/commit/f1c924e))
+- 同步批次B1落地口径并标注历史文档版本边界 ([299770b](https://github.com/GuoSirius/candidate-pool/commit/299770b))
+- 调度全景标注已落地与仅计划，避免误读为已排程 ([c28e7e4](https://github.com/GuoSirius/candidate-pool/commit/c28e7e4))
+
+### 📦 杂项维护 (Chores)
+
+- 尾盘观察 2026-11-05 ([de84eea](https://github.com/GuoSirius/candidate-pool/commit/de84eea))
+- 尾盘选股 2026-11-05 ([973f7e5](https://github.com/GuoSirius/candidate-pool/commit/973f7e5))
+- 每日实时初筛 2026-11-05 ([bb2bdac](https://github.com/GuoSirius/candidate-pool/commit/bb2bdac))
+- 盘前回填 2026-11-05 ([8519032](https://github.com/GuoSirius/candidate-pool/commit/8519032))
+- **automations:** 全部产报告任务新增任务内预览步骤(present_files) ([c2b5526](https://github.com/GuoSirius/candidate-pool/commit/c2b5526))
+- 盘前选股 2026-11-06 ([9272b20](https://github.com/GuoSirius/candidate-pool/commit/9272b20))
+- 盘中机会 2026-11-06 ([35b91e0](https://github.com/GuoSirius/candidate-pool/commit/35b91e0))
+- 盘中机会 2026-11-06 ([eaffa1b](https://github.com/GuoSirius/candidate-pool/commit/eaffa1b))
+- Pulse 参数调整（回看24h/条数60/冷却20min/保留480天），watch 轮次不归档日期快照 ([8525262](https://github.com/GuoSirius/candidate-pool/commit/8525262))
+- **automations:** 本机任务已同步预览步骤 ([72f3026](https://github.com/GuoSirius/candidate-pool/commit/72f3026))
+- **automations:** 附录A1引号与线上prompt逐字对齐 ([231bd3a](https://github.com/GuoSirius/candidate-pool/commit/231bd3a))
+- **automations:** 收录 pulse 双任务、移除A2、总览按时间正序、preopen状态对齐ACTIVE ([b3c32da](https://github.com/GuoSirius/candidate-pool/commit/b3c32da))
+- **automations:** Pulse 一键报告调度改为每日08:00 ([ea1caf6](https://github.com/GuoSirius/candidate-pool/commit/ea1caf6))
+- 尾盘观察 2026-11-06 ([7ad94d0](https://github.com/GuoSirius/candidate-pool/commit/7ad94d0))
+- 尾盘选股 2026-11-06 ([6b91969](https://github.com/GuoSirius/candidate-pool/commit/6b91969))
+- 每日实时初筛 2026-11-06 ([e45599c](https://github.com/GuoSirius/candidate-pool/commit/e45599c))
+- Update ([1d58ea0](https://github.com/GuoSirius/candidate-pool/commit/1d58ea0))
+- Node 最低版本要求提升至 24（root/web/worker 三包 engines 对齐） ([af00c41](https://github.com/GuoSirius/candidate-pool/commit/af00c41))
+- 三包依赖版本统一改 latest（含 typescript 7.0.2 试用，失败回退 6 最新） ([8f8f3ec](https://github.com/GuoSirius/candidate-pool/commit/8f8f3ec))
+- Latest 标签改为显式最新版本号（ts 7.0.2 试用；镜像 dist-tag 同步时差导致 latest 解析滞后） ([bc10ad2](https://github.com/GuoSirius/candidate-pool/commit/bc10ad2))
+- 盘前回填 2026-11-06 ([95db367](https://github.com/GuoSirius/candidate-pool/commit/95db367))
+- 依赖分层定稿（全部 latest；web typescript 回退 6.0.3 适配 vue-tsc） ([ea332e1](https://github.com/GuoSirius/candidate-pool/commit/ea332e1))
+- 盘前选股 2026-11-09 ([c3f9ca5](https://github.com/GuoSirius/candidate-pool/commit/c3f9ca5))
+- 盘中机会 2026-11-09 ([d5d0cb0](https://github.com/GuoSirius/candidate-pool/commit/d5d0cb0))
+- 游资席位扫描首跑归档（2026-10-26 ~ 2026-11-06 十个交易日） ([65f06b6](https://github.com/GuoSirius/candidate-pool/commit/65f06b6))
+- 游资席位扫描归档 2026-11-06 ([128763c](https://github.com/GuoSirius/candidate-pool/commit/128763c))
+- 盘中机会 2026-11-09 ([43b1a6c](https://github.com/GuoSirius/candidate-pool/commit/43b1a6c))
+- 归档文件迁移至 data ([reports 的 eod](https://github.com/GuoSirius/candidate-pool/commit/reports 的 eod))
+- 今日报告全部重渲染（新子目录路径，2026-11-09） ([f11acd8](https://github.com/GuoSirius/candidate-pool/commit/f11acd8))
+- 重渲染引起的归档落库更新（运行留痕与快照时间戳） ([2308514](https://github.com/GuoSirius/candidate-pool/commit/2308514))
+- **pulse:** 报告目录 pulse/report 统一更名为 pulse/reports ([b2beb38](https://github.com/GuoSirius/candidate-pool/commit/b2beb38))
+- Raw快照解除git跟踪并补ignore规则；快照归档补verdicts ([19a1ac6](https://github.com/GuoSirius/candidate-pool/commit/19a1ac6))
+- 去除gitignore重复raw规则 ([3225009](https://github.com/GuoSirius/candidate-pool/commit/3225009))
+- 次日回填 2026-11-09 ([b87ccd4](https://github.com/GuoSirius/candidate-pool/commit/b87ccd4))
+- 次日回填 2026-11-09 ([9fe23bf](https://github.com/GuoSirius/candidate-pool/commit/9fe23bf))
+- 尾盘观察 2026-11-09 ([b8b06fb](https://github.com/GuoSirius/candidate-pool/commit/b8b06fb))
+- 尾盘选股 2026-11-09 ([0952a99](https://github.com/GuoSirius/candidate-pool/commit/0952a99))
+- 每日实时初筛 2026-11-09 ([3d655f5](https://github.com/GuoSirius/candidate-pool/commit/3d655f5))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+- Preopen <hotmoney 子目录（git mv 保历史）>
+- Hotmoney），同步 Workflows/docs/自动化 <305a5ee>
+
 ## v3.2.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.1.0...v3.2.0)
