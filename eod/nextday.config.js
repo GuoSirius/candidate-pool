@@ -21,6 +21,11 @@ module.exports = {
   // fqkline 为逐票请求（腾讯，无东财封 IP 风险）；并发对齐 preopen 的 6
   concurrency: 6,
 
+  // 数据源失败率红线：K线抓取失败占比超过此值时，不写回归档/不覆盖 perf-weekly，
+  // 并以非零退出码告警（否则「腾讯端点全挂」会被当成「待次日」静默通过）。
+  // 与 tail.config.market.maxBatchFailRate 同一范式，见 01-标准与流程.md §1.3。
+  maxKlineFailRate: 0.3,
+
   store: {
     // 滚动聚合产物（按管道 × 命中率），周六简报（批次 D）从这读
     perfFile: 'perf-weekly.json',

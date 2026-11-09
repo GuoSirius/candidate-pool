@@ -425,7 +425,8 @@ async function main() {
       breadth = {
         up: marketRegime.up, down: marketRegime.down, flat: marketRegime.flat,
         limitUp: marketRegime.limitUp, limitDown: marketRegime.limitDown,
-        halt: Math.max(0, (snap.meta.slots || 0) - snap.meta.valid),   // 停牌 ≈ 槽位 - 有效报价
+        // 不提供「停牌」：snap.meta.slots 是配置里枚举的代码槽位（≈29,999），不是上市公司清单，
+        // slots − valid 会把未分配号段 / 未上市 / 请求失败批全算成停牌（评审 2026-11-09 #2）。
         upPct: marketRegime.upPct,
         amountYi: marketRegime.amountYi * 1e8,          // 渲染层按「元」再 /1e8 显示，保持旧字段口径
       };
@@ -617,10 +618,10 @@ function buildHTML(m) {
   if (breadth && !breadth.error) {
     const label = breadthIsAnchor ? b('市场宽度（锚定日收盘）', 'Market breadth (anchor close)') : b('市场宽度（最新交易日快照，非锚定日历史值）', 'Market breadth (latest session snapshot, not the anchor date)');
     breadthHtml = `<p class="body-text">${label}</p><div class="table-wrap"><table><thead><tr>` +
-      ['上涨', '下跌', '平盘', '涨停', '跌停', '停牌', '上涨占比', '两市成交额'].map(h => `<th>${b(h, h)}</th>`).join('') +
+      ['上涨', '下跌', '平盘', '涨停', '跌停', '上涨占比', '两市成交额'].map(h => `<th>${b(h, h)}</th>`).join('') +
       `</tr></thead><tbody><tr>` +
       `<td class="up">${breadth.up}</td><td class="down">${breadth.down}</td><td>${breadth.flat}</td>` +
-      `<td class="up">${breadth.limitUp}</td><td class="down">${breadth.limitDown}</td><td>${breadth.halt}</td>` +
+      `<td class="up">${breadth.limitUp}</td><td class="down">${breadth.limitDown}</td>` +
       `<td class="up">${breadth.upPct}%</td><td>${breadth.amountYi != null ? (breadth.amountYi / 1e8).toFixed(0) + ' 亿' : '—'}</td>` +
       `</tr></tbody></table></div>` +
       (breadthIsAnchor ? '' : `<p class="src">${b('注：涨跌分布接口仅提供最新交易日，非锚定日历史值；历史回填时该数据不代表锚定日真实宽度。', 'Note: the breadth endpoint provides only the latest session, not the anchor date; for historical backfills this does not reflect the anchor day’s true breadth.')}</p>`);
@@ -630,7 +631,17 @@ function buildHTML(m) {
 
   // 市场画像
   let overviewHtml = '';
-  if (overview && !overview.error) {
+  // 批次 B1 起 overview = { error, amountYi(亿), avgChg(%) }，不再是 9 维评分数组。
+  // 旧实现按数组 .filter 渲染：只要环境闸算成功（正常交易日）就抛 TypeError，
+  // 整个 [8/8] 生成 HTML 中断，快照/报告/通知全断 —— 按对象字段渲染。
+  if (overview && !overview.error && Array.isArray(overview) === false) {
+    const rows = [
+      [b('两市成交额', 'Turnover'), num(overview.amountYi, 0) + ' 亿'],
+      [b('平均涨跌幅', 'Avg change'), pct(overview.avgChg)],
+    ].map(([k, v]) => `<tr><td>${k}</td><td class="num">${v}</td></tr>`).join('');
+    overviewHtml = `<div class="table-wrap"><table><thead><tr><th>${b('维度', 'Dimension')}</th><th>${b('数值', 'Value')}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } else if (Array.isArray(overview)) {
+    // 兼容旧快照（9 维评分数组）离线重建
     const pick = ['大小盘轮动', '行业轮动', '板块宽度', '情绪指标', '个股宽度', '短期趋势方向', '短期趋势强度', '估值水平', '成交量能'];
     const rows = overview.filter(o => pick.includes(o.dim)).map(o => `<tr><td>${b(o.dim, o.dim)}</td><td>${o.score}</td><td>${b(o.state, o.state)}</td></tr>`).join('');
     overviewHtml = `<div class="table-wrap"><table><thead><tr><th>${b('维度', 'Dimension')}</th><th>${b('得分', 'Score')}</th><th>${b('状态', 'State')}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -646,14 +657,14 @@ function buildHTML(m) {
     : upPctTxt >= 30 ? b('分化偏弱', 'divergent / soft')
     : b('弱势普跌', 'broad decline');
   const marketNarrative = b(
-    `当前为${regime}环境（上涨占比 ${upPctTxt != null ? upPctTxt + '%' : '—'}，涨停 ${breadth ? breadth.limitUp : '—'} 只）。综合评分候选池均来自强势榜单，但在普涨日里 R01 量能突破与 R07 补涨的信号噪声偏高，需结合 R05 尾盘资金确认强度后再做决策。本报告仅作观察评级，不构成任何买卖建议。`,
-    `The regime is ${regime} (advance ratio ${upPctTxt != null ? upPctTxt + '%' : '—'}, ${breadth ? breadth.limitUp : '—'} limit-ups). The composite-score universe all comes from strong-rank lists, but on a broad up-day the R01 volume-breakout and R07 laggard signals are noisy; confirm strength with R05 late-session capital before any decision. This report is observation-only and is not investment advice.`
+    `当前为${regime}环境（上涨占比 ${upPctTxt != null ? upPctTxt + '%' : '—'}，涨停 ${breadth && !breadth.error ? breadth.limitUp : '—'} 只）。综合评分候选池均来自强势榜单，但在普涨日里 R01 量能突破与 R07 补涨的信号噪声偏高，需结合 R05 尾盘资金确认强度后再做决策。本报告仅作观察评级，不构成任何买卖建议。`,
+    `The regime is ${regime} (advance ratio ${upPctTxt != null ? upPctTxt + '%' : '—'}, ${breadth && !breadth.error ? breadth.limitUp : '—'} limit-ups). The composite-score universe all comes from strong-rank lists, but on a broad up-day the R01 volume-breakout and R07 laggard signals are noisy; confirm strength with R05 late-session capital before any decision. This report is observation-only and is not investment advice.`
   );
 
   // 数据口径
   const provenance = b(
-    `候选起点为本目录 <code>candidates.json</code> 配置的可编辑观察池（覆盖主要行业，可自由增删），不再依赖已随 WorkBuddy 安装目录变更而失效的 westock 内置技能。行情数据改为直连腾讯公开接口：日线(前复权)与分时来自 <code>web.ifzq.gtimg.cn</code>，实时报价/总市值/流通市值/52周高/换手率来自 <code>qt.gtimg.cn</code>。全部分析锚定 ${anchor} 收盘，日线截断至 ${anchor}，不使用该日之后数据。R07 行业涨幅由观察池内同行业个股当日涨幅中位数推导（申万行业分类口径）。市值对总市值与流通市值同时校验。市场宽度与画像因本环境无全市场公开数据源，暂标记为不可用。`,
-    `The starting universe is the editable watchlist in <code>candidates.json</code> (covers major sectors, freely editable), replacing the westock builtin skill that became unavailable after a WorkBuddy install-path change. Market data now comes directly from Tencent's public endpoints: daily bars (forward-adjusted) and intraday from <code>web.ifzq.gtimg.cn</code>; realtime quote / total cap / free-float cap / 52-week high / turnover from <code>qt.gtimg.cn</code>. All analysis is anchored to the ${anchor} close; daily bars are truncated at ${anchor} and no later data is used. R07 sector return is the median same-day gain of the watchlist's constituents in that sector (SW-sector classification). Market cap is checked against both total and free-float. Market breadth and profile are marked unavailable because no market-wide public source is available in this environment.`
+    `候选起点为本目录 <code>candidates.json</code> 配置的可编辑观察池（覆盖主要行业，可自由增删），不再依赖已随 WorkBuddy 安装目录变更而失效的 westock 内置技能。行情数据改为直连腾讯公开接口：日线(前复权)与分时来自 <code>web.ifzq.gtimg.cn</code>，实时报价/总市值/流通市值/52周高/换手率来自 <code>qt.gtimg.cn</code>。全部分析锚定 ${anchor} 收盘，日线截断至 ${anchor}，不使用该日之后数据。R07 行业涨幅由观察池内同行业个股当日涨幅中位数推导（申万行业分类口径）。市值对总市值与流通市值同时校验。市场宽度与环境画像由腾讯全市场快照（qt.gtimg.cn 按代码段枚举）推导，为快照时点口径，非锚定日历史值；停牌家数因代码槽位不等于上市公司清单，不予展示。`,
+    `The starting universe is the editable watchlist in <code>candidates.json</code> (covers major sectors, freely editable), replacing the westock builtin skill that became unavailable after a WorkBuddy install-path change. Market data now comes directly from Tencent's public endpoints: daily bars (forward-adjusted) and intraday from <code>web.ifzq.gtimg.cn</code>; realtime quote / total cap / free-float cap / 52-week high / turnover from <code>qt.gtimg.cn</code>. All analysis is anchored to the ${anchor} close; daily bars are truncated at ${anchor} and no later data is used. R07 sector return is the median same-day gain of the watchlist's constituents in that sector (SW-sector classification). Market cap is checked against both total and free-float. Market breadth and regime are derived from a Tencent full-market snapshot (qt.gtimg.cn code-range enumeration) and reflect the snapshot time, not the anchor date's historical values; suspended counts are omitted because enumerated code slots are not a listed-company roster.`
   );
 
   // 组装

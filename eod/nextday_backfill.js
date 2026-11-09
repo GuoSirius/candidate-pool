@@ -67,7 +67,9 @@ function listTail() {
     if (!m) continue;
     out.push({ dir, file: f, date: m[1], kind: m[2] ? 'tail-obs' : 'tail' });
   }
-  return out.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, OPT.days);
+  // 窗口按「不同交易日」取，不按文件数：尾盘一天有 formal + obs 两份，
+  // 按文件 slice 会让 window.days=10 只覆盖 5 个交易日（2026-11-09 评审 #1）。
+  return V.sliceByTradingDays(out, OPT.days);
 }
 
 function listNextday() {
@@ -78,7 +80,9 @@ function listNextday() {
     if (!m) continue;
     out.push({ dir, file: f, date: m[1], kind: 'nextday' });
   }
-  return out.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, OPT.days);
+  // 窗口按「不同交易日」取，不按文件数：尾盘一天有 formal + obs 两份，
+  // 按文件 slice 会让 window.days=10 只覆盖 5 个交易日（2026-11-09 评审 #1）。
+  return V.sliceByTradingDays(out, OPT.days);
 }
 
 function listPreopen() {
@@ -89,7 +93,9 @@ function listPreopen() {
     if (!m) continue;
     out.push({ dir, file: f, date: m[1], kind: 'preopen' });
   }
-  return out.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, OPT.days);
+  // 窗口按「不同交易日」取，不按文件数：尾盘一天有 formal + obs 两份，
+  // 按文件 slice 会让 window.days=10 只覆盖 5 个交易日（2026-11-09 评审 #1）。
+  return V.sliceByTradingDays(out, OPT.days);
 }
 
 function listHotmoney() {
@@ -100,7 +106,9 @@ function listHotmoney() {
     if (!m) continue;
     out.push({ dir, file: f, date: m[1], kind: 'hotmoney' });
   }
-  return out.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, OPT.days);
+  // 窗口按「不同交易日」取，不按文件数：尾盘一天有 formal + obs 两份，
+  // 按文件 slice 会让 window.days=10 只覆盖 5 个交易日（2026-11-09 评审 #1）。
+  return V.sliceByTradingDays(out, OPT.days);
 }
 
 /** 抽出某归档文件里所有待判记录：[{ ref, code, basis }] */
@@ -145,11 +153,13 @@ async function run() {
   // 1) 汇总所有待判条目 + 需要抓 K 的代码集合
   const jobs = [];            // { entry, doc, item }
   const needCodes = new Set();
+  const docCache = new Map(); // file → doc：第 4 步聚合复用，避免同一批归档全量重读
   for (const [pipe, list] of Object.entries(pipelines)) {
     for (const entry of list) {
       const file = path.join(entry.dir, entry.file);
       const doc = readJSONSafe(file, null, warn);
       if (!doc) { log(`[${pipe}] 跳过（读取失败）：${entry.file}`); continue; }
+      docCache.set(file, doc);
       for (const item of extractItems(entry, doc)) {
         jobs.push({ pipe, entry, file, doc, item });
         needCodes.add(item.code);
@@ -160,16 +170,28 @@ async function run() {
 
   // 2) 逐代码抓全量日 K（降序，一次多日），进程内缓存；无任务则跳过抓取
   const kCache = new Map();       // code → rowsDesc | null
-  let kErr = 0;
+  const failedCodes = new Set();  // 抓取失败的代码：与「尚未到 T+1」严格区分
+  const kErr = () => failedCodes.size;
   if (jobs.length) {
     log(`[1b/3] 待判 ${jobs.length} 条 / 涉及 ${needCodes.size} 只 · K线抓取（fqkline，并发 ${cfg.concurrency}）…`);
     await mapLimit([...needCodes], cfg.concurrency, async (code) => {
       try {
         const k = await market.fetchKline(code, '2099-12-31');   // 取全部行，T 之后自行过滤
         kCache.set(code, (k && k.rows) || null);
-      } catch (e) { kErr++; kCache.set(code, null); }
+      } catch (e) { failedCodes.add(code); kCache.set(code, null); }
     });
-    log(`[2/3] K线完成：${kCache.size - kErr} 成功 / ${kErr} 失败`);
+    log(`[2/3] K线完成：${kCache.size - kErr()} 成功 / ${kErr()} 失败`);
+  }
+
+  // 数据源闸门（2026-11-09 评审 #3）：端点全挂 / WAF 拦截时，失败与「未到期」同形，
+  // 旧逻辑会静默计入 pending 并照常覆盖 perf-weekly、退出码 0。此处直接中止并告警。
+  const failRate = needCodes.size ? kErr() / needCodes.size : 0;
+  if (failRate > cfg.maxKlineFailRate) {
+    warn(`[闸门] K线失败率 ${(failRate * 100).toFixed(0)}%（${kErr()}/${needCodes.size}）超过 ${(cfg.maxKlineFailRate * 100).toFixed(0)}%，疑似数据源故障；不写回归档、不覆盖 perf-weekly、不重渲染`);
+    process.exitCode = 1;
+    const summary = { filled: 0, pending: 0, kErr: kErr(), failRate, aborted: true, elapsedMs: Date.now() - t0, changedHtml: [] };
+    if (OPT.json) console.log(JSON.stringify(summary, null, 2));
+    return summary;
   }
 
   // 3) 逐条判定并写回归档
@@ -179,11 +201,15 @@ async function run() {
   const { lastClosedTradingDay } = require('../rules');
   const lastClosed = lastClosedTradingDay(dayjs.tz());
   const touchedFiles = new Map();   // file → doc（去重写盘）
-  let filled = 0, pending = 0, noBasis = 0;
+  let filled = 0, pending = 0, noBasis = 0, kUnavailable = 0;
   for (const job of jobs) {
     const rows = kCache.get(job.item.code);
     const bars = V.barsAfter(rows || [], job.entry.date, 3).filter((b) => b.date <= lastClosed);
-    if (!bars.length) { pending++; continue; }                 // T+1 还没走完（今日刚出报告）→ 留空待明日
+    if (!bars.length) {
+      if (failedCodes.has(job.item.code)) kUnavailable++;      // 抓取失败 ≠ 待次日
+      else pending++;                                          // T+1 还没走完（今日刚出报告）
+      continue;
+    }
     const basis = job.item.basis != null ? job.item.basis : bars[0].open;
     if (!(basis > 0)) { noBasis++; continue; }
     const v = V.buildVerdicts(bars, { basis, t1HitMin: cfg.thresholds.t1HitMin, t3HitMin: cfg.thresholds.t3HitMin });
@@ -193,7 +219,7 @@ async function run() {
     filled++;
   }
   for (const [file, doc] of touchedFiles) atomicWriteJSON(file, doc);
-  log(`[3/3] 写回 ${touchedFiles.size} 份归档：补齐 ${filled} 条 / 待次日 ${pending} 条${noBasis ? ` / 缺基准价 ${noBasis}` : ''}`);
+  log(`[3/3] 写回 ${touchedFiles.size} 份归档：补齐 ${filled} 条 / 待次日 ${pending} 条${kUnavailable ? ` / K线不可用 ${kUnavailable} 条` : ''}${noBasis ? ` / 缺基准价 ${noBasis}` : ''}`);
 
   // 4) 滚动聚合 → eod/data/perf-weekly.json（按管道 × 命中率/均值）
   const perf = { generatedAt: require('../time').now(), windowDays: OPT.days, pipelines: {} };
@@ -201,7 +227,8 @@ async function run() {
     const all = [];
     const byDay = {};
     for (const entry of list) {
-      const doc = readJSONSafe(path.join(entry.dir, entry.file), null, warn);
+      const file = path.join(entry.dir, entry.file);
+      const doc = docCache.get(file) || readJSONSafe(file, null, warn);
       if (!doc) continue;
       const dayList = [];
       if (entry.kind === 'tail' || entry.kind === 'tail-obs' || entry.kind === 'preopen') {
@@ -212,10 +239,15 @@ async function run() {
         for (const rec of doc.records || []) dayList.push(rec);
       }
       const aggDay = V.aggregate(dayList);
-      if (aggDay) byDay[entry.date] = aggDay;
+      if (aggDay) byDay[V.dayKeyOf(entry)] = aggDay;   // 同日 formal/obs 分键，避免互相覆盖
       all.push(...dayList);
     }
-    perf.pipelines[pipe] = { archives: list.length, ...V.aggregate(all), byDay };
+    perf.pipelines[pipe] = {
+      archives: list.length,
+      tradingDays: new Set(list.map((e) => e.date)).size,
+      ...V.aggregate(all),
+      byDay,
+    };
   }
   const perfFile = path.join(paths.eodDir(), 'data', cfg.store.perfFile);
   atomicWriteJSON(perfFile, perf);
@@ -243,7 +275,10 @@ async function run() {
     }
   }
 
-  const summary = { filled, pending, kErr, elapsedMs: Date.now() - t0, perfFile, changedHtml };
+  const summary = {
+    filled, pending, kErr: kErr(), kUnavailable, failRate, aborted: false,
+    elapsedMs: Date.now() - t0, perfFile, changedHtml,
+  };
   for (const [p, a] of Object.entries(perf.pipelines)) {
     if (a && a.t1) log(`[胜率] ${p}: n=${a.n} T1命中 ${a.t1.rate}%（均值 ${a.t1.avg}%）${a.t3 ? ` · T3命中 ${a.t3.rate3}%（均值 ${a.t3.avg}% / 期间最高均值 ${a.t3.avgMax}%）` : ''}`);
   }

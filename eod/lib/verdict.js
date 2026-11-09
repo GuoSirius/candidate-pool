@@ -29,6 +29,27 @@ function relRet(basis, v) {
   return basis > 0 ? +(((v / basis) - 1) * 100).toFixed(2) : null;
 }
 
+/**
+ * 回扫窗口按「不同交易日」切片，返回这些天的**全部**归档条目。
+ * 尾盘一天可能有 formal + obs 两份，按文件数 slice 会让窗口缩水一半
+ * （2026-11-09 评审 #1：10 份文件只有 5 个交易日）。
+ * 排序确定性：日期降序，同日按 kind 字典序（formal 在 obs 前）。
+ */
+function sliceByTradingDays(entries, days) {
+  const rows = (entries || []).slice().sort((a, b) => (
+    a.date === b.date
+      ? String(a.kind || '').localeCompare(String(b.kind || ''))
+      : (a.date < b.date ? 1 : -1)
+  ));
+  const keep = new Set([...new Set(rows.map((e) => e.date))].slice(0, Math.max(1, days | 0)));
+  return rows.filter((e) => keep.has(e.date));
+}
+
+/** 聚合时的分日键：同日多口径不能共用一个键，否则后者覆盖前者（评审 #1） */
+function dayKeyOf(entry) {
+  return entry.kind === 'tail-obs' ? `${entry.date}-obs` : entry.date;
+}
+
 /** 从降序全量 K 线里取「T 之后」的前 n 根并翻成升序（T 当根不含；先翻升序再截断，保证取最近 T+1..T+n） */
 function barsAfter(rowsDesc, fromDate, n = 3) {
   return (rowsDesc || [])
@@ -56,12 +77,15 @@ function buildVerdicts(bars, opts = {}) {
   const out = { basis, t1: { date: b1.date, buyRet: t1Ret, hit: t1Ret != null && t1Ret >= t1HitMin * 100 } };
   if (bs.length >= 3) {
     const b3 = bs[2];
-    const maxHigh = Math.max(bs[0].high, bs[1].high, bs[2].high);
+    // high 未经 barsAfter 校验：一根脏 high（NaN/undefined）会污染 Math.max → maxRet 落盘 null。
+    // 只取有限值；全脏则 maxRet 为 null，不用 -100% 这种伪收益充数。
+    const highs = bs.map((b) => b.high).filter(Number.isFinite);
+    const maxHigh = highs.length ? Math.max(...highs) : null;
     const t3Ret = relRet(basis, b3.close);
     out.t3 = {
       date: b3.date,
       buyRet: t3Ret,
-      maxRet: relRet(basis, maxHigh),
+      maxRet: maxHigh != null ? relRet(basis, maxHigh) : null,
       hit3: t3Ret != null && t3Ret >= t3HitMin * 100,
     };
   }
@@ -75,10 +99,11 @@ function buildVerdicts(bars, opts = {}) {
  */
 function aggregate(list) {
   let t1N = 0, t1Hit = 0, t1Sum = 0;
-  let t3N = 0, t3Hit = 0, t3Sum = 0, maxSum = 0;
+  let t3N = 0, t3Hit = 0, t3Sum = 0, maxSum = 0, withVerdicts = 0;
   for (const it of list || []) {
     const v = it && it.verdicts;
     if (!v) continue;
+    withVerdicts++;
     if (v.t1 && v.t1.buyRet != null) { t1N++; t1Sum += v.t1.buyRet; if (v.t1.hit) t1Hit++; }
     if (v.t3 && v.t3.buyRet != null) {
       t3N++; t3Sum += v.t3.buyRet; if (v.t3.hit3) t3Hit++;
@@ -88,10 +113,10 @@ function aggregate(list) {
   if (!t1N && !t3N) return null;
   const round = (x, n = 1) => (x == null ? null : +x.toFixed(n));
   return {
-    n: list.filter((x) => x && x.verdicts).length,
+    n: withVerdicts,
     t1: t1N ? { n: t1N, hit: t1Hit, rate: round(t1Hit / t1N * 100), avg: round(t1Sum / t1N, 2) } : null,
     t3: t3N ? { n: t3N, hit3: t3Hit, rate3: round(t3Hit / t3N * 100), avg: round(t3Sum / t3N, 2), avgMax: round(maxSum / t3N, 2) } : null,
   };
 }
 
-module.exports = { relRet, barsAfter, buildVerdicts, aggregate };
+module.exports = { relRet, barsAfter, buildVerdicts, aggregate, sliceByTradingDays, dayKeyOf };
