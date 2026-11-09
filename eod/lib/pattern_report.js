@@ -87,13 +87,13 @@ function rowHtml(c, i, cfg, withDetail) {
     <td class="num down" title="Below pattern support">${p.stopLoss == null ? '—' : num(p.stopLoss)}</td>
     <td class="num up" title="R:R ${p.rewardRatio || 2}:1">${p.takeProfit == null ? '—' : num(p.takeProfit)}</td>
     <td class="pat-cell">${patternTags(c)}</td>
+    <td>${boardsTxt(c.boards)}</td>
+    <td class="wrap">${billboardCell(c.billboard)}</td>
     <td><span class="score">${num(c.score, 1)}</span></td>
     <td class="src">${esc(String(w.launchDate || '—').slice(5))} · ${num(w.windowDays, 0)}${b('日', 'd')}</td>
     <td class="num ${f.cumChg >= 0 ? 'up' : 'down'}">${pct(f.cumChg)}</td>
     <td class="num ${f.aboveMA20Now >= 0 ? 'up' : 'down'}">${pct(f.aboveMA20Now)}</td>
     <td><span class="tag ${c.stage === '二次启动' ? 'pass' : ''}">${esc(c.stage)}</span></td>
-    <td>${boardsTxt(c.boards)}</td>
-    <td class="wrap">${billboardCell(c.billboard)}</td>
     ${detail}
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap"><span class="tag ${wait ? 'wait' : ''}">${esc(p.status || '—')}</span>${p.chasePct != null ? `<span class="src">${b('距支撑', 'to support')} ${num(p.chasePct, 1)}%</span>` : ''}</td>
@@ -112,9 +112,9 @@ const headCols = () => [
   ['#'], [b('标的', 'Name')], [b('mini K线', 'mini K')], [b('行业', 'Industry')], [b('板块', 'Board')],
   [b('现价', 'Price')], [b('涨跌%', 'Chg%')], [b('量比', 'VolR')], [b('换手%', 'Turn%')], [b('市值/流通', 'Cap/FLOAT')],
   [b('推荐买入区间', 'Buy range')], [b('止损', 'Stop')], [b('止盈', 'Target')],
-  [b('形态', 'Patterns')], [b('匹配分', 'Match')], [b('窗口', 'Window')],
-  [b('累计涨幅', 'Cum chg')], [b('距MA20', 'vs MA20')],   [b('阶段', 'Stage')],
-  [b('连板', 'Streak')], [b('上榜/游资', 'List / Hot money')],
+  [b('形态', 'Patterns')], [b('连板', 'Streak')], [b('上榜', 'List')],
+  [b('匹配分', 'Match')], [b('窗口', 'Window')],
+  [b('累计涨幅', 'Cum chg')], [b('距MA20', 'vs MA20')], [b('阶段', 'Stage')],
 ];
 
 function buildHTML(m) {

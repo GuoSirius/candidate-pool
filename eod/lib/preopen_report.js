@@ -98,9 +98,9 @@ function rowHtml(c, i, withBreakdown, sparkIdx) {
     <td class="num">${c.auctionVolRatio == null ? '—' : num(c.auctionVolRatio, 2)}</td>
     <td class="num">${c.yesterdayVolRatio == null ? '—' : num(c.yesterdayVolRatio, 2)}</td>
     <td class="num">${c.yesterdayTurnoverPct == null ? '—' : num(c.yesterdayTurnoverPct, 2) + '%'}</td>
-    <td class="trend">${esc(trendStr(c.trend))}</td>
     <td>${boardsTxt(c.boards)}</td>
     <td>${billboardCell(c.billboard)}</td>
+    <td class="trend">${esc(trendStr(c.trend))}</td>
     ${cells}
     <td><span class="score">${num(c.total, 1)}</span></td>
     <td class="wrap"><span class="tag ${labelCls(c.label)}">${esc(c.label)}</span>${riskTag}</td>
@@ -304,8 +304,8 @@ function buildHTML(m) {
   const topHead = `<tr><th rowspan="2">#</th><th rowspan="2">${b('标的', 'Name')}</th><th rowspan="2">${b('mini K线', 'mini K')}</th><th rowspan="2">${b('行业', 'Industry')}</th>
     <th rowspan="2">${b('板块', 'Board')}</th><th rowspan="2">${b('今开价', 'Open px')}</th><th rowspan="2">${b('今开', 'Open%')}</th><th rowspan="2">${b('昨涨', 'Prev chg')}</th>
     <th rowspan="2">${b('昨日净流入', 'Prev inflow')}</th><th rowspan="2">${b('市值/流通', 'Cap/FLOAT')}</th>
-    <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('昨量比', 'Prev volR')}</th><th rowspan="2">${b('昨换手%', 'Prev turn')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
-    <th rowspan="2">${b('连板', 'Streak')}</th><th rowspan="2">${b('上榜', 'List')}</th>
+    <th rowspan="2">${b('竞价量能比', 'Auction vol')}</th><th rowspan="2">${b('昨量比', 'Prev volR')}</th><th rowspan="2">${b('昨换手%', 'Prev turn')}</th>
+    <th rowspan="2">${b('连板', 'Streak')}</th><th rowspan="2">${b('上榜', 'List')}</th><th rowspan="2">${b('趋势', 'Trend')}</th>
     <th colspan="${SCORE_COLS.length}" class="grp">${b(SCORE_GROUP.zh, SCORE_GROUP.en)}</th>
     <th rowspan="2">${b('总分', 'Total')}</th><th rowspan="2">${b('标签', 'Label')}</th></tr>
     <tr>${SCORE_COLS.map(([, zh, w]) => `<th class="grp-sub">${b(`${zh} · ${w}`, `${zh} · ${w}`)}</th>`).join('')}</tr>`;
