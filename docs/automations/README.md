@@ -22,6 +22,7 @@
 | A股次日候选池初筛 | `automation-1786328116138` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
 | 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
 | 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
+| 次日回填 nextday_backfill（18:30） | `08b2baac-9293-4d2e-86a2-a2c1ab565d36` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=30` | 工作日 18:30 | PAUSED（试跑后转 ACTIVE） | 四类归档 verdicts 段 + `eod/data/perf-weekly.json` |
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
 
@@ -410,6 +411,20 @@ git push
 ### git 推送块（本任务）
 
 提交范围固定为 hotmoney 归档（日档/快照/观察名单）+ 报告（见上方 Prompt 第 3 步），不 add 其它改动。
+
+## 12. 次日回填 nextday_backfill（18:30，PAUSED）
+
+> 批次 A3（2026-11-09 方案）。排在 18:00 盘前回填、18:20 游资扫描之后：统一给尾盘（含 -obs）/ 盘前 / 次日选股 / 游资四类归档补 T+1/T+3 表现（verdicts 段，K 线走腾讯 fqkline），并滚动聚合 `eod/data/perf-weekly.json`（周六胜率简报的数据源）。幂等：t3 已齐的记录跳过。首次 PAUSED 试跑一周后再转 ACTIVE。
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+```text
+在仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool 执行 `node eod/nextday_backfill.js`（统一次日回填：给尾盘/盘前/次日选股/游资四类归档补 T+1/T+3 表现 verdicts 段，并更新 eod/data/perf-weekly.json 胜率聚合）。脚本幂等，重复运行安全。成功后：1) 向用户简要汇报各管道（tail/preopen/nextday/hotmoney）的 T1/T3 命中率与均值（一行每管道），不展开明细；2) 必须把更新后的归档与聚合一并提交并推送（脚本不自动提交，必须显式执行）：git add eod/data data && git commit -m "chore: 次日回填 $(date +%F)" && git push。若失败，汇报错误信息与日志（eod/logs/nextday-*.log）。
+```
+
+### git 推送块（本任务）
+
+提交范围：`eod/data`（四类归档 + perf-weekly.json）+ `data`（snapshot verdicts）；报告 HTML 由各管道自身任务负责，本任务不重渲染报告。
 
 ## 附录：A 股工作流相关、但 cwd 不在本仓库的自动化
 

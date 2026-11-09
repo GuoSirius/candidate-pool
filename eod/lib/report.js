@@ -18,6 +18,16 @@ const { BOARD_LABEL } = require('./screen');
 /** 双语片段：默认渲染中文，点击右上角按钮切换 */
 // 共享格式化纯函数（唯一真相源：report_fmt.js；yi 仅本报告使用，留在本地）
 const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
+const fs = require('fs');
+const path = require('path');
+const paths = require('../../paths');
+/** 近 N 日命中率聚合（nextday_backfill 产出的 perf-weekly.json；缺文件/缺段返回 null） */
+function loadPerf(pipe) {
+  try {
+    const perf = JSON.parse(fs.readFileSync(path.join(paths.eodDir(), 'data', 'perf-weekly.json'), 'utf8'));
+    return (perf.pipelines && perf.pipelines[pipe]) || null;
+  } catch (e) { return null; }
+}
 function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + ' 亿'; }
 
 /*
@@ -233,6 +243,9 @@ const CSS = `  :root, :root[data-theme="light"] {
 function buildHTML(m) {
   const { cfg, tradeDate, mode, cutHHMM, segFrom, result, meta, runner } = m;
   const { candidates, groups, top, stats } = result;
+  // 近 N 日入选票命中率（批次 A5，2026-11-09）：尾盘口径 = 尾盘价买入，T+1/T+3 收盘卖出。
+  // 数据来自 nextday_backfill（工作日 18:30）滚动聚合；攒样本阶段口径不动权重（plan §A5）。
+  const perfHit = loadPerf('tail');
   // 三种口径必须在报告顶部一眼可辨：盘中模式的「尾盘段」是滚动窗口近似，
   // 若标签写得像正式结果，复盘时会把近似值当基准（口径混淆）。
   // 观察模式整点触发时自然窗口退化为 0 分钟 → trading.js 改用最近 observeMinWindow 分钟滚动窗口
@@ -375,6 +388,11 @@ function buildHTML(m) {
     <div><span class="label">${b('候选：', 'Candidates:')}</span><span class="value up">${stats.candidateCount}</span></div>
     <div><span class="label">${b('行业组：', 'Groups:')}</span><span class="value">${stats.groupCount}</span></div>
   </div>
+
+  ${perfHit && perfHit.t1 ? `<div class="callout">
+    <h3>${b('近10日入选票命中率（回填验证）', '10-Day Hit Rate (backfilled verdicts)')}</h3>
+    <ul><li>${b(`入选 ${perfHit.n} 票 · T+1：命中 ${perfHit.t1.hit}/${perfHit.t1.n}（${perfHit.t1.rate}%），平均收益 ${perfHit.t1.avg}%；${perfHit.t3 ? `T+3：命中 ${perfHit.t3.hit3}/${perfHit.t3.n}（${perfHit.t3.rate3}%），平均收益 ${perfHit.t3.avg}%，期间最高平均 ${perfHit.t3.avgMax}%。` : 'T+3 待后续交易日补齐。'}口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。`, `${perfHit.n} picks · T+1 hit ${perfHit.t1.rate}% (avg ${perfHit.t1.avg}%); ${perfHit.t3 ? `T+3 hit ${perfHit.t3.rate3}% (avg ${perfHit.t3.avg}%, max ${perfHit.t3.avgMax}%).` : 'T+3 pending.'} Basis: buy at tail price, sell at T+1/T+3 close.`)}</li></ul>
+  </div>` : ''}
 
   <div class="callout">
     <h3>${b('核心结论（先行）', 'Key Conclusions (Up Front)')}</h3>

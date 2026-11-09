@@ -128,7 +128,7 @@
   <div class="topbar">
     <div>
       <h1><span data-zh="尾盘选股" data-en="EOD Tail Screener">尾盘选股</span> · 2026-11-06</h1>
-      <div class="sub"><span data-zh="尾盘段 14:30 → 14:50 · 满分 100 · <span data-zh="固定口径 1450" data-en="fixed cut 1450">固定口径 1450</span>" data-en="Tail segment 14:30 → 14:50 · max 100 · <span data-zh="固定口径 1450" data-en="fixed cut 1450">固定口径 1450</span>">尾盘段 14:30 → 14:50 · 满分 100 · <span data-zh="固定口径 1450" data-en="fixed cut 1450">固定口径 1450</span></span></div>
+      <div class="sub"><span data-zh="尾盘段 14:30 → 14:50 · 满分 100 · &lt;span data-zh=&quot;固定口径 1450&quot; data-en=&quot;fixed cut 1450&quot;&gt;固定口径 1450&lt;/span&gt;" data-en="Tail segment 14:30 → 14:50 · max 100 · &lt;span data-zh=&quot;固定口径 1450&quot; data-en=&quot;fixed cut 1450&quot;&gt;固定口径 1450&lt;/span&gt;">尾盘段 14:30 → 14:50 · 满分 100 · <span data-zh="固定口径 1450" data-en="fixed cut 1450">固定口径 1450</span></span></div>
     </div>
     <button id="themeBtn" type="button" class="topbtn" title="切换深浅色">🌙</button>
     <button id="langBtn" type="button" class="topbtn">EN</button>
@@ -144,12 +144,17 @@
   </div>
 
   <div class="callout">
+    <h3><span data-zh="近10日入选票命中率（回填验证）" data-en="10-Day Hit Rate (backfilled verdicts)">近10日入选票命中率（回填验证）</span></h3>
+    <ul><li><span data-zh="入选 247 票 · T+1：命中 104/247（42.1%），平均收益 1.27%；T+3：命中 47/64（73.4%），平均收益 4.56%，期间最高平均 6.67%。口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。" data-en="247 picks · T+1 hit 42.1% (avg 1.27%); T+3 hit 73.4% (avg 4.56%, max 6.67%). Basis: buy at tail price, sell at T+1/T+3 close.">入选 247 票 · T+1：命中 104/247（42.1%），平均收益 1.27%；T+3：命中 47/64（73.4%），平均收益 4.56%，期间最高平均 6.67%。口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。</span></li></ul>
+  </div>
+
+  <div class="callout">
     <h3><span data-zh="核心结论（先行）" data-en="Key Conclusions (Up Front)">核心结论（先行）</span></h3>
-    <ul><li><b><span data-zh="候选 2 只 / 2 个行业" data-en="2 names across 2 industries">候选 2 只 / 2 个行业</span>。</b><span data-zh="最强行业「电力」（中位涨幅 3.69%），组内最优 湖南发展。" data-en="Strongest industry "电力" (median 3.69%); its top pick is 湖南发展.">最强行业「电力」（中位涨幅 3.69%），组内最优 湖南发展。</span></li><li><span data-zh="全市场前五：湖南发展（62.9）、国科天成（49.5）。" data-en="Top five: 湖南发展 (62.9), 国科天成 (49.5).">全市场前五：湖南发展（62.9）、国科天成（49.5）。</span></li><li><span data-zh="漏斗：快照 6181 → 初筛通过 34 → 尾盘段校验后 2。" data-en="Funnel: snapshot 6181 → pre-filter pass 34 → after tail checks 2.">漏斗：快照 6181 → 初筛通过 34 → 尾盘段校验后 2。</span></li></ul>
+    <ul><li><b><span data-zh="候选 2 只 / 2 个行业" data-en="2 names across 2 industries">候选 2 只 / 2 个行业</span>。</b><span data-zh="最强行业「电力」（中位涨幅 3.69%），组内最优 湖南发展。" data-en="Strongest industry &quot;电力&quot; (median 3.69%); its top pick is 湖南发展.">最强行业「电力」（中位涨幅 3.69%），组内最优 湖南发展。</span></li><li><span data-zh="全市场前五：湖南发展（62.9）、国科天成（49.5）。" data-en="Top five: 湖南发展 (62.9), 国科天成 (49.5).">全市场前五：湖南发展（62.9）、国科天成（49.5）。</span></li><li><span data-zh="漏斗：快照 6181 → 初筛通过 34 → 尾盘段校验后 2。" data-en="Funnel: snapshot 6181 → pre-filter pass 34 → after tail checks 2.">漏斗：快照 6181 → 初筛通过 34 → 尾盘段校验后 2。</span></li></ul>
   </div>
 
   <h2><span data-zh="候选明细（2 只）" data-en="Candidates (2)">候选明细（2 只）</span></h2>
-  <p class="score-note" id="scoreNote"><span data-zh="五个分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 77 分</b>（尾盘动能 35 + 量能 24 + 位置 18）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 23 分</b>（均价线 12 + 换手 11）—— 流动性与位置给的背景分，靠它撑起来的高分不可信。总分与次日收益相关性弱（ρ≈0.04），<b>「涨幅≥5%」标记比总分更值得看</b>（涨幅是相关最强的特征，ρ=+0.15）。" data-en="<b class='sn-self'>The stock itself — 77 pts</b> (tail momentum 35 + volume 24 + position 18): evidence this name moved on its own — <b>this is the group to read first</b>. <b class='sn-ctx'>Context &amp; quality — 23 pts</b> (VWAP 12 + turnover 11): background handed over by liquidity and position; a high total carried by this group alone is not trustworthy. The total correlates only weakly with next-day return (ρ≈0.04), so the <b>chg ≥5% flag</b> deserves more attention than the total (chg is the strongest correlate, ρ=+0.15).">五个分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 77 分</b>（尾盘动能 35 + 量能 24 + 位置 18）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 23 分</b>（均价线 12 + 换手 11）—— 流动性与位置给的背景分，靠它撑起来的高分不可信。总分与次日收益相关性弱（ρ≈0.04），<b>「涨幅≥5%」标记比总分更值得看</b>（涨幅是相关最强的特征，ρ=+0.15）。</span></p><div class="toolbar">
+  <p class="score-note" id="scoreNote"><span data-zh="五个分项按「这分是谁给的」分成两组：&lt;b class='sn-self'&gt;个股自身 77 分&lt;/b&gt;（尾盘动能 35 + 量能 24 + 位置 18）—— 这只票自己在走出来的证据，&lt;b&gt;重点看这一组&lt;/b&gt;；&lt;b class='sn-ctx'&gt;环境与质量 23 分&lt;/b&gt;（均价线 12 + 换手 11）—— 流动性与位置给的背景分，靠它撑起来的高分不可信。总分与次日收益相关性弱（ρ≈0.04），&lt;b&gt;「涨幅≥5%」标记比总分更值得看&lt;/b&gt;（涨幅是相关最强的特征，ρ=+0.15）。" data-en="&lt;b class='sn-self'&gt;The stock itself — 77 pts&lt;/b&gt; (tail momentum 35 + volume 24 + position 18): evidence this name moved on its own — &lt;b&gt;this is the group to read first&lt;/b&gt;. &lt;b class='sn-ctx'&gt;Context &amp;amp; quality — 23 pts&lt;/b&gt; (VWAP 12 + turnover 11): background handed over by liquidity and position; a high total carried by this group alone is not trustworthy. The total correlates only weakly with next-day return (ρ≈0.04), so the &lt;b&gt;chg ≥5% flag&lt;/b&gt; deserves more attention than the total (chg is the strongest correlate, ρ=+0.15).">五个分项按「这分是谁给的」分成两组：<b class='sn-self'>个股自身 77 分</b>（尾盘动能 35 + 量能 24 + 位置 18）—— 这只票自己在走出来的证据，<b>重点看这一组</b>；<b class='sn-ctx'>环境与质量 23 分</b>（均价线 12 + 换手 11）—— 流动性与位置给的背景分，靠它撑起来的高分不可信。总分与次日收益相关性弱（ρ≈0.04），<b>「涨幅≥5%」标记比总分更值得看</b>（涨幅是相关最强的特征，ρ=+0.15）。</span></p><div class="toolbar">
     <div class="seg" role="tablist">
       <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
       <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
@@ -161,7 +166,7 @@
     <th rowspan="2"><span data-zh="涨幅" data-en="Chg">涨幅</span></th><th rowspan="2"><span data-zh="连板" data-en="Streak">连板</span></th><th rowspan="2"><span data-zh="上榜" data-en="List">上榜</span></th><th rowspan="2"><span data-zh="尾盘段" data-en="Tail seg">尾盘段</span></th><th rowspan="2"><span data-zh="量比" data-en="Vol ratio">量比</span></th>
     <th rowspan="2"><span data-zh="换手" data-en="Turnover">换手</span></th><th rowspan="2"><span data-zh="价格" data-en="Price">价格</span></th>
     <th rowspan="2"><span data-zh="流通值" data-en="Float cap">流通值</span></th><th rowspan="2"><span data-zh="总市值" data-en="Total cap">总市值</span></th>
-    <th colspan="3" class="grp grp-self"><span data-zh="个股自身（77 分）" data-en="The stock itself (77)">个股自身（77 分）</span></th><th colspan="2" class="grp grp-ctx"><span data-zh="环境质量（23 分）" data-en="Context & quality (23)">环境质量（23 分）</span></th>
+    <th colspan="3" class="grp grp-self"><span data-zh="个股自身（77 分）" data-en="The stock itself (77)">个股自身（77 分）</span></th><th colspan="2" class="grp grp-ctx"><span data-zh="环境质量（23 分）" data-en="Context &amp; quality (23)">环境质量（23 分）</span></th>
     <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标记" data-en="Flags">标记</span></th></tr>
     <tr><th class="grp-sub grp-self sc-start"><span data-zh="尾盘动能" data-en="Tail momentum">尾盘动能</span></th><th class="grp-sub grp-self"><span data-zh="量能" data-en="Volume">量能</span></th><th class="grp-sub grp-self"><span data-zh="位置" data-en="Position">位置</span></th><th class="grp-sub grp-ctx sc-start"><span data-zh="均价线" data-en="VWAP">均价线</span></th><th class="grp-sub grp-ctx"><span data-zh="换手" data-en="Turnover">换手</span></th></tr></thead>
     <tbody id="candBody"><tr data-sector="电力" data-best="1" data-grank="1">

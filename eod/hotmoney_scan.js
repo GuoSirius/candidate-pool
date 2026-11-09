@@ -220,13 +220,38 @@ async function run() {
   }
   const byTraderMap = new Map();
   for (const t of trades) {
-    const tr = byTraderMap.get(t.name) || { name: t.name, tier: t.tier, buy: 0, sell: 0, net: 0, days: new Set(), stocks: new Set() };
+    const tr = byTraderMap.get(t.name) || { name: t.name, tier: t.tier, buy: 0, sell: 0, net: 0, days: new Set(), stocks: new Set(), t1Rets: [], t3Rets: [], maxRets: [] };
     tr.buy += t.buy || 0; tr.sell += t.sell || 0; tr.net += t.net || 0;
     tr.days.add(t.date); tr.stocks.add(t.code);
     byTraderMap.set(t.name, tr);
   }
+  // 该游资介入票的 T+1/T+3 表现（rec.verdicts 由 nextday_backfill 统一补齐，缺段跳过）
+  for (const doc of days) {
+    for (const rec of doc.records) {
+      const v = rec.verdicts;
+      if (!v) continue;
+      const names = new Set((rec.hot || []).map((h) => h.name));
+      for (const n of names) {
+        const tr = byTraderMap.get(n);
+        if (!tr) continue;
+        if (v.t1 && v.t1.buyRet != null) tr.t1Rets.push(v.t1.buyRet);
+        if (v.t3) {
+          if (v.t3.buyRet != null) tr.t3Rets.push(v.t3.buyRet);
+          if (v.t3.maxRet != null) tr.maxRets.push(v.t3.maxRet);
+        }
+      }
+    }
+  }
+  const win = (arr, min) => arr.length
+    ? { n: arr.length, rate: +((arr.filter((x) => x >= min).length / arr.length) * 100).toFixed(0), avg: +(arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) }
+    : null;
   const byTrader = [...byTraderMap.values()]
-    .map((o) => ({ name: o.name, tier: o.tier, buy: o.buy, sell: o.sell, net: o.net, dayCount: o.days.size, stockCount: o.stocks.size }))
+    .map((o) => ({
+      name: o.name, tier: o.tier, buy: o.buy, sell: o.sell, net: o.net,
+      dayCount: o.days.size, stockCount: o.stocks.size,
+      t1: win(o.t1Rets, 2), t3: win(o.t3Rets, 2), avgMax: o.maxRets.length
+        ? +(o.maxRets.reduce((a, b) => a + b, 0) / o.maxRets.length).toFixed(2) : null,
+    }))
     .sort((a, b) => b.net - a.net);
 
   const result = {

@@ -7,6 +7,7 @@
  * 逻辑：回扫最近 window.days 个「有归档的交易日」，逐管道给缺 verdicts（或 verdicts 不完整）的
  * 记录补 T+1/T+3 三口径判定（eod/lib/verdict.js 纯函数，K 线走腾讯 fqkline，无东财封 IP 风险）：
  *   1. 尾盘     eod/data/eod/eod-<日>.json（含 -obs）   basis = 记录 price（14:50 可成交价）
+ *   1b. 盘前    eod/data/preopen/preopen-<日>.json      basis = 当日开盘价（开盘买入口径，A2 随此任务一并覆盖，不再单独排程）
  *   2. 次日选股 data/snapshot-<日>.json（r01.ok 触发票）  basis = T+1 开盘
  *   3. 游资票   eod/data/hotmoney/hotmoney-<日>.json      basis = T+1 开盘
  * verdicts 一律追加段：旧归档缺段不报错；t3 已齐的记录跳过（幂等，不重抓）。
@@ -79,6 +80,17 @@ function listNextday() {
   return out.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, OPT.days);
 }
 
+function listPreopen() {
+  const dir = path.join(paths.eodDir(), 'data', 'preopen');
+  const out = [];
+  for (const f of (fs.existsSync(dir) ? fs.readdirSync(dir) : [])) {
+    const m = f.match(/^preopen-(\d{4}-\d{2}-\d{2})\.json$/);
+    if (!m) continue;
+    out.push({ dir, file: f, date: m[1], kind: 'preopen' });
+  }
+  return out.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, OPT.days);
+}
+
 function listHotmoney() {
   const dir = path.join(paths.eodDir(), 'data', 'hotmoney');
   const out = [];
@@ -104,6 +116,12 @@ function extractItems(entry, doc) {
       if (!OPT.force && hasComplete(s.verdicts)) continue;
       items.push({ ref: () => s, code: s.code, basis: null });   // 16:00 出报告 → T+1 开盘买
     }
+  } else if (entry.kind === 'preopen') {
+    // 盘前：basis = T 开盘价（开盘买入口径，与 close 段的 t0 一致）
+    for (const [code, rec] of Object.entries(doc.records || {})) {
+      if (!OPT.force && hasComplete(rec.verdicts)) continue;
+      items.push({ ref: () => rec, code, basis: rec.open != null ? rec.open : null });
+    }
   } else if (entry.kind === 'hotmoney') {
     for (const rec of doc.records || []) {
       if (!OPT.force && hasComplete(rec.verdicts)) continue;
@@ -116,7 +134,9 @@ function extractItems(entry, doc) {
 // ---------- 主流程 ----------
 async function run() {
   const t0 = Date.now();
-  const pipelines = { tail: listTail(), nextday: listNextday(), hotmoney: listHotmoney() };
+  const pipelines = {
+    tail: listTail(), preopen: listPreopen(), nextday: listNextday(), hotmoney: listHotmoney(),
+  };
   for (const [k, list] of Object.entries(pipelines)) {
     log(`[${k}] 归档 ${list.length} 份（${list.length ? list[list.length - 1].date + ' → ' + list[0].date : '空'}）`);
   }
@@ -181,7 +201,7 @@ async function run() {
       const doc = readJSONSafe(path.join(entry.dir, entry.file), null, warn);
       if (!doc) continue;
       const dayList = [];
-      if (entry.kind === 'tail' || entry.kind === 'tail-obs') {
+      if (entry.kind === 'tail' || entry.kind === 'tail-obs' || entry.kind === 'preopen') {
         for (const rec of Object.values(doc.records || {})) dayList.push(rec);
       } else if (entry.kind === 'nextday') {
         for (const s of doc.stocks || []) { if (s.r01 && s.r01.ok) dayList.push(s); }

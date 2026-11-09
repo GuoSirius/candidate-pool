@@ -9,9 +9,9 @@
  * 结构：
  *   topbar → meta-bar → 核心结论（席位变更感知 + 当日要点）
  *   → 当日交易明细（按游资/按票双视图 + 层级/方向/游资过滤）
- *   → 游资·近N日汇总（按层级过滤）
+ *   → 游资·近N日汇总（按层级过滤，含介入票 T+1/T+3 胜率）
  *   → 近N日交易明细（游资/日期/方向过滤）
- *   → 票·近N日汇总 → 未识别席位观察名单 → 数据口径 → 免责声明
+ *   → 未识别席位观察名单 → 名单管理建议 → 数据口径 → 免责声明
  * ---------------------------------------------------------------------------
  */
 const { b, num, esc } = require('./report_fmt');
@@ -194,21 +194,25 @@ function buildHTML({ cfg, anchor, result, runner }) {
     : `<div class="card">${b('当日榜单未匹配到知名游资席位。', 'No known hot-money seat matched on the anchor-day board.')}</div>`}
 
   <h2>${b(`游资 · 近${dayCount}日汇总（${byTrader.length} 人）`, `Traders · ${dayCount}-Day Summary (${byTrader.length})`)}</h2>
-  <p class="src">${b(`依据 = 窗口内（近 ${dayCount} 个交易日日档）的全部游资记录按人聚合：净额 = 买入合计 − 卖出合计；活跃天数 = 出现过的交易日数；涉票数 = 去重标的数。列表按净额降序。逐日买卖去「近${dayCount}日交易明细」表用游资 chip 圈定。`,
-    'Aggregated per trader over the window: net = total buy − total sell; days = distinct trading days seen; stocks = distinct names. Sorted by net. Per-day detail: use the trader chip in the window-trades table.')}</p>
+  <p class="src">${b(`依据 = 窗口内（近 ${dayCount} 个交易日日档）的全部游资记录按人聚合：净额 = 买入合计 − 卖出合计；活跃天数 = 出现过的交易日数；涉票数 = 去重标的数；介入票 T+1/T+3 = 其介入票次日/三日后收盘表现（T+1 开盘买入，T+1/T+3 收盘卖出，verdicts 由 nextday_backfill 回填，缺档显示 —）。列表按净额降序。逐日买卖去「近${dayCount}日交易明细」表用游资 chip 圈定。`,
+    'Aggregated per trader over the window: net = total buy − total sell; days = distinct trading days seen; stocks = distinct names; T+1/T+3 = performance of stocks they traded (bought at T+1 open). Sorted by net. Per-day detail: use the trader chip in the window-trades table.')}</p>
   ${byTrader.length ? `${filterChipRow('fTier2', '层级', 'Tier', tierChips(byTrader))}
   <div class="table-wrap"><table><thead><tr>
     <th>${b('游资', 'Trader')}</th><th>${b('层级', 'Tier')}</th>
     <th>${b('净额', 'Net')}</th><th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th>
     <th>${b('活跃天数', 'Days')}</th><th>${b('涉票数', 'Stocks')}</th>
+    <th>${b('介入票T+1', 'T+1')}</th><th>${b('介入票T+3', 'T+3')}</th>
   </tr></thead><tbody id="traderBody">${byTrader.map((t) => {
     const net = fmtAmtCell(t.net); const buy = fmtAmtCell(t.buy); const sell = fmtAmtCell(t.sell);
+    // 介入票表现（verdicts 由 nextday_backfill 统一回填；缺段 = —）。格式：胜率%（均值%·样本n）
+    const vCell = (v) => v ? `<span class="${v.avg >= 0 ? 'up' : 'down'}">${v.rate}%（${v.avg}%·n${v.n}）</span>` : `<span class="src">—</span>`;
     return `<tr data-tier="${esc(t.tier || '')}" data-name="${esc(t.name)}">
     <td><b>${esc(t.name)}</b></td><td>${tierTag(t.tier)}</td>
     <td class="num ${net.cls}"><b>${net.txt}</b></td>
     <td class="num ${buy.cls}">${buy.txt}</td>
     <td class="num ${sell.cls}">${sell.txt}</td>
     <td class="num">${t.dayCount}</td><td class="num">${t.stockCount}</td>
+    <td class="num">${vCell(t.t1)}</td><td class="num">${vCell(t.t3)}</td>
   </tr>`; }).join('')}</tbody></table></div>`
     : `<div class="card">${b('窗口内无游资记录。', 'No trader records in the window.')}</div>`}
 
@@ -239,6 +243,24 @@ function buildHTML({ cfg, anchor, result, runner }) {
   <p class="src">${b(`高频新席位建议晋升：在 eod/data/hotmoney-registry.json 增加 { "name": "…", "seat": "正则", "tier": "一线/二线", "action": "add" }，下次运行即生效（不改代码）。`,
     `To promote a seat: add { name, seat(regex), tier, action:"add" } to eod/data/hotmoney-registry.json; takes effect next run.`)}</p>`
     : `<div class="card">${b(`暂无出现 ≥${cfg.watch.minDays} 天的未识别席位。`, `No unmatched seat recurring ≥${cfg.watch.minDays} days yet.`)}</div>`}
+
+  <div class="callout">
+    <h3>${b('名单管理建议（数据驱动，只建议不自动改）', 'Registry Suggestions (data-driven, advisory only)')}</h3>
+    <ul>${(() => {
+      const demote = byTrader.filter((t) => (t.tier === '一线' || t.tier === '二线') && t.t1 && t.t1.n >= 5 && t.t1.rate < 30);
+      const promo = watchTop.slice(0, 5);
+      const items = [];
+      items.push(demote.length
+        ? b(`降级观察：${esc(demote.map((t) => `${t.name}（${t.tier}，T+1 胜率 ${t.t1.rate}%·n${t.t1.n}）`).join('、'))} 近窗口介入票 T+1 胜率持续 < 30%，建议降层或移入观察（人工确认后改 eod/data/hotmoney/hotmoney-registry.json 写 remove，再按 add 写新层级）。`,
+          `Demote: ${esc(demote.map((t) => t.name).join(', '))} — T+1 win rate persistently < 30%. Confirm manually via the registry override file.`)
+        : b('降级观察：暂无一线/二线游资介入票 T+1 胜率持续低于 30%（样本 ≥5）。', 'Demotion: none triggered yet (need ≥5 samples, win rate < 30%).'));
+      items.push(promo.length
+        ? b(`晋升观察：${promo.length} 个未识别席位高频出现（≥${cfg.watch.minDays} 天，见上表）——未匹配前无法算其介入票胜率，建议先人工核对席位归属，确认后写 registry。`,
+          `Promotion watch: ${promo.length} recurring unmatched seats — verify ownership manually before adding to the registry.`)
+        : b('晋升观察：暂无满足频次条件的未识别席位。', 'Promotion watch: no qualifying unmatched seats yet.'));
+      return items.map((x) => `<li>${x}</li>`).join('');
+    })()}</ul>
+  </div>
 
   <div class="callout">
     <h3>${b('数据口径与偏差', 'Provenance & Caveats')}</h3>

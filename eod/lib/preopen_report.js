@@ -20,6 +20,16 @@
 // 注意：report_fmt.fmtAmt 返回字符串（上游已用）；hotmoney_report 的 fmtAmtCell
 // 返回 {txt,cls}，二者签名不同不可互换（评审 #22）。
 const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
+const fs = require('fs');
+const path = require('path');
+const paths = require('../../paths');
+/** 近 N 日命中率聚合（nextday_backfill 产出的 perf-weekly.json；缺文件/缺段返回 null） */
+function loadPerf(pipe) {
+  try {
+    const perf = JSON.parse(fs.readFileSync(path.join(paths.eodDir(), 'data', 'perf-weekly.json'), 'utf8'));
+    return (perf.pipelines && perf.pipelines[pipe]) || null;
+  } catch (e) { return null; }
+}
 /** 主力净流入（元 → 万/亿），涨红跌绿 */
 function fmtFlow(v) {
   if (v == null || isNaN(v)) return { txt: '—', cls: '' };
@@ -253,6 +263,8 @@ function buildHTML(m) {
   const closeRows = showClose ? candidates.map((c, i) => closeRowHtml(c, i, sealedMin)).join('') : '';
   const closeCallout = showClose ? buildCloseSummary(candidates, close, sealedMin) : '';
   const scopeLabel = scope === 'universe' ? b('全市场', 'Full market') : b('观察池', 'Watchlist');
+  // 近 N 日三口径命中率（批次 A2，2026-11-09）：开盘买入口径，T+1/T+3 收盘卖出
+  const perfHit = loadPerf('preopen');
 
   // ---- 核心结论 ----
   const bestGroup = groups[0];
@@ -404,6 +416,7 @@ function buildHTML(m) {
   ${showClose ? `
   <h2>${b('收盘回填（开盘买入当日验证）', 'Close Backfill (open-buy verification)')}</h2>
   ${closeCallout}
+  ${perfHit && perfHit.t1 ? `<p class="src">${b(`三口径命中率（近 10 个交易日回填）：T0 开盘买入当日收盘命中看上表；T+1：${perfHit.t1.rate}%（均值 ${perfHit.t1.avg}%·n${perfHit.t1.n}）${perfHit.t3 ? `；T+3：${perfHit.t3.rate3}%（均值 ${perfHit.t3.avg}%·期间最高均值 ${perfHit.t3.avgMax}%）` : '；T+3 待补齐'}。口径：开盘价买入、T+1/T+3 收盘卖出（阈值 2%）。`, `T+1: ${perfHit.t1.rate}% (avg ${perfHit.t1.avg}%, n=${perfHit.t1.n})${perfHit.t3 ? `; T+3: ${perfHit.t3.rate3}% (avg ${perfHit.t3.avg}%)` : '; T+3 pending'}. Basis: open buy, T+1/T+3 close sell.`)}</p>` : ''}
   <div class="toolbar">
     <div class="toolrow"><span class="cap">${b('标签', 'Label')}</span><span class="chips" id="closeLchips">${labelChips}</span></div>
     <div class="toolrow"><span class="cap">${b('行业', 'Industry')}</span><span class="chips" id="closeSchips">${sectorChips}</span></div>
