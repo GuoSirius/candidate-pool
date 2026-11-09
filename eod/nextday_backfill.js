@@ -12,7 +12,7 @@
  *   3. 游资票   eod/data/hotmoney/hotmoney-<日>.json      basis = T+1 开盘
  * verdicts 一律追加段：旧归档缺段不报错；t3 已齐的记录跳过（幂等，不重抓）。
  *
- * 产出：eod/data/perf-weekly.json 滚动聚合（按管道 × 命中率/均值）；周六胜率回归简报属批次 D 计划（脚本/自动化均未实现），届时从这读；
+ * 产出：eod/data/perf-weekly.json 滚动聚合（按管道 × 命中率/均值）；由批次 D2 的 eod/weekly_winrate.js（周六 10:00 ACTIVE）读取出简报；
  *       回填后重渲染各管道最新一份正式报告（eod/lib/rerender.js）并打印改动 HTML 清单。
  *
  * 用法：
