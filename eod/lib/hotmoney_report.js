@@ -16,6 +16,17 @@
  */
 const { b, num, esc } = require('./report_fmt');
 const { CSS } = require('./preopen_report');
+const { badgeHTML: regimeBadgeHTML } = require('./regime');
+const fs = require('fs');
+const path = require('path');
+const paths = require('../../paths');
+/** 同锚定日的次日选股快照里的环境标签（gen_candidates 16:00 已算好；缺档返回 null） */
+function loadRegime(anchor) {
+  try {
+    const snap = JSON.parse(fs.readFileSync(path.join(paths.dataDir(), `snapshot-${anchor}.json`), 'utf8'));
+    return snap.regime || null;
+  } catch (e) { return null; }
+}
 
 /** 金额（元）→ 「1.2亿」「3000万」，涨红跌绿；返回 {txt,cls}（与 report_fmt 共享版 fmtAmt 签名不同，故改名区分，评审 #22） */
 function fmtAmtCell(v) {
@@ -69,6 +80,8 @@ function chipHtml(fkey, value, label, count, active) {
 function buildHTML({ cfg, anchor, result, runner }) {
   const { anchorDay, trades, byTrader, seatChanges, watchTop, window: win } = result;
   const anchorTrades = trades.filter((t) => t.date === anchor);
+  const regime = loadRegime(anchor);
+  const regimeBadge = regime ? regimeBadgeHTML(regime, b, esc) : '';
 
   // ---- chips 数据 ----
   const tierOrder = ['一线', '二线', '避坑'];
@@ -167,6 +180,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     <div><span class="label">${b('窗口：', 'Window:')}</span><span class="value">${dayCount}${b('天', 'd')}</span></div>
     <div><span class="label">${b('席位变更：', 'Seat changes:')}</span><span class="value ${seatChanges.length ? 'down' : ''}">${seatChanges.length}</span></div>
     <div><span class="label">${b('观察席位：', 'Watch seats:')}</span><span class="value">${watchTop.length}</span></div>
+    ${regimeBadge ? `<div>${regimeBadge}</div>` : ''}
   </div>
 
   <div class="callout">

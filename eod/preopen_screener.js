@@ -39,6 +39,8 @@ const { loadIndustryMap, listedOf, sectorOf, UNKNOWN } = require('./lib/sector')
 const { mapLimit } = require('./lib/http');
 const { notify } = require('../notify');
 const paths = require('../paths');
+const { minifyHTML } = require('./lib/report_fmt');
+const { calcRegime } = require('./lib/regime');
 const scaffold = require('../scaffold');
 
 const argv = process.argv.slice(2);
@@ -365,15 +367,18 @@ async function run() {
   };
 
   log(`[4/4] 落库 + 报告 + 通知…`);
-  return emitResult({ tradeDate, scope, anchor, result, baselineCount: baseline.size, quotesCount: quotes.length, marketDate: tradeDate, _t0: Date.now() });
+  // 市场环境标签（批次 B1）：仅全市场口径可判（观察池 378 只样本会误档）；失败降级为不显示
+  const regime = scope === 'universe' ? calcRegime(quotes) : null;
+  if (regime) log(`[环境] ${regime.label}（涨停 ${regime.limitUp} / 跌停 ${regime.limitDown} / 上涨占比 ${regime.upPct}%）${regime.tip ? ' · ' + regime.tip : ''}`);
+  return emitResult({ tradeDate, scope, anchor, result, baselineCount: baseline.size, quotesCount: quotes.length, marketDate: tradeDate, regime, _t0: Date.now() });
 }
 
 async function emitResult(p) {
-  const { tradeDate, scope, result, marketDate } = p;
+  const { tradeDate, scope, result, marketDate, regime } = p;
   const saved = store.saveRun({
     cfg, tradeDate, scope, candidates: result.candidates,
     nearMiss: result.nearMiss, rejByReason: result.stats.rejByReason,
-    meta: { snapshotCount: result.stats.snapshotCount, baselineCount: p.baselineCount, validQuotes: p.quotesCount, marketDate, elapsedMs: Date.now() - (p._t0 || Date.now()) },
+    meta: { snapshotCount: result.stats.snapshotCount, baselineCount: p.baselineCount, validQuotes: p.quotesCount, marketDate, regime, elapsedMs: Date.now() - (p._t0 || Date.now()) },
     marketDate, anchor: p.anchor,
   });
   log(`[落库] ${path.basename(saved.file)}（${saved.recordCount} 条 / 第 ${saved.runCount} 次运行）`);
@@ -382,7 +387,7 @@ async function emitResult(p) {
   fs.mkdirSync(reportDir, { recursive: true });
   const suffix = OPT.stamp ? `-${dayjs.tz().format('HHmm')}` : '';
   const reportFile = path.join(reportDir, `${cfg.store.prefix}-${tradeDate}${suffix}.html`);
-  fs.writeFileSync(reportFile, buildHTML({ cfg, tradeDate, scope, result, marketDate, anchor: p.anchor, runner: RUNNER }), 'utf8');
+  fs.writeFileSync(reportFile, minifyHTML(buildHTML({ cfg, tradeDate, scope, result, marketDate, anchor: p.anchor, runner: RUNNER, regime })), 'utf8');
   log(`[报告] ${reportFile}`);
 
   if (cfg.notify.enabled && !OPT.noNotify) {

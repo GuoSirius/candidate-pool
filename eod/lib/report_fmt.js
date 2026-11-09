@@ -50,4 +50,17 @@ function billboardCell(bb) {
   return `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
 }
 
-module.exports = { b, num, pct, esc, boardsTxt, fmtAmt, billboardCell };
+/** HTML 安全压缩（用户要求减小入库体积，2026-11-09）：
+ *  只做零语义风险的三件事——<style> 内空白折叠、逐行去首部缩进、去空行。
+ *  不合并标签间空白（inline 元素间距会变）、不删行内 JS 换行（// 注释会串行）。 */
+function minifyHTML(html) {
+  return String(html)
+    .replace(/<style>([\s\S]*?)<\/style>/g, (_, css) => `<style>${css.replace(/\s+/g, ' ').replace(/\s*([{}:;,])\s*/g, '$1')}</style>`)
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((l) => l.replace(/^\s+/, ''))
+    .filter((l) => l.length)
+    .join('\n');
+}
+
+module.exports = { b, num, pct, esc, boardsTxt, fmtAmt, billboardCell, minifyHTML };

@@ -59,6 +59,8 @@ const { syncTailRun, cleanupLegacyModes, d1Mode, targetLabel } = require('./lib/
 const { buildHTML } = require('./lib/report');
 const { notify } = require('../notify');
 const paths = require('../paths');
+const { minifyHTML } = require('./lib/report_fmt');
+const { calcRegime } = require('./lib/regime');
 // 首次运行脚手架：空工作目录时补齐目录（尾盘不依赖 candidates.json，但归档/报告目录要存在）
 const scaffold = require('../scaffold');
 
@@ -148,7 +150,7 @@ async function runReplay(file) {
     return emitResult({
       tradeDate: doc.tradeDate, mode: doc.mode || 'cut', cutHHMM: doc.cutAt || '1450',
       segFrom: segFromRe, segMinutes: lastRun.segMinutes ?? null, result,
-      meta: { slots: 0, batches: 0, failedBatches: 0, valid: raw.quotes.length, marketDate: doc.tradeDate, elapsedMs: 0, outlierDates: [] },
+      meta: { slots: 0, batches: 0, failedBatches: 0, valid: raw.quotes.length, marketDate: doc.tradeDate, elapsedMs: 0, outlierDates: [], regime: calcRegime(raw.quotes) },
       quotes: raw.quotes, minutes: minutesMap, _t0: Date.now(),
       skipRaw: true, skipStore: true, noNotify: true,
       stamp: doc.stamp || false,
@@ -312,6 +314,10 @@ async function run() {
   log(`[时段] ${ss.reason}`);
   if (!ss.ok) { log('[结束] 跳过本次运行'); return { skipped: ss.reason }; }
 
+  // 市场环境标签（批次 B1）：全市场报价直接推导，失败降级为不显示
+  snap.meta.regime = calcRegime(snap.quotes);
+  if (snap.meta.regime) log(`[环境] ${snap.meta.regime.label}（涨停 ${snap.meta.regime.limitUp} / 跌停 ${snap.meta.regime.limitDown} / 上涨占比 ${snap.meta.regime.upPct}%）${snap.meta.regime.tip ? ' · ' + snap.meta.regime.tip : ''}`);
+
   // 2. 初筛
   // 尾盘段起点一律取 ss.segFrom：正式/观察 = 固定 1430，盘中 = 滚动窗口起点。
   // 不要再回退到 cfg.session.observeFrom —— 那样盘中模式会去找不存在的 14:30 K 线 → 0 候选。
@@ -419,9 +425,9 @@ async function emitResult(p) {
   fs.mkdirSync(reportDir, { recursive: true });
   const suffix = daySuffix(mode, cutHHMM, { stamp, segMinutes });
   const reportFile = path.join(reportDir, `eod-${tradeDate}${suffix}.html`);
-  fs.writeFileSync(reportFile, buildHTML({
+  fs.writeFileSync(reportFile, minifyHTML(buildHTML({
     cfg, tradeDate, mode, cutHHMM, segFrom, result, meta, runner: RUNNER,
-  }), 'utf8');
+  })), 'utf8');
   log(`[报告] ${reportFile}`);
 
   // 通知（replay / resync 等离线路径由调用方传 noNotify 抑制，避免重发）

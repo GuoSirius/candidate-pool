@@ -24,6 +24,7 @@ const store = require('./lib/preopen_store');
 const PR = require('./lib/preopen_rules');
 const { mapLimit } = require('./lib/http');
 const paths = require('../paths');
+const { minifyHTML } = require('./lib/report_fmt');
 const { lastClosedTradingDay } = require('../rules');
 const { buildHTML } = require('./lib/preopen_report');
 const argv = process.argv.slice(2);
@@ -156,7 +157,7 @@ async function run() {
     const reportDir = path.join(paths.eodDir(), cfg.store.reportDir);
     fs.mkdirSync(reportDir, { recursive: true });
     const reportFile = path.join(reportDir, `${cfg.store.prefix}-${tradeDate}.html`);
-    fs.writeFileSync(reportFile, buildHTML({ cfg, tradeDate, scope: doc.scope, anchor: doc.anchor || lastClosedTradingDay(dayjs.tz(tradeDate)), result, marketDate: doc.marketDate, runner: 'local', close: doc.close }), 'utf8');
+    fs.writeFileSync(reportFile, minifyHTML(buildHTML({ cfg, tradeDate, scope: doc.scope, anchor: doc.anchor || lastClosedTradingDay(dayjs.tz(tradeDate)), result, marketDate: doc.marketDate, runner: 'local', close: doc.close, regime: (doc.meta && doc.meta.regime) || null })), 'utf8');
     log(`[报告] 已重渲染（含收盘区块）${reportFile}`);
   } catch (e) { log(`[警告] HTML 重渲染失败（不影响归档）：${e && e.message || e}`); }
 

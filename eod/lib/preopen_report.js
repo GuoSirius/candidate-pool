@@ -23,6 +23,7 @@ const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
 const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
+const { badgeHTML: regimeBadgeHTML } = require('./regime');
 /** 近 N 日命中率聚合（nextday_backfill 产出的 perf-weekly.json；缺文件/缺段返回 null） */
 function loadPerf(pipe) {
   try {
@@ -252,7 +253,7 @@ const CSS = `  :root, :root[data-theme="light"] {
  * @returns {string} 完整 HTML
  */
 function buildHTML(m) {
-  const { cfg, tradeDate, scope, anchor, result, marketDate, runner, close } = m;
+  const { cfg, tradeDate, scope, anchor, result, marketDate, runner, close, regime } = m;
   const { candidates, groups, top, stats } = result;
   // ---- 贴线未入选（nearMiss）：总分落在入选线下 10 分内的归档样本，供回溯调参 ----
   const nearMissList = result.nearMiss || [];
@@ -265,6 +266,8 @@ function buildHTML(m) {
   const scopeLabel = scope === 'universe' ? b('全市场', 'Full market') : b('观察池', 'Watchlist');
   // 近 N 日三口径命中率（批次 A2，2026-11-09）：开盘买入口径，T+1/T+3 收盘卖出
   const perfHit = loadPerf('preopen');
+  // 市场环境徽标（批次 B1）：live 全市场跑时由调用方传入；回填重渲染从归档 meta 还原
+  const regimeBadge = regime ? regimeBadgeHTML(regime, b, esc) : '';
 
   // ---- 核心结论 ----
   const bestGroup = groups[0];
@@ -399,6 +402,7 @@ function buildHTML(m) {
     <div><span class="label">${b('候选：', 'Candidates:')}</span><span class="value up">${stats.candidateCount}</span></div>
     <div><span class="label">${b('行业组：', 'Groups:')}</span><span class="value">${stats.groupCount}</span></div>
     <div><span class="label">${b('缺口：', 'Gaps:')}</span><span class="value">${stats.gapCount}</span></div>
+    ${regimeBadge ? `<div>${regimeBadge}</div>` : ''}
   </div>
 
   <div class="callout">

@@ -21,6 +21,7 @@ const { b, num, pct, esc, boardsTxt, billboardCell } = require('./report_fmt');
 const fs = require('fs');
 const path = require('path');
 const paths = require('../../paths');
+const { badgeHTML: regimeBadgeHTML } = require('./regime');
 /** 近 N 日命中率聚合（nextday_backfill 产出的 perf-weekly.json；缺文件/缺段返回 null） */
 function loadPerf(pipe) {
   try {
@@ -387,6 +388,7 @@ function buildHTML(m) {
     <div><span class="label">${b('初筛通过：', 'Pre-filter pass:')}</span><span class="value">${stats.prePassCount}</span></div>
     <div><span class="label">${b('候选：', 'Candidates:')}</span><span class="value up">${stats.candidateCount}</span></div>
     <div><span class="label">${b('行业组：', 'Groups:')}</span><span class="value">${stats.groupCount}</span></div>
+    ${meta && meta.regime ? `<div>${regimeBadgeHTML(meta.regime, b, esc)}</div>` : ''}
   </div>
 
   ${perfHit && perfHit.t1 ? `<div class="callout">

@@ -412,11 +412,36 @@ async function main() {
     s.r05 = verifyR05(dayBars, s.r01.chg, anchor);
   }
 
-  // ---- 6. 市场宽度 + 画像（无全市场公开源，标记为暂不可用）----
-  log(`[6/8] 市场宽度/画像：本环境无全市场涨跌分布公开源，标记为暂不可用 ...`);
-  let breadth = { error: '市场宽度接口暂不可用（需要全市场涨跌分布，本环境无对应公开数据源；可日后接入）' };
-  let breadthIsAnchor = false;
-  let overview = { error: '市场画像接口暂不可用（需要全市场成交额/情绪聚合，本环境无对应公开数据源；可日后接入）' };
+  // ---- 6. 市场宽度 + 画像（批次 B1：腾讯全市场快照推导，替代原「暂不可用」占位）----
+  log(`[6/8] 市场宽度：拉腾讯全市场快照，推导涨跌分布与环境标签 ...`);
+  let breadth, breadthIsAnchor = true, overview, marketRegime;
+  try {
+    const tcfg = require('./eod/tail.config');           // 全市场槽位/批量/并发口径与尾盘一致
+    const market = require('./eod/lib/market');
+    const { calcRegime } = require('./eod/lib/regime');
+    const snap = await market.fullMarketSnapshot(tcfg, log);
+    marketRegime = calcRegime(snap.quotes);
+    if (marketRegime) {
+      breadth = {
+        up: marketRegime.up, down: marketRegime.down, flat: marketRegime.flat,
+        limitUp: marketRegime.limitUp, limitDown: marketRegime.limitDown,
+        halt: Math.max(0, (snap.meta.slots || 0) - snap.meta.valid),   // 停牌 ≈ 槽位 - 有效报价
+        upPct: marketRegime.upPct,
+        amountYi: marketRegime.amountYi * 1e8,          // 渲染层按「元」再 /1e8 显示，保持旧字段口径
+      };
+      overview = { error: null, amountYi: marketRegime.amountYi, avgChg: marketRegime.avgChg };
+      log(`      环境 ${marketRegime.label}：涨停 ${marketRegime.limitUp} / 跌停 ${marketRegime.limitDown} / 上涨占比 ${marketRegime.upPct}%${marketRegime.tip ? ' · ' + marketRegime.tip : ''}`);
+    } else {
+      breadth = { error: '全市场快照覆盖不足，宽度暂不可用' };
+      overview = { error: '同上' };
+      breadthIsAnchor = false;
+    }
+  } catch (e) {
+    log(`[6/8] 全市场快照失败（${e && e.message || e}），宽度降级为暂不可用`);
+    breadth = { error: '全市场快照拉取失败：' + (e && e.message || e) };
+    overview = { error: '同上' };
+    breadthIsAnchor = false;
+  }
 
   // ---- 7-8. 分类 + 生成 HTML（抽取为 classifyAndBuild，离线模式复用）----
   // 实时模式：写出「当日日期」命名的快照（覆盖式写入，每天一份），并推送通知
@@ -428,7 +453,7 @@ async function main() {
     // 快照当时的规则常量（rules.js G）：日后调参（如 CHG_MIN 3→4）时，
     // 历史门槛可按当时的常量重算，也可按新常量对 stocks[].chg 等原始值离线重切。
     rulesG: { ...G },
-    breadth, breadthIsAnchor, overview,
+    breadth, breadthIsAnchor, overview, regime: marketRegime || null,
     stocks: stocks.map(s => { const c = Object.assign({}, s); delete c.kline; delete c.quote; delete c.minute; return c; }),
     sectors: validSectors.map(s => { const c = Object.assign({}, s); delete c.members; return c; }),
   };

@@ -35,6 +35,7 @@ const preopenCfg = require('./preopen.config');
 const { buildHTML } = require('./lib/hotmoney_report');
 const { mapLimit } = require('./lib/http');
 const paths = require('../paths');
+const { minifyHTML } = require('./lib/report_fmt');
 const scaffold = require('../scaffold');
 const { notify } = require('../notify');
 
@@ -265,7 +266,7 @@ async function run() {
   const reportDir = path.join(paths.eodDir(), cfg.store.reportDir);
   fs.mkdirSync(reportDir, { recursive: true });
   const reportFile = path.join(reportDir, `${cfg.store.prefix}-${anchor}.html`);
-  fs.writeFileSync(reportFile, buildHTML({ cfg, anchor, result, runner: process.env.GITHUB_ACTIONS ? 'github' : 'local' }), 'utf8');
+  fs.writeFileSync(reportFile, minifyHTML(buildHTML({ cfg, anchor, result, runner: process.env.GITHUB_ACTIONS ? 'github' : 'local' })), 'utf8');
   log(`[报告] ${reportFile}`);
 
   if (cfg.notify.enabled && !OPT.noNotify) {
