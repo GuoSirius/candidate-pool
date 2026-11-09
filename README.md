@@ -1,6 +1,6 @@
 # A股次日候选池 · 自动初筛
 
-把 **A股短线交易** 的「标的初筛」流程固化为可定时运行的脚本：以一份**可编辑的行业观察池**（`candidates.json`，当前 377 只、覆盖 26 个申万一级行业）为候选起点，套用 **R01 量能验证突破 + R07 板块内补涨**（并以 **R05 尾盘异动** 核验），输出一份 **单文件、资源全内联、无外链、支持中英切换** 的 HTML 报告，并把实时结果**推送到个人微信 / 163 邮箱**。
+把 **A股短线交易** 的「标的初筛」流程固化为可定时运行的脚本：以一份**可编辑的行业观察池**（`candidates.json`，当前 378 只、覆盖 26 个申万一级行业）为候选起点，套用 **R01 量能验证突破 + R07 板块内补涨**（并以 **R05 尾盘异动** 核验），输出一份 **单文件、资源全内联、无外链、支持中英切换** 的 HTML 报告，并把实时结果**推送到个人微信 / 163 邮箱**。
 
 另有**尾盘选股**（交易日 14:50 口径）与 **Web / PWA 查询前端**（候选列表 / 复盘统计 / 个股复盘 / 尾盘候选）。
 
@@ -142,6 +142,24 @@ node build_universe.js --dry     # 只体检不写文件：打印剔除明细与
 node build_universe.js           # 重新生成 candidates.json
 node build_universe.js --min-cap 30   # 自定义市值下限（亿），默认 15
 ```
+
+**观察池回流（批次 C2 · 默认 dry-run）**：从尾盘正式档 / 次日快照 / 游资 / 盘前四类归档收集信号，产出可审核的 diff 报告，默认**一个字节都不写** `candidates.json`：
+
+```bash
+npm run pool:reflow -- --days 5     # dry-run，只出 diff（默认）
+node eod/pool_reflow.js --apply     # 人工审核 diff 后才追加写回（先备份 + 写前/写后双重校验）
+```
+
+> 数据安全契约：**只追加、不淘汰、不设上限、存量票零改动**；`meta` 只出现在本次新增票上，不做批量迁移。
+> 完整契约与恢复方式见 `eod/pool_reflow.js` 文件头；调度状态见 [`docs/automations/README.md`](docs/automations/README.md) 第 13 节（PAUSED）。
+
+**周六胜率回归简报（批次 D2 · 不推送）**：
+
+```bash
+npm run weekly:winrate     # 管道 / 分项 / 游资三维度；<20 交易日只报样本量；不推送、不调权重
+```
+
+> 两项自测 `npm run pool:selftest` / `npm run weekly:selftest` 已挂进 `npm run selftest` 全量门禁。
 
 种子清单维护在 `build_universe.js` 顶部的 `SEED`，**只需要写「6 位代码 + 申万一级行业」**，其余全部由接口回填与校验：
 

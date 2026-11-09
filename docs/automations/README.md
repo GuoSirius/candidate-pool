@@ -23,8 +23,15 @@
 | 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
 | 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
 | 次日回填 nextday_backfill（18:30） | `08b2baac-9293-4d2e-86a2-a2c1ab565d36` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=30` | 工作日 18:30 | ACTIVE | 四类归档 verdicts 段 + `eod/data/perf-weekly.json` + 最新报告重渲染 |
+| 观察池回流 pool_reflow（18:40） | `650d6943-9903-44f9-85be-c4e5c46cb066` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40` | 工作日 18:40 | **PAUSED** | `eod/reports/pool_reflow/pool_reflow-<日>.md`（dry-run diff，**不写**观察池） |
+| 周六胜率回归简报（10:00） | `6b3d2cf6-942c-44e9-86d8-9e39fbe3f5b5` | `FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0` | 周六 10:00 | ACTIVE | `eod/reports/weekly/winrate-<日>.md`（纯只读，不推送） |
+| A股每日市场情绪日报（23:30） | `automation-1786325369523` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=23;BYMINUTE=30` | 工作日 23:30 | PAUSED | 仅对话输出；B2 联动 regime 未实现 |
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
+
+> ⚠️ **补登记（2026-11-09）**：最后一行「A股每日市场情绪日报」本机一直存在，此前漏登记进本真值源；
+> 其 prompt 的逐字原文与 cwds 尚未按本文件模板校对（重建时请用 `automation_update mode=view` 取原文）。
+> 详见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md) 的 B2 节。
 
 ### ⚓ 提交约定（铁律）
 
@@ -34,7 +41,7 @@
 
 - **本地自动化（本机 WorkBuddy）**：**所有任务**的提交都由下方各节 Prompt 里的「git 推送块」显式负责（`git add` → `git commit` → `git push`）。脚本内部**不再写 git**——原先盘前选股 / 回填在 `preopen_screener.js` / `preopen_backfill.js` 内自动 commit，已于 2026-10-23 移除，统一收归 Prompt，避免重复提交。
 - **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
-- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/reports/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库。
+- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/reports/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库；④ **第 13/14 节（pool_reflow / weekly_winrate）**：用户 2026-11-09 拍板「不推送」，两条 prompt 均**不含 git 推送块**，报告落盘后不自动提交 —— 这是有意例外，避免 ACTIVE 的周六任务自动写远端。如需入库，人工 `git add eod/reports/pool_reflow eod/reports/weekly` 后提交。
 
 #### 统一提交信息格式（规范 · 中文描述 + 时间）
 
@@ -431,6 +438,64 @@ git push
 
 提交范围：`eod/data`（四类归档 + perf-weekly.json）+ `eod/reports`（本任务重渲染的最新报告）+ `data`（snapshot verdicts）。
 
+## 13. 观察池回流 pool_reflow（18:40，PAUSED）
+
+> 批次 C2（2026-11-09 落地，方案见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md) C2 节）。排在 18:30 nextday_backfill 之后。
+> **用户拍板**：允许扩 `meta`，但数据必须及时/可靠/稳定/不丢失；**默认不设上限、只出 diff、不推送**；本任务 PAUSED。
+> 数据安全契约（只追加、存量票零改动、写前备份 + 双重校验、非法代码丢弃）见 `eod/pool_reflow.js` 文件头。
+> **prompt 严禁加 `--apply`**：写回只能由人工审核 diff 后手动执行，绝不自动化。
+
+- **ID**：`650d6943-9903-44f9-85be-c4e5c46cb066`
+- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40`（工作日 18:40）
+- **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
+- **状态**：**PAUSED**
+- **产物**：`eod/reports/pool_reflow/pool_reflow-<日>.md`（可审核的 diff 报告）
+- **推送 / git**：无（不推送微信邮件、不自动 git，见「提交约定」例外 ④）
+- **自测**：`npm run pool:selftest`
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+~~~text
+在 candidate-pool 仓库运行观察池回流的 dry-run，并汇报可审核的 diff。
+
+执行 `node eod/pool_reflow.js --days 5`，然后读取生成的 `eod/reports/pool_reflow/pool_reflow-<当日>.md`，用简洁中文汇报：回看交易日范围、四个来源（尾盘TopN·T+1命中 / R01触发 / 一线游资 / 盘前超预期）各自的状态与命中条数、拟新增只数、命中但已在池的只数、保持不动只数、删除只数（必须为 0）。拟新增票用表格列出代码 / 名称 / 来源 / 最近触发日；超过 20 只时只列前 20 只并说明总数。
+
+严格约束：
+- 默认 dry-run，**绝对不要加 --apply**，不要写 candidates.json，不要修改任何归档或配置。
+- 不要推送微信 / 邮件，不要执行 git commit / push，不要调整任何权重或阈值。
+- 报告生成后用 present_files 打开该 Markdown 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
+- 若命令非零退出，贴出 stderr 错误摘要，不要重试超过一次。
+~~~
+
+## 14. 周六胜率回归简报 weekly_winrate（10:00，ACTIVE）
+
+> 批次 D2（2026-11-09 落地）。数据来自 `eod/data/perf-weekly.json`（18:30 回填聚合）+ 四类归档逐票 verdicts。
+> **硬门禁**：已回填交易日 < 20 时只报样本量，不输出任何胜率与回归结论。
+> **用户拍板**：不推送（不发微信/邮件）、不自动调权重、ACTIVE；脚本纯只读，不改归档/配置/观察池。
+
+- **ID**：`6b3d2cf6-942c-44e9-86d8-9e39fbe3f5b5`
+- **调度**：`FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0`（周六 10:00）
+- **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
+- **状态**：ACTIVE
+- **产物**：`eod/reports/weekly/winrate-<日>.md`（管道 / 分项 / 游资三维度）
+- **推送 / git**：无（不推送通知、不自动 git，见「提交约定」例外 ④）
+- **自测**：`npm run weekly:selftest`
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+~~~text
+在 candidate-pool 仓库生成周六胜率回归简报。
+
+执行 `node eod/weekly_winrate.js`，然后读取生成的 `eod/reports/weekly/winrate-<当日>.md`，向用户汇报：
+- 先说明已回填交易日数与门禁（20 个交易日）。若脚本判定样本不足，只汇报各管道的样本量，并明确「本期不输出胜率与回归结论」，**不要自行补算任何命中率或结论**。
+- 样本达标时，按「管道 / 分项 / 游资」三个维度各用一段话概括关键数值，不展开全部表格。
+- 最后用 present_files 打开该 Markdown 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
+
+严格约束：
+- 纯只读：不要修改任何归档、配置、观察池；不要调整权重或阈值；不要推送微信 / 邮件；不要执行 git commit / push。
+- 若命令非零退出，贴出 stderr 错误摘要，不要重试超过一次。
+~~~
+
 ## 附录：A 股工作流相关、但 cwd 不在本仓库的自动化
 
 > 换设备重建时一并照抄即可；它们的 cwds 指向其他工作区，需按新设备实际路径调整。
@@ -469,7 +534,8 @@ git push
 2. AI 逐条用 `automation_update`（mode=create）照各节 Prompt、rrule、cwds 创建；总览表中的 ID 会变（本机 ID 仅供参考对齐，重建后以新 ID 为准）。
 3. 把各节 cwds 里的旧路径替换为新设备的仓库实际路径。
 4. 盘前选股 / 盘前回填两个手动兜底任务创建后状态设为 ACTIVE（与当前本机一致；scheduleType=recurring + status=ACTIVE，名义 rrule 仅占位，日常手动触发）。
-5. 重建完成后用本文件逐字校验各 prompt。
+5. 第 13 节 `pool_reflow` 必须建为 **PAUSED**、第 14 节 `weekly_winrate` 建为 **ACTIVE**；两条 prompt 均**不含 git 推送块**，第 13 节**不得出现 `--apply`**。
+6. 重建完成后用本文件逐字校验各 prompt。
 
 ## 对齐约定（务必遵守）
 
@@ -477,3 +543,4 @@ git push
 - **改本文档 → 改自动化**：若先在文档里优化，也要用 `automation_update` 把 prompt 同步回本机对应自动化。
 - **校验**：每隔一段时间对比本文件 prompt 与 `automation_update` 拉到的本机 prompt 是否逐字一致；三者（本文档 / 本机 prompt / 实际行为）必须一致。
 - **新增 / 删除任务**：同步增删本文件对应小节与总览表。
+- **C2/D2 红线（2026-11-09 用户拍板）**：第 13 节 prompt 不得含 `--apply` / git 推送块，状态保持 PAUSED；第 14 节不得含 `notify` / git 推送块，不自动调权重。任何放宽都必须先经用户明确确认，并同步改 `docs/system-plan-2026-11-09.md` 与代码配置。
