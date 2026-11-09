@@ -156,19 +156,21 @@ async function run() {
       }
     }
   }
-  if (!jobs.length) { log('[结束] 无缺 verdicts 的记录'); return { done: 0 }; }
-  log(`[1/3] 待判 ${jobs.length} 条 / 涉及 ${needCodes.size} 只 · K线抓取（fqkline，并发 ${cfg.concurrency}）…`);
+  if (!jobs.length) log('[1/3] 无缺 verdicts 的记录（幂等跳过判定，仍做聚合 + 重渲染清单）');
 
-  // 2) 逐代码抓全量日 K（降序，一次多日），进程内缓存
+  // 2) 逐代码抓全量日 K（降序，一次多日），进程内缓存；无任务则跳过抓取
   const kCache = new Map();       // code → rowsDesc | null
   let kErr = 0;
-  await mapLimit([...needCodes], cfg.concurrency, async (code) => {
-    try {
-      const k = await market.fetchKline(code, '2099-12-31');   // 取全部行，T 之后自行过滤
-      kCache.set(code, (k && k.rows) || null);
-    } catch (e) { kErr++; kCache.set(code, null); }
-  });
-  log(`[2/3] K线完成：${kCache.size - kErr} 成功 / ${kErr} 失败`);
+  if (jobs.length) {
+    log(`[1b/3] 待判 ${jobs.length} 条 / 涉及 ${needCodes.size} 只 · K线抓取（fqkline，并发 ${cfg.concurrency}）…`);
+    await mapLimit([...needCodes], cfg.concurrency, async (code) => {
+      try {
+        const k = await market.fetchKline(code, '2099-12-31');   // 取全部行，T 之后自行过滤
+        kCache.set(code, (k && k.rows) || null);
+      } catch (e) { kErr++; kCache.set(code, null); }
+    });
+    log(`[2/3] K线完成：${kCache.size - kErr} 成功 / ${kErr} 失败`);
+  }
 
   // 3) 逐条判定并写回归档
   // fqkline 会带「今日盘中」的未收盘 bar：收盘前把今日 bar 当 T+1/T+3 收盘会算出盘中价
@@ -219,11 +221,12 @@ async function run() {
   atomicWriteJSON(perfFile, perf);
   log(`[聚合] ${perfFile}`);
 
-  // 5) 重渲染受影响报告（批次 A 收尾）：命中率区块 / 游资 T+1·T+3 列只有重渲染才可见。
-  //    只重渲染各管道最新一份正式报告——历史报告是冻结的复盘快照，不悄悄改写；
-  //    旧游资档缺 seatChanges 会跳过（rerender.js 内说明，宁缺毋滥）。
+  // 5) 重渲染最新报告（批次 A 收尾）：命中率区块 / 游资 T+1·T+3 列只有重渲染才可见。
+  //    **无条件执行**（2026-11-09 用户反馈：盘中跑 filled=0 也要求出清单）——重渲染幂等，
+  //    无变化时产物与旧文件一致，git 无 diff；只重渲染各管道最新一份正式报告，
+  //    历史报告是冻结的复盘快照，不悄悄改写；旧游资档缺 seatChanges 会跳过（宁缺毋滥）。
   const changedHtml = [];
-  if (filled > 0 || OPT.force) {
+  {
     const { rerenderTail, rerenderPreopen, rerenderHotmoney } = require('./lib/rerender');
     const tailEntry = pipelines.tail.find((e) => e.kind === 'tail');   // 最新正式档（排除 -obs）
     const jobs = [
