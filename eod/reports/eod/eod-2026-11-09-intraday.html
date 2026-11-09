@@ -113,6 +113,7 @@ return g >= 1 && g <= 3;
 if (candFilter === '@boards') return tr.hasAttribute('data-boards');
 if (candFilter === '@billboard') return tr.hasAttribute('data-billboard');
 if (candFilter === '@hotmoney') return tr.getAttribute('data-hot') === '1';
+if (candFilter.indexOf('@htier:') === 0) return (tr.getAttribute('data-hm-tier') || '').split('|').indexOf(candFilter.replace('@htier:', '')) >= 0;
 return !candFilter || tr.getAttribute('data-sector') === candFilter;
 }
 var shown = [];
@@ -123,7 +124,7 @@ if (want(tr)) { frag.appendChild(tr); shown.push(tr); }
 } else {
 sepOrder.forEach(function (sep) {
 var sec = sep.getAttribute('data-sep');
-// @ 前缀为伪过滤（@best/@top3/@boards/@billboard/@hotmoney），交由 want() 判行，不参与行业组筛选
+// @ 前缀为伪过滤（@best/@top3/@boards/@billboard/@hotmoney/@htier:），交由 want() 判行，不参与行业组筛选
 if (!bestOnly && !top3 && candFilter && candFilter.charAt(0) !== '@' && sec !== candFilter) return;
 // 先收集该组本次要显示的行：空组（如组内第一被 maxRows 截断）不渲染分隔行
 var groupRows = [];
