@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盘前选股 — 2026-11-04</title>
+<style>  :root, :root[data-theme="light"] {
+    --bg: #fffbeb; --card: #fff; --text: #1c1917; --muted: #92400e;
+    --border: #fde68a; --accent: #b45309; --red: #dc2626; --green: #16a34a;
+    --blue: #2563eb; --amber: #d97706; --gold: #ca8a04; --slate: #64748b;
+    --btn-bg: #fff; --btn-fg: #b45309; --callout-bg: #fff7ed; --th-bg: #fefce8;
+    --grp-self-bg: #fed7aa; --grp-self-fg: #7c2d12; --grp-sub-self-bg: #fff7ed;
+    --tag-bg: #eff6ff; --tag-pass-bg: #fef2f2; --tag-gap-bg: #fff7ed; --score-bg: #fffbeb;
+    --sc-self-bg: rgba(217, 119, 6, 0.06); --note-fg: #57534e;
+    --disc-bg: #fef2f2; --disc-border: #fecaca; --disc-fg: #991b1b; --card-empty-bg: #fafaf9;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1419; --card: #1a2129; --text: #e6edf3; --muted: #c9a684;
+    --border: #2a323c; --accent: #f59e0b; --red: #ff5b5b; --green: #26a69a;
+    --blue: #60a5fa; --amber: #fbbf24; --gold: #ffb74d; --slate: #94a3b8;
+    --btn-bg: #222b35; --btn-fg: #f59e0b; --callout-bg: #1f1c17; --th-bg: #222b35;
+    --grp-self-bg: #3a2a1a; --grp-self-fg: #fcd34d; --grp-sub-self-bg: #1f1c17;
+    --tag-bg: #1b2533; --tag-pass-bg: #2a1e1e; --tag-gap-bg: #1f1c17; --score-bg: #211d14;
+    --sc-self-bg: rgba(245, 158, 11, 0.10); --note-fg: #b9b3a8;
+    --disc-bg: #2a1e1e; --disc-border: #5b2a2a; --disc-fg: #fca5a5; --card-empty-bg: #14171c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px 16px; }
+  .container { max-width: 1320px; margin: 0 auto; }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
+  h1 { font-size: 1.55rem; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 14px; }
+  .topbtn { flex: none; cursor: pointer; border: 1px solid var(--accent); background: var(--btn-bg); color: var(--btn-fg); font-weight: 600; font-size: 0.85rem; padding: 7px 14px; border-radius: 999px; font-family: inherit; transition: all .15s; white-space: nowrap; }
+  .topbtn:hover { background: var(--accent); color: var(--btn-bg); }
+  .topbar .btns { display: flex; gap: 8px; }
+  .meta-bar { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.88rem; margin-bottom: 18px; }
+  .meta-bar .label { color: var(--muted); }
+  .meta-bar .value { font-weight: 600; }
+  .callout { background: var(--callout-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 16px 20px; margin-bottom: 18px; }
+  .callout h3 { color: var(--accent); margin-bottom: 8px; }
+  .callout ul { margin: 6px 0 0 18px; font-size: 0.9rem; }
+  .callout li { margin-bottom: 5px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+  .up { color: var(--red); } .down { color: var(--green); } .flat { color: var(--slate); }
+  .score { display: inline-block; font-size: 0.95rem; font-weight: 700; padding: 2px 12px; border-radius: 6px; background: var(--score-bg); color: var(--gold); }
+  .tag { display: inline-block; font-size: 0.78rem; padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; background: var(--tag-bg); color: var(--blue); }
+  .tag.pass { background: var(--tag-pass-bg); color: var(--red); }
+  .tag.gap { background: var(--tag-gap-bg); color: var(--amber); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; background: var(--th-bg); }
+  th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); background: var(--grp-self-bg); color: var(--grp-self-fg); font-weight: 700; }
+  th.grp-sub { background: var(--grp-sub-self-bg); color: var(--accent); }
+  td.num { text-align: center; font-variant-numeric: tabular-nums; }
+  td.sc { background: var(--sc-self-bg); }
+  .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: var(--note-fg); background: var(--callout-bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; }
+  td.wrap { white-space: normal; min-width: 130px; }
+  td .src { display: block; color: var(--slate); font-size: 0.72rem; }
+  td.trend { color: var(--muted); font-size: 0.8rem; }
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0 0 12px; }
+  .toolrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+  .toolrow .cap { font-size: 0.8rem; color: var(--muted); font-weight: 600; flex: none; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; flex: none; }
+  .segbtn { border: 0; background: var(--btn-bg); color: var(--btn-fg); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 6px 16px; cursor: pointer; white-space: nowrap; }
+  .segbtn + .segbtn { border-left: 1px solid var(--border); }
+  .segbtn.active { background: var(--accent); color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font: inherit; font-size: 0.8rem; padding: 3px 11px; border-radius: 999px; cursor: pointer; }
+  .chip i { font-style: normal; color: var(--muted); margin-left: 3px; }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.active i { color: inherit; opacity: 0.85; }
+  .bd-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); cursor: pointer; white-space: nowrap; flex: none; }
+  tr.sector-row td { background: var(--th-bg); color: var(--accent); font-weight: 700; font-size: 0.88rem; }
+  table.hide-bd th.grp, table.hide-bd th.grp-sub, table.hide-bd td.sc { display: none; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; font-weight: 600; }
+  .src { font-size: 0.78rem; color: var(--slate); margin-top: 8px; }
+  .disclaimer { margin-top: 26px; padding: 14px 18px; background: var(--disc-bg); border: 1px solid var(--disc-border); border-radius: 8px; font-size: 0.85rem; color: var(--disc-fg); }
+  .footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; text-align: center; }</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div>
+      <h1><span data-zh="盘前选股" data-en="Pre-Open Screener">盘前选股</span> · 2026-11-04</h1>
+      <div class="sub"><span data-zh="盘前窗口 09:20–09:35 · 今开(open) 09:25 撮合后固定 · 满分 100" data-en="Pre-open window 09:20–09:35 · open fixed at 09:25 auction close · max 100">盘前窗口 09:20–09:35 · 今开(open) 09:25 撮合后固定 · 满分 100</span></div>
+    </div>
+    <div class="btns">
+      <button id="themeBtn" type="button" class="topbtn" title="切换深浅色">☀</button>
+      <button id="langBtn" type="button" class="topbtn">EN</button>
+    </div>
+  </div>
+
+  <div class="meta-bar">
+    <div><span class="label"><span data-zh="交易日：" data-en="Trade date:">交易日：</span></span><span class="value">2026-11-04</span></div>
+    <div><span class="label"><span data-zh="范围：" data-en="Scope:">范围：</span></span><span class="value"><span data-zh="全市场" data-en="Full market">全市场</span></span></div>
+    <div><span class="label"><span data-zh="行情日：" data-en="Market date:">行情日：</span></span><span class="value">2026-11-04</span></div>
+    <div><span class="label"><span data-zh="基线锚定日：" data-en="Baseline anchor:">基线锚定日：</span></span><span class="value">2026-11-03</span></div>
+    <div><span class="label"><span data-zh="快照：" data-en="Snapshot:">快照：</span></span><span class="value">6180</span></div>
+    <div><span class="label"><span data-zh="基线：" data-en="Baseline:">基线：</span></span><span class="value">5913</span></div>
+    <div><span class="label"><span data-zh="候选：" data-en="Candidates:">候选：</span></span><span class="value up">14</span></div>
+    <div><span class="label"><span data-zh="行业组：" data-en="Groups:">行业组：</span></span><span class="value">11</span></div>
+    <div><span class="label"><span data-zh="缺口：" data-en="Gaps:">缺口：</span></span><span class="value">807</span></div>
+  </div>
+
+  <div class="callout">
+    <h3><span data-zh="核心结论（先行）" data-en="Key Conclusions (Up Front)">核心结论（先行）</span></h3>
+    <ul><li><b><span data-zh="候选 14 只 / 11 个行业（全市场）" data-en="14 names across 11 industries (full market)">候选 14 只 / 11 个行业（全市场）</span>。</b><span data-zh="最强行业「白酒Ⅱ」，组内最优 皇台酒业（94.8）。" data-en="Strongest industry "白酒Ⅱ"; its top pick is 皇台酒业 (94.8).">最强行业「白酒Ⅱ」，组内最优 皇台酒业（94.8）。</span></li><li><span data-zh="全市场前五：皇台酒业（94.8）、九牧王（91.7）、大晟文化（91.0）、东方海洋（74.4）、马矿股份（70.0）。" data-en="Top five: 皇台酒业 (94.8), 九牧王 (91.7), 大晟文化 (91.0), 东方海洋 (74.4), 马矿股份 (70.0).">全市场前五：皇台酒业（94.8）、九牧王（91.7）、大晟文化（91.0）、东方海洋（74.4）、马矿股份（70.0）。</span></li><li><span data-zh="漏斗：快照 6180 → 有基线 5913 → 入选 14（缺口 807）。" data-en="Funnel: snapshot 6180 → with baseline 5913 → picked 14 (gaps 807).">漏斗：快照 6180 → 有基线 5913 → 入选 14（缺口 807）。</span></li></ul>
+  </div>
+
+  <h2><span data-zh="候选明细（14 只）" data-en="Candidates (14)">候选明细（14 只）</span></h2>
+  <p class="score-note" id="scoreNote"><span data-zh="信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。另有 <b>P04 趋势放量通道</b>（门槛制独立轨，不打分：均线多头 + 温和斜率 + 逐步放量 + 竞价有承接、允许微低开），与打分轨并集入选，可用标签区「P04 通道 / 打分轨」过滤。" data-en="Signals: <b class="sn-self">P1 auction strength</b> (gap-up + auction volume ratio) · <b>P2 turn-strong / beat</b> (yesterday strong + today gap in/above range) · <b>P3 trend</b> (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total. A separate <b>P04 trend-volume track</b> (gate-based, unscored: MA bull + mild slope + building volume + auction support incl. slight gap-down) joins the score track; filter via the P04/Score chips.">信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。另有 <b>P04 趋势放量通道</b>（门槛制独立轨，不打分：均线多头 + 温和斜率 + 逐步放量 + 竞价有承接、允许微低开），与打分轨并集入选，可用标签区「P04 通道 / 打分轨」过滤。</span></p><div class="toolbar">
+    <div class="seg" role="tablist">
+      <button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
+      <button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
+    </div>
+    <div class="toolrow"><span class="cap"><span data-zh="标签" data-en="Label">标签</span></span><span class="chips" id="lchips"><button type="button" class="chip active" data-lfilter=""><span data-zh="全部 14" data-en="All 14">全部 14</span></button><button type="button" class="chip" data-lfilter="@best"><span data-zh="组内第一" data-en="Group #1">组内第一</span><i>11</i></button><button type="button" class="chip" data-lfilter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>14</i></button><button type="button" class="chip" data-lfilter="@billboard"><span data-zh="上榜" data-en="On list">上榜</span><i>6</i></button><button type="button" class="chip" data-lfilter="@p4"><span data-zh="P04 通道" data-en="P04 track">P04 通道</span><i>0</i></button><button type="button" class="chip" data-lfilter="@score"><span data-zh="打分轨 P1-P3" data-en="Score track">打分轨 P1-P3</span><i>14</i></button><button type="button" class="chip" data-lfilter="超预期"><span data-zh="超预期" data-en="超预期">超预期</span><i>8</i></button><button type="button" class="chip" data-lfilter="弱转强·符合"><span data-zh="弱转强·符合" data-en="弱转强·符合">弱转强·符合</span><i>6</i></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="行业" data-en="Industry">行业</span></span><span class="chips" id="schips"><button type="button" class="chip active" data-sfilter=""><span data-zh="全部行业" data-en="All sectors">全部行业</span></button><button type="button" class="chip" data-sfilter="白酒Ⅱ"><span data-zh="白酒Ⅱ" data-en="白酒Ⅱ">白酒Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="服装家纺"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span><i>2</i></button><button type="button" class="chip" data-sfilter="游戏Ⅱ"><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="农产品加工"><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span><i>1</i></button><button type="button" class="chip" data-sfilter="冶钢原料"><span data-zh="冶钢原料" data-en="冶钢原料">冶钢原料</span><i>1</i></button><button type="button" class="chip" data-sfilter="一般零售"><span data-zh="一般零售" data-en="一般零售">一般零售</span><i>3</i></button><button type="button" class="chip" data-sfilter="化学制品"><span data-zh="化学制品" data-en="化学制品">化学制品</span><i>1</i></button><button type="button" class="chip" data-sfilter="电池"><span data-zh="电池" data-en="电池">电池</span><i>1</i></button><button type="button" class="chip" data-sfilter="纺织制造"><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span><i>1</i></button><button type="button" class="chip" data-sfilter="专用设备"><span data-zh="专用设备" data-en="专用设备">专用设备</span><i>1</i></button><button type="button" class="chip" data-sfilter="装修建材"><span data-zh="装修建材" data-en="装修建材">装修建材</span><i>1</i></button></span></div>
+    <div class="toolrow"><label class="bd-toggle"><input type="checkbox" id="bdToggle"> <span data-zh="分项得分" data-en="Breakdown">分项得分</span></label></div>
+  </div>
+  <div class="table-wrap"><table id="candTable"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
+    <th rowspan="2"><span data-zh="板块" data-en="Board">板块</span></th><th rowspan="2"><span data-zh="今开价" data-en="Open px">今开价</span></th><th rowspan="2"><span data-zh="今开" data-en="Open%">今开</span></th><th rowspan="2"><span data-zh="昨涨" data-en="Prev chg">昨涨</span></th>
+    <th rowspan="2"><span data-zh="昨日净流入" data-en="Prev inflow">昨日净流入</span></th><th rowspan="2"><span data-zh="市值/流通" data-en="Cap/FLOAT">市值/流通</span></th>
+    <th rowspan="2"><span data-zh="竞价量能比" data-en="Auction vol">竞价量能比</span></th><th rowspan="2"><span data-zh="昨量比" data-en="Prev volR">昨量比</span></th><th rowspan="2"><span data-zh="昨换手%" data-en="Prev turn">昨换手%</span></th><th rowspan="2"><span data-zh="趋势" data-en="Trend">趋势</span></th>
+    <th rowspan="2"><span data-zh="连板" data-en="Streak">连板</span></th><th rowspan="2"><span data-zh="上榜" data-en="List">上榜</span></th>
+    <th colspan="3" class="grp"><span data-zh="信号分项" data-en="Signals">信号分项</span></th>
+    <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标签" data-en="Label">标签</span></th></tr>
+    <tr><th class="grp-sub"><span data-zh="P1 竞价 · 35" data-en="P1 竞价 · 35">P1 竞价 · 35</span></th><th class="grp-sub"><span data-zh="P2 弱转强 · 35" data-en="P2 弱转强 · 35">P2 弱转强 · 35</span></th><th class="grp-sub"><span data-zh="P3 趋势 · 30" data-en="P3 趋势 · 30">P3 趋势 · 30</span></th></tr></thead>
+    <tbody id="candBody"><tr data-sector="白酒Ⅱ" data-label="超预期" data-track="score" data-best="1" data-grank="1">
+    <td>1</td>
+    <td><b>皇台酒业</b><span class="src">000995</span></td>
+    <td><span data-zh="白酒Ⅱ" data-en="白酒Ⅱ">白酒Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num">18.45</td>
+    <td class="num up">+7.52%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">1682万</td>
+    <td class="num">30.4/30.4亿</td>
+    <td class="num">4.80</td>
+    <td class="num">0.08</td>
+    <td class="num">1.93%</td>
+    <td class="trend">多头✓ 20新✓ 60新✓ 斜率1.5%/d</td>
+    <td>3连板·7天4板</td>
+    <td></td>
+    <td class="num sc">29.8</td><td class="num sc">35.0</td><td class="num sc">30.0</td>
+    <td><span class="score">94.8</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="服装家纺" data-label="超预期" data-track="score" data-best="1" data-grank="1">
+    <td>2</td>
+    <td><b>九牧王</b><span class="src">601566</span></td>
+    <td><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span></td>
+    <td>主板</td>
+    <td class="num">12.55</td>
+    <td class="num up">+8.66%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">8399万</td>
+    <td class="num">66.4/66.4亿</td>
+    <td class="num">0.73</td>
+    <td class="num">1.16</td>
+    <td class="num">10.14%</td>
+    <td class="trend">多头✓ 20新✓ 60新✓ 斜率0.6%/d</td>
+    <td>首板·10天3板</td>
+    <td></td>
+    <td class="num sc">33.9</td><td class="num sc">35.0</td><td class="num sc">22.8</td>
+    <td><span class="score">91.7</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="游戏Ⅱ" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-billboard="1">
+    <td>3</td>
+    <td><b>大晟文化</b><span class="src">600892</span></td>
+    <td><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num">5.29</td>
+    <td class="num up">+9.98%</td>
+    <td class="num up">+10.07%</td>
+    <td class="num up">2338万</td>
+    <td class="num">26.9/26.9亿</td>
+    <td class="num">1.28</td>
+    <td class="num">0.08</td>
+    <td class="num">1.26%</td>
+    <td class="trend">多头✓ 20新✓ 斜率0.2%/d</td>
+    <td>2连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">21.0</td>
+    <td><span class="score">91.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="农产品加工" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-billboard="1">
+    <td>4</td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span></td>
+    <td>主板</td>
+    <td class="num">3.58</td>
+    <td class="num up">+4.68%</td>
+    <td class="num up">+9.97%</td>
+    <td class="num down">-4265万</td>
+    <td class="num">67.0/54.1亿</td>
+    <td class="num">1.24</td>
+    <td class="num">0.66</td>
+    <td class="num">14.58%</td>
+    <td class="trend">多头✓ 20新✓ 60新✓ 斜率2.3%/d</td>
+    <td>4连板·10天6板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+    <td class="num sc">19.9</td><td class="num sc">24.5</td><td class="num sc">30.0</td>
+    <td><span class="score">74.4</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="冶钢原料" data-label="超预期" data-track="score" data-best="1" data-grank="1">
+    <td>5</td>
+    <td><b>马矿股份</b><span class="src">601123</span></td>
+    <td><span data-zh="冶钢原料" data-en="冶钢原料">冶钢原料</span></td>
+    <td>主板</td>
+    <td class="num">16.58</td>
+    <td class="num up">+10.02%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">5590万</td>
+    <td class="num">186.1/14.4亿</td>
+    <td class="num">1.41</td>
+    <td class="num">2.00</td>
+    <td class="num">13.90%</td>
+    <td class="trend">多头✗ 斜率-1.0%/d</td>
+    <td>首板</td>
+    <td></td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+    <td><span class="score">70.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="一般零售" data-label="超预期" data-track="score" data-best="1" data-grank="1">
+    <td>6</td>
+    <td><b>大连友谊</b><span class="src">000679</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td>主板</td>
+    <td class="num">7.28</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">4127万</td>
+    <td class="num">23.6/23.6亿</td>
+    <td class="num">0.26</td>
+    <td class="num">2.81</td>
+    <td class="num">5.68%</td>
+    <td class="trend">多头✗ 斜率-0.4%/d</td>
+    <td>首板</td>
+    <td></td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+    <td><span class="score">70.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="服装家纺" data-label="超预期" data-track="score" data-grank="2">
+    <td>7</td>
+    <td><b>七匹狼</b><span class="src">002029</span></td>
+    <td><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span></td>
+    <td>主板</td>
+    <td class="num">11.36</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">+10.01%</td>
+    <td class="num up">7736万</td>
+    <td class="num">72.8/68.7亿</td>
+    <td class="num">0.31</td>
+    <td class="num">0.64</td>
+    <td class="num">5.28%</td>
+    <td class="trend">多头✗ 斜率-0.6%/d</td>
+    <td>2连板</td>
+    <td></td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+    <td><span class="score">70.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="化学制品" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-billboard="1">
+    <td>8</td>
+    <td><b>高争民爆</b><span class="src">002827</span></td>
+    <td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
+    <td>主板</td>
+    <td class="num">68.95</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">1728万</td>
+    <td class="num">173.6/173.0亿</td>
+    <td class="num">0.74</td>
+    <td class="num">0.05</td>
+    <td class="num">0.17%</td>
+    <td class="trend">多头✗ 斜率-1.8%/d</td>
+    <td>2连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">作手新一 1580万</span></td>
+    <td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+    <td><span class="score">70.0</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="电池" data-label="超预期" data-track="score" data-best="1" data-grank="1">
+    <td>9</td>
+    <td><b>圣阳股份</b><span class="src">002580</span></td>
+    <td><span data-zh="电池" data-en="电池">电池</span></td>
+    <td>主板</td>
+    <td class="num">20.17</td>
+    <td class="num up">+8.03%</td>
+    <td class="num up">+10.02%</td>
+    <td class="num up">3.96亿</td>
+    <td class="num">84.7/84.5亿</td>
+    <td class="num">1.94</td>
+    <td class="num">0.73</td>
+    <td class="num">8.77%</td>
+    <td class="trend">多头✗ 斜率-1.1%/d</td>
+    <td>首板</td>
+    <td></td>
+    <td class="num sc">31.5</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+    <td><span class="score">66.6</span></td>
+    <td class="wrap"><span class="tag pass">超预期</span></td>
+  </tr><tr data-sector="一般零售" data-label="弱转强·符合" data-track="score" data-grank="2" data-billboard="1">
+    <td>10</td>
+    <td><b>大东方</b><span class="src">600327</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td>主板</td>
+    <td class="num">4.58</td>
+    <td class="num up">+5.29%</td>
+    <td class="num up">+10.13%</td>
+    <td class="num up">6866万</td>
+    <td class="num">38.5/38.5亿</td>
+    <td class="num">0.96</td>
+    <td class="num">2.72</td>
+    <td class="num">5.50%</td>
+    <td class="trend">多头✗ 20新✓ 60新✓ 斜率0.1%/d</td>
+    <td>首板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+    <td class="num sc">22.1</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
+    <td><span class="score">55.5</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="纺织制造" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-billboard="1">
+    <td>11</td>
+    <td><b>浙文影业</b><span class="src">601599</span></td>
+    <td><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span></td>
+    <td>主板</td>
+    <td class="num">3.99</td>
+    <td class="num up">+4.45%</td>
+    <td class="num up">+10.09%</td>
+    <td class="num up">3485万</td>
+    <td class="num">44.3/44.3亿</td>
+    <td class="num">3.66</td>
+    <td class="num">0.80</td>
+    <td class="num">2.15%</td>
+    <td class="trend">多头✗ 20新✓ 60新✓ 斜率0.1%/d</td>
+    <td>2连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">方新侠 579万</span></td>
+    <td class="num sc">19.3</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
+    <td><span class="score">52.6</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="一般零售" data-label="弱转强·符合" data-track="score" data-grank="3">
+    <td>12</td>
+    <td><b>利群股份</b><span class="src">601366</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td>主板</td>
+    <td class="num">4.10</td>
+    <td class="num up">+3.54%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">3775万</td>
+    <td class="num">38.0/38.0亿</td>
+    <td class="num">0.93</td>
+    <td class="num">2.15</td>
+    <td class="num">2.85%</td>
+    <td class="trend">多头✗ 20新✓ 60新✓ 斜率-0.0%/d</td>
+    <td>首板</td>
+    <td></td>
+    <td class="num sc">15.8</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
+    <td><span class="score">49.4</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="专用设备" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1">
+    <td>13</td>
+    <td><b>泰瑞机器</b><span class="src">603289</span></td>
+    <td><span data-zh="专用设备" data-en="专用设备">专用设备</span></td>
+    <td>主板</td>
+    <td class="num">10.99</td>
+    <td class="num up">+5.98%</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">1249万</td>
+    <td class="num">30.4/30.4亿</td>
+    <td class="num">2.21</td>
+    <td class="num">0.97</td>
+    <td class="num">1.54%</td>
+    <td class="trend">多头✗ 斜率-0.8%/d</td>
+    <td>首板</td>
+    <td></td>
+    <td class="num sc">24.5</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">48.9</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="装修建材" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-billboard="1">
+    <td>14</td>
+    <td><b>鲁阳节能</b><span class="src">002088</span></td>
+    <td><span data-zh="装修建材" data-en="装修建材">装修建材</span></td>
+    <td>主板</td>
+    <td class="num">8.82</td>
+    <td class="num up">+5.88%</td>
+    <td class="num up">+10.04%</td>
+    <td class="num up">4753万</td>
+    <td class="num">42.4/42.2亿</td>
+    <td class="num">1.22</td>
+    <td class="num">1.05</td>
+    <td class="num">2.81%</td>
+    <td class="trend">多头✗ 斜率-0.3%/d</td>
+    <td>首板·3天2板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+    <td class="num sc">24.1</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">48.6</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr class="sector-row" data-sep="白酒Ⅱ" hidden><td colspan="20"><span data-zh="白酒Ⅱ" data-en="白酒Ⅱ">白酒Ⅱ</span> · <span data-zh="组内 1 只，最优 皇台酒业（94.8）" data-en="1 picked; top 皇台酒业 (94.8)">组内 1 只，最优 皇台酒业（94.8）</span></td></tr><tr class="sector-row" data-sep="服装家纺" hidden><td colspan="20"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span> · <span data-zh="组内 2 只，最优 九牧王（91.7）" data-en="2 picked; top 九牧王 (91.7)">组内 2 只，最优 九牧王（91.7）</span></td></tr><tr class="sector-row" data-sep="游戏Ⅱ" hidden><td colspan="20"><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span> · <span data-zh="组内 1 只，最优 大晟文化（91.0）" data-en="1 picked; top 大晟文化 (91.0)">组内 1 只，最优 大晟文化（91.0）</span></td></tr><tr class="sector-row" data-sep="农产品加工" hidden><td colspan="20"><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span> · <span data-zh="组内 1 只，最优 东方海洋（74.4）" data-en="1 picked; top 东方海洋 (74.4)">组内 1 只，最优 东方海洋（74.4）</span></td></tr><tr class="sector-row" data-sep="冶钢原料" hidden><td colspan="20"><span data-zh="冶钢原料" data-en="冶钢原料">冶钢原料</span> · <span data-zh="组内 1 只，最优 马矿股份（70.0）" data-en="1 picked; top 马矿股份 (70.0)">组内 1 只，最优 马矿股份（70.0）</span></td></tr><tr class="sector-row" data-sep="一般零售" hidden><td colspan="20"><span data-zh="一般零售" data-en="一般零售">一般零售</span> · <span data-zh="组内 3 只，最优 大连友谊（70.0）" data-en="3 picked; top 大连友谊 (70.0)">组内 3 只，最优 大连友谊（70.0）</span></td></tr><tr class="sector-row" data-sep="化学制品" hidden><td colspan="20"><span data-zh="化学制品" data-en="化学制品">化学制品</span> · <span data-zh="组内 1 只，最优 高争民爆（70.0）" data-en="1 picked; top 高争民爆 (70.0)">组内 1 只，最优 高争民爆（70.0）</span></td></tr><tr class="sector-row" data-sep="电池" hidden><td colspan="20"><span data-zh="电池" data-en="电池">电池</span> · <span data-zh="组内 1 只，最优 圣阳股份（66.6）" data-en="1 picked; top 圣阳股份 (66.6)">组内 1 只，最优 圣阳股份（66.6）</span></td></tr><tr class="sector-row" data-sep="纺织制造" hidden><td colspan="20"><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span> · <span data-zh="组内 1 只，最优 浙文影业（52.6）" data-en="1 picked; top 浙文影业 (52.6)">组内 1 只，最优 浙文影业（52.6）</span></td></tr><tr class="sector-row" data-sep="专用设备" hidden><td colspan="20"><span data-zh="专用设备" data-en="专用设备">专用设备</span> · <span data-zh="组内 1 只，最优 泰瑞机器（48.9）" data-en="1 picked; top 泰瑞机器 (48.9)">组内 1 只，最优 泰瑞机器（48.9）</span></td></tr><tr class="sector-row" data-sep="装修建材" hidden><td colspan="20"><span data-zh="装修建材" data-en="装修建材">装修建材</span> · <span data-zh="组内 1 只，最优 鲁阳节能（48.6）" data-en="1 picked; top 鲁阳节能 (48.6)">组内 1 只，最优 鲁阳节能（48.6）</span></td></tr></tbody></table></div>
+  
+
+  
+  <h2><span data-zh="收盘回填（开盘买入当日验证）" data-en="Close Backfill (open-buy verification)">收盘回填（开盘买入当日验证）</span></h2>
+  <div class="callout">
+    <h3><span data-zh="收盘回填结论（开盘买入当日验证）" data-en="Close-backfill Summary (open-buy verification)">收盘回填结论（开盘买入当日验证）</span></h3>
+    <ul>
+      <li><span data-zh="入选 14 只 · 命中 7 只（当日涨幅 ≥ 2%）· 可买入 13 只（涨停 6 只：开板可买 3 / 一字 3，其中放量可买 2 / 很难买入 1）" data-en="14 picked · 7 hit (day chg ≥ 2%) · buyable 13 (limit-up 6: opened-buyable 3 / sealed 3, volume-buyable 2 / hard 1)">入选 14 只 · 命中 7 只（当日涨幅 ≥ 2%）· 可买入 13 只（涨停 6 只：开板可买 3 / 一字 3，其中放量可买 2 / 很难买入 1）</span></li>
+      <li><span data-zh="买入机会：非涨停可直接开盘买入；涨停开板（盘中曾跌破涨停价）开板可买；一字涨停但放量（换手 ≥ 1.5%）放量可买（可涨停价排板成交）；缩量一字很难买入。" data-en="Buyability: non-limit open-buyable; limit-up opened (intraday dip below limit) opened-buyable; sealed limit-up with volume (turnover ≥ 1.5%) volume-buyable (queueable at limit); thin sealed limit-up hard to buy.">买入机会：非涨停可直接开盘买入；涨停开板（盘中曾跌破涨停价）开板可买；一字涨停但放量（换手 ≥ 1.5%）放量可买（可涨停价排板成交）；缩量一字很难买入。</span></li>
+    </ul>
+  </div>
+  <div class="toolbar">
+    <div class="toolrow"><span class="cap"><span data-zh="标签" data-en="Label">标签</span></span><span class="chips" id="closeLchips"><button type="button" class="chip active" data-lfilter=""><span data-zh="全部 14" data-en="All 14">全部 14</span></button><button type="button" class="chip" data-lfilter="@best"><span data-zh="组内第一" data-en="Group #1">组内第一</span><i>11</i></button><button type="button" class="chip" data-lfilter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>14</i></button><button type="button" class="chip" data-lfilter="@billboard"><span data-zh="上榜" data-en="On list">上榜</span><i>6</i></button><button type="button" class="chip" data-lfilter="@p4"><span data-zh="P04 通道" data-en="P04 track">P04 通道</span><i>0</i></button><button type="button" class="chip" data-lfilter="@score"><span data-zh="打分轨 P1-P3" data-en="Score track">打分轨 P1-P3</span><i>14</i></button><button type="button" class="chip" data-lfilter="超预期"><span data-zh="超预期" data-en="超预期">超预期</span><i>8</i></button><button type="button" class="chip" data-lfilter="弱转强·符合"><span data-zh="弱转强·符合" data-en="弱转强·符合">弱转强·符合</span><i>6</i></button></span></div>
+    <div class="toolrow"><span class="cap"><span data-zh="行业" data-en="Industry">行业</span></span><span class="chips" id="closeSchips"><button type="button" class="chip active" data-sfilter=""><span data-zh="全部行业" data-en="All sectors">全部行业</span></button><button type="button" class="chip" data-sfilter="白酒Ⅱ"><span data-zh="白酒Ⅱ" data-en="白酒Ⅱ">白酒Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="服装家纺"><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span><i>2</i></button><button type="button" class="chip" data-sfilter="游戏Ⅱ"><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="农产品加工"><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span><i>1</i></button><button type="button" class="chip" data-sfilter="冶钢原料"><span data-zh="冶钢原料" data-en="冶钢原料">冶钢原料</span><i>1</i></button><button type="button" class="chip" data-sfilter="一般零售"><span data-zh="一般零售" data-en="一般零售">一般零售</span><i>3</i></button><button type="button" class="chip" data-sfilter="化学制品"><span data-zh="化学制品" data-en="化学制品">化学制品</span><i>1</i></button><button type="button" class="chip" data-sfilter="电池"><span data-zh="电池" data-en="电池">电池</span><i>1</i></button><button type="button" class="chip" data-sfilter="纺织制造"><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span><i>1</i></button><button type="button" class="chip" data-sfilter="专用设备"><span data-zh="专用设备" data-en="专用设备">专用设备</span><i>1</i></button><button type="button" class="chip" data-sfilter="装修建材"><span data-zh="装修建材" data-en="装修建材">装修建材</span><i>1</i></button></span></div>
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>#</th><th><span data-zh="标的" data-en="Name">标的</span></th><th><span data-zh="行业" data-en="Industry">行业</span></th><th><span data-zh="板块" data-en="Board">板块</span></th>
+    <th><span data-zh="昨收%" data-en="PrevClose %">昨收%</span></th><th><span data-zh="今开%" data-en="Open %">今开%</span></th><th><span data-zh="今收%" data-en="Close %">今收%</span></th>
+    <th><span data-zh="买入收益%" data-en="Open-buy ret">买入收益%</span></th>
+    <th><span data-zh="今日净流入" data-en="Inflow">今日净流入</span></th><th><span data-zh="市值/流通" data-en="Cap/FLOAT">市值/流通</span></th>
+    <th><span data-zh="量比" data-en="Vol ratio">量比</span></th><th><span data-zh="换手%" data-en="Turnover %">换手%</span></th>
+    <th><span data-zh="涨停" data-en="Limit">涨停</span></th><th><span data-zh="可买" data-en="Buyable">可买</span></th><th><span data-zh="命中" data-en="Hit">命中</span></th>
+    <th><span data-zh="连板" data-en="Streak">连板</span></th><th><span data-zh="上榜" data-en="List">上榜</span></th>
+  </tr></thead><tbody id="closeBody"><tr data-sector="白酒Ⅱ" data-label="超预期" data-track="score" data-billboard="1">
+    <td>1</td>
+    <td><b>皇台酒业</b><span class="src">000995</span></td>
+    <td><span data-zh="白酒Ⅱ" data-en="白酒Ⅱ">白酒Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+7.52%</td>
+    <td class="num down">-4.66%</td>
+    <td class="num down">-12.18%</td>
+    <td class="num down">-4959万</td>
+    <td class="num">29.0/29.0亿</td>
+    <td class="num">2.45</td>
+    <td class="num">41.52%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>8天4板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="服装家纺" data-label="超预期" data-track="score" data-billboard="1">
+    <td>2</td>
+    <td><b>九牧王</b><span class="src">601566</span></td>
+    <td><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+8.66%</td>
+    <td class="num down">-5.19%</td>
+    <td class="num down">-13.85%</td>
+    <td class="num down">-1.68亿</td>
+    <td class="num">62.9/62.9亿</td>
+    <td class="num">1.71</td>
+    <td class="num">16.72%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>7天2板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="游戏Ⅱ" data-label="超预期" data-track="score">
+    <td>3</td>
+    <td><b>大晟文化</b><span class="src">600892</span></td>
+    <td><span data-zh="游戏Ⅱ" data-en="游戏Ⅱ">游戏Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num up">+10.07%</td>
+    <td class="num up">+9.98%</td>
+    <td class="num up">+9.98%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">4001万</td>
+    <td class="num">29.6/29.6亿</td>
+    <td class="num">0.18</td>
+    <td class="num">2.35%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag "><span data-zh="放量可买" data-en="Volume queue">放量可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>3连板</td>
+    <td></td>
+  </tr><tr data-sector="农产品加工" data-label="弱转强·符合" data-track="score" data-billboard="1">
+    <td>4</td>
+    <td><b>东方海洋</b><span class="src">002086</span></td>
+    <td><span data-zh="农产品加工" data-en="农产品加工">农产品加工</span></td>
+    <td>主板</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">+4.68%</td>
+    <td class="num down">-4.09%</td>
+    <td class="num down">-8.77%</td>
+    <td class="num down">-3.44亿</td>
+    <td class="num">64.3/51.9亿</td>
+    <td class="num">2.61</td>
+    <td class="num">50.92%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>8天5板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="冶钢原料" data-label="超预期" data-track="score" data-billboard="1">
+    <td>5</td>
+    <td><b>马矿股份</b><span class="src">601123</span></td>
+    <td><span data-zh="冶钢原料" data-en="冶钢原料">冶钢原料</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+10.02%</td>
+    <td class="num up">+10.02%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">1.40亿</td>
+    <td class="num">204.7/15.9亿</td>
+    <td class="num">3.96</td>
+    <td class="num">32.01%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>2连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="一般零售" data-label="超预期" data-track="score" data-billboard="1">
+    <td>6</td>
+    <td><b>大连友谊</b><span class="src">000679</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td>主板</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">1717万</td>
+    <td class="num">25.9/25.9亿</td>
+    <td class="num">0.95</td>
+    <td class="num">2.60%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag "><span data-zh="放量可买" data-en="Volume queue">放量可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>2连板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="服装家纺" data-label="超预期" data-track="score" data-billboard="1">
+    <td>7</td>
+    <td><b>七匹狼</b><span class="src">002029</span></td>
+    <td><span data-zh="服装家纺" data-en="服装家纺">服装家纺</span></td>
+    <td>主板</td>
+    <td class="num up">+10.01%</td>
+    <td class="num up">+9.97%</td>
+    <td class="num down">-9.97%</td>
+    <td class="num down">-19.94%</td>
+    <td class="num down">-4.20亿</td>
+    <td class="num">65.6/61.9亿</td>
+    <td class="num">3.01</td>
+    <td class="num">23.86%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>3天2板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="化学制品" data-label="超预期" data-track="score">
+    <td>8</td>
+    <td><b>高争民爆</b><span class="src">002827</span></td>
+    <td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">1747万</td>
+    <td class="num">191.0/190.3亿</td>
+    <td class="num">0.07</td>
+    <td class="num">0.20%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag gap"><span data-zh="很难买入" data-en="Hard to buy">很难买入</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>3连板</td>
+    <td></td>
+  </tr><tr data-sector="电池" data-label="超预期" data-track="score">
+    <td>9</td>
+    <td><b>圣阳股份</b><span class="src">002580</span></td>
+    <td><span data-zh="电池" data-en="电池">电池</span></td>
+    <td>主板</td>
+    <td class="num up">+10.02%</td>
+    <td class="num up">+8.03%</td>
+    <td class="num up">+2.04%</td>
+    <td class="num down">-5.99%</td>
+    <td class="num down">-3.49亿</td>
+    <td class="num">86.5/86.2亿</td>
+    <td class="num">2.70</td>
+    <td class="num">32.35%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>昨日首板</td>
+    <td></td>
+  </tr><tr data-sector="一般零售" data-label="弱转强·符合" data-track="score">
+    <td>10</td>
+    <td><b>大东方</b><span class="src">600327</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td>主板</td>
+    <td class="num up">+10.13%</td>
+    <td class="num up">+5.29%</td>
+    <td class="num down">-3.45%</td>
+    <td class="num down">-8.74%</td>
+    <td class="num down">-4891万</td>
+    <td class="num">37.2/37.2亿</td>
+    <td class="num">4.72</td>
+    <td class="num">13.35%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>昨日首板</td>
+    <td></td>
+  </tr><tr data-sector="纺织制造" data-label="弱转强·符合" data-track="score">
+    <td>11</td>
+    <td><b>浙文影业</b><span class="src">601599</span></td>
+    <td><span data-zh="纺织制造" data-en="纺织制造">纺织制造</span></td>
+    <td>主板</td>
+    <td class="num up">+10.09%</td>
+    <td class="num up">+4.45%</td>
+    <td class="num up">+9.95%</td>
+    <td class="num up">+5.50%</td>
+    <td class="num down">-2071万</td>
+    <td class="num">48.7/48.7亿</td>
+    <td class="num">3.53</td>
+    <td class="num">9.67%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>3连板</td>
+    <td></td>
+  </tr><tr data-sector="一般零售" data-label="弱转强·符合" data-track="score">
+    <td>12</td>
+    <td><b>利群股份</b><span class="src">601366</span></td>
+    <td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+    <td>主板</td>
+    <td class="num up">+10.00%</td>
+    <td class="num up">+3.54%</td>
+    <td class="num down">-3.54%</td>
+    <td class="num down">-7.08%</td>
+    <td class="num down">-1587万</td>
+    <td class="num">36.7/36.7亿</td>
+    <td class="num">4.83</td>
+    <td class="num">7.73%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>昨日首板</td>
+    <td></td>
+  </tr><tr data-sector="专用设备" data-label="弱转强·符合" data-track="score" data-billboard="1">
+    <td>13</td>
+    <td><b>泰瑞机器</b><span class="src">603289</span></td>
+    <td><span data-zh="专用设备" data-en="专用设备">专用设备</span></td>
+    <td>主板</td>
+    <td class="num up">+9.97%</td>
+    <td class="num up">+5.98%</td>
+    <td class="num down">-3.86%</td>
+    <td class="num down">-9.84%</td>
+    <td class="num up">2846万</td>
+    <td class="num">29.3/29.3亿</td>
+    <td class="num">5.44</td>
+    <td class="num">8.79%</td>
+    <td></td>
+    <td><span class="tag "><span data-zh="开盘可买" data-en="Open-buyable">开盘可买</span></span></td>
+    <td></td>
+    <td>昨日首板</td>
+    <td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span></td>
+  </tr><tr data-sector="装修建材" data-label="弱转强·符合" data-track="score">
+    <td>14</td>
+    <td><b>鲁阳节能</b><span class="src">002088</span></td>
+    <td><span data-zh="装修建材" data-en="装修建材">装修建材</span></td>
+    <td>主板</td>
+    <td class="num up">+10.04%</td>
+    <td class="num up">+5.88%</td>
+    <td class="num up">+9.96%</td>
+    <td class="num up">+4.08%</td>
+    <td class="num down">-515万</td>
+    <td class="num">46.7/46.4亿</td>
+    <td class="num">2.48</td>
+    <td class="num">6.68%</td>
+    <td><span class="tag pass"><span data-zh="涨停" data-en="Limit">涨停</span></span></td>
+    <td><span class="tag pass"><span data-zh="开板可买" data-en="Opened">开板可买</span></span></td>
+    <td><span class="tag pass"><span data-zh="命中" data-en="Hit">命中</span></span></td>
+    <td>2连板·4天3板</td>
+    <td></td>
+  </tr></tbody></table></div>
+
+  
+  <h2><span data-zh="贴线未入选（8 只）" data-en="Near Miss (8)">贴线未入选（8 只）</span></h2>
+  <div class="card">
+    <details>
+      <summary><span data-zh="总分落在入选线（45）之下 10 分内的样本，默认折叠，供回溯调「入选线」" data-en="Scores within 10 points below the admission line (45); collapsed by default, for tuning the threshold">总分落在入选线（45）之下 10 分内的样本，默认折叠，供回溯调「入选线」</span></summary>
+      <div class="table-wrap"><table><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
+    <th rowspan="2"><span data-zh="板块" data-en="Board">板块</span></th><th rowspan="2"><span data-zh="今开价" data-en="Open px">今开价</span></th><th rowspan="2"><span data-zh="今开" data-en="Open%">今开</span></th><th rowspan="2"><span data-zh="昨涨" data-en="Prev chg">昨涨</span></th>
+    <th rowspan="2"><span data-zh="昨日净流入" data-en="Prev inflow">昨日净流入</span></th><th rowspan="2"><span data-zh="市值/流通" data-en="Cap/FLOAT">市值/流通</span></th>
+    <th rowspan="2"><span data-zh="竞价量能比" data-en="Auction vol">竞价量能比</span></th><th rowspan="2"><span data-zh="昨量比" data-en="Prev volR">昨量比</span></th><th rowspan="2"><span data-zh="昨换手%" data-en="Prev turn">昨换手%</span></th><th rowspan="2"><span data-zh="趋势" data-en="Trend">趋势</span></th>
+    <th rowspan="2"><span data-zh="连板" data-en="Streak">连板</span></th><th rowspan="2"><span data-zh="上榜" data-en="List">上榜</span></th>
+    <th colspan="3" class="grp"><span data-zh="信号分项" data-en="Signals">信号分项</span></th>
+    <th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标签" data-en="Label">标签</span></th></tr>
+    <tr><th class="grp-sub"><span data-zh="P1 竞价 · 35" data-en="P1 竞价 · 35">P1 竞价 · 35</span></th><th class="grp-sub"><span data-zh="P2 弱转强 · 35" data-en="P2 弱转强 · 35">P2 弱转强 · 35</span></th><th class="grp-sub"><span data-zh="P3 趋势 · 30" data-en="P3 趋势 · 30">P3 趋势 · 30</span></th></tr></thead><tbody><tr data-sector="贸易Ⅱ" data-label="弱转强·符合" data-track="score" data-grank="">
+    <td>1</td>
+    <td><b>中成股份</b><span class="src">000151</span></td>
+    <td><span data-zh="贸易Ⅱ" data-en="贸易Ⅱ">贸易Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num">9.96</td>
+    <td class="num up">+4.18%</td>
+    <td class="num up">+10.01%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">0.70</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✗ 斜率-0.8%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">18.2</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">42.6</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="出版" data-label="弱转强·符合" data-track="score" data-grank="">
+    <td>2</td>
+    <td><b>龙版传媒</b><span class="src">605577</span></td>
+    <td><span data-zh="出版" data-en="出版">出版</span></td>
+    <td>主板</td>
+    <td class="num">14.88</td>
+    <td class="num up">+4.06%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">7.55</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✗ 斜率-1.8%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">17.9</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">42.2</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="电池" data-label="弱转强·符合" data-track="score" data-grank="">
+    <td>3</td>
+    <td><b>尚水智能</b><span class="src">301513</span></td>
+    <td><span data-zh="电池" data-en="电池">电池</span></td>
+    <td>创业板</td>
+    <td class="num">56.86</td>
+    <td class="num up">+3.80%</td>
+    <td class="num up">+20.00%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">0.60</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✗ 斜率-2.1%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">16.8</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">41.3</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="照明设备Ⅱ" data-label="趋势向上" data-track="score" data-grank="">
+    <td>4</td>
+    <td><b>阳光照明</b><span class="src">600261</span></td>
+    <td><span data-zh="照明设备Ⅱ" data-en="照明设备Ⅱ">照明设备Ⅱ</span></td>
+    <td>主板</td>
+    <td class="num">4.95</td>
+    <td class="num up">+0.00%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">0.38</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✓ 20新✓ 60新✓ 斜率1.6%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">0.0</td><td class="num sc">10.5</td><td class="num sc">30.0</td>
+    <td><span class="score">40.5</span></td>
+    <td class="wrap"><span class="tag gap">趋势向上</span></td>
+  </tr><tr data-sector="光学光电子" data-label="弱转强·符合" data-track="score" data-grank="">
+    <td>5</td>
+    <td><b>宝明科技</b><span class="src">002992</span></td>
+    <td><span data-zh="光学光电子" data-en="光学光电子">光学光电子</span></td>
+    <td>主板</td>
+    <td class="num">31.36</td>
+    <td class="num up">+3.29%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">0.30</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✗ 斜率-0.7%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">15.0</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">39.5</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="电网设备" data-label="弱转强·符合" data-track="score" data-grank="">
+    <td>6</td>
+    <td><b>远程股份</b><span class="src">002692</span></td>
+    <td><span data-zh="电网设备" data-en="电网设备">电网设备</span></td>
+    <td>主板</td>
+    <td class="num">4.31</td>
+    <td class="num up">+3.11%</td>
+    <td class="num up">+10.00%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">2.58</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✗ 斜率-0.9%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">14.3</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">38.9</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="其他电源设备Ⅱ" data-label="弱转强·符合" data-track="score" data-grank="">
+    <td>7</td>
+    <td><b>海博思创</b><span class="src">688411</span></td>
+    <td><span data-zh="其他电源设备Ⅱ" data-en="其他电源设备Ⅱ">其他电源设备Ⅱ</span></td>
+    <td>科创板</td>
+    <td class="num">159.20</td>
+    <td class="num up">+3.09%</td>
+    <td class="num up">+7.14%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">0.23</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✗ 斜率-0.9%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">14.3</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+    <td><span class="score">38.8</span></td>
+    <td class="wrap"><span class="tag ">弱转强·符合</span></td>
+  </tr><tr data-sector="炼化及贸易" data-label="竞价涨停" data-track="score" data-grank="">
+    <td>8</td>
+    <td><b>广聚能源</b><span class="src">000096</span></td>
+    <td><span data-zh="炼化及贸易" data-en="炼化及贸易">炼化及贸易</span></td>
+    <td>主板</td>
+    <td class="num">8.46</td>
+    <td class="num up">+10.01%</td>
+    <td class="num up">+1.18%</td>
+    <td class="num ">—</td>
+    <td class="num">—</td>
+    <td class="num">0.94</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="trend">多头✗ 斜率-0.3%/d</td>
+    <td></td>
+    <td></td>
+    <td class="num sc">35.0</td><td class="num sc">0.0</td><td class="num sc">0.0</td>
+    <td><span class="score">35.0</span></td>
+    <td class="wrap"><span class="tag pass">竞价涨停</span></td>
+  </tr></tbody></table></div>
+    </details>
+  </div>
+
+  <h2><span data-zh="数据缺口" data-en="Data Gaps">数据缺口</span></h2>
+  <div class="card">
+    <span data-zh="无数据缺口记录。" data-en="No data-gap records.">无数据缺口记录。</span>
+  </div>
+
+  <h2><span data-zh="数据口径与偏差声明" data-en="Data Provenance and Deviations">数据口径与偏差声明</span></h2>
+  <div class="card"><p class="body-text"><span data-zh="竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 / 昨量比 / 昨换手 / 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线（昨量比 = 昨日成交量 / 前5日均量；昨换手 = 昨日成交量 / 流通股本，流通股本 = 流通市值 / 现价），锚定前一交易日 2026-11-03（全市场基线缓存 preopen-baseline-*.json）。主力净流入与龙虎榜（含知名游资席位标注，公开常见归属仅供参考）来自东方财富 push2his / datacenter 接口，龙虎榜约 17:00 后出齐（收盘回填定时 18:00 运行），接口失败相关列留空。市值/流通来自报价市值字段（历史归档按 股本 × 当日收盘价 折算）。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（2026-11-04），不依赖外部交易日历。运行环境：local。" data-en="Auction snapshot: Tencent qt.gtimg.cn batch quotes (open fixed at 09:25 auction close; auction vol ratio = auction vol / yesterday full-day vol). Yesterday-change + trend baseline: Tencent ifzq fqkline (pre-adjusted daily K), anchored to the prior trading day 2026-11-03 (full-market baseline cache preopen-baseline-*.json). Industry: local cache eod/data/industry-map.json. Trade date derived from quote-timestamp mode (2026-11-04); no external calendar. Runner: local.">竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 / 昨量比 / 昨换手 / 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线（昨量比 = 昨日成交量 / 前5日均量；昨换手 = 昨日成交量 / 流通股本，流通股本 = 流通市值 / 现价），锚定前一交易日 2026-11-03（全市场基线缓存 preopen-baseline-*.json）。主力净流入与龙虎榜（含知名游资席位标注，公开常见归属仅供参考）来自东方财富 push2his / datacenter 接口，龙虎榜约 17:00 后出齐（收盘回填定时 18:00 运行），接口失败相关列留空。市值/流通来自报价市值字段（历史归档按 股本 × 当日收盘价 折算）。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（2026-11-04），不依赖外部交易日历。运行环境：local。</span></p></div>
+
+  <div class="disclaimer"><span data-zh="本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen-2026-11-04.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。" data-en="This report is programmatic observation output for personal research only and is not investment advice. Pre-open candidates are screened on the auction snapshot; prices may still move after 09:25, and limit-up / one-word boards may be unbuyable — verify tradability and liquidity yourself. The snapshot is archived to eod/data/preopen-2026-11-04.json; after close preopen_backfill.js back-fills the day change / limit-up and computes the hit rate.">本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen-2026-11-04.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。</span></div>
+  <div class="footer">candidate-pool · preopen screener v1 · <span data-zh="全市场" data-en="Full market">全市场</span> · 2026-11-04</div>
+</div>
+<script>
+(function () {
+  var themeBtn = document.getElementById('themeBtn');
+  var root = document.documentElement;
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('report-theme'); } catch (e) {}
+  if (savedTheme === 'light' || savedTheme === 'dark') root.setAttribute('data-theme', savedTheme);
+  function syncThemeLabel() { themeBtn.textContent = (root.getAttribute('data-theme') === 'dark') ? '☀' : '🌙'; }
+  syncThemeLabel();
+  themeBtn.addEventListener('click', function () {
+    var t = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem('report-theme', t); } catch (e) {}
+    syncThemeLabel();
+  });
+  var lang = 'zh';
+  var btn = document.getElementById('langBtn');
+  var nodes = document.querySelectorAll('[data-zh]');
+  nodes.forEach(function (el) { if (!el.getAttribute('data-zh')) el.setAttribute('data-zh', el.innerHTML); });
+  function apply(target) {
+    nodes.forEach(function (el) {
+      var val = el.getAttribute('data-' + target);
+      if (val !== null && val !== '') el.innerHTML = val;
+    });
+    document.documentElement.lang = (target === 'zh') ? 'zh-CN' : 'en';
+    document.title = (target === 'zh') ? '盘前选股 — 2026-11-04' : 'Pre-Open Screener — 2026-11-04';
+    btn.textContent = (target === 'zh') ? 'EN' : '中文';
+  }
+  btn.addEventListener('click', function () { lang = (lang === 'zh') ? 'en' : 'zh'; apply(lang); });
+  apply(lang);
+
+  // 候选明细：视图切换 + 标签过滤 + 行业过滤（AND）+ 分项开关。
+  // 行服务端渲染好；「按行业」把行重排进分组分隔行之下，不重建 DOM。
+  var tbody = document.getElementById('candBody');
+  if (tbody) {
+    var candRows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-sector]'));
+    var sepOrder = [];
+    Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-sep]'), function (tr) { sepOrder.push(tr); });
+    var candView = 'score', lFilter = '', sFilter = '';
+    var viewScoreBtn = document.getElementById('viewScore');
+    var viewSectorBtn = document.getElementById('viewSector');
+    function want(tr) {
+      var okL = true, okS = true;
+      if (lFilter === '@best') okL = tr.hasAttribute('data-best');
+      else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (lFilter === '@billboard') okL = tr.hasAttribute('data-billboard');
+      else if (lFilter === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
+      else if (lFilter === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
+      else if (lFilter) okL = tr.getAttribute('data-label') === lFilter;
+      if (sFilter) okS = tr.getAttribute('data-sector') === sFilter;
+      return okL && okS;
+    }
+    function renderCand() {
+      var frag = document.createDocumentFragment();
+      var ranked = (lFilter === '@best' || lFilter === '@top3');
+      var shown = [];
+      if (candView === 'score') {
+        candRows.forEach(function (tr) { if (want(tr)) { frag.appendChild(tr); shown.push(tr); } });
+      } else {
+        sepOrder.forEach(function (sep) {
+          var sec = sep.getAttribute('data-sep');
+          if (sFilter && sec !== sFilter) return;
+          var groupRows = [];
+          candRows.forEach(function (tr) { if (tr.getAttribute('data-sector') === sec && want(tr)) groupRows.push(tr); });
+          if (!groupRows.length) return;
+          sep.hidden = false; frag.appendChild(sep);
+          groupRows.forEach(function (tr) { frag.appendChild(tr); shown.push(tr); });
+        });
+      }
+      shown.forEach(function (tr) {
+        var cell = tr.cells[0];
+        if (ranked) {
+          if (!tr.dataset.idx) tr.dataset.idx = cell.textContent;
+          cell.textContent = tr.getAttribute('data-grank') || tr.dataset.idx;
+        } else if (tr.dataset.idx) {
+          cell.textContent = tr.dataset.idx;
+        }
+      });
+      while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+      tbody.appendChild(frag);
+    }
+    function setView(v) {
+      candView = v;
+      viewScoreBtn.classList.toggle('active', v === 'score');
+      viewSectorBtn.classList.toggle('active', v === 'sector');
+      renderCand();
+    }
+    viewScoreBtn.addEventListener('click', function () { setView('score'); });
+    viewSectorBtn.addEventListener('click', function () { setView('sector'); });
+    function bindChips(id, setter) {
+      var wrap = document.getElementById(id);
+      wrap.addEventListener('click', function (e) {
+        var chip = e.target.closest('.chip');
+        if (!chip) return;
+        setter(chip.getAttribute('data-lfilter') != null ? chip.getAttribute('data-lfilter') : chip.getAttribute('data-sfilter') || '');
+        Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function (c) {
+          var v = c.getAttribute('data-lfilter') != null ? c.getAttribute('data-lfilter') : (c.getAttribute('data-sfilter') || '');
+          var cur = (id === 'lchips') ? lFilter : sFilter;
+          c.classList.toggle('active', v === cur);
+        });
+        // 组内前三要求同组相邻：选中时自动切「按行业」
+        if (lFilter === '@top3' && candView !== 'sector') { setView('sector'); return; }
+        renderCand();
+      });
+    }
+    bindChips('lchips', function (v) { lFilter = v; });
+    bindChips('schips', function (v) { sFilter = v; });
+    var bdToggle = document.getElementById('bdToggle');
+    var scoreNote = document.getElementById('scoreNote');
+    function applyBd() {
+      var on = bdToggle.checked;
+      document.getElementById('candTable').classList.toggle('hide-bd', !on);
+      if (scoreNote) scoreNote.style.display = on ? '' : 'none';
+    }
+    bdToggle.addEventListener('change', applyBd);
+    applyBd();
+    renderCand();
+  }
+
+  // 收盘回填表：与候选明细同一套 标签/行业 过滤（AND），只做行显隐，不动序号。
+  var ctb = document.getElementById('closeBody');
+  if (ctb) {
+    var cRows = Array.prototype.slice.call(ctb.querySelectorAll('tr[data-sector]'));
+    var clF = '', csF = '';
+    function cWant(tr) {
+      var okL = true;
+      if (clF === '@best') okL = tr.hasAttribute('data-best');
+      else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (clF === '@billboard') okL = tr.hasAttribute('data-billboard');
+      else if (clF === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
+      else if (clF === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
+      else if (clF) okL = tr.getAttribute('data-label') === clF;
+      if (csF) okL = okL && tr.getAttribute('data-sector') === csF;
+      return okL;
+    }
+    function renderClose() { cRows.forEach(function (tr) { tr.hidden = !cWant(tr); }); }
+    function bindCloseChips(id, which) {
+      var wrap = document.getElementById(id);
+      if (!wrap) return;
+      wrap.addEventListener('click', function (e) {
+        var chip = e.target.closest('.chip');
+        if (!chip) return;
+        var v = which === 'l'
+          ? (chip.getAttribute('data-lfilter') != null ? chip.getAttribute('data-lfilter') : '')
+          : (chip.getAttribute('data-sfilter') || '');
+        if (which === 'l') clF = v; else csF = v;
+        Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        renderClose();
+      });
+    }
+    bindCloseChips('closeLchips', 'l');
+    bindCloseChips('closeSchips', 's');
+  }
+})();
+</script>
+</body>
+</html>
