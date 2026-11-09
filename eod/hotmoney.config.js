@@ -94,8 +94,8 @@ module.exports = {
   // 6. 归档与报告
   // =========================================================================
   store: {
-    dataDir: 'data',          // eod/data/hotmoney-<日>.json + 快照/观察名单
-    reportDir: 'reports',     // eod/reports/hotmoney-<日>.html
+    dataDir: 'data/hotmoney',      // eod/data/hotmoney/hotmoney-<日>.json + 快照/观察名单（快照/名单同目录）
+    reportDir: 'reports/hotmoney', // eod/reports/hotmoney/hotmoney-<日>.html
     prefix: 'hotmoney',
   },
 

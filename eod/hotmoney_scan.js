@@ -217,32 +217,21 @@ async function run() {
     }
   }
   const byTraderMap = new Map();
-  const byStockMap = new Map();
   for (const t of trades) {
     const tr = byTraderMap.get(t.name) || { name: t.name, tier: t.tier, buy: 0, sell: 0, net: 0, days: new Set(), stocks: new Set() };
     tr.buy += t.buy || 0; tr.sell += t.sell || 0; tr.net += t.net || 0;
     tr.days.add(t.date); tr.stocks.add(t.code);
     byTraderMap.set(t.name, tr);
-    const ts = byStockMap.get(t.code) || { code: t.code, stock: t.stock, buy: 0, sell: 0, net: 0, days: new Set(), traders: new Map() };
-    ts.buy += t.buy || 0; ts.sell += t.sell || 0; ts.net += t.net || 0;
-    ts.days.add(t.date);
-    const tm = ts.traders.get(t.name) || { name: t.name, tier: t.tier, net: 0, buy: 0, sell: 0 };
-    tm.buy += t.buy || 0; tm.sell += t.sell || 0; tm.net += t.net || 0;
-    ts.traders.set(t.name, tm);
-    byStockMap.set(t.code, ts);
   }
   const byTrader = [...byTraderMap.values()]
     .map((o) => ({ name: o.name, tier: o.tier, buy: o.buy, sell: o.sell, net: o.net, dayCount: o.days.size, stockCount: o.stocks.size }))
-    .sort((a, b) => b.net - a.net);
-  const byStock = [...byStockMap.values()]
-    .map((o) => ({ code: o.code, stock: o.stock, buy: o.buy, sell: o.sell, net: o.net, dayCount: o.days.size, traders: [...o.traders.values()].sort((a, b) => b.net - a.net) }))
     .sort((a, b) => b.net - a.net);
 
   const result = {
     anchor,
     window: { nDays, days: days.map((d) => ({ date: d.date, stockCount: d.stockCount, hitCount: d.records.length })) },
     anchorDay: { date: anchorDoc.date, stockCount: anchorDoc.stockCount, records: anchorDoc.records },
-    trades, byTrader, byStock, seatChanges, watchTop,
+    trades, byTrader, seatChanges, watchTop,
   };
 
   // 报告（覆盖式单文件 HTML）

@@ -10,18 +10,18 @@
 
 | 任务 | 自动化 ID | 调度（RRULE） | 人类可读 | 状态 | 产物 |
 |---|---|---|---|---|---|
-| 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen-baseline-*.json`（不入库） |
+| 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen/preopen-baseline-*.json`（不入库） |
 | pulse 消息脉搏 · 一键报告 | `6d84d676-9d4c-4880-a205-b99383cfb74f` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=0` | 每日 08:00 | PAUSED | `pulse/report/latest.html`（不入库） |
 | 盘前纪要每日早间分析（附录 A1） | `automation-1784254142442` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=8;BYMINUTE=30` | 工作日 08:30 | ACTIVE | 仅对话输出（cwd 不在本仓库） |
 | pulse watch · 常驻监听启动 | `87f8f966-f5f4-41d6-a5b7-04a6c45059ea` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=30` | 每日 08:30 | PAUSED | `pulse/data/watch-console.log` + 归档（不入库） |
-| 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen-<日>.json` + html |
+| 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen/preopen-<日>.json` + html |
 | 早盘机会（10:30） | `437fc164-152b-431c-b5bf-8a7a211f8f47` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30` | 工作日 10:30 | ACTIVE | 同 `--intraday` 产物 |
 | 午盘机会（11:30） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
-| 尾盘选股-观察模式(1430) | `f46d3c1c-a803-4e43-a2a7-7db8ede8b5ba` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod-<交易日>-obs.json` + html |
-| 尾盘选股-正式口径(1450) | `6cda9d58-4ba9-4c1d-ac2c-476c2459d879` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod-<交易日>.json` + html |
+| 尾盘选股-观察模式(1430) | `f46d3c1c-a803-4e43-a2a7-7db8ede8b5ba` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod/eod-<交易日>-obs.json` + html |
+| 尾盘选股-正式口径(1450) | `6cda9d58-4ba9-4c1d-ac2c-476c2459d879` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod/eod-<交易日>.json` + html |
 | A股次日候选池初筛 | `automation-1786328116138` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
-| 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen-<日>.json` close 段 |
-| 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney-<日>.json` + `eod/reports/hotmoney-<日>.html` |
+| 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
+| 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
 
@@ -65,7 +65,7 @@ chore: <任务中文名> $(date +%F)
 - 报告文件存在 → `present_files(<报告绝对路径>)`，一句话说明报告内容要点；
 - 文件不存在 → **如实说明**（时段跳过 / 当日无候选 / 回填失败），把脚本日志尾部的关键错误贴出来，**不要编造路径**。
 
-各任务的报告路径以小节内 Prompt 里写死的为准（盘前/回填 `eod/reports/preopen-<日>.html`、尾盘观察 `eod-<日>-obs.html`、尾盘正式 `eod-<日>.html`、盘中 `eod-<日>-intraday.html`、次日初筛 `reports/stock_list_<日>.html`）。
+各任务的报告路径以小节内 Prompt 里写死的为准（盘前/回填 `eod/reports/preopen/preopen-<日>.html`、尾盘观察 `eod-<日>-obs.html`、尾盘正式 `eod-<日>.html`、盘中 `eod-<日>-intraday.html`、次日初筛 `reports/stock_list_<日>.html`）。
 
 > **同步状态（2026-11-06）**：本约定为本日新增，下文各任务 Prompt 模板均已含预览步骤；本机 7 条记录（2/3/4/5/6/7/8 小节）的线上 prompt 已于同日用 `automation_update` 逐条同步完成。
 
@@ -77,7 +77,7 @@ chore: <任务中文名> $(date +%F)
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0`（工作日 03:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
-- **产物**：`eod/data/preopen-baseline-YYYYMMDD.json`（派生缓存，已被 .gitignore 忽略，不入库）
+- **产物**：`eod/data/preopen/preopen-baseline-YYYYMMDD.json`（派生缓存，已被 .gitignore 忽略，不入库）
 - **推送**：失败时经项目 notify 配置告警；成功静默
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
@@ -85,13 +85,13 @@ chore: <任务中文名> $(date +%F)
 ~~~text
 在候选池仓库运行盘前基线预计算：执行命令 `node eod/preopen_screener.js --baseline`（cwd 固定为 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool）。
 
-该命令会：抓取全市场前一日（lastClosedTradingDay，锚定日）的日 K 线，计算「昨日涨幅 + 昨日成交量 + 趋势(MA5/10/20/60 多头/N日新高/斜率)」基线指标，写入 eod/data/preopen-baseline-YYYYMMDD.json 缓存文件（文件名中的日期 = 锚定交易日，与次日 09:25 盘前全市场选股读取的是同一个文件，幂等覆盖、不会错乱）。
+该命令会：抓取全市场前一日（lastClosedTradingDay，锚定日）的日 K 线，计算「昨日涨幅 + 昨日成交量 + 趋势(MA5/10/20/60 多头/N日新高/斜率)」基线指标，写入 eod/data/preopen/preopen-baseline-YYYYMMDD.json 缓存文件（文件名中的日期 = 锚定交易日，与次日 09:25 盘前全市场选股读取的是同一个文件，幂等覆盖、不会错乱）。
 
 重要约束（无需联网提交、无需 git 操作）：
 - 基线文件是派生缓存，已被仓库 .gitignore 忽略，不入库、不推送。不要执行任何 git add/commit/push。
 - 本任务设计为「交易日收盘后」运行：非交易日运行会重算最近一个已收盘交易日的基线（无害，只是重复写同一文件）。
 
-执行后用 Bash 确认 eod/data/preopen-baseline-*.json 的最近修改时间已更新（例如 `ls -la eod/data/preopen-baseline-*.json`）。
+执行后用 Bash 确认 eod/data/preopen/preopen-baseline-*.json 的最近修改时间已更新（例如 `ls -la eod/data/preopen/preopen-baseline-*.json`）。
 若命令非零退出、或网络抓取失败、或缓存文件未生成，请记录明确错误日志并告警（微信/邮件，复用项目 notify 配置），切勿静默忽略。
 ~~~
 
@@ -103,7 +103,7 @@ chore: <任务中文名> $(date +%F)
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25`（名义 09:25，日常以手动触发为主，名义 rrule 仅占位）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：ACTIVE
-- **产物**：`eod/data/preopen-<当日>.json` + `eod/reports/preopen-<当日>.html`
+- **产物**：`eod/data/preopen/preopen-<当日>.json` + `eod/reports/preopen/preopen-<当日>.html`
 - **推送**：脚本自身会推送通知与 git 溯源，无需额外提交
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
@@ -139,12 +139,12 @@ git push
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0`（工作日 18:00——龙虎榜约 17:00 后才出齐，故从 15:30 推迟到 18:00，收盘行情不受影响）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：ACTIVE
-- **产物**：回填进 `eod/data/preopen-<当日>.json` 的 close 段（昨收%/今开%/今收%/买入收益%/今日主力净流入/市值流通/量比/换手/涨停/连板/买入机会/命中/龙虎榜上榜含游资标注），并**重渲染** `eod/reports/preopen-<当日>.html` 的「收盘回填（开盘买入当日验证）」段（含逐票表 + 汇总 callout + 与候选明细同款 标签/行业 筛选）
+- **产物**：回填进 `eod/data/preopen/preopen-<当日>.json` 的 close 段（昨收%/今开%/今收%/买入收益%/今日主力净流入/市值流通/量比/换手/涨停/连板/买入机会/命中/龙虎榜上榜含游资标注），并**重渲染** `eod/reports/preopen/preopen-<当日>.html` 的「收盘回填（开盘买入当日验证）」段（含逐票表 + 汇总 callout + 与候选明细同款 标签/行业 筛选）
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效（定时 18:00，等龙虎榜出齐）；功能是对当日盘前候选（eod/data/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停、是否盘中开板、换手率、量比、市值/流通、今日主力净流入、连板数、龙虎榜上榜（含知名游资席位标注），并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段；随后脚本会**自动重渲染** eod/reports/preopen-<当日>.html 的「收盘回填（开盘买入当日验证）」段（逐票：昨收%/今开%/今收%/买入收益%/今日净流入/市值流通/量比/换手%/涨停/可买/命中/连板/上榜 + 汇总 callout + 标签/行业筛选）。东财接口失败时相关列自动留空，属正常降级，不算失败。
+在仓库 D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool 运行盘前收盘回填：npm run preopen:backfill（等价 node eod/preopen_backfill.js）。收盘后 15:00-23:59 内执行有效（定时 18:00，等龙虎榜出齐）；功能是对当日盘前候选（eod/data/preopen/preopen-<当日>.json 的 records）回填收盘价、当日涨跌幅、是否涨停、是否盘中开板、换手率、量比、市值/流通、今日主力净流入、连板数、龙虎榜上榜（含知名游资席位标注），并按 hitDayChgMin=2% 标记命中，结果合并进同一归档的 close 段；随后脚本会**自动重渲染** eod/reports/preopen/preopen-<当日>.html 的「收盘回填（开盘买入当日验证）」段（逐票：昨收%/今开%/今收%/买入收益%/今日净流入/市值流通/量比/换手%/涨停/可买/命中/连板/上榜 + 汇总 callout + 标签/行业筛选）。东财接口失败时相关列自动留空，属正常降级，不算失败。
 
 买入机会四态判定（脚本已在 HTML 内算好，无需你重算）：
 - 非涨停 → 开盘可买
@@ -180,7 +180,7 @@ git push
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30`（工作日 14:30）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
-- **产物**：`eod/data/eod-<交易日>-obs.json` + `eod/reports/eod-<交易日>-obs.html`
+- **产物**：`eod/data/eod/eod-<交易日>-obs.json` + `eod/reports/eod/eod-<交易日>-obs.html`
 - **推送**：本机照常推送微信 / 邮件（不静默）
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
@@ -189,7 +189,7 @@ git push
 运行 A 股尾盘选股（观察模式预览）。在当前工作目录（candidate-pool 项目根）执行：node eod/tail_screener.js
 
 说明：
-- 该时刻处于 14:30–14:50 之间，脚本自动进入「观察模式」（尾盘段=最近 20 分钟滚动窗口，与正式口径等长；结果仅供参考预览），产物写入 eod/data/eod-<交易日>-obs.json（原始快照另存 eod/data/raw/，不入库）与 eod/reports/ 同名 html，并通过 notify.js 推送微信/邮件。
+- 该时刻处于 14:30–14:50 之间，脚本自动进入「观察模式」（尾盘段=最近 20 分钟滚动窗口，与正式口径等长；结果仅供参考预览），产物写入 eod/data/eod/eod-<交易日>-obs.json（原始快照另存 eod/data/eod/raw/，不入库）与 eod/reports/ 同名 html，并通过 notify.js 推送微信/邮件。
 - 脚本输出「非交易日 / 未到尾盘观察时点」属正常跳过，不要告警，直接结束即可。
   例外：若提示的是「未到尾盘观察时点 14:30（还差 N 分钟）」且 N ≤ 2，说明本机触发比观察起点早了分秒级，请等待 N 分钟零 10 秒后重跑一次该命令即可（不要重跑超过一次）。
 - 若脚本异常退出（非跳过原因），将 stderr 里的错误摘要简洁反馈给用户；脚本自身在配置了 notify_config.json 时会主动发失败告警，无需重复推送。
@@ -202,7 +202,7 @@ git push
   推送依赖本机已缓存的 Git 凭据（GitHub），无需交互；若失败如实反馈，不要编造。
 
 生成并入库后，把当日入选票在对话里以表格列出（不要只给 report 页面路径，让用户不用去开网页）：
-1. 用 node 读取当日存档：观察模式为 eod/data/eod-<交易日>-obs.json（<交易日> 取今天；若今天文件不存在，则取 eod/data/eod-*-obs.json 中修改时间最新的一份）。
+1. 用 node 读取当日存档：观察模式为 eod/data/eod/eod-<交易日>-obs.json（<交易日> 取今天；若今天文件不存在，则取 eod/data/eod/eod-*-obs.json 中修改时间最新的一份）。
 2. 跑下面这段 node 把 records 按 total 降序打印成 Markdown 表格（把命令里的文件路径换成上面那份）：
    ```
    node -e "const fs=require('fs');const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,'utf8'));const rs=Object.values(d.records||{}).sort((a,b)=>b.total-a.total);console.log('## 尾盘观察入选（'+d.tradeDate+'，共'+rs.length+'只）');console.log('|代码|名称|行业|涨跌幅%|尾盘段%|量比|总分|标记|');console.log('|---|---|---|---|---|---|---|---|');for(const r of rs){const t=r.tail||{};const tags=[];if(r.bestInGroup)tags.push('组内最优');if((t.upRatio??1)<0.55)tags.push('拉升不连贯');tags.push('组内 '+(r.groupRank??'?')+'/'+(r.groupSize??'?'));console.log('|'+r.code+'|'+r.name+'|'+(r.sector||'')+'|'+r.chgPct.toFixed(2)+'|'+(t.segPct!=null?t.segPct.toFixed(2):'')+'|'+r.volRatio.toFixed(2)+'|'+r.total.toFixed(1)+'|'+tags.join('、')+'|');}"
@@ -229,7 +229,7 @@ git push
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50`（工作日 14:50）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
-- **产物**：`eod/data/eod-<交易日>.json` + `eod/reports/eod-<交易日>.html`
+- **产物**：`eod/data/eod/eod-<交易日>.json` + `eod/reports/eod/eod-<交易日>.html`
 - **推送**：**本机静默**（`--no-notify`）；微信 / 邮件由 GitHub Actions 的 `tail-screen.yml`（14:40 触发、程序内等到 14:50）负责，避免重复推送
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
@@ -239,7 +239,7 @@ git push
 
 说明：
 - 推送策略：**本机静默**。同一 14:50 口径还由 GitHub Actions 的 tail-screen.yml（14:40 触发、程序内等到 14:50）运行并负责推送微信/邮件；本机再推一次会重复，故加 --no-notify。
-- 该时刻已过 14:50，脚本自动按「固定口径 14:50」取数（同日多次运行结果一致、幂等覆盖），产物写入 eod/data/eod-<交易日>.json 与 eod/reports/eod-<交易日>.html，并照常同步 Cloudflare D1（--no-notify 不影响入库与本地留档）。
+- 该时刻已过 14:50，脚本自动按「固定口径 14:50」取数（同日多次运行结果一致、幂等覆盖），产物写入 eod/data/eod/eod-<交易日>.json 与 eod/reports/eod/eod-<交易日>.html，并照常同步 Cloudflare D1（--no-notify 不影响入库与本地留档）。
 - 脚本输出「非交易日 / 超出补跑宽限期」属正常跳过，不要告警，直接结束即可。
 - 因本机已静默，失败时不会有微信/邮件告警：若脚本异常退出（非跳过原因），请把 stderr 里的错误摘要简洁反馈给用户，明确说明「本机这一侧未成功」，不要重复补发推送。
 - 生成成功后，将当日尾盘正式产物提交并推送到 GitHub 仓库 candidate-pool：
@@ -251,7 +251,7 @@ git push
   推送依赖本机已缓存的 Git 凭据（GitHub），无需交互；若失败如实反馈，不要编造。
 
 生成并入库后，把当日入选票在对话里以表格列出（不要只给 report 页面路径，让用户不用去开网页）：
-1. 用 node 读取当日存档：正式口径为 eod/data/eod-<交易日>.json（<交易日> 取今天；若今天文件不存在，则取 eod/data/eod-*.json 中修改时间最新、且文件名不含 -obs / -intraday 的一份）。
+1. 用 node 读取当日存档：正式口径为 eod/data/eod/eod-<交易日>.json（<交易日> 取今天；若今天文件不存在，则取 eod/data/eod/eod-*.json 中修改时间最新、且文件名不含 -obs / -intraday 的一份）。
 2. 跑下面这段 node 把 records 按 total 降序打印成 Markdown 表格（把命令里的文件路径换成上面那份）：
    ```
    node -e "const fs=require('fs');const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,'utf8'));const rs=Object.values(d.records||{}).sort((a,b)=>b.total-a.total);console.log('## 尾盘正式入选（'+d.tradeDate+'，共'+rs.length+'只）');console.log('|代码|名称|行业|涨跌幅%|尾盘段%|量比|总分|标记|');console.log('|---|---|---|---|---|---|---|---|');for(const r of rs){const t=r.tail||{};const tags=[];if(r.bestInGroup)tags.push('组内最优');if((t.upRatio??1)<0.55)tags.push('拉升不连贯');tags.push('组内 '+(r.groupRank??'?')+'/'+(r.groupSize??'?'));console.log('|'+r.code+'|'+r.name+'|'+(r.sector||'')+'|'+r.chgPct.toFixed(2)+'|'+(t.segPct!=null?t.segPct.toFixed(2):'')+'|'+r.volRatio.toFixed(2)+'|'+r.total.toFixed(1)+'|'+tags.join('、')+'|');}"
@@ -287,7 +287,7 @@ git push
 ~~~text
 在 candidate-pool 项目目录（D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）下，执行尾盘选股命令：运行 `npm run tail:intraday`（等价于 `node eod/tail_screener.js --intraday`）。等待命令执行完成，捕获并打印关键输出（候选股列表、报告路径、任何报错），用简洁中文向用户汇报结果。若命令执行失败，给出根因与可执行建议，不要隐瞒错误。
 
-生成成功后，必须调用 present_files 工具打开盘中报告（eod/reports/ 下当天修改时间最新的 eod-<交易日>-intraday.html，用绝对路径），让报告直接在任务预览面板展示；文件不存在则如实说明，不要编造路径。
+生成成功后，必须调用 present_files 工具打开盘中报告（eod/reports/eod/ 下当天修改时间最新的 eod-<交易日>-intraday.html，用绝对路径），让报告直接在任务预览面板展示；文件不存在则如实说明，不要编造路径。
 
 生成成功后，把盘中候选提交并推送到 GitHub 仓库 candidate-pool（脚本不自动提交，必须显式执行；`--intraday` 盘中模式强制 `--no-notify` 且不写 D1，仅入库本仓库 git）：
 
@@ -403,8 +403,8 @@ git push
 
 1. 执行 `node eod/hotmoney_scan.js`，统计最近一个交易日的龙虎榜知名游资席位买卖并归档（17:30 后运行会统计当天；脚本缺档自动回补近 10 个交易日窗口）。日志自动落 `eod/logs/hotmoney-<日期>.log`。
 2. 若脚本退出码非 0 或输出含「失败」，读取日志尾部排查原因并告知用户，不要盲目重试超过 2 次（东财可能临时封 IP，次日自动恢复）。
-3. 成功后把归档与报告提交推送：`git add eod/data/hotmoney-*.json eod/data/hotmoney-seats-snapshot.json eod/data/hotmoney-watchlist.json eod/reports/hotmoney-*.html && git commit -m "chore: 游资席位扫描归档 <交易日>" && git push origin main`（push 失败多为代理抖动，重试一次）。
-4. 用一句话向用户汇报：锚定日、榜单票数、游资命中票数、席位变更条数，并给出报告路径 eod/reports/hotmoney-<交易日>.html。
+3. 成功后把归档与报告提交推送：`git add eod/data/hotmoney/hotmoney-*.json eod/data/hotmoney/hotmoney-seats-snapshot.json eod/data/hotmoney/hotmoney-watchlist.json eod/reports/hotmoney/hotmoney-*.html && git commit -m "chore: 游资席位扫描归档 <交易日>" && git push origin main`（push 失败多为代理抖动，重试一次）。
+4. 用一句话向用户汇报：锚定日、榜单票数、游资命中票数、席位变更条数，并给出报告路径 eod/reports/hotmoney/hotmoney-<交易日>.html。
 ```
 
 ### git 推送块（本任务）

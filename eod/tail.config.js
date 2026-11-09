@@ -207,8 +207,8 @@ module.exports = {
   // 7. 落库与回放（FR-10 / FR-11 / Q3）
   // =========================================================================
   store: {
-    dataDir: 'data',         // 相对 eod/ 目录
-    reportDir: 'reports',
+    dataDir: 'data/eod',     // 相对 eod/ 目录（2026-11-09 起按流水线分子目录：data/eod|preopen|hotmoney）
+    reportDir: 'reports/eod',
     // 幂等约定（FR-11）：一个交易日一份文件 eod-<交易日>.json，**整文件覆盖**，
     // 文件内 records 按 code 唯一，天然不会出现重复记录。
     // 同日多次运行的历史（几次、各几次候选）记在 runs[] 里留痕。

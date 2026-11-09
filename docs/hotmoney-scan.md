@@ -34,27 +34,26 @@ node eod/hotmoney_scan.js --json           # 机器摘要
 
 ## 游资名单动态更新（不改代码）
 
-1. **本地覆盖文件** `eod/data/hotmoney-registry.json`（可选，不存在即用 config 内置名单）：
+1. **本地覆盖文件** `eod/data/hotmoney/hotmoney-registry.json`（可选，不存在即用 config 内置名单）：
    ```json
    [{ "name": "新游资", "seat": "XX证券.*YY营业部", "tier": "一线", "action": "add" },
     { "name": "旧游资", "action": "remove" }]
    ```
    add 按 name 追加/覆盖，remove 按 name 删除，下次运行即生效。
 2. **变动自动感知**：
-   - **席位变更**：锚定日席位与快照 `eod/data/hotmoney-seats-snapshot.json` 比对，
+   - **席位变更**：锚定日席位与快照 `eod/data/hotmoney/hotmoney-seats-snapshot.json` 比对，
      游资出现历史未见席位 → 报告核心结论提示 + 行内「新席位」标注（换马甲/改营业部可见）。
      注：首跑无快照，全员标新；第二次运行起才有意义。
-   - **观察名单**：未匹配任何游资的席位按天累计到 `eod/data/hotmoney-watchlist.json`，
+   - **观察名单**：未匹配任何游资的席位按天累计到 `eod/data/hotmoney/hotmoney-watchlist.json`，
      出现 ≥ `watch.minDays`（默认 3）天进报告观察表 → 高频新席位浮现，建议晋升进 registry。
 
-## 报告内容（eod/reports/hotmoney-<日>.html）
+## 报告内容（eod/reports/hotmoney/hotmoney-<日>.html）
 
 | 区块 | 说明 | 过滤 chips |
 |---|---|---|
 | 当日交易明细 | 游资×票逐条记录：买/卖/净额/席位/标记 | 层级 + 方向（净买/净卖）+ 游资名；按游资/按票双视图 |
 | 游资·近N日汇总 | 净额/买/卖/活跃天数/涉票数，按净额降序 | 层级 |
 | 近N日交易明细 | 窗口内全部记录（含日期列） | 游资名 + 日期 + 方向 + 层级 |
-| 票·近N日汇总 | 每票的游资名单（按净额） | — |
 | 未识别席位观察名单 | ≥minDays 天的高频未识别席位 | — |
 
 标记列：`盘前候选`（游资票 ∩ 当日盘前候选池，交叉确认信号）、`新席位`（变动感知）。
@@ -63,10 +62,10 @@ node eod/hotmoney_scan.js --json           # 机器摘要
 
 | 文件 | 说明 |
 |---|---|
-| `eod/data/hotmoney-<日>.json` | 日档：榜单名单 + 逐票匹配结果 + 未识别席位汇总 |
-| `eod/data/hotmoney-seats-snapshot.json` | 游资→席位全集快照（变动感知基准） |
-| `eod/data/hotmoney-watchlist.json` | 未识别席位按天累计 |
-| `eod/reports/hotmoney-<日>.html` | 报告 |
+| `eod/data/hotmoney/hotmoney-<日>.json` | 日档：榜单名单 + 逐票匹配结果 + 未识别席位汇总 |
+| `eod/data/hotmoney/hotmoney-seats-snapshot.json` | 游资→席位全集快照（变动感知基准） |
+| `eod/data/hotmoney/hotmoney-watchlist.json` | 未识别席位按天累计 |
+| `eod/reports/hotmoney/hotmoney-<日>.html` | 报告 |
 
 ## 定时任务
 

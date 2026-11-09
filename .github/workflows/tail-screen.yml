@@ -168,7 +168,7 @@ jobs:
           name: tail-report
           path: |
             eod/reports/
-            eod/data/eod-*.json
+            eod/data/eod/eod-*.json
           if-no-files-found: ignore
           retention-days: 30
 

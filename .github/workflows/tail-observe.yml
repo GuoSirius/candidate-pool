@@ -161,7 +161,7 @@ jobs:
           name: tail-observe-report
           path: |
             eod/reports/
-            eod/data/eod-*-obs*.json
+            eod/data/eod/eod-*-obs*.json
           if-no-files-found: ignore
           retention-days: 30
 

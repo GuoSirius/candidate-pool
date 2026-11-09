@@ -9,15 +9,15 @@
 
 | 任务名 | 时间 | 执行内容 | 产物 / 日志 |
 |---|---|---|---|
-| 盘前基线预计算 | 03:00 | `node eod/preopen_screener.js --baseline`（全市场前一日 K 线指标缓存） | `eod/data/preopen-baseline-<日>.json`；日志 `eod/logs/preopen-<日期>.log` |
+| 盘前基线预计算 | 03:00 | `node eod/preopen_screener.js --baseline`（全市场前一日 K 线指标缓存） | `eod/data/preopen/preopen-baseline-<日>.json`；日志 `eod/logs/preopen-<日期>.log` |
 | 盘前纪要每日早间分析 | 08:30 | 盘前消息面分析（WorkBuddy 侧编排） | 见任务详情 |
-| 盘前选股 | 09:25 | `node eod/preopen_screener.js`（9:20–9:35 时段守卫，竞价快照） | `eod/data/preopen-<日>.json` + `eod/reports/`；日志 `eod/logs/preopen-<日期>.log` |
+| 盘前选股 | 09:25 | `node eod/preopen_screener.js`（9:20–9:35 时段守卫，竞价快照） | `eod/data/preopen/preopen-<日>.json` + `eod/reports/preopen/`；日志 `eod/logs/preopen-<日期>.log` |
 | 早盘机会 | 10:30 | 盘中机会扫描（WorkBuddy 侧编排） | 见任务详情 |
 | 午盘机会 | 11:30 | 同上（午盘时点） | 见任务详情 |
-| 尾盘选股-观察模式 | 14:30 | `node eod/tail_screener.js --intraday`（盘中近似口径，不推送） | `eod/data/eod-<日>-intraday.json`；日志 `eod/logs/tail-intraday-<日期>.log` |
-| 尾盘选股-正式口径 | 14:50 | `node eod/tail_screener.js`（正式口径，微信+邮件推送） | `eod/data/eod-<日>.json` + `eod/reports/`；日志 `eod/logs/tail-<日期>.log` |
-| 盘前回填 | 18:00 | `node eod/preopen_backfill.js`（含龙虎榜） | `eod/data/`；日志 `eod/logs/preopen-backfill-<日期>.log` |
-| 游资席位扫描 | 18:20 | `node eod/hotmoney_scan.js`（最近交易日龙虎榜游资席位，缺档自动回补近10日窗口） | `eod/data/hotmoney-<日>.json` + `eod/reports/hotmoney-<日>.html`；日志 `eod/logs/hotmoney-<日期>.log` |
+| 尾盘选股-观察模式 | 14:30 | `node eod/tail_screener.js --intraday`（盘中近似口径，不推送） | `eod/data/eod/eod-<日>-intraday.json`；日志 `eod/logs/tail-intraday-<日期>.log` |
+| 尾盘选股-正式口径 | 14:50 | `node eod/tail_screener.js`（正式口径，微信+邮件推送） | `eod/data/eod/eod-<日>.json` + `eod/reports/eod/`；日志 `eod/logs/tail-<日期>.log` |
+| 盘前回填 | 18:00 | `node eod/preopen_backfill.js`（含龙虎榜） | `eod/data/preopen/`（close 段合并进当日归档）；日志 `eod/logs/preopen-backfill-<日期>.log` |
+| 游资席位扫描 | 18:20 | `node eod/hotmoney_scan.js`（最近交易日龙虎榜游资席位，缺档自动回补近10日窗口） | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html`；日志 `eod/logs/hotmoney-<日期>.log` |
 | A股次日候选池初筛 | 16:00 | `node gen_candidates.js`（R01/R07 规则，推送 GitHub + Server酱/邮件） | `candidates.json` + `reports/` |
 
 **日志归位说明（2026-11-06 起）**：`eod/lib/runlog.js` 让脚本自身把 console 输出镜像到

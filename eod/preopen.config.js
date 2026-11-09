@@ -63,7 +63,7 @@ module.exports = {
   // 4. 基线（前一日 K 线指标缓存）—— P02/P03 的数据源
   // =========================================================================
   baseline: {
-    dataDir: 'data',
+    dataDir: 'data/preopen',
     // 缓存文件名模板（按交易日）：preopen-baseline-YYYYMMDD.json
     fileName: (date) => `preopen-baseline-${date}.json`,
     // 全市场模式若缓存缺失则实时算（慢，~3min）；观察池模式默认实时算（几百只，~30s）
@@ -158,8 +158,8 @@ module.exports = {
   // 9. 落库与报告
   // =========================================================================
   store: {
-    dataDir: 'data',
-    reportDir: 'reports',
+    dataDir: 'data/preopen',
+    reportDir: 'reports/preopen',
     prefix: 'preopen',         // 文件名前缀：preopen-YYYYMMDD.json / .html
     keepRunHistory: 20,
   },

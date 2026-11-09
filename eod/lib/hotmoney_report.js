@@ -67,7 +67,7 @@ function chipHtml(fkey, value, label, count, active) {
 
 /** 主报告 */
 function buildHTML({ cfg, anchor, result, runner }) {
-  const { anchorDay, trades, byTrader, byStock, seatChanges, watchTop, window: win } = result;
+  const { anchorDay, trades, byTrader, seatChanges, watchTop, window: win } = result;
   const anchorTrades = trades.filter((t) => t.date === anchor);
 
   // ---- chips 数据 ----
@@ -226,26 +226,6 @@ function buildHTML({ cfg, anchor, result, runner }) {
     <th>${b('席位', 'Seat')}</th><th>${b('标记', 'Marks')}</th>
   </tr></thead><tbody id="winBody">${winRows}</tbody></table></div>`
     : `<div class="card">${b('窗口内无游资记录。', 'No records in the window.')}</div>`}
-
-  <h2>${b(`票 · 近${dayCount}日游资汇总（${byStock.length} 只）`, `Stocks · ${dayCount}-Day Summary (${byStock.length})`)}</h2>
-  <p class="src">${b('把窗口内记录按「票」聚合：这只票近 N 天被哪些游资做过、各自买/卖多少（游资按其在该票上的净额排序）。用于回答「这只票是谁在玩、是不是同一个游资反复做」。',
-    'Aggregated per stock over the window: which traders played it and how much each bought/sold (sorted by per-stock net). Answers "who is behind this name, and is anyone repeating it".')}</p>
-  ${byStock.length ? `<div class="table-wrap"><table><thead><tr>
-    <th>${b('标的', 'Stock')}</th>
-    <th>${b('净额', 'Net')}</th><th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th>
-    <th>${b('活跃天数', 'Days')}</th><th>${b('游资数', 'Traders')}</th><th>${b('游资（按净额）', 'Traders by net')}</th>
-  </tr></thead><tbody>${byStock.map((s) => {
-    const net = fmtAmt(s.net); const buy = fmtAmt(s.buy); const sell = fmtAmt(s.sell);
-    const tradersTxt = s.traders.map((t) => `${esc(t.name)}${t.net >= 0 ? '' : '(卖)'}`).join(' / ');
-    return `<tr>
-    <td><b>${esc(s.stock)}</b><span class="src">${esc(s.code)}</span></td>
-    <td class="num ${net.cls}"><b>${net.txt}</b></td>
-    <td class="num ${buy.cls}">${buy.txt}</td>
-    <td class="num ${sell.cls}">${sell.txt}</td>
-    <td class="num">${s.dayCount}</td><td class="num">${s.traders.length}</td>
-    <td class="wrap src">${tradersTxt}</td>
-  </tr>`; }).join('')}</tbody></table></div>`
-    : `<div class="card">${b('窗口内无游资涉票。', 'No stocks touched in the window.')}</div>`}
 
   <h2>${b(`未识别席位观察名单（≥${cfg.watch.minDays} 天，Top ${watchTop.length}）`, `Unmatched Seat Watchlist (≥${cfg.watch.minDays} days, top ${watchTop.length})`)}</h2>
   ${watchTop.length ? `<div class="table-wrap"><table><thead><tr>
