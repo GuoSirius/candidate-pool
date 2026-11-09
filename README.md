@@ -246,6 +246,23 @@ npm run report:rerender -- --date 2026-11-09   # 指定交易日
 
 ---
 
+## 游资层级过滤（一线 / 二线 / 避坑）
+
+凡带「游资」过滤项的报告都能按游资层级圈定。层级取自归档 `billboard.hot[].tier`，口径与 `hotmoney.config` 的三档一致。
+
+| 报告 | 过滤区 | 龙虎榜口径 |
+|---|---|---|
+| 盘前 | 候选明细 / 收盘回填（各自独立统计） | 候选区 `c.billboard`；收盘区 `c.close.billboard`，缺档回退盘前 |
+| 尾盘 | 候选明细 | `c.billboard` |
+| 形态 | 质量过滤组 | `c.billboard` |
+| 游资 | 层级 chips（本来就有，未改动） | 席位记录 `t.tier` |
+
+- 固定三档恒出现（含 0 命中），归档里冒出的新层级自动追加在后；chip 数字 = 点击后实际显示行数。
+- 行属性 `data-hm-tier` 与 chip 值 `@htier:<编码>` 统一 URI 编码，纯函数收在 `eod/lib/report_fmt.js`（`hotTierAttr` / `hotTierCounts` / `hotTierChipValue`），自测见 `report_fmt.selftest.js [4]`。
+- 盘前两区必须分开统计：收盘回填后龙虎榜出齐，`close.billboard` 与盘前 `billboard` 可能不同（11-09 实测 7 只票层级不一致），共用一套 chips 会让数字与行数对不上。
+
+---
+
 ## 数据来源与口径
 
 - 数据来源：腾讯公开行情接口，数据时点为锚定日收盘。
