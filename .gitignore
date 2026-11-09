@@ -18,10 +18,10 @@ pulse/reports/
 #   - 报告 eod/reports/{eod,preopen,hotmoney}/（提交 git，便于查看历史）
 eod/data/*/_*.json
 eod/reports/*/_*.html
+
 # 原始快照 raw/（全市场 quotes+分时，~4MB/日）：仅供 --replay 离线重算，不入库（2026-11-09 发现曾被误跟踪，已解除）
 eod/data/eod/raw/
 
-eod/data/eod/raw/
 # 盘前基线缓存（前一日 K 线指标，由 --baseline 重建，非溯源必需）
 eod/data/preopen/preopen-baseline-*.json
 
