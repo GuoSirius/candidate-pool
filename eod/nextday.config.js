@@ -27,7 +27,7 @@ module.exports = {
   maxKlineFailRate: 0.3,
 
   store: {
-    // 滚动聚合产物（按管道 × 命中率），周六简报（批次 D）从这读
+    // 滚动聚合产物（按管道 × 命中率）；周六胜率回归简报属批次 D 计划，尚未实现，届时从这读
     perfFile: 'perf-weekly.json',
   },
 };
