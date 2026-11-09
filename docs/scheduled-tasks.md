@@ -1,7 +1,8 @@
 # 本项目定时任务清单（本机 + 远程）
 
-> 更新：2026-11-06。本机 **Windows 计划任务为空**（已用 CIM `Get-ScheduledTask` 全量核查，无项目相关任务），
-> 全部调度走 **WorkBuddy 任务**（本机执行）+ **GitHub Actions**（远程兜底）。
+> 更新：2026-11-09。本机 Windows 计划任务：`pulse-watch`（登录触发，延迟 30s）——
+> **已于 2026-11-09 禁用**（用户改为手动触发 `npm run pulse:watch`），其余调度走
+> **WorkBuddy 任务**（本机执行）+ **GitHub Actions**（远程兜底）。
 > 手动触发方式：WorkBuddy 任务列表中手动运行；GitHub Actions 用 workflow_dispatch。
 
 ## 一、本机 · WorkBuddy 任务（ACTIVE，工作日自动跑）
@@ -27,7 +28,11 @@
 | 任务名 | 预约时间（仅占位） | 执行内容 |
 |---|---|---|
 | pulse 消息脉搏 · 一键报告 | 09:00 | `npm run pulse`：6 源采集 → 交叉分析 → 归档 → 打开 `pulse/report/latest.html` |
-| pulse watch · 常驻监听启动 | 08:30 | 查重后最小化窗口后台启动 `npm run pulse:watch`（每轮完成计时 3 分钟；异动弹 Windows Toast）；停止：taskkill PID |
+| pulse watch · 常驻监听启动 | 08:30（PAUSED） | 查重后最小化窗口后台启动 `npm run pulse:watch`（每轮完成计时 3 分钟；异动弹 Windows Toast）；停止：taskkill PID |
+
+**pulse watch 停用记录（2026-11-09）**：Windows 计划任务 `pulse-watch`（登录触发）已 `Disable-ScheduledTask` 禁用，
+运行中的 watch 进程已终止；WorkBuddy 任务保持 PAUSED。此后完全手动：最小化窗口跑 `npm run pulse:watch`，
+停止用 taskkill 对应 node PID。如需恢复开机自启：`Enable-ScheduledTask -TaskName 'pulse-watch'`。
 | A股每日市场情绪日报 | 23:30 | 情绪日报生成（WorkBuddy 侧编排） |
 
 pulse 数据/报告归档：`pulse/data/YYYY-MM-DD/`、`pulse/report/YYYY-MM-DD/`（latest.json / latest.html 留根目录）；watch 控制台日志 `pulse/data/watch-console.log`。
