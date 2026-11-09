@@ -221,6 +221,31 @@ npm run pattern:selftest                    # 23 项离线自测（模板票必�
 
 ---
 
+## 报告重渲染（改样式后刷当天报告）
+
+改了报告样式后不必重抓行情：从当天归档离线重刷**全部** HTML，零网络、不推送、不写 D1。
+
+```bash
+npm run report:rerender                        # 今天
+npm run report:rerender -- --date 2026-11-09   # 指定交易日
+```
+
+| 覆盖报告 | 重渲染入口 |
+|---|---|
+| 主报告 `stock_list_<日>.html` | `gen_candidates --offline` 读 `data/snapshot-<日>.json` |
+| 尾盘（正式 / 观察 / 盘中三份） | `tail_screener --replay` 逐档 |
+| 盘前 / 游资 | `eod/lib/rerender.js` |
+| 形态 | `pattern_screener --replay` |
+| 消息脉搏 `pulse/reports/latest.html` | 从 `pulse/data/latest.json` 离线重建 |
+
+脚本末尾自动校验每个表格的「表头列数 = 数据行列数」，并汇总各报告的 SVG / mini K 列数量；单份失败不影响其余。
+
+**mini K 线**统一紧跟「标的 / 代码」列，位于所有数值列之前。共享实现见 [`eod/lib/kline_spark.js`](eod/lib/kline_spark.js)：CSS + 内联 SVG + 代码归一化 + 日 K 索引只有一份，六个 HTML 生成器各加一个单元格。数据取 `eod/data/pattern/pattern-kline-<日>.json` 日档缓存（gitignore），缺档/缺票该格显示「—」，不编造、不阻断；盘前按 `anchor`、游资按每行 `date` 截断，避免画出前视数据。
+
+> pulse 是消息面实时快照，离线重建只保留快照里的 `lead` 字段，不含在线 `enrichLeaders` 补充的领涨股明细。
+
+---
+
 ## 数据来源与口径
 
 - 数据来源：腾讯公开行情接口，数据时点为锚定日收盘。
