@@ -78,7 +78,8 @@ function rowHtml(c, i, withBreakdown) {
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
   const yFlow = fmtFlow(c.yesterdayMainInflow);
   const hasHot = !!(c.billboard && (c.billboard.hot || []).length);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ' data-hot="1"' : ''}>
+  const hotNames = hasHot ? [...new Set((c.billboard.hot || []).map((h) => esc(h.name)))].join('|') : '';
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -126,7 +127,8 @@ function closeRowHtml(c, i, sealedMin) {
   const tFlow = fmtFlow(cl.mainInflow);
   const bbCell = billboardCell(cl.billboard);
   const hasHot = !!(cl.billboard && (cl.billboard.hot || []).length);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${cl.billboard ? ' data-billboard="1"' : ''}${hasHot ? ' data-hot="1"' : ''}>
+  const hotNames = hasHot ? [...new Set((cl.billboard.hot || []).map((h) => esc(h.name)))].join('|') : '';
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${cl.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     <td>${b(esc(c.sector), esc(c.sector))}</td>
@@ -310,6 +312,10 @@ function buildHTML(m) {
   const top3Count = listed.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
   const bbCount = listed.reduce((n, c) => n + (c.billboard ? 1 : 0), 0);
   const hotCount = listed.reduce((n, c) => n + (c.billboard && (c.billboard.hot || []).length ? 1 : 0), 0);
+  // 游资明细 chips：按当天实际命中的游资名动态生成（只在有命中时出现），计数=命中的票数（同票多席位去重），按命中票数降序
+  const hotNameCounts = {};
+  for (const c of listed) for (const n of new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name))) hotNameCounts[n] = (hotNameCounts[n] || 0) + 1;
+  const hotNameOrder = Object.keys(hotNameCounts).sort((a, b) => hotNameCounts[b] - hotNameCounts[a]);
   // 轨道计数：p4/both 算 P04 通道；score/both 算打分轨（历史数据无 track 字段 → 默认 score）
   const trackOf = (c) => c.track || 'score';
   const p4Count = listed.reduce((n, c) => n + (trackOf(c) !== 'score' ? 1 : 0), 0);
@@ -321,6 +327,7 @@ function buildHTML(m) {
       `<button type="button" class="chip" data-lfilter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@hotmoney">${b('游资', 'Hot money')}<i>${hotCount}</i></button>`,
+      ...hotNameOrder.map((n) => `<button type="button" class="chip" data-lfilter="${esc('@hm:' + n)}">${b(esc(n), esc(n))}<i>${hotNameCounts[n]}</i></button>`),
       `<button type="button" class="chip" data-lfilter="@p4">${b('P04 通道', 'P04 track')}<i>${p4Count}</i></button>`,
       `<button type="button" class="chip" data-lfilter="@score">${b('打分轨 P1-P3', 'Score track')}<i>${scoreCount}</i></button>`,
     ])
@@ -491,6 +498,7 @@ function buildHTML(m) {
       else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
       else if (lFilter === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (lFilter === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
+      else if (lFilter.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(lFilter.slice(4)) >= 0;
       else if (lFilter === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
       else if (lFilter === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
       else if (lFilter) okL = tr.getAttribute('data-label') === lFilter;
@@ -575,6 +583,7 @@ function buildHTML(m) {
       else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
       else if (clF === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (clF === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
+      else if (clF.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(clF.slice(4)) >= 0;
       else if (clF === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
       else if (clF === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
       else if (clF) okL = tr.getAttribute('data-label') === clF;
