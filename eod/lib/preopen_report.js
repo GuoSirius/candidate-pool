@@ -615,4 +615,4 @@ function buildHTML(m) {
 </html>`;
 }
 
-module.exports = { buildHTML };
+module.exports = { buildHTML, CSS };

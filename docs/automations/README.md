@@ -21,6 +21,7 @@
 | 尾盘选股-正式口径(1450) | `6cda9d58-4ba9-4c1d-ac2c-476c2459d879` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod-<交易日>.json` + html |
 | A股次日候选池初筛 | `automation-1786328116138` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
 | 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen-<日>.json` close 段 |
+| 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney-<日>.json` + `eod/reports/hotmoney-<日>.html` |
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
 
@@ -389,6 +390,26 @@ git push
 ~~~
 
 ---
+
+## 11. 游资席位扫描（18:20）
+
+> 详设与口径见 `docs/hotmoney-scan.md`。排在 18:00 盘前回填之后；17:30 后跑统计当天榜单，
+> 更早（含手动补跑）自动回退上一交易日。首跑已回补近 10 个交易日日档（2026-11-09）。
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+```text
+运行 A 股游资席位扫描流水线（仓库 GuoSirius/candidate-pool，工作目录 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）：
+
+1. 执行 `node eod/hotmoney_scan.js`，统计最近一个交易日的龙虎榜知名游资席位买卖并归档（17:30 后运行会统计当天；脚本缺档自动回补近 10 个交易日窗口）。日志自动落 `eod/logs/hotmoney-<日期>.log`。
+2. 若脚本退出码非 0 或输出含「失败」，读取日志尾部排查原因并告知用户，不要盲目重试超过 2 次（东财可能临时封 IP，次日自动恢复）。
+3. 成功后把归档与报告提交推送：`git add eod/data/hotmoney-*.json eod/data/hotmoney-seats-snapshot.json eod/data/hotmoney-watchlist.json eod/reports/hotmoney-*.html && git commit -m "chore: 游资席位扫描归档 <交易日>" && git push origin main`（push 失败多为代理抖动，重试一次）。
+4. 用一句话向用户汇报：锚定日、榜单票数、游资命中票数、席位变更条数，并给出报告路径 eod/reports/hotmoney-<交易日>.html。
+```
+
+### git 推送块（本任务）
+
+提交范围固定为 hotmoney 归档（日档/快照/观察名单）+ 报告（见上方 Prompt 第 3 步），不 add 其它改动。
 
 ## 附录：A 股工作流相关、但 cwd 不在本仓库的自动化
 
