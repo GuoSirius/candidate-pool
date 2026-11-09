@@ -4,7 +4,7 @@
  * 运行：node eod/lib/regime.selftest.js   （退出码非 0 = 失败；纯函数，不联网）
  */
 
-const { calcRegime, limitPctOf } = require('./regime');
+const { calcRegime, limitPctOf, badgeHTML } = require('./regime');
 
 let failed = 0;
 function check(name, cond, detail) {
@@ -51,6 +51,15 @@ console.log('\n[3] 边界');
 check('报价 <1000 只 → null（样本不足不判档）', calcRegime(mk(999, () => 1)) === null);
 check('空数组 → null', calcRegime([]) === null);
 check('chgPct 缺失被过滤', calcRegime(mk(2000, () => 1).map((q, i) => (i % 2 ? { ...q, chgPct: null } : q))) !== null);
+
+console.log('\n[4] 徽标双语（评审 #9：收了 b 却不用 → EN 切换仍中文）');
+const fakeB = (zh, en) => `<span data-zh="${zh}" data-en="${en}">${zh}</span>`;
+const badge = badgeHTML(calcRegime(mk(2000, () => 9.9)), fakeB);
+check('徽标带 data-en（可切换）', badge.includes('data-en="'), badge.slice(0, 100));
+check('环境标签有英文', badge.includes('Regime ·'), badge.slice(0, 100));
+check('数值行有英文', badge.includes('Limit-up'), badge.slice(-160));
+check('弱市提示有英文', badgeHTML(weak, fakeB).includes('no auto threshold change'));
+check('无数据 → 空串', badgeHTML(null, fakeB) === '');
 
 console.log(`\n${failed ? `自测失败 ${failed} 项` : '全部通过'}`);
 process.exit(failed ? 1 : 0);

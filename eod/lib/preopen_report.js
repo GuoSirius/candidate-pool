@@ -29,7 +29,10 @@ function loadPerf(pipe) {
   try {
     const perf = JSON.parse(fs.readFileSync(path.join(paths.eodDir(), 'data', 'perf-weekly.json'), 'utf8'));
     return (perf.pipelines && perf.pipelines[pipe]) || null;
-  } catch (e) { return null; }
+  } catch (e) {
+    if (!e || e.code !== 'ENOENT') process.stderr.write(`[报告] perf-weekly.json 读取失败：${(e && e.message) || e}\n`);
+    return null;
+  }
 }
 /** 主力净流入（元 → 万/亿），涨红跌绿 */
 function fmtFlow(v) {

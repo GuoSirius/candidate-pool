@@ -15,13 +15,19 @@
  * ---------------------------------------------------------------------------
  */
 
+// 模块级静态正则：calcRegime 对每只票调一次 limitPctOf（全市场 ~5000 只），
+// 正则字面量写在函数里会每轮求值新建 RegExp 对象（评审 2026-11-09 #5）。
+const RE_BJ = /^bj(4|8|92)/;
+const RE_GEM = /^sz3/;
+const RE_STAR = /^sh688/;
+
 /** 各板涨跌幅制度（%）：北交 30；创业板(30x)/科创(688) 20（含 ST，注册制后与普通股一致）；
  *  沪深主板普通与 ST 均 10（2026-07-06 起《交易规则》修订，风险警示股 5%→10%）。
  *  注意判断顺序：先板块后 ST，否则创业/科创 ST 会被误判 10% */
 function limitPctOf(code, name) {
   const c = String(code);
-  if (/^bj(4|8|92)/.test(c)) return 30;
-  if (/^sz3/.test(c) || /^sh688/.test(c)) return 20;
+  if (RE_BJ.test(c)) return 30;
+  if (RE_GEM.test(c) || RE_STAR.test(c)) return 20;
   return 10;   // 沪深主板普通股与 ST 统一 10%（2026 新规）
 }
 
@@ -80,12 +86,17 @@ function calcRegime(quotes, opts = {}) {
   };
 }
 
-/** 报告头部徽标 HTML（双语，无数据返回空串）——三份报告共用一种写法，避免漂移 */
-function badgeHTML(r, b, esc) {
+const LABEL_EN = { 强市: 'Strong', 正常: 'Neutral', 弱市: 'Weak', 冰点: 'Freeze' };
+const TIP_EN = 'Consider raising the entry bar / cutting exposure (no auto threshold change)';
+
+/** 报告头部徽标 HTML（双语，无数据返回空串）——三份报告共用一种写法，避免漂移。
+ *  b 为调用方的双语片段函数；内容全是内部数值与固定文案，不含外部数据，无需额外 esc。 */
+function badgeHTML(r, b = (zh) => String(zh ?? '')) {
   if (!r) return '';
   const cls = { 强市: 'up', 弱市: 'down', 冰点: 'down', 正常: '' }[r.label] || '';
-  const line = `涨停 ${r.limitUp} / 跌停 ${r.limitDown} · 上涨占比 ${r.upPct}% · 均涨 ${r.avgChg}% · 两市 ${r.amountYi} 亿`;
-  return `<span class="tag ${cls}">环境·${r.label}</span> <span class="src">${line}${r.tip ? ' · ' + r.tip : ''}</span>`;
+  const zh = `涨停 ${r.limitUp} / 跌停 ${r.limitDown} · 上涨占比 ${r.upPct}% · 均涨 ${r.avgChg}% · 两市 ${r.amountYi} 亿${r.tip ? ' · ' + r.tip : ''}`;
+  const en = `Limit-up ${r.limitUp} / limit-down ${r.limitDown} · advancers ${r.upPct}% · avg ${r.avgChg}% · turnover ${r.amountYi} (×100M CNY)${r.tip ? ' · ' + TIP_EN : ''}`;
+  return `<span class="tag ${cls}">${b(`环境·${r.label}`, `Regime · ${LABEL_EN[r.label] || r.label}`)}</span> <span class="src">${b(zh, en)}</span>`;
 }
 
 module.exports = { calcRegime, limitPctOf, THRESHOLDS, badgeHTML };

@@ -25,7 +25,10 @@ function loadRegime(anchor) {
   try {
     const snap = JSON.parse(fs.readFileSync(path.join(paths.dataDir(), `snapshot-${anchor}.json`), 'utf8'));
     return snap.regime || null;
-  } catch (e) { return null; }
+  } catch (e) {
+    if (!e || e.code !== 'ENOENT') process.stderr.write(`[报告] snapshot-${anchor}.json 读取失败：${(e && e.message) || e}\n`);
+    return null;
+  }
 }
 
 /** 金额（元）→ 「1.2亿」「3000万」，涨红跌绿；返回 {txt,cls}（与 report_fmt 共享版 fmtAmt 签名不同，故改名区分，评审 #22） */

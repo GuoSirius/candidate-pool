@@ -26,16 +26,23 @@ const { minifyHTML } = require('./report_fmt');
 function rerenderTail(archiveFile) {
   const doc = JSON.parse(fs.readFileSync(archiveFile, 'utf8'));
   if (!doc.records || !doc.tradeDate) throw new Error('存档格式不对：缺少 records/tradeDate');
-  execFileSync(process.execPath, [path.join(__dirname, '..', 'tail_screener.js'), '--replay', archiveFile], { stdio: 'pipe' });
-  // 报告文件名由 emitResult 的 daySuffix 决定（stamp/盘中口径带后缀）——不复制该逻辑，
-  // 直接取该交易日最新落盘的 HTML。
+  // 子进程要加载全量模块 + 离线重算 + 压缩 HTML：无超时会永久阻塞 18:30 链路（评审 #6）。
+  const stdout = execFileSync(process.execPath, [path.join(__dirname, '..', 'tail_screener.js'), '--replay', archiveFile], {
+    stdio: 'pipe', encoding: 'utf8', timeout: 60_000, maxBuffer: 8 * 1024 * 1024,
+  });
+  // 优先用子进程回传的真实写入路径（emitResult 打印 `[报告] <path>`）；
+  // 旧实现靠 mtime + startsWith 猜，会误匹配 -intraday / -obs / _probe（评审 #14a）。
+  const reported = [...String(stdout || '').matchAll(/\[报告\]\s*([^\r\n]+\.html)/g)].pop();
+  if (reported) return reported[1].trim();
   const dir = path.join(paths.eodDir(), 'reports', 'eod');
   const prefix = `eod-${doc.tradeDate}`;
-  const hit = fs.readdirSync(dir).filter((f) => f.startsWith(prefix) && f.endsWith('.html'))
+  const files = (fs.existsSync(dir) ? fs.readdirSync(dir) : []).filter((f) => f.startsWith(prefix) && f.endsWith('.html'));
+  const exact = `${prefix}.html`;
+  const hit = files.includes(exact) ? exact : files
     .map((f) => ({ f, m: fs.statSync(path.join(dir, f)).mtimeMs }))
-    .sort((a, b) => b.m - a.m)[0];
+    .sort((a, b) => b.m - a.m)[0]?.f;
   if (!hit) throw new Error('重渲染后未找到报告文件');
-  return path.join(dir, hit.f);
+  return path.join(dir, hit);
 }
 
 // ---------- 盘前：重建 result → buildHTML（与 preopen_backfill 收盘重渲染同一逻辑） ----------
@@ -79,6 +86,7 @@ function rerenderPreopen(tradeDate) {
 // ---------- 游资：窗口日档聚合重建（与 hotmoney_scan 聚合段同一逻辑） ----------
 function rerenderHotmoney(anchor) {
   const cfg = require('../hotmoney.config');
+  const ndCfg = require('../nextday.config');
   const hmStore = require('./hotmoney_store');
   const preopenStore = require('./preopen_store');
   const preopenCfg = require('../preopen.config');
@@ -163,7 +171,9 @@ function rerenderHotmoney(anchor) {
     .map((o) => ({
       name: o.name, tier: o.tier, buy: o.buy, sell: o.sell, net: o.net,
       dayCount: o.days.size, stockCount: o.stocks.size,
-      t1: win(o.t1Rets, 2), t3: win(o.t3Rets, 2), avgMax: o.maxRets.length
+      t1: win(o.t1Rets, ndCfg.thresholds.t1HitMin * 100),
+      t3: win(o.t3Rets, ndCfg.thresholds.t3HitMin * 100),
+      avgMax: o.maxRets.length
         ? +(o.maxRets.reduce((a, b) => a + b, 0) / o.maxRets.length).toFixed(2) : null,
     }))
     .sort((a, b) => b.net - a.net);

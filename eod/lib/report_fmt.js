@@ -51,11 +51,13 @@ function billboardCell(bb) {
 }
 
 /** HTML 安全压缩（用户要求减小入库体积，2026-11-09）：
- *  只做零语义风险的三件事——<style> 内空白折叠、逐行去首部缩进、去空行。
- *  不合并标签间空白（inline 元素间距会变）、不删行内 JS 换行（// 注释会串行）。 */
+ *  只做 <style> 内空白折叠、逐行去首部缩进、去空行。
+ *  不合并标签间空白（inline 元素间距会变）、不删行内 JS 换行（// 注释会串行）。
+ *  2026-11-09 评审 #8：不再删 {}:;, 周围空白 —— 那会连 CSS 字符串内部一起改写
+ *  （content: "a: b, c" → content:"a:b,c"），「零语义风险」契约不成立。 */
 function minifyHTML(html) {
   return String(html)
-    .replace(/<style>([\s\S]*?)<\/style>/g, (_, css) => `<style>${css.replace(/\s+/g, ' ').replace(/\s*([{}:;,])\s*/g, '$1')}</style>`)
+    .replace(/<style>([\s\S]*?)<\/style>/g, (_, css) => `<style>${css.replace(/\s+/g, ' ')}</style>`)
     .replace(/\r/g, '')
     .split('\n')
     .map((l) => l.replace(/^\s+/, ''))

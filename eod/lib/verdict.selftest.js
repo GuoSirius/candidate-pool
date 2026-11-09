@@ -6,7 +6,7 @@
  * 纯函数断言，不联网、不写文件。
  */
 
-const { barsAfter, buildVerdicts, aggregate } = require('./verdict');
+const { barsAfter, buildVerdicts, aggregate, sliceByTradingDays, dayKeyOf } = require('./verdict');
 
 let failed = 0;
 function check(name, cond, detail) {
@@ -72,6 +72,29 @@ check('t1.n = 2 / hit = 1 / rate = 50', agg.t1.n === 2 && agg.t1.hit === 1 && ag
 check('t3.n = 2 / hit3 = 2 / rate3 = 100', agg.t3.n === 2 && agg.t3.hit3 === 2 && agg.t3.rate3 === 100, JSON.stringify(agg.t3));
 check('t3.avgMax ≈ 10.0', agg.t3.avgMax === 10.0, agg.t3.avgMax);
 check('全空 → null', aggregate([{ verdicts: null }]) === null);
+
+console.log('\n[6] 回扫窗口按交易日切片（评审 #1：tail 一天 formal+obs 两份）');
+const ARCH = [];
+for (const d of ['2026-10-30', '2026-10-31', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-09']) {
+  ARCH.push({ date: d, kind: 'tail', file: `eod-${d}.json` });
+  ARCH.push({ date: d, kind: 'tail-obs', file: `eod-${d}-obs.json` });
+}
+const win10 = sliceByTradingDays(ARCH, 10);
+check('days=10 → 覆盖 7 个不同交易日（不缩水成 5 天）', new Set(win10.map((e) => e.date)).size === 7, new Set(win10.map((e) => e.date)).size);
+check('days=10 → 14 份归档全纳入（不按文件数截断）', win10.length === 14, win10.length);
+const win5 = sliceByTradingDays(ARCH, 5);
+check('days=5 → 恰 5 个交易日', new Set(win5.map((e) => e.date)).size === 5, new Set(win5.map((e) => e.date)).size);
+check('days=5 → 10 份文件', win5.length === 10, win5.length);
+check('按日期降序', win5[0].date > win5[win5.length - 1].date);
+check('同日 formal 排在 obs 前（排序确定性）', win5[0].kind === 'tail' && win5[1].kind === 'tail-obs');
+check('同日两口径 byDay 键不互相覆盖', dayKeyOf({ date: '2026-11-09', kind: 'tail' }) !== dayKeyOf({ date: '2026-11-09', kind: 'tail-obs' }));
+
+console.log('\n[7] 脏 high 不污染期间最高收益（评审 #13）');
+const dirty = bars.map((r, i) => (i === 1 ? { ...r, high: NaN } : r));
+const vDirty = buildVerdicts(dirty);
+check('一根 NaN high → maxRet 仍取其余有效高点', vDirty.t3.maxRet === 10.0, vDirty.t3.maxRet);
+const allDirty = bars.map((r) => ({ ...r, high: undefined }));
+check('三根 high 全脏 → maxRet = null（不写伪 -100%）', buildVerdicts(allDirty).t3.maxRet === null);
 
 console.log(`\n${failed ? `自测失败 ${failed} 项` : '全部通过'}`);
 process.exit(failed ? 1 : 0);

@@ -25,6 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 const cfg = require('./hotmoney.config');
+const ndCfg = require('./nextday.config');
 const { dayjs } = require('../time');
 const { lastClosedTradingDay } = require('../rules');
 const market = require('./lib/market');
@@ -167,8 +168,11 @@ async function run() {
   // 席位变更感知：锚定日每个 (游资,席位) 与快照比对 → 新席位标注；随后 union 更新快照
   const snap = store.loadSeatSnapshot();
   const seatChanges = [];
-  const anchorDoc = days[0];
-  for (const rec of anchorDoc.records) {
+  // tradingDays 在锚定日空榜 / 非交易日时会 continue，此时 days[0].date 是更早的交易日。
+  // 拿它当 anchorDoc 再以 anchor 为文件名落档会串档，18:30 重渲染会读错日数据（评审 #11）。
+  const anchorDoc = days.find((d) => d.date === anchor) || null;
+  const anchorView = anchorDoc || { date: anchor, stockCount: 0, records: [] };
+  for (const rec of anchorView.records) {
     for (const h of rec.hot) {
       const seen = snap.seatsByPerson[h.name] || [];
       if (!seen.includes(h.seat)) seatChanges.push({ name: h.name, tier: h.tier, seat: h.seat, code: rec.code, stock: rec.name });
@@ -185,8 +189,12 @@ async function run() {
   store.saveSeatSnapshot(snap);
   // 锚定日席位变更落档：这是 rerender 从归档重渲染时还原「新席位」标注的唯一来源
   // （席位快照已 union 更新，事后无法复现比对 → 扫描当刻必须存下来；旧档无此字段则重渲染跳过）
-  anchorDoc.seatChanges = seatChanges;
-  store.saveDay(anchor, anchorDoc);
+  if (anchorDoc) {
+    anchorDoc.seatChanges = seatChanges;
+    store.saveDay(anchor, anchorDoc);
+  } else {
+    log(`[感知] ${anchor} 无当日榜单归档 → 跳过席位变更落档（避免用别日数据串档）`);
+  }
   log(`[感知] 席位变更 ${seatChanges.length} 条${seatChanges.length ? '：' + [...new Set(seatChanges.map((c) => c.name))].join('、') : ''}`);
 
   // 观察名单合并（各日未识别席位按天累计；同日重复合并只计一次）
@@ -254,7 +262,9 @@ async function run() {
     .map((o) => ({
       name: o.name, tier: o.tier, buy: o.buy, sell: o.sell, net: o.net,
       dayCount: o.days.size, stockCount: o.stocks.size,
-      t1: win(o.t1Rets, 2), t3: win(o.t3Rets, 2), avgMax: o.maxRets.length
+      t1: win(o.t1Rets, ndCfg.thresholds.t1HitMin * 100),
+      t3: win(o.t3Rets, ndCfg.thresholds.t3HitMin * 100),
+      avgMax: o.maxRets.length
         ? +(o.maxRets.reduce((a, b) => a + b, 0) / o.maxRets.length).toFixed(2) : null,
     }))
     .sort((a, b) => b.net - a.net);
@@ -262,7 +272,7 @@ async function run() {
   const result = {
     anchor,
     window: { nDays, days: days.map((d) => ({ date: d.date, stockCount: d.stockCount, hitCount: d.records.length })) },
-    anchorDay: { date: anchorDoc.date, stockCount: anchorDoc.stockCount, records: anchorDoc.records },
+    anchorDay: { date: anchorView.date, stockCount: anchorView.stockCount, records: anchorView.records },
     trades, byTrader, seatChanges, watchTop,
   };
 
@@ -278,7 +288,7 @@ async function run() {
     const lines = top.map((t, i) => `${i + 1}. ${t.name}（${t.tier}）净 ${fmtWan(t.net)} · ${t.stockCount} 票 / ${t.dayCount} 天`);
     const content = [
       `交易日 ${anchor} · 游资席位扫描`,
-      `榜单 ${anchorDoc.stockCount} 只 / 游资命中 ${anchorDoc.records.length} 只 / 窗口 ${nDays} 天`,
+      `榜单 ${anchorView.stockCount} 只 / 游资命中 ${anchorView.records.length} 只 / 窗口 ${nDays} 天`,
       '', ...lines,
     ].join('\n');
     const res = await notify({ title: `游资席位扫描 ${anchor}`, content, htmlPath: reportFile });
@@ -288,8 +298,8 @@ async function run() {
   const summary = {
     anchor,
     window: result.window.days,
-    anchorStocks: anchorDoc.stockCount,
-    anchorHitStocks: anchorDoc.records.length,
+    anchorStocks: anchorView.stockCount,
+    anchorHitStocks: anchorView.records.length,
     anchorTrades: trades.filter((t) => t.date === anchor).length,
     seatChanges: seatChanges.length,
     watchTop: watchTop.length,

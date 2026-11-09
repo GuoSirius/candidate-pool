@@ -27,7 +27,11 @@ function loadPerf(pipe) {
   try {
     const perf = JSON.parse(fs.readFileSync(path.join(paths.eodDir(), 'data', 'perf-weekly.json'), 'utf8'));
     return (perf.pipelines && perf.pipelines[pipe]) || null;
-  } catch (e) { return null; }
+  } catch (e) {
+    // 文件不存在是正常降级；解析失败/权限错误必须留痕，否则报告只是「悄悄没有命中率区块」。
+    if (!e || e.code !== 'ENOENT') process.stderr.write(`[报告] perf-weekly.json 读取失败：${(e && e.message) || e}\n`);
+    return null;
+  }
 }
 function yi(n) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + ' 亿'; }
 
@@ -410,7 +414,7 @@ function buildHTML(m) {
 
   ${perfHit && perfHit.t1 ? `<div class="callout">
     <h3>${b('近10日入选票命中率（回填验证）', '10-Day Hit Rate (backfilled verdicts)')}</h3>
-    <ul><li>${b(`入选 ${perfHit.n} 票 · T+1：命中 ${perfHit.t1.hit}/${perfHit.t1.n}（${perfHit.t1.rate}%），平均收益 ${perfHit.t1.avg}%；${perfHit.t3 ? `T+3：命中 ${perfHit.t3.hit3}/${perfHit.t3.n}（${perfHit.t3.rate3}%），平均收益 ${perfHit.t3.avg}%，期间最高平均 ${perfHit.t3.avgMax}%。` : 'T+3 待后续交易日补齐。'}口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。`, `${perfHit.n} picks · T+1 hit ${perfHit.t1.rate}% (avg ${perfHit.t1.avg}%); ${perfHit.t3 ? `T+3 hit ${perfHit.t3.rate3}% (avg ${perfHit.t3.avg}%, max ${perfHit.t3.avgMax}%).` : 'T+3 pending.'} Basis: buy at tail price, sell at T+1/T+3 close.`)}</li></ul>
+    <ul><li>${b(`已回填 ${perfHit.n} 票 · T+1：命中 ${perfHit.t1.hit}/${perfHit.t1.n}（${perfHit.t1.rate}%），平均收益 ${perfHit.t1.avg}%；${perfHit.t3 ? `T+3：命中 ${perfHit.t3.hit3}/${perfHit.t3.n}（${perfHit.t3.rate3}%），平均收益 ${perfHit.t3.avg}%，期间最高平均 ${perfHit.t3.avgMax}%。` : 'T+3 待后续交易日补齐。'}口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。`, `${perfHit.n} backfilled picks · T+1 hit ${perfHit.t1.rate}% (avg ${perfHit.t1.avg}%); ${perfHit.t3 ? `T+3 hit ${perfHit.t3.rate3}% (avg ${perfHit.t3.avg}%, max ${perfHit.t3.avgMax}%).` : 'T+3 pending.'} Basis: buy at tail price, sell at T+1/T+3 close.`)}</li></ul>
   </div>` : ''}
 
   <div class="callout">
