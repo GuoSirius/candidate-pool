@@ -336,7 +336,7 @@ git push
    node gen_candidates.js --no-notify
    推送策略：**本机静默**——同一份结果还由 GitHub Actions 的 daily-screen.yml 在 15:30 运行并负责推送微信/邮件；本机再推一次会重复，故加 --no-notify（仅跳过推送，不影响报告生成、快照留档与 git 提交）。
    数据源为腾讯公开行情接口（qt.gtimg.cn / web.ifzq.gtimg.cn），直连、不依赖任何本机技能或 CLI，与 GitHub Actions 上的运行完全同源。
-   该命令默认锚定"最近一个已收盘交易日"（判据：交易日 hour < 15 视为未收盘），做实时初筛（R01 量能验证突破 + R07 板块内补涨 + R05 尾盘异动核验），输出单文件、资源全内联、支持中英切换的 HTML。
+   该命令默认锚定「行情日 marketDate」（全市场报价时间戳众数，数据驱动；快照失败兜底日历口径）：开盘前运行→上一交易日，盘中→当日实时，收盘后→当日收盘（2026-11-11 统一口径，见 docs/pattern/01-方案.md §4.1），做实时初筛（R01 量能验证突破 + R07 板块内补涨 + R05 尾盘异动核验），输出单文件、资源全内联、支持中英切换的 HTML。
    默认按锚定日输出：reports/stock_list_<锚定日>.html 与 data/snapshot-<锚定日>.json（覆盖式，每天一份）。
 2. 生成成功后，将更新提交并推送到远程：
    git add reports/stock_list_*.html data/snapshot-*.json

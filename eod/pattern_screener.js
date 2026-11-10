@@ -4,14 +4,16 @@
  * ---------------------------------------------------------------------------
  * 流程：
  *   1. 锚定实时行情实际交易日（marketDate）：开盘前停在上一交易日→锚定上一交易日（完整 K、走缓存）；
- *      开盘后行情日切到当日→锚定当日（含实时 K、不读/不写缓存）。天然覆盖法定节假日/调休/临时休市。
+ *      开盘后锚定当日——盘中=实时（含半截 K、不读/不写缓存），15:00 收盘后=当日固定口径（K 完整、可读写缓存）。
+ *      天然覆盖法定节假日/调休/临时休市。
  *   2. 全市场快照 → 宽松粗筛（只排除明确不可能的，形态票常缩量整理，按活跃度排序会误杀）
  *   3. 仅对入围票抓前复权日 K（两阶段漏斗，避免 ~5000 次请求触发 WAF），日档缓存
- *   4. 双引擎跑四类形态 → 参考价位 → 行业分组 → 上榜/游资（低频，失败留空）
+ *   4. 双引擎跑四类形态 → 参考价位 → 行业分组 → 上榜/游资（低频，失败留空）：
+ *      上榜取锚定日龙虎榜；今日榜未出（~17:30 后出齐）→ 自动回退上一交易日，billboard.date 记录榜单日期
  *   5. 落库(JSON) → HTML 报告（可过滤）→ 通知（默认关）
  *
  * 用法：
- *   node eod/pattern_screener.js                    # 默认全市场，锚定实时行情实际交易日（开盘前=上一交易日，开盘后=当日实时）
+ *   node eod/pattern_screener.js                    # 默认全市场（开盘前=上一交易日；盘中=当日实时；收盘后=当日固定）
  *   node eod/pattern_screener.js --scope watchlist  # 观察池（快速调试）
  *   node eod/pattern_screener.js --date 2026-11-09  # 指定锚定日
  *   node eod/pattern_screener.js --limit 300        # 粗筛后只取前 N 只（调试）
@@ -54,8 +56,7 @@ const OPT = {
   paths: argv.includes('--paths'),
   init: argv.includes('--init'),
 };
-const RUNNER = process.env.GITHUB_ACTIONS ? 'github' : 'local';
-function log(m) { if (!OPT.json) console.log(m); }
+const RUNNER = process.env.GITHUB_ACTIONS ? 'github' : 'local';function log(m) { if (!OPT.json) console.log(m); }
 if (!OPT.paths) require('./lib/runlog').startRunLog('pattern');
 
 function fail(msg, err) {
@@ -71,6 +72,9 @@ function fail(msg, err) {
 function boardOf(code) {
   return /sh68[89]/.test(code) ? '科创板' : /^sz30/.test(code) ? '创业板' : /^bj/.test(code) ? '北交所' : '主板';
 }
+
+/** 是否已过当日收盘（15:00）——收盘后日 K 完整，视为「当日固定口径」而非盘中实时（2026-11-11 拍板） */
+function marketClosed(now) { return now.hour() >= 15; }
 
 /** 报价精简（写进 K 线缓存，供 --replay 复用） */
 function liteQuote(q, sector) {
@@ -222,18 +226,27 @@ function buildCandidates(entries, defs, quotesByCode, map) {
 }
 
 /** 补全上榜/游资（仅命中票，低频；东财失败留空不阻断） */
-async function attachBillboard(candidates, anchor) {
+async function attachBillboard(candidates, anchor, now, calendarToday) {
   if (!candidates.length) return;
   let bb = null;
+  let bbDate = anchor;
   try { bb = await market.fetchBillboard(anchor); }
   catch (e) { log(`[上榜] 龙虎榜抓取失败，相关列留空：${e.message}`); }
+  // 锚定日=今日且榜未出（龙虎榜 ~17:30 后出齐）→ 回退上一交易日（与尾盘同口径，2026-11-11 拍板）
+  if ((!bb || !Object.keys(bb).length) && anchor === calendarToday) {
+    const prev = lastClosedTradingDay(now);
+    try {
+      const prevBb = await market.fetchBillboard(prev);
+      if (prevBb && Object.keys(prevBb).length) { bb = prevBb; bbDate = prev; log(`[上榜] ${anchor} 榜未出 → 回退上一交易日 ${prev}`); }
+    } catch (e) { /* 回退失败留空 */ }
+  }
   if (!bb) return;
   const list = candidates.filter((c) => bb[c.code.slice(2)]);
-  log(`[上榜] 命中 ${list.length} 只，抓席位明细…`);
+  log(`[上榜] ${bbDate} 榜命中 ${list.length} 只，抓席位明细…`);
   await mapLimit(list, 4, async (c) => {
     try {
-      const seats = await market.fetchBillboardSeats(c.code.slice(2), anchor);
-      c.billboard = { net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
+      const seats = await market.fetchBillboardSeats(c.code.slice(2), bbDate);
+      c.billboard = { date: bbDate, net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
     } catch (e) { /* 席位抓取失败留空 */ }
   });
 }
@@ -356,11 +369,11 @@ async function run() {
   //   --date 显式优先（调试/回放目标日）；--replay 无 --date → 最新 K 线缓存日；否则取实时快照的行情日。
   let anchor = null;
   let marketDate = null;
-  let intraday = false; // 锚定日 == 今日历日 → 盘中实时
+  let intraday = false; // 锚定日 == 今日历日 且未收盘 → 盘中实时（不读/不写缓存）；收盘后=当日固定口径（可读写缓存）
   if (OPT.date) {
     anchor = OPT.date;
     marketDate = anchor;
-    intraday = (anchor === calendarToday);
+    intraday = (anchor === calendarToday && !marketClosed(now));
   } else if (OPT.replay) {
     anchor = store.latestKlineCacheDate(cfg) || lastClosedTradingDay(now);
     marketDate = anchor;
@@ -381,12 +394,12 @@ async function run() {
     quotes = snap.quotes;
     marketDate = snap.marketDate;
     anchor = marketDate || lastClosedTradingDay(now);
-    intraday = (anchor === calendarToday);
-    log(`[锚定] ${anchor}（行情日 ${marketDate || '—'}，${intraday ? '盘中实时' : '已收盘/休市'}）`);
+    intraday = (anchor === calendarToday && !marketClosed(now));
+    log(`[锚定] ${anchor}（行情日 ${marketDate || '—'}，${intraday ? '盘中实时(不读写缓存)' : marketClosed(now) ? '当日收盘(固定口径,可读写缓存)' : '上一交易日/休市(走缓存)'}）`);
   }
 
-  // K 线缓存开关：盘中实时（锚定当日）不读/不写，避免缓存半截当日 K；
-  // 上一交易日 / 显式历史日 / --replay 正常走缓存。
+  // K 线缓存开关：盘中实时（锚定当日且未收盘）不读/不写，避免缓存半截当日 K；
+  // 上一交易日 / 显式历史日 / 收盘后（当日 K 已完整，2026-11-11 拍板）/ --replay 正常走缓存。
   const cacheRead = (cfg.kline.cache && !OPT.refresh && !intraday) || OPT.replay;
   const cache = cacheRead ? store.loadKlineCache(cfg, anchor) : null;
   if (cache && !OPT.refresh) {
@@ -440,7 +453,7 @@ async function run() {
       log('[上榜] --replay 沿用已有归档的上榜/游资标注与回填');
     }
   } else {
-    await attachBillboard(built.candidates, anchor);
+    await attachBillboard(built.candidates, anchor, now, calendarToday);
   }
 
   log('[4/4] 落库 + 报告…');

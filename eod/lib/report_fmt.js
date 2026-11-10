@@ -41,13 +41,15 @@ function fmtAmt(v) {
   return (v < 0 ? '-' : '') + (a >= 1e8 ? num(a / 1e8, 1) + '亿' : num(a / 1e4, 0) + '万');
 }
 
-/** 上榜单元格（2026-11-09 从 preopen_report.js 迁入共享）：tag + 游资标注（金额+分层，如「章盟主(1.2亿)@一线」） */
+/** 上榜单元格（2026-11-09 从 preopen_report.js 迁入共享）：tag + 游资标注（金额+分层，如「章盟主(1.2亿)@一线」）。
+ *  bb.date 存在时附注榜单日期（形态选股盘中/收盘早期会回退上一交易日榜，需防误解，2026-11-11） */
 function billboardCell(bb) {
   if (!bb) return '';
   const hotTxt = (bb.hot || [])
     .map((h) => `${esc(h.name)}${h.amt != null ? '(' + fmtAmt(h.amt) + ')' : ''}${h.tier ? '@' + esc(h.tier) : ''}`)
     .join(' / ');
-  return `<span class="tag pass">${b('上榜', 'List')}</span>${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
+  const dateTxt = bb.date ? `<span class="src">${esc(String(bb.date).slice(5))}榜</span>` : '';
+  return `<span class="tag pass">${b('上榜', 'List')}</span>${dateTxt}${hotTxt ? `<span class="src">${hotTxt}</span>` : ''}`;
 }
 
 /** 游资层级细分（2026-11-09）：凡带「游资」过滤项的报告，都要能按 一线/二线/避坑 圈定。

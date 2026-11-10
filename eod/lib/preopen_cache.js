@@ -2,19 +2,21 @@
 /*
  * eod/lib/preopen_cache.js —— 盘前基线缓存读写（2026-11-10 评审 #4/#5 后续）
  * ---------------------------------------------------------------------------
- * 背景（键名错位，日志实锤）：03:00 预计算锚「昨日」写 preopen-baseline-<昨日>.json，
- * 09:25 主流程锚「今日」读 <今日>.json → 隔夜缓存从未命中，每日全市场 K 线白抓 ~3 分钟。
- * 统一口径：文件名与内嵌 dataDate 均为「基线数据日」= rows[0] 所在交易日
- * （即次日盘前眼中的「昨日」）。
- *   - 写：{ dataDate, baselines: {code: baseline} }，文件 preopen-baseline-<dataDate>.json
- *   - 读：精确 anchor 日档优先 → 扫描最新 dataDate < anchor 的档；
- *     并用报价昨收(prevClose) 抽样比对基线 lastClose，校验通过才使用。
- *     旧格式（裸 code→baseline map，无 dataDate）无法证明口径，一律视为无效，
- *     首次运行会触发一次实时重算并落新格式档。
+ * 文件命名口径（用户 2026-11-11 拍板）：文件名 = 该基线「服务」的交易日（serveDate）：
+ *   - 交易日 15:00 收盘前跑（含 03:00 预计算，属「昨日收盘后→今日开盘前」窗口）→ 命名当日
+ *   - 交易日 15:00 收盘后跑（为下一交易日盘前服务）→ 命名下一交易日（如 11-11 收盘后 → 11-12）
+ *   - 非交易日跑 → 命名下一个交易日
+ * 内容内嵌 dataDate = 基线数据日（rows[0] 所在交易日，即消费日眼中的「昨日」），
+ * 读侧靠 dataDate + 昨收(prevClose) 抽样校验定位/验证档案，文件名仅是语义标签（日历口径，
+ * 节假日错名不影响正确性——校验会兜底弃用）。
+ *   - 写：{ dataDate, baselines: {code: baseline} }，文件 preopen-baseline-<serveDate>.json
+ *   - 读：精确 anchor 日档优先 → 扫描最新 dataDate < anchor 的档；校验通过才使用。
+ *     旧格式（裸 code→baseline map，无 dataDate）无法证明口径，一律视为无效。
  */
 const fs = require('fs');
 const path = require('path');
 const { readJSONSafe, atomicWriteJSON } = require('./atomic');
+const { isTradingDay, nextTradingDay } = require('../../rules');
 
 const RE_FILE = /^preopen-baseline-(\d{4}-\d{2}-\d{2})\.json$/;
 const MAX_SAMPLE = 300;   // 校验抽样上限
@@ -69,15 +71,23 @@ function load(dir, anchor, quotes, log = () => {}) {
   return null;
 }
 
-/** 写缓存：文件名按数据日命名；dataDate 缺失（全失败）或空 Map 不写 */
-function save(dir, dataDate, map, log = () => {}) {
-  if (!dataDate || !map || !map.size) return null;
+/** 基线「服务」的交易日（文件命名用）：
+ *  交易日 15:00 收盘前（含 03:00）→ 当日；收盘后 / 非交易日 → 下一交易日（日历口径，节假日正确）。 */
+function serveDateOf(now) {
+  const today = now.format('YYYY-MM-DD');
+  if (isTradingDay(now) && now.hour() * 60 + now.minute() < 15 * 60) return today;
+  return nextTradingDay(today);
+}
+
+/** 写缓存：文件名 = serveDate（服务交易日）；dataDate 内嵌供读侧校验；任一缺失不写 */
+function save(dir, serveDate, dataDate, map, log = () => {}) {
+  if (!serveDate || !dataDate || !map || !map.size) return null;
   const out = {};
   for (const [code, b] of map) out[code] = b;
-  const file = path.join(dir, `preopen-baseline-${dataDate}.json`);
+  const file = path.join(dir, `preopen-baseline-${serveDate}.json`);
   atomicWriteJSON(file, { dataDate, baselines: out });
-  log(`[基线] 已缓存 ${map.size} 只（数据日 ${dataDate}）→ ${path.basename(file)}`);
+  log(`[基线] 已缓存 ${map.size} 只（数据日 ${dataDate}，服务 ${serveDate}）→ ${path.basename(file)}`);
   return file;
 }
 
-module.exports = { load, save, parseDoc, validate };
+module.exports = { load, save, parseDoc, validate, serveDateOf };

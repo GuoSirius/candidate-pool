@@ -106,10 +106,10 @@ function readCandidates() {
 }
 
 // ---------- 基线（前一日 K 线指标）----------
-async function getBaseline(codes, anchor, scope, quotes) {
+async function getBaseline(codes, anchor, scope, quotes, serveDate) {
   const cacheDir = path.join(paths.eodDir(), cfg.baseline.dataDir);
   if (scope === 'universe') {
-    // 读缓存（键名错位修复，2026-11-10）：按「数据日」命名 + 昨收抽样校验，
+    // 读缓存（键名错位修复，2026-11-10）：按「数据日」内嵌 + 昨收抽样校验，
     // 陈旧档 / 旧格式档一律弃用 → 回退实时计算，绝不把过期基线当「昨日」用。
     const cached = PCache.load(cacheDir, anchor, quotes, log);
     if (cached) return cached;
@@ -133,7 +133,7 @@ async function getBaseline(codes, anchor, scope, quotes) {
     if (b && !b.error) { m.set(code, b); okN++; } else errN++;
   }
   log(`[基线] K线 ${okN} 只成功 / ${errN} 只失败`);
-  if (scope === 'universe') PCache.save(cacheDir, dataDate, m, log);
+  if (scope === 'universe') PCache.save(cacheDir, serveDate, dataDate, m, log);
   return m;
 }
 
@@ -214,8 +214,8 @@ async function run() {
     });
     let ok = 0, err = 0;
     for (const [c, b] of res) { if (b && !b.error) { m.set(c, b); ok++; } else err++; }
-    // 新格式落档：文件名 = 数据日（= anchor），与 09:25 读侧同一口径，隔夜缓存自此可命中
-    const cf = PCache.save(path.join(paths.eodDir(), cfg.baseline.dataDir), dataDate, m, log);
+    // 文件名 = serveDate（交易日 15:00 前→当日；收盘后→下一交易日，2026-11-11 拍板）
+    const cf = PCache.save(path.join(paths.eodDir(), cfg.baseline.dataDir), PCache.serveDateOf(now), dataDate, m, log);
     return { baseline: { file: cf, ok, err } };
   }
 
@@ -261,8 +261,10 @@ async function run() {
   anchor = tradeDate; // 主流程锚定日 = 行情日（开盘前=上一交易日；数据驱动，不依赖日历）
 
   // 基线
+  // 基线（serveDate = 文件命名口径：交易日 15:00 收盘前→当日；收盘后/非交易日→下一交易日）
+  const serveDate = PCache.serveDateOf(now);
   log('[2/4] 计算基线（昨涨 + 趋势）…');
-  const baseline = await getBaseline(codes, anchor, scope, quotes);
+  const baseline = await getBaseline(codes, anchor, scope, quotes, serveDate);
 
   // 行业映射（分组用）
   const map = loadIndustryMap();
