@@ -205,6 +205,15 @@ const CSS = `  :root, :root[data-theme="light"] {
   .tag.gap { background: #fffbeb; color: var(--amber); }
   .tag.hot { background: var(--red); color: #fff; font-weight: 700; }
   .table-wrap { overflow-x: auto; }
+  /* 冻结列与表头（2026-11-11）：主表容器内双轴滚动；两级表头第二行 top 补位；钉住 1/2 列（# 与 标的） */
+  .vscroll { max-height: 72vh; overflow: auto; }
+  .vscroll thead th { position: sticky; top: 0; z-index: 3; height: 36px; }
+  .vscroll thead tr:nth-child(2) th { top: 36px; }
+  .vscroll thead tr:first-child th:nth-child(1) { left: 0; z-index: 5; width: 36px; min-width: 36px; }
+  .vscroll thead tr:first-child th:nth-child(2) { left: 36px; z-index: 5; box-shadow: 2px 0 0 var(--border); }
+  .vscroll tbody td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 36px; min-width: 36px; background: var(--card); }
+  .vscroll tbody td:nth-child(2) { position: sticky; left: 36px; z-index: 2; min-width: 96px; background: var(--card); box-shadow: 2px 0 0 var(--border); }
+  .vscroll tbody tr.sector-row td:nth-child(-n+2) { background: var(--th-bg); }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: #fefce8; }
@@ -433,7 +442,7 @@ function buildHTML(m) {
 
   <h2>${b(`候选明细（${listed.length} 只）`, `Candidates (${listed.length})`)}</h2>
   ${listed.length ? `${scoreNote}${toolbar}
-  <div class="table-wrap"><table id="candTable"><thead>${topHead}</thead>
+  <div class="table-wrap vscroll"><table id="candTable"><thead>${topHead}</thead>
     <tbody id="candBody">${candRows}${sepRows}</tbody></table></div>
   ${truncated > 0 ? `<p class="src">${b(`另有 ${truncated} 只超出展示上限（report.maxRows）未列出。`, `${truncated} more candidates not listed (report.maxRows cap).`)}</p>` : ''}`
     : `<div class="card">${b('本时段无满足全部门槛的候选。', 'No candidate passed all gates in this window.')}</div>`}

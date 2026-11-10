@@ -96,7 +96,12 @@ function buildReport(snapshot, analysis) {
   .chip { font-size:12px; padding:2px 10px; border-radius:10px; border:1px solid var(--line); }
   .chip.ok { color:#7bd7a2; } .chip.bad { color:#ff9c9c; border-color:#5a3038; }
   .summary { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:14px 0; }
-  table { width:100%; border-collapse:collapse; background:var(--panel); border-radius:10px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; background:var(--panel); border-radius:10px; overflow:clip; }
+  /* 冻结表头与左侧前两列（2026-11-11）：窄屏页面出现横向滚动时同样生效；列宽可变 → JS 实测写 --s1 */
+  thead th { position: sticky; top: 0; z-index: 3; }
+  thead th:nth-child(1), tbody td:nth-child(1) { position: sticky; left: 0; background: var(--panel); box-shadow: 2px 0 0 var(--line); }
+  thead th:nth-child(2), tbody td:nth-child(2) { position: sticky; left: var(--s1, 0px); background: var(--panel); box-shadow: 2px 0 0 var(--line); }
+  thead th:nth-child(1), thead th:nth-child(2) { z-index: 4; }
   th,td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
   th { color:var(--muted); font-weight:600; background:#1b1f29; }
   tr:last-child td { border-bottom:none; }
@@ -137,6 +142,16 @@ function buildReport(snapshot, analysis) {
   <table><thead><tr><th>时间</th><th>来源</th><th>内容</th></tr></thead><tbody>${newsRows || '<tr><td colspan="3">暂无</td></tr>'}</tbody></table>
 </div>
 <script>
+// 冻结列偏移同步：实测各表首列宽度写 --s1（第 2 列 sticky left 用；窄屏横向滚动时保证不重叠）
+function syncSticky() {
+  document.querySelectorAll('table').forEach(function (t) {
+    var r = t.rows[0];
+    if (r && r.cells[0]) t.style.setProperty('--s1', r.cells[0].getBoundingClientRect().width.toFixed(1) + 'px');
+  });
+}
+syncSticky();
+window.addEventListener('resize', syncSticky);
+
 // 表头点击排序：优先取 td[data-v]（数值，null 落底），否则按文本；再次点击切换升降序
 document.querySelectorAll('table.sortable').forEach(function (table) {
   var ths = table.querySelectorAll('thead th');

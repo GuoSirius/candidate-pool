@@ -760,6 +760,13 @@ function buildHTML(m) {
   .risk { margin-top: 12px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; font-size: 0.85rem; color: var(--red); }
   .note { margin-top: 12px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; font-size: 0.85rem; color: var(--slate); }
   .table-wrap { overflow-x: auto; }
+  /* 冻结列与表头（2026-11-11）：matrixTable 容器内双轴滚动；钉住 1/2 列（代码 6 位定宽 70px + 名称） */
+  .vscroll { max-height: 72vh; overflow: auto; }
+  .vscroll thead th { position: sticky; top: 0; z-index: 3; height: 36px; }
+  .vscroll thead th:nth-child(1) { left: 0; z-index: 5; width: 70px; min-width: 70px; }
+  .vscroll thead th:nth-child(2) { left: 70px; z-index: 5; box-shadow: 2px 0 0 var(--border); }
+  .vscroll tbody td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 70px; min-width: 70px; background: var(--card); }
+  .vscroll tbody td:nth-child(2) { position: sticky; left: 70px; z-index: 2; min-width: 88px; background: var(--card); box-shadow: 2px 0 0 var(--border); }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: #fefce8; }
@@ -837,7 +844,7 @@ function buildHTML(m) {
   <div class="card">
     <p class="body-text" style="margin-bottom:12px">${b('四项门槛：C1 当日量 ≥ 近 5 日均量 150% ｜ C2 收盘突破近 10 日最高价 ｜ C3 涨幅 3%–8% ｜ C4 换手率 ≥ 3%。红色为达成。R07：所属行业居前 10% 且个股涨幅 < 行业涨幅一半记为补涨。点上方档位 chips 可只看某一档。', 'Four gates: C1 volume at 150%+ of the 5-day average | C2 close above the prior 10-day high | C3 gain 3%–8% | C4 turnover 3%+. Red marks a pass. R07 laggard: sector in the top 10% and gain below half the sector median. Use the tier chips above to focus on one tier.')}</p>
     <div class="toolbar"><div class="chips" id="tierChips">${tierChips}</div></div>
-    <div class="table-wrap"><table id="matrixTable">
+    <div class="table-wrap vscroll"><table id="matrixTable">
       <thead><tr>
         <th>${b('代码', 'Code')}</th><th>${b('名称', 'Name')}</th><th>${b('mini K线', 'mini K')}</th><th>${b('档位', 'Tier')}</th>
         <th>${b('收盘', 'Close')}</th><th>${b('涨幅', 'Chg')}</th><th>${b('换手', 'Turn.')}</th>

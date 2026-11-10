@@ -207,7 +207,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     ${filterChipRow('fDir', '方向', 'Side', dirChips())}
     ${filterChipRow('fName', '游资', 'Trader', nameChips(anchorTrades))}
   </div>
-  <div class="table-wrap"><table id="dayTable"><thead><tr>
+  <div class="table-wrap vscroll"><table id="dayTable" class="vfreeze"><thead><tr>
     <th>${b('游资', 'Trader')}</th><th>${b('标的', 'Stock')}</th><th>${b('mini K线', 'mini K')}</th>
     <th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th><th>${b('净额', 'Net')}</th>
     <th>${b('席位', 'Seat')}</th><th>${b('标记', 'Marks')}</th>
@@ -218,7 +218,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
   <p class="src">${b(`依据 = 窗口内（近 ${dayCount} 个交易日日档）的全部游资记录按人聚合：净额 = 买入合计 − 卖出合计；活跃天数 = 出现过的交易日数；涉票数 = 去重标的数；介入票 T+1/T+3 = 其介入票次日/三日后收盘表现（T+1 开盘买入，T+1/T+3 收盘卖出，verdicts 由 nextday_backfill 回填，缺档显示 —）。列表按净额降序。逐日买卖去「近${dayCount}日交易明细」表用游资 chip 圈定。`,
     'Aggregated per trader over the window: net = total buy − total sell; days = distinct trading days seen; stocks = distinct names; T+1/T+3 = performance of stocks they traded (bought at T+1 open). Sorted by net. Per-day detail: use the trader chip in the window-trades table.')}</p>
   ${byTrader.length ? `${filterChipRow('fTier2', '层级', 'Tier', tierChips(byTrader))}
-  <div class="table-wrap"><table><thead><tr>
+  <div class="table-wrap vscroll"><table class="vfreeze"><thead><tr>
     <th>${b('游资', 'Trader')}</th><th>${b('层级', 'Tier')}</th>
     <th>${b('净额', 'Net')}</th><th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th>
     <th>${b('活跃天数', 'Days')}</th><th>${b('涉票数', 'Stocks')}</th>
@@ -246,7 +246,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     ${filterChipRow('fDir3', '方向', 'Side', dirChips())}
     ${filterChipRow('fTier3', '层级', 'Tier', tierChips(trades))}
   </div>
-  <div class="table-wrap"><table><thead><tr>
+  <div class="table-wrap vscroll"><table class="vfreeze vfreeze3"><thead><tr>
     <th>${b('日期', 'Date')}</th><th>${b('游资', 'Trader')}</th><th>${b('标的', 'Stock')}</th><th>${b('mini K线', 'mini K')}</th>
     <th>${b('买入', 'Buy')}</th><th>${b('卖出', 'Sell')}</th><th>${b('净额', 'Net')}</th>
     <th>${b('席位', 'Seat')}</th><th>${b('标记', 'Marks')}</th>
@@ -254,7 +254,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     : `<div class="card">${b('窗口内无游资记录。', 'No records in the window.')}</div>`}
 
   <h2>${b(`未识别席位观察名单（≥${cfg.watch.minDays} 天，Top ${watchTop.length}）`, `Unmatched Seat Watchlist (≥${cfg.watch.minDays} days, top ${watchTop.length})`)}</h2>
-  ${watchTop.length ? `<div class="table-wrap"><table><thead><tr>
+  ${watchTop.length ? `<div class="table-wrap vscroll"><table class="vfreeze"><thead><tr>
     <th>${b('席位', 'Seat')}</th><th>${b('出现天数', 'Days')}</th><th>${b('累计买入', 'Buy')}</th><th>${b('累计卖出', 'Sell')}</th>
   </tr></thead><tbody>${watchTop.map((w) => {
     const buy = fmtAmtCell(w.buy); const sell = fmtAmtCell(w.sell);
@@ -293,6 +293,21 @@ function buildHTML({ cfg, anchor, result, runner }) {
 <script>
 (function () {
   'use strict';
+  // ---- 冻结列偏移同步（2026-11-11）：vfreeze 表列宽随内容/筛选变化，实测首列宽写 --s1/--s2 ----
+  function syncSticky() {
+    document.querySelectorAll('table.vfreeze').forEach(function (t) {
+      var r = t.rows[0];
+      if (!r || r.cells.length < 2) return;
+      var w0 = r.cells[0].getBoundingClientRect().width;
+      var w1 = r.cells[1] ? r.cells[1].getBoundingClientRect().width : 0;
+      t.style.setProperty('--s1', w0.toFixed(1) + 'px');
+      t.style.setProperty('--s2', (w0 + w1).toFixed(1) + 'px');
+    });
+  }
+  syncSticky();
+  window.addEventListener('resize', syncSticky);
+  new MutationObserver(syncSticky).observe(document.body, { childList: true, attributes: true, subtree: true });
+
   // ---- 主题 ----
   var root = document.documentElement;
   var themeBtn = document.getElementById('themeBtn');
