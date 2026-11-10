@@ -30,7 +30,7 @@ const path = require('path');
 
 const cfg = require('./preopen.config');
 const { dayjs } = require('../time');
-const { lastClosedTradingDay } = require('../rules');
+const { lastClosedTradingDay, previousTradingDay } = require('../rules');
 const market = require('./lib/market');
 const PR = require('./lib/preopen_rules');
 const store = require('./lib/preopen_store');
@@ -329,17 +329,21 @@ async function run() {
   // 昨日主力净流入（东财 fflow）+ 昨日龙虎榜（候选级低频调用；封 IP / 失败留空，不阻断）
   if (candidates.length) {
     log(`[3.5/4] 候选昨日净流入/龙虎榜（${candidates.length} 只，东财）…`);
+    // 「昨日」榜与净流入恒取 tradeDate 的前一交易日（previousTradingDay），与运行时刻无关：
+    // 09:25 主流程与 --force 任意时刻补跑同口径；若用 lastClosedTradingDay(now)，15:00 后补跑会
+    // 错拿当日榜（当日榜 17:30 后才出齐且属收盘区口径）。billboard.date 记录实际榜单日期。
+    const bbDate = previousTradingDay(tradeDate);
     await mapLimit(candidates, 4, async (c) => {
       const f = await market.fetchFlowDay(c.code);
-      if (f && f[anchor] != null) c.yesterdayMainInflow = f[anchor];
+      if (f && f[bbDate] != null) c.yesterdayMainInflow = f[bbDate];
     });
-    const bb = await market.fetchBillboard(anchor);
+    const bb = await market.fetchBillboard(bbDate);
     // 席位明细并行抓（评审 #8：串行 40 只上榜最坏 ~10 分钟 → 4 并发 ~1.5 分钟）
     const bbCands = candidates.filter((c) => bb[c.code.slice(2)]);
     await mapLimit(bbCands, 4, async (c) => {
       try {
-        const seats = await market.fetchBillboardSeats(c.code.slice(2), anchor);
-        c.billboard = { net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
+        const seats = await market.fetchBillboardSeats(c.code.slice(2), bbDate);
+        c.billboard = { date: bbDate !== anchor ? bbDate : undefined, net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
       } catch (e) { /* 容错：席位抓取失败留空 */ }
     });
   }

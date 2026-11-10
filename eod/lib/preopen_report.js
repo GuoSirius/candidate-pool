@@ -81,10 +81,12 @@ function rowHtml(c, i, withBreakdown, sparkIdx) {
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
   const yFlow = fmtFlow(c.yesterdayMainInflow);
   const hasHot = !!(c.billboard && (c.billboard.hot || []).length);
+  // 连板过滤（2026-11-10）：连板 = N连板（streak≥2）；data-streak 存连板数，供前端过滤与将来细分
+  const streakN = (c.boards && (c.boards.streak | 0)) || 0;
   // data-hm 存 encodeURIComponent 后的游资名（| 分隔）：名字含特殊字符也不会破坏属性/过滤（评审 #13）
   const hotNames = hasHot ? [...new Set((c.billboard.hot || []).map((h) => h.name).filter(Boolean))].map(encodeURIComponent).join('|') : '';
   const hmTiers = hotTierAttr(c.billboard);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${streakN >= 2 ? ` data-streak="${streakN}"` : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     ${sparkCell(sparkOf(c.code, sparkIdx))}
@@ -113,6 +115,9 @@ function closeRowHtml(c, i, sealedMin, sparkIdx) {
   // 收盘回填没拿到龙虎榜时沿用盘前已有的上榜信息；必须与 makeLabelChips 的 bbOf 同口径，
   // 否则 chip 计数会把这些票算进去、行却没有 data-hm-tier（11-09 实测 2 只票偏差）。
   const bb = cl.billboard || c.billboard;
+  // 连板口径：收盘回填没抓到 K 线时沿用盘前连板（与上方上榜的回退口径一致）；chip 计数与 data-streak 同源
+  const boards = cl.boards || c.boards;
+  const streakN = (boards && (boards.streak | 0)) || 0;
   const yChg = c.yesterdayChgPct;   // 昨收涨跌幅（昨日 vs 前日）
   const openChg = c.auctionChgPct;  // 今开涨跌幅（今开 vs 昨收）
   const dayChg = cl.dayChgPct;      // 今收涨跌幅（今收 vs 昨收）
@@ -139,7 +144,7 @@ function closeRowHtml(c, i, sealedMin, sparkIdx) {
   const hotNames = hasHot ? [...new Set((bb.hot || []).map((h) => h.name).filter(Boolean))].map(encodeURIComponent).join('|') : '';
   const hmTiers = hotTierAttr(bb);
   // 带 @best/@top3 所需的排序属性：收盘区 chips 与候选区共用一份，行缺属性会一点就全空（评审 #12）
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${bb ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${streakN >= 2 ? ` data-streak="${streakN}"` : ''}${bb ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     ${sparkCell(sparkOf(c.code, sparkIdx))}
@@ -156,7 +161,7 @@ function closeRowHtml(c, i, sealedMin, sparkIdx) {
     <td>${limitUp ? `<span class="tag pass">${b('涨停', 'Limit')}</span>` : ''}</td>
     <td><span class="tag ${oppCls}">${b(oppZh, oppEn)}</span></td>
     <td>${hit ? `<span class="tag pass">${b('命中', 'Hit')}</span>` : ''}</td>
-    <td>${boardsTxt(cl.boards)}</td>
+    <td>${boardsTxt(boards)}</td>
     <td>${bbCell}</td>
   </tr>`;
 }
@@ -344,8 +349,8 @@ function buildHTML(m) {
 
   // 标签 chips 候选区 / 收盘区各自统计：收盘回填后龙虎榜出齐，close.billboard 与盘前
   // billboard 可能不同（11-09 实测 7 只票层级不一致），共用一套计数会让 chip 数字与
-  // 点击后实际行数对不上。bbOf 决定本区用哪份龙虎榜口径。
-  function makeLabelChips(recs, bbOf) {
+  // 点击后实际行数对不上。bbOf / boardsOf 决定本区用哪份龙虎榜/连板口径。
+  function makeLabelChips(recs, bbOf, boardsOf) {
     const labelCounts = {}, labelOrder = [];
     for (const c of recs) {
       labelCounts[c.label] = (labelCounts[c.label] || 0) + 1;
@@ -353,6 +358,8 @@ function buildHTML(m) {
     }
     const bestCount = recs.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
     const top3Count = recs.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
+    // 连板 = N连板（streak≥2）；口径与行 data-streak 一致
+    const streakCount = recs.reduce((n, c) => n + ((((boardsOf && boardsOf(c)) || {}).streak | 0) >= 2 ? 1 : 0), 0);
     const bbCount = recs.reduce((n, c) => n + (bbOf(c) ? 1 : 0), 0);
     const hotCount = recs.reduce((n, c) => n + (bbOf(c) && (bbOf(c).hot || []).length ? 1 : 0), 0);
     // 游资明细 chips：按当天实际命中的游资名动态生成，计数 = 命中的票数（同票多席位去重），按命中票数降序
@@ -369,6 +376,7 @@ function buildHTML(m) {
       .concat([
         `<button type="button" class="chip" data-lfilter="@best">${b('组内第一', 'Group #1')}<i>${bestCount}</i></button>`,
         `<button type="button" class="chip" data-lfilter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
+        `<button type="button" class="chip" data-lfilter="@streak">${b('连板', 'Streak≥2')}<i>${streakCount}</i></button>`,
         `<button type="button" class="chip" data-lfilter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
         `<button type="button" class="chip" data-lfilter="@hotmoney">${b('游资', 'Hot money')}<i>${hotCount}</i></button>`,
         ...tierStat.order.map((t) =>
@@ -380,9 +388,9 @@ function buildHTML(m) {
       .concat(labelOrder.map((l) => `<button type="button" class="chip" data-lfilter="${esc(l)}">${b(esc(l), esc(l))}<i>${labelCounts[l]}</i></button>`))
       .join('');
   }
-  const labelChips = makeLabelChips(listed, (c) => c.billboard);
+  const labelChips = makeLabelChips(listed, (c) => c.billboard, (c) => c.boards);
   const closeLabelChips = showClose
-    ? makeLabelChips(candidates, (c) => (c.close && c.close.billboard) || c.billboard)
+    ? makeLabelChips(candidates, (c) => (c.close && c.close.billboard) || c.billboard, (c) => (c.close && c.close.boards) || c.boards)
     : '';
   const sectorChips = [`<button type="button" class="chip active" data-sfilter="">${b('全部行业', 'All sectors')}</button>`]
     .concat(sectorOrder.map((s) => `<button type="button" class="chip" data-sfilter="${esc(s)}">${b(esc(s), esc(s))}<i>${sectorCounts[s]}</i></button>`))
@@ -549,6 +557,7 @@ function buildHTML(m) {
       var okL = true, okS = true;
       if (lFilter === '@best') okL = tr.hasAttribute('data-best');
       else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (lFilter === '@streak') okL = (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
       else if (lFilter === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (lFilter === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
       else if (lFilter.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(lFilter.slice(4)) >= 0;
@@ -635,6 +644,7 @@ function buildHTML(m) {
       var okL = true;
       if (clF === '@best') okL = tr.hasAttribute('data-best');
       else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+      else if (clF === '@streak') okL = (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
       else if (clF === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (clF === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
       else if (clF.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(clF.slice(4)) >= 0;
