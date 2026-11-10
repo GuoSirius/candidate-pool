@@ -19,7 +19,15 @@ const util = require('util');
 const { dayjs } = require('../../time');
 
 function logsDir() {
-  const dir = path.join(__dirname, '..', 'logs');
+  // 日志属于「运行产物」→ 随 HOME 走（npm 包 / npx 场景不写进 node_modules，重装即丢）。
+  // 仓库场景下与历史完全一致：<repo>/eod/logs。
+  let dir;
+  try {
+    const paths = require('../../paths');
+    dir = path.join(paths.eodDir(), 'logs');
+  } catch (e) {
+    dir = path.join(__dirname, '..', 'logs');   // paths 不可用时的兜底（代码资产相对）
+  }
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }

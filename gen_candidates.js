@@ -319,6 +319,9 @@ async function main() {
     console.log(args.date || lastClosedTradingDay(now));
     return;
   }
+  // 日志统一归位：脚本自镜像到 eod/logs/nextday-pool-<日期>.log（不依赖外部重定向；
+  // --paths / --print-anchor 等纯诊断入口不记日志、不产生写入）
+  require('./eod/lib/runlog').startRunLog('nextday-pool');
   if (args.offline) { await runOffline(args); return; }
   const now = dayjs.tz();            // 当前北京时间（dayjs 对象；交易日推算与机器时区无关）
   // 锚定日：--date 指定优先；否则取全市场报价时间戳众数 marketDate（数据驱动，天然覆盖
