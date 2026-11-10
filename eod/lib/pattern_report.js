@@ -62,6 +62,8 @@ function rowHtml(c, i, cfg, withDetail) {
   const hmNames = [...new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name).filter(Boolean))]
     .map(encodeURIComponent).join('|');
   const hmTiers = hotTierAttr(c.billboard);
+  // 连板过滤（2026-11-10）：连板 = N连板（streak≥2）；data-streak 存连板数，与盘前/尾盘报告同口径
+  const streakN = (c.boards && (c.boards.streak | 0)) || 0;
   const detail = withDetail
     ? DETAIL_COLS.map(([k]) => {
       const v = f[k];
@@ -72,6 +74,7 @@ function rowHtml(c, i, cfg, withDetail) {
   return `<tr data-sector="${esc(c.sector)}" data-patterns="${esc(c.patternIds.join('|'))}" data-stage="${esc(c.stage)}"`
     + ` data-score="${num(c.score, 1)}" data-resonance="${c.resonance}"`
     + `${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"`
+    + `${streakN >= 2 ? ` data-streak="${streakN}"` : ''}`
     + `${c.billboard ? ' data-billboard="1"' : ''}${hmNames ? ` data-hot="1" data-hm="${hmNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${esc(c.code.replace(/^[a-z]+/, ''))}</span></td>
@@ -165,12 +168,14 @@ function buildHTML(m) {
     .concat([90, 80, 70].map((v) => chipBtn('score', String(v), `≥${v}`, `≥${v}`, listed.filter((c) => c.score >= v).length, false))).join('');
   const bbCount = listed.filter((c) => c.billboard).length;
   const hotCount = listed.filter((c) => (c.billboard && c.billboard.hot || []).length).length;
+  const streakCount = listed.reduce((n, c) => n + (((c.boards && (c.boards.streak | 0)) || 0) >= 2 ? 1 : 0), 0);
   const bestCount = listed.filter((c) => c.bestInGroup).length;
   const top3Count = listed.filter((c) => (c.groupRank || 99) <= 3).length;
   const hmCounts = {};
   for (const c of listed) for (const n of new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name).filter(Boolean))) hmCounts[n] = (hmCounts[n] || 0) + 1;
   const tierStat = hotTierCounts(listed, (c) => c.billboard);
   const qualityChips = [chipBtn('quality', '', '全部', 'All', null, true),
+    chipBtn('quality', '@streak', '连板', 'Streak≥2', streakCount, false),
     chipBtn('quality', '@billboard', '上榜', 'On list', bbCount, false),
     chipBtn('quality', '@hotmoney', '游资', 'Hot money', hotCount, false)]
     .concat(tierStat.order.map((t) => chipBtn('quality', hotTierChipValue(t), esc(t), esc(t), tierStat.counts[t], false)))
@@ -317,6 +322,7 @@ function buildHTML(m) {
     if (+filters.score > 0) ok = ok && +(tr.getAttribute('data-score') || 0) >= +filters.score;
     if (q === '@best') ok = ok && tr.hasAttribute('data-best');
     else if (q === '@top3') { var g = +(tr.getAttribute('data-grank') || 99); ok = ok && g >= 1 && g <= 3; }
+    else if (q === '@streak') ok = ok && +(tr.getAttribute('data-streak') || 0) >= 2;
     else if (q === '@billboard') ok = ok && tr.hasAttribute('data-billboard');
     else if (q === '@hotmoney') ok = ok && tr.getAttribute('data-hot') === '1';
     else if (q.indexOf('@hm:') === 0) ok = ok && (tr.getAttribute('data-hm') || '').split('|').indexOf(q.slice(4)) >= 0;

@@ -119,8 +119,13 @@ function rowHtml(c, i, cfg, withBreakdown, sparkIdx) {
     : '';
   const btxt = boardsTxt(c.boards);
   const hasHot = !!(c.billboard && (c.billboard.hot || []).length);
+  // 连板口径统一（2026-11-10）：连板 = N连板（streak≥2），data-streak 存连板数；
+  // 旧 data-boards 用 boardsTxt 非空判定，会把「5天1板」等零散板也算进「连板」，语义失真。
+  // data-hm 存 encodeURIComponent 后的游资名（| 分隔），与盘前/形态报告同口径
+  const streakN = (c.boards && (c.boards.streak | 0)) || 0;
+  const hmNames = hasHot ? [...new Set((c.billboard.hot || []).map((h) => h.name).filter(Boolean))].map(encodeURIComponent).join('|') : '';
   const hmTiers = hotTierAttr(c.billboard);
-  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${btxt ? ' data-boards="1"' : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ' data-hot="1"' : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
+  return `<tr data-sector="${esc(c.sector)}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${streakN >= 2 ? ` data-streak="${streakN}"` : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hmNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     ${sparkCell(sparkOf(c.code, sparkIdx))}
@@ -348,9 +353,14 @@ function buildHTML(m) {
   // 组内排名来自 groupAndRank 的 groupRank（组内按总分降序）。
   const bestCount = listed.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
   const top3Count = listed.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
-  const boardsCount = listed.filter((c) => boardsTxt(c.boards)).length;
+  const boardsCount = listed.reduce((n, c) => n + (((c.boards && (c.boards.streak | 0)) || 0) >= 2 ? 1 : 0), 0);
   const bbCount = listed.reduce((n, c) => n + (c.billboard ? 1 : 0), 0);
   const hotCount = listed.reduce((n, c) => n + (c.billboard && (c.billboard.hot || []).length ? 1 : 0), 0);
+  // 游资明细 chips：按当天实际命中的游资名动态生成（同票多席位去重），按命中票数降序（与盘前/形态报告同口径）
+  const hmCounts = {};
+  for (const c of listed) for (const n of new Set(((c.billboard && c.billboard.hot) || []).map((h) => h.name).filter(Boolean))) hmCounts[n] = (hmCounts[n] || 0) + 1;
+  const hmChipHtml = Object.keys(hmCounts).sort((a, z) => hmCounts[z] - hmCounts[a]).map((n) =>
+    `<button type="button" class="chip" data-filter="${esc('@hm:' + encodeURIComponent(n))}">${b(esc(n), esc(n))}<i>${hmCounts[n]}</i></button>`);
   const tierStat = hotTierCounts(listed, (c) => c.billboard);
   const tierChipHtml = tierStat.order.map((t) =>
     `<button type="button" class="chip" data-filter="${esc(hotTierChipValue(t))}">${b(esc(t), esc(t))}<i>${tierStat.counts[t]}</i></button>`);
@@ -358,10 +368,11 @@ function buildHTML(m) {
     .concat([
       `<button type="button" class="chip" data-filter="@best">${b('只看组内第一', 'Group #1 only')}<i>${bestCount}</i></button>`,
       `<button type="button" class="chip" data-filter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
-      `<button type="button" class="chip" data-filter="@boards">${b('连板', 'Boards')}<i>${boardsCount}</i></button>`,
+      `<button type="button" class="chip" data-filter="@streak">${b('连板', 'Streak≥2')}<i>${boardsCount}</i></button>`,
       `<button type="button" class="chip" data-filter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
       `<button type="button" class="chip" data-filter="@hotmoney">${b('游资', 'Hot money')}<i>${hotCount}</i></button>`,
       ...tierChipHtml,
+      ...hmChipHtml,
     ])
     .concat(chipOrder.map((s) =>
       `<button type="button" class="chip" data-filter="${esc(s)}">${b(esc(s), esc(s))}<i>${chipCounts[s]}</i></button>`))
@@ -526,9 +537,10 @@ function buildHTML(m) {
           var g = parseInt(tr.getAttribute('data-grank'), 10);
           return g >= 1 && g <= 3;
         }
-        if (candFilter === '@boards') return tr.hasAttribute('data-boards');
+        if (candFilter === '@streak') return (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
         if (candFilter === '@billboard') return tr.hasAttribute('data-billboard');
         if (candFilter === '@hotmoney') return tr.getAttribute('data-hot') === '1';
+        if (candFilter.indexOf('@hm:') === 0) return (tr.getAttribute('data-hm') || '').split('|').indexOf(candFilter.slice(4)) >= 0;
         if (candFilter.indexOf('@htier:') === 0) return (tr.getAttribute('data-hm-tier') || '').split('|').indexOf(candFilter.replace('@htier:', '')) >= 0;
         return !candFilter || tr.getAttribute('data-sector') === candFilter;
       }
@@ -540,7 +552,7 @@ function buildHTML(m) {
       } else {
         sepOrder.forEach(function (sep) {
           var sec = sep.getAttribute('data-sep');
-          // @ 前缀为伪过滤（@best/@top3/@boards/@billboard/@hotmoney/@htier:），交由 want() 判行，不参与行业组筛选
+          // @ 前缀为伪过滤（@best/@top3/@streak/@billboard/@hotmoney/@htier:/@hm:），交由 want() 判行，不参与行业组筛选
           if (!bestOnly && !top3 && candFilter && candFilter.charAt(0) !== '@' && sec !== candFilter) return;
           // 先收集该组本次要显示的行：空组（如组内第一被 maxRows 截断）不渲染分隔行
           var groupRows = [];
