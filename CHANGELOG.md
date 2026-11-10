@@ -2,6 +2,44 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.5.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.4.0...v3.5.0)
+
+### 🚀 新功能 (Features)
+
+- 全部报告表格冻结序号/标的列与表头（vscroll 双轴滚动容器+两级表头补位+hotmoney JS 实测列宽偏移+pulse clip+sticky） ([7a43d84](https://github.com/GuoSirius/candidate-pool/commit/7a43d84))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- 运行日志统一归位，杜绝游离日志 ([62bbd15](https://github.com/GuoSirius/candidate-pool/commit/62bbd15))
+- 落地 2026-11-10 评审 #1-#6 与 💭 清理（runlog 流级镜像/D1 超时重试/基线缓存原子化/锚定显式过滤/特征前缀和/渲染转义） ([#1](https://github.com/GuoSirius/candidate-pool/issues/1), [#6](https://github.com/GuoSirius/candidate-pool/issues/6))
+- 落地评审决策五项（基线缓存键名错位+昨收校验/computeSectors 过滤无chg票/toFullCode 统一收口/hotmoney 龙虎榜并发回补/D1 batch 隐式事务化） ([87ae77e](https://github.com/GuoSirius/candidate-pool/commit/87ae77e))
+- 时间锚定口径统一（基线缓存按服务交易日命名/形态选股收盘后可写缓存/上榜未出回退上一交易日+榜单日期标注/口径文档同步） ([a53318f](https://github.com/GuoSirius/candidate-pool/commit/a53318f))
+- 冻结列按表精确作用域（freeze2/#matrixTable/vfreeze 拆分 th z4/td z2 修表头遮挡），观察名单等无需横向滚动的表还原不冻结 ([5822831](https://github.com/GuoSirius/candidate-pool/commit/5822831))
+
+### 📚 文档 (Documentation)
+
+- 系统性代码审查报告（05-评审-2026-11-10） ([cb0820e](https://github.com/GuoSirius/candidate-pool/commit/cb0820e))
+
+### 📦 杂项维护 (Chores)
+
+- 盘前选股 2026-11-10 ([aa16817](https://github.com/GuoSirius/candidate-pool/commit/aa16817))
+- 形态选股全市场产物 2026-11-09（第15次运行） ([5d85b6a](https://github.com/GuoSirius/candidate-pool/commit/5d85b6a))
+- **pattern:** 形态选股全市场报告 2026-11-10（盘中实时锚定） ([cd2dade](https://github.com/GuoSirius/candidate-pool/commit/cd2dade))
+- 盘中机会 2026-11-10 ([7c973f3](https://github.com/GuoSirius/candidate-pool/commit/7c973f3))
+- 盘中机会 2026-11-10 ([0112dc3](https://github.com/GuoSirius/candidate-pool/commit/0112dc3))
+- Rerender_all 重渲染 11-09/11-10 全部报告（冻结列+表头样式全量落盘） ([87ad718](https://github.com/GuoSirius/candidate-pool/commit/87ad718))
+- **pattern:** 形态选股全市场报告 2026-11-10（盘中实时锚定） ([fcfe834](https://github.com/GuoSirius/candidate-pool/commit/fcfe834))
+- 尾盘观察 2026-11-10 ([f504f1f](https://github.com/GuoSirius/candidate-pool/commit/f504f1f))
+- 尾盘选股 2026-11-10 ([9b84c8f](https://github.com/GuoSirius/candidate-pool/commit/9b84c8f))
+- **pattern:** 形态选股全市场报告 2026-11-10（收盘固定口径） ([1c392e5](https://github.com/GuoSirius/candidate-pool/commit/1c392e5))
+- 每日实时初筛 2026-11-10 ([02e96a9](https://github.com/GuoSirius/candidate-pool/commit/02e96a9))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v3.4.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.3.0...v3.4.0)
