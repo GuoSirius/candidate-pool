@@ -64,7 +64,7 @@ function saveReport(html, runAt) {
 const STATE_FILE = path.join(cfg.DATA_DIR, 'watch-state.json');
 
 function loadState() {
-  return readJSONSafe(STATE_FILE, { seenNewsIds: [], boardPct: {}, hotBoards: [] }) || { seenNewsIds: [], boardPct: {}, hotBoards: [] };
+  return readJSONSafe(STATE_FILE, { boardPct: {}, hotBoards: [] }) || { boardPct: {}, hotBoards: [] };
 }
 
 function saveState(state) {

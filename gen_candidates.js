@@ -56,6 +56,7 @@ const scaffold = require('./scaffold');
 const { lastClosedTradingDay, nextTradingDay, calcTurnover, computeSectors, calcR01, isLaggard, verifyR05, G } = require('./rules');
 // mini K 线：与 eod/ 各报告共用一套内联 SVG 实现与日档缓存（缺档自动降级为「—」）
 const { KLINE_CSS, sparkCell, sparkOf, loadSparkIndex } = require('./eod/lib/kline_spark');
+const { atomicWriteJSON } = require('./eod/lib/atomic');
 
 // ---------- 数据源：腾讯公开行情接口（无需任何第三方 CLI / 内置技能）----------
 const QT_QUOTE = 'https://qt.gtimg.cn/q=';
@@ -479,7 +480,7 @@ async function main() {
     stocks: stocks.map(s => { const c = Object.assign({}, s); delete c.kline; delete c.quote; delete c.minute; return c; }),
     sectors: validSectors.map(s => { const c = Object.assign({}, s); delete c.members; return c; }),
   };
-  fs.writeFileSync(snapshotPath, JSON.stringify(snap));
+  atomicWriteJSON(snapshotPath, snap);
   log(`[snapshot] 已写出 ${snapshotPath}（覆盖式，按锚定日留档）`);
   const build = classifyAndBuild({ anchor, target, limit, stocks, validSectors, topN, breadth, breadthIsAnchor, overview, outPath, quiet: args.quiet });
   if (!args.noNotify) {
@@ -613,7 +614,7 @@ function buildHTML(m) {
       `<div class="grid-2">` +
       `<div><div class="kv"><span class="label">${b('名称', 'Name')}：</span><span class="value">${b(s.name, s.name)}（${s.code.replace(/^(sh|sz|bj)/, '')}）</span></div>` +
       `<div class="kv"><span class="label">${b('R01 达成', 'R01 score')}：</span><span class="value">${r.core}/4${r.capOk ? '，市值达标' : '，市值越线'}</span></div>` +
-      `<div class="kv"><span class="label">${b('行业', 'Sector')}：</span><span class="value">${r07.sectorName || '—'}（${pct(r07.sectorPct)}，排名 ${r07.sectorRank || '—'}/${r07.total || '—'}）</span></div></div>` +
+      `<div class="kv"><span class="label">${b('行业', 'Sector')}：</span><span class="value">${r07.sectorName ? b(r07.sectorName, r07.sectorName) : '—'}（${pct(r07.sectorPct)}，排名 ${r07.sectorRank || '—'}/${r07.total || '—'}）</span></div></div>` +
       `<div>${fund}` +
       `<div class="kv"><span class="label">${b('R07 状态', 'R07')}：</span><span class="value">${r07.laggard ? b('板块补涨滞后', 'sector laggard') : b('板块领涨', 'sector leader')}</span></div>` +
       `<div class="kv"><span class="label">${b('R05', 'R05')}：</span><span class="value">${(() => { if (!s.r05) return '—'; if (s.r05.verdict === 'gap') return b('数据缺口', 'data gap'); if (s.r05.verdict === 'partial') return b('尾盘量价达标', 'late-session met'); return b('未触发', 'not triggered'); })()}</span></div></div>` +
@@ -674,14 +675,20 @@ function buildHTML(m) {
 
   // 市场整体判断叙述
   const upPctTxt = (breadth && !breadth.error) ? breadth.upPct : null;
+  // 叙事用纯文本（regime 若为 b() 产出的 <span> 片段，嵌进 b() 会被二次转义、
+  // 报告 note 区直接显示 HTML 源码字面量——2026-11-10 评审 #2）。徽标用下方 HTML 版。
+  const regimeText = upPctTxt == null ? '市场宽度数据缺失'
+    : upPctTxt >= 70 ? '强势普涨' : upPctTxt >= 50 ? '偏多震荡' : upPctTxt >= 30 ? '分化偏弱' : '弱势普跌';
+  const regimeEnText = upPctTxt == null ? 'breadth data missing'
+    : upPctTxt >= 70 ? 'broad strong rally' : upPctTxt >= 50 ? 'mildly bullish' : upPctTxt >= 30 ? 'divergent / soft' : 'broad decline';
   const regime = upPctTxt == null ? b('市场宽度数据缺失', 'breadth data missing')
     : upPctTxt >= 70 ? b('强势普涨', 'broad strong rally')
     : upPctTxt >= 50 ? b('偏多震荡', 'mildly bullish')
     : upPctTxt >= 30 ? b('分化偏弱', 'divergent / soft')
     : b('弱势普跌', 'broad decline');
   const marketNarrative = b(
-    `当前为${regime}环境（上涨占比 ${upPctTxt != null ? upPctTxt + '%' : '—'}，涨停 ${breadth && !breadth.error ? breadth.limitUp : '—'} 只）。综合评分候选池均来自强势榜单，但在普涨日里 R01 量能突破与 R07 补涨的信号噪声偏高，需结合 R05 尾盘资金确认强度后再做决策。本报告仅作观察评级，不构成任何买卖建议。`,
-    `The regime is ${regime} (advance ratio ${upPctTxt != null ? upPctTxt + '%' : '—'}, ${breadth && !breadth.error ? breadth.limitUp : '—'} limit-ups). The composite-score universe all comes from strong-rank lists, but on a broad up-day the R01 volume-breakout and R07 laggard signals are noisy; confirm strength with R05 late-session capital before any decision. This report is observation-only and is not investment advice.`
+    `当前为${regimeText}环境（上涨占比 ${upPctTxt != null ? upPctTxt + '%' : '—'}，涨停 ${breadth && !breadth.error ? breadth.limitUp : '—'} 只）。综合评分候选池均来自强势榜单，但在普涨日里 R01 量能突破与 R07 补涨的信号噪声偏高，需结合 R05 尾盘资金确认强度后再做决策。本报告仅作观察评级，不构成任何买卖建议。`,
+    `The regime is ${regimeEnText} (advance ratio ${upPctTxt != null ? upPctTxt + '%' : '—'}, ${breadth && !breadth.error ? breadth.limitUp : '—'} limit-ups). The composite-score universe all comes from strong-rank lists, but on a broad up-day the R01 volume-breakout and R07 laggard signals are noisy; confirm strength with R05 late-session capital before any decision. This report is observation-only and is not investment advice.`
   );
 
   // 数据口径
@@ -1004,7 +1011,9 @@ async function runOffline(args) {
     }
   }
   if (!snapPath) { log('离线模式需要 --snapshot <快照文件>，或 data/ 下存在 snapshot-YYYY-MM-DD.json'); process.exit(1); }
-  const snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+  let snap;
+  try { snap = JSON.parse(fs.readFileSync(snapPath, 'utf8')); }
+  catch (e) { log(`快照读取/解析失败：${snapPath}\n${e && e.message || e}`); process.exit(1); }
   const stocks = snap.stocks;
   const validSectors = snap.sectors || [];
   const { anchor, target, limit } = snap;

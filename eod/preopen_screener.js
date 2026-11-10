@@ -40,6 +40,7 @@ const { mapLimit } = require('./lib/http');
 const { notify } = require('../notify');
 const paths = require('../paths');
 const { minifyHTML } = require('./lib/report_fmt');
+const { atomicWriteJSON, readJSONSafe } = require('./lib/atomic');
 const { calcRegime } = require('./lib/regime');
 const scaffold = require('../scaffold');
 
@@ -109,10 +110,15 @@ async function getBaseline(codes, anchor, scope) {
   if (scope === 'universe') {
     const cf = path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor));
     if (fs.existsSync(cf)) {
-      log(`[基线] 加载缓存 ${path.basename(cf)}`);
-      const m = new Map();
-      for (const [code, b] of Object.entries(JSON.parse(fs.readFileSync(cf, 'utf8')))) m.set(code, b);
-      return m;
+      // 读缓存走安全读（2026-11-10 评审 #4）：半截 JSON 隔离后回退实时计算，不整轮崩
+      const cached = readJSONSafe(cf, null, log);
+      if (cached) {
+        log(`[基线] 加载缓存 ${path.basename(cf)}`);
+        const m = new Map();
+        for (const [code, b] of Object.entries(cached)) m.set(code, b);
+        return m;
+      }
+      log('[基线] 缓存损坏已隔离，回退实时计算');
     }
     if (!cfg.baseline.computeIfMissing) { log('[基线] 全市场无缓存且禁用实时计算 → 跳过趋势(P3)'); return new Map(); }
     log('[基线] 全市场缓存缺失，实时计算（较慢，约数分钟）…');
@@ -121,6 +127,9 @@ async function getBaseline(codes, anchor, scope) {
   const res = await mapLimit(codes, cfg.market.concurrency, async (code) => {
     try {
       const kl = await market.fetchKline(code, anchor);
+      // 显式过滤 anchor 当日 bar（2026-11-10 评审 #5）：不依赖「9:25 fqkline 无当日 bar」
+      // 的隐式行为，接口提前给当日竞价 bar / 盘后 --force 补跑时基线口径都不会失真。
+      kl.rows = (kl.rows || []).filter((r) => r.date && r.date < anchor);
       return [code, PR.calcBaseline(kl, code, cfg)];
     } catch (e) { return [code, { error: String((e && e.message) || e) }]; }
   });
@@ -131,9 +140,8 @@ async function getBaseline(codes, anchor, scope) {
   log(`[基线] K线 ${okN} 只成功 / ${errN} 只失败`);
   if (scope === 'universe' && m.size) {
     const out = {}; for (const [code, b] of m) out[code] = b;
-    fs.mkdirSync(path.dirname(path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor))), { recursive: true });
     const cf = path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor));
-    fs.writeFileSync(cf, JSON.stringify(out), 'utf8');
+    atomicWriteJSON(cf, out);
     log(`[基线] 已缓存 ${m.size} 只 → ${path.basename(cf)}`);
   }
   return m;
@@ -216,8 +224,7 @@ async function run() {
     for (const [c, b] of res) { if (b && !b.error) { m.set(c, b); ok++; } else err++; }
     const out = {}; for (const [c, b] of m) out[c] = b;
     const cf = path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor));
-    fs.mkdirSync(path.dirname(cf), { recursive: true });
-    fs.writeFileSync(cf, JSON.stringify(out), 'utf8');
+    atomicWriteJSON(cf, out);
     log(`[基线] 已缓存 ${ok} 只（失败 ${err}）→ ${path.basename(cf)}`);
     return { baseline: { file: cf, ok, err } };
   }

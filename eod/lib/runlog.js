@@ -4,7 +4,8 @@
  * ---------------------------------------------------------------------------
  * 背景：日志文件原先靠外部调度命令 `> xxx.log` 重定向产生，路径随调度配置漂移
  *（2026-11-06 盘前日志落到了 eod/ 根，与 eod/logs/ 里的既有序列脱节）。
- * 治本：脚本启动时自行开启 tee，把 console.log/error/warn 镜像追加到
+ * 治本：脚本启动时自行开启 tee，在 process.stdout/stderr.write 上单点拦截，
+ *   把全部输出（console.* 与直写 stream）镜像追加到
  *   eod/logs/<prefix>-<YYYY-MM-DD>.log（一天一个文件，带会话头）。
  * stdout 语义完全不变（--json 机器摘要不受影响）；写日志失败静默，不干扰主流程。
  *
@@ -15,7 +16,6 @@
  */
 const fs = require('fs');
 const path = require('path');
-const util = require('util');
 const { dayjs } = require('../../time');
 
 function logsDir() {
@@ -41,14 +41,18 @@ function startRunLog(prefix) {
   started = true;
 
   const write = (line) => { try { fs.appendFileSync(file, line); } catch (e) { /* 日志失败不影响主流程 */ } };
-  const wrap = (origFn) => (...args) => {
-    origFn(...args);
-    write(args.map((a) => (typeof a === 'string' ? a : util.format(a))).join(' ') + '\n');
-  };
-  const orig = { log: console.log, error: console.error, warn: console.warn };
-  console.log = wrap(orig.log);
-  console.error = wrap(orig.error);
-  console.warn = wrap(orig.warn);
+  // 统一在流层面镜像（2026-11-10 评审 #1）：console.log/error/warn 内部就是
+  // process.stdout/stderr.write（属性查找发生在调用时），gen_candidates 的 log()、
+  // store/pool_reflow 等的 stderr 告警也走它 —— 只包 console 会漏，只包 stderr 会与
+  // console 包装重复镜像。改在 stdout/stderr 两个 write 上单点拦截：console 与
+  // 直写 stream 各镜像一次、互不重复。防递归：write() 内部用 fs.appendFileSync。
+  for (const stream of [process.stdout, process.stderr]) {
+    const origWrite = stream.write.bind(stream);
+    stream.write = function (chunk, ...rest) {
+      write(typeof chunk === 'string' ? chunk : String(chunk));
+      return origWrite(chunk, ...rest);
+    };
+  }
   write(`\n===== run start ${dayjs.tz().format('YYYY-MM-DD HH:mm:ss')} args: ${process.argv.slice(2).join(' ') || '(none)'} =====\n`);
   return file;
 }

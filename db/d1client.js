@@ -24,16 +24,31 @@ function endpoint() {
   return c;
 }
 
+// HTTP 层健壮性（2026-11-10 评审 #3）：裸 fetch 无超时，CF API 半开连接会让
+// syncTailRun / applyTailFill 等定时链路 await 永久挂死。20s 超时 + 3 次退避重试；
+// 写入侧全是幂等 UPSERT / INSERT OR IGNORE，重试安全。
+const HTTP_TIMEOUT_MS = 20000;
+const RETRIES = 3;
+
 async function post(path, body) {
   const c = endpoint();
-  const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${c.ACCOUNT_ID}/d1/database/${c.DB_ID}${path}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${c.TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const j = await res.json();
-  if (!j.success) throw new Error('CF D1 API 错误: ' + JSON.stringify(j.errors || j.messages || j));
-  return j.result;
+  const url = `https://api.cloudflare.com/client/v4/accounts/${c.ACCOUNT_ID}/d1/database/${c.DB_ID}${path}`;
+  let lastErr;
+  for (let i = 0; i < RETRIES; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 1000 * i));   // 1s / 2s 退避
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${c.TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      });
+      const j = await res.json();
+      if (!j.success) throw new Error('CF D1 API 错误: ' + JSON.stringify(j.errors || j.messages || j));
+      return j.result;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
 }
 
 // 单条语句（DDL / 查询 / 单插）

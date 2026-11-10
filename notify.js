@@ -191,7 +191,6 @@ function smtpSend({ host, port, user, pass, from, to, subject, text, htmlPath })
       { cmd: msg + '\r\n.', codes: [250] },
       { cmd: 'QUIT', codes: [221, 250] },
     ];
-    if (!ready) socket.on('secureConnect', () => {}); // 确保握手完成后再等 220
   });
 }
 

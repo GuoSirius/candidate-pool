@@ -33,12 +33,18 @@ function series(asc) {
   const vols = asc.map((r) => r.vol);
   const n = asc.length;
   const s = { ma5: [], ma10: [], ma20: [], ma60: [], volMa5: [], chg: [] };
+  // 前缀和一次构建，逐下标 O(1) 取均线（2026-11-10 评审 #6：原逐点 slice+reduce
+  // 为 O(n×k)，全市场 ~4800 只 × 5 序列是形态扫描最大 CPU 热点）。
+  const prefixSum = (vals) => { const ps = new Array(vals.length + 1); ps[0] = 0; for (let i = 0; i < vals.length; i++) ps[i + 1] = ps[i] + vals[i]; return ps; };
+  const pc = prefixSum(closes);
+  const pv = prefixSum(vols);
+  const maPS = (ps, i, k) => (i + 1 < k ? null : (ps[i + 1] - ps[i + 1 - k]) / k);
   for (let i = 0; i < n; i++) {
-    s.ma5[i] = maAt(closes, i, 5);
-    s.ma10[i] = maAt(closes, i, 10);
-    s.ma20[i] = maAt(closes, i, 20);
-    s.ma60[i] = maAt(closes, i, 60);
-    s.volMa5[i] = i >= 5 ? mean(vols.slice(i - 5, i)) : null; // 前 5 日均量（不含当日）
+    s.ma5[i] = maPS(pc, i, 5);
+    s.ma10[i] = maPS(pc, i, 10);
+    s.ma20[i] = maPS(pc, i, 20);
+    s.ma60[i] = maPS(pc, i, 60);
+    s.volMa5[i] = i >= 5 ? (pv[i] - pv[i - 5]) / 5 : null; // 前 5 日均量（不含当日）
     s.chg[i] = i > 0 && closes[i - 1] > 0 ? (closes[i] / closes[i - 1] - 1) * 100 : null;
   }
   return s;

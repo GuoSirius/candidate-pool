@@ -339,5 +339,5 @@ function buildCandidates({ quotes, minutes, cfg, map, tradeDate, cutHHMM, segFro
 module.exports = {
   REASON, BOARD_LABEL, boardOf, limitUpPct, daysBetween,
   preFilterOne, preFilter, postCheck, scoreStock, turnoverFit, fromHighPct, lin,
-  turnoverFit, groupAndRank, buildCandidates,
+  groupAndRank, buildCandidates,
 };
