@@ -252,19 +252,19 @@ function buildHTML(m) {
     `形态过滤只用形态名；「多形态共振」= 同一只票命中 ≥2 类。买入区间/止损/止盈为形态支撑位推导的<b>量化参考位</b>（盈亏比 ${cfg.price.rewardRatio}:1），不是投资建议；「等回踩」表示现价已离支撑过远。`,
     `Patterns are filtered by name only. Buy range / stop / target are quantitative reference levels derived from pattern support (R:R ${cfg.price.rewardRatio}:1), not investment advice.`)}</p>
   ${toolbar}
-  <div class="table-wrap vscroll"><table id="candTable"><thead>${topHead}</thead><tbody id="candBody">${candRows}${sepRows}</tbody></table></div>
+  <div class="table-wrap vscroll"><table id="candTable" class="freeze2"><thead>${topHead}</thead><tbody id="candBody">${candRows}${sepRows}</tbody></table></div>
   ${truncated > 0 ? `<p class="src">${b(`另有 ${truncated} 只超出展示上限未列出。`, `${truncated} more not listed.`)}</p>` : ''}`
     : `<div class="card">${b('本时段无满足门槛的候选。', 'No candidate passed all gates.')}</div>`}
 
   <h2>${b('形态胜率（近 10 个交易日）', 'Pattern Win Rate (last 10 sessions)')}</h2>
-  <div class="card"><div class="table-wrap vscroll"><table><thead><tr>
+  <div class="card"><div class="table-wrap vscroll"><table class="freeze2"><thead><tr>
     <th>${b('形态', 'Pattern')}</th><th>${b('今日命中', 'Hits today')}</th><th>${b('T+1 命中率', 'T+1 rate')}</th><th>${b('T+3 命中率', 'T+3 rate')}</th>
   </tr></thead><tbody>${perfRows}</tbody></table></div>
   <p class="src">${b('口径：开盘价买入、T+1/T+3 收盘卖出（阈值 2%），由 weekly_winrate 按形态维度聚合；样本不足 20 个交易日只报「待积累」，不给结论。', 'Basis: open buy, T+1/T+3 close sell (2% threshold), aggregated by pattern; <20 sessions → pending only.')}</p></div>
 
   ${nearMiss && nearMiss.length ? `<h2>${b(`贴线未入选（${nearMiss.length} 只）`, `Near Miss (${nearMiss.length})`)}</h2>
   <div class="card"><details><summary>${b(`匹配分落在入选线（${cfg.score.minMatch}）下方 ${cfg.score.nearMissBand} 分内，默认折叠，供回调阈值`, `Scores within ${cfg.score.nearMissBand} pts below the ${cfg.score.minMatch} admission line`)}</summary>
-    <div class="table-wrap vscroll"><table><thead>${plainHead}</thead><tbody>${nearRows}</tbody></table></div></details></div>` : ''}
+    <div class="table-wrap vscroll"><table class="freeze2"><thead>${plainHead}</thead><tbody>${nearRows}</tbody></table></div></details></div>` : ''}
 
   <h2>${b('数据缺口', 'Data Gaps')}</h2>
   <div class="card">${cfg.report.showDataGap && gapRows

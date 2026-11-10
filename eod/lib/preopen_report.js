@@ -227,20 +227,25 @@ const CSS = `  :root, :root[data-theme="light"] {
   .tag.pass { background: var(--tag-pass-bg); color: var(--red); }
   .tag.gap { background: var(--tag-gap-bg); color: var(--amber); }
   .table-wrap { overflow-x: auto; }
-  /* 冻结列与表头（2026-11-11）：.vscroll 主表容器内双轴滚动；两级表头第二行 top 补位；
-     钉住 1/2 列（# 与 标的）——# 列恒为数字定宽 36px，col2 偏移为常量。
-     游资报告列宽可变的表用 .vfreeze（JS 实测列宽写 --s1/--s2，见 hotmoney_report） */
+  /* 冻结列与表头（2026-11-11）：.vscroll 只管容器内双轴滚动 + 表头 sticky；
+     列冻结按表精确作用域，避免误伤不需要横向滚动的表：
+     - .freeze2：# 列恒为数字定宽 36px 的主表（候选/回填/贴线），col2 偏移为常量 36px
+     - .vfreeze / .vfreeze3：列宽可变的表（游资），JS 实测列宽写 --s1/--s2 */
   .vscroll { max-height: 72vh; overflow: auto; }
   .vscroll thead th { position: sticky; top: 0; z-index: 3; height: 36px; }
-  .vscroll thead tr:nth-child(2) th { top: 36px; }
-  .vscroll thead tr:first-child th:nth-child(1) { left: 0; z-index: 5; width: 36px; min-width: 36px; }
-  .vscroll thead tr:first-child th:nth-child(2) { left: 36px; z-index: 5; box-shadow: 2px 0 0 var(--border); }
-  .vscroll tbody td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 36px; min-width: 36px; background: var(--card); }
-  .vscroll tbody td:nth-child(2) { position: sticky; left: 36px; z-index: 2; min-width: 96px; background: var(--card); box-shadow: 2px 0 0 var(--border); }
-  .vscroll tbody tr.sector-row td:nth-child(-n+2) { background: var(--th-bg); }
-  .vfreeze td:nth-child(1), .vfreeze th:nth-child(1) { position: sticky; left: 0; z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); }
-  .vfreeze td:nth-child(2), .vfreeze th:nth-child(2) { position: sticky; left: var(--s1, 0px); z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); }
-  .vfreeze3 td:nth-child(3), .vfreeze3 th:nth-child(3) { position: sticky; left: var(--s2, 0px); z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); }
+  .freeze2 thead tr:nth-child(2) th { top: 36px; }
+  .freeze2 thead tr:first-child th:nth-child(1) { left: 0; z-index: 5; width: 36px; min-width: 36px; }
+  .freeze2 thead tr:first-child th:nth-child(2) { left: 36px; z-index: 5; box-shadow: 2px 0 0 var(--border); }
+  .freeze2 tbody td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 36px; min-width: 36px; background: var(--card); }
+  .freeze2 tbody td:nth-child(2) { position: sticky; left: 36px; z-index: 2; min-width: 96px; background: var(--card); box-shadow: 2px 0 0 var(--border); }
+  .freeze2 tbody tr.sector-row td:nth-child(-n+2) { background: var(--th-bg); }
+  /* th 必须高于 td（否则表头被冻结列盖住——图证 2026-11-11）：th z4 / td z2 */
+  .vfreeze td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); }
+  .vfreeze th:nth-child(1) { position: sticky; left: 0; z-index: 4; }
+  .vfreeze td:nth-child(2) { position: sticky; left: var(--s1, 0px); z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); }
+  .vfreeze th:nth-child(2) { position: sticky; left: var(--s1, 0px); z-index: 4; }
+  .vfreeze3 td:nth-child(3) { position: sticky; left: var(--s2, 0px); z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); }
+  .vfreeze3 th:nth-child(3) { position: sticky; left: var(--s2, 0px); z-index: 4; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: var(--th-bg); }
@@ -453,7 +458,7 @@ function buildHTML(m) {
 
   <h2>${b(`候选明细（${listed.length} 只）`, `Candidates (${listed.length})`)}</h2>
   ${listed.length ? `${scoreNote}${toolbar}
-  <div class="table-wrap vscroll"><table id="candTable"><thead>${topHead}</thead>
+  <div class="table-wrap vscroll"><table id="candTable" class="freeze2"><thead>${topHead}</thead>
     <tbody id="candBody">${candRows}${sepRows}</tbody></table></div>
   ${truncated > 0 ? `<p class="src">${b(`另有 ${truncated} 只超出展示上限（report.maxRows）未列出。`, `${truncated} more candidates not listed (report.maxRows cap).`)}</p>` : ''}`
     : `<div class="card">${b('本时段无满足全部门槛的候选。', 'No candidate passed all gates.')}</div>`}
@@ -466,7 +471,7 @@ function buildHTML(m) {
     <div class="toolrow"><span class="cap">${b('标签', 'Label')}</span><span class="chips" id="closeLchips">${closeLabelChips}</span></div>
     <div class="toolrow"><span class="cap">${b('行业', 'Industry')}</span><span class="chips" id="closeSchips">${sectorChips}</span></div>
   </div>
-  <div class="table-wrap vscroll"><table><thead><tr>
+  <div class="table-wrap vscroll"><table class="freeze2"><thead><tr>
     <th>#</th><th>${b('标的', 'Name')}</th><th>${b('mini K线', 'mini K')}</th><th>${b('行业', 'Industry')}</th><th>${b('板块', 'Board')}</th>
     <th>${b('昨收%', 'PrevClose %')}</th><th>${b('今开%', 'Open %')}</th><th>${b('今收%', 'Close %')}</th>
     <th>${b('买入收益%', 'Open-buy ret')}</th>
@@ -481,7 +486,7 @@ function buildHTML(m) {
   <div class="card">
     <details>
       <summary>${b(`总分落在入选线（${cfg.score.minTotal}）之下 10 分内的样本，默认折叠，供回溯调「入选线」`, `Scores within 10 points below the admission line (${cfg.score.minTotal}); collapsed by default, for tuning the threshold`)}</summary>
-      <div class="table-wrap vscroll"><table><thead>${topHead}</thead><tbody>${nearMissRows}</tbody></table></div>
+      <div class="table-wrap vscroll"><table class="freeze2"><thead>${topHead}</thead><tbody>${nearMissRows}</tbody></table></div>
     </details>
   </div>` : ''}
 

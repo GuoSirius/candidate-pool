@@ -254,7 +254,7 @@ function buildHTML({ cfg, anchor, result, runner }) {
     : `<div class="card">${b('窗口内无游资记录。', 'No records in the window.')}</div>`}
 
   <h2>${b(`未识别席位观察名单（≥${cfg.watch.minDays} 天，Top ${watchTop.length}）`, `Unmatched Seat Watchlist (≥${cfg.watch.minDays} days, top ${watchTop.length})`)}</h2>
-  ${watchTop.length ? `<div class="table-wrap vscroll"><table class="vfreeze"><thead><tr>
+  ${watchTop.length ? `<div class="table-wrap"><table><thead><tr>
     <th>${b('席位', 'Seat')}</th><th>${b('出现天数', 'Days')}</th><th>${b('累计买入', 'Buy')}</th><th>${b('累计卖出', 'Sell')}</th>
   </tr></thead><tbody>${watchTop.map((w) => {
     const buy = fmtAmtCell(w.buy); const sell = fmtAmtCell(w.sell);

@@ -760,13 +760,13 @@ function buildHTML(m) {
   .risk { margin-top: 12px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; font-size: 0.85rem; color: var(--red); }
   .note { margin-top: 12px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; font-size: 0.85rem; color: var(--slate); }
   .table-wrap { overflow-x: auto; }
-  /* 冻结列与表头（2026-11-11）：matrixTable 容器内双轴滚动；钉住 1/2 列（代码 6 位定宽 70px + 名称） */
+  /* 冻结列与表头（2026-11-11）：仅作用于 matrixTable；代码列 6 位定宽 70px → 名称列偏移常量 */
   .vscroll { max-height: 72vh; overflow: auto; }
   .vscroll thead th { position: sticky; top: 0; z-index: 3; height: 36px; }
-  .vscroll thead th:nth-child(1) { left: 0; z-index: 5; width: 70px; min-width: 70px; }
-  .vscroll thead th:nth-child(2) { left: 70px; z-index: 5; box-shadow: 2px 0 0 var(--border); }
-  .vscroll tbody td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 70px; min-width: 70px; background: var(--card); }
-  .vscroll tbody td:nth-child(2) { position: sticky; left: 70px; z-index: 2; min-width: 88px; background: var(--card); box-shadow: 2px 0 0 var(--border); }
+  #matrixTable thead th:nth-child(1) { left: 0; z-index: 5; width: 70px; min-width: 70px; }
+  #matrixTable thead th:nth-child(2) { left: 70px; z-index: 5; box-shadow: 2px 0 0 var(--border); }
+  #matrixTable tbody td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 70px; min-width: 70px; background: var(--card); }
+  #matrixTable tbody td:nth-child(2) { position: sticky; left: 70px; z-index: 2; min-width: 88px; background: var(--card); box-shadow: 2px 0 0 var(--border); }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; background: #fefce8; }
