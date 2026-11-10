@@ -358,15 +358,17 @@ async function run() {
         if (kl && kl.rows.length) c.boards = PR.boardsInfo(kl.rows, c.code);
       } catch (e) { /* 留空 */ }
     });
-    // 昨日龙虎榜（盘中当日榜未出齐，用最近已收盘交易日；失败留空不阻断）
-    const { lastClosedTradingDay } = require('../rules');
-    const bbAnchor = lastClosedTradingDay(dayjs.tz());
+    // 昨日龙虎榜（盘中当日榜未出齐，用 tradeDate 的前一交易日；失败留空不阻断）。
+    // 恒用 previousTradingDay(tradeDate)，不用 lastClosedTradingDay(now)：15:00 后 --force 补跑时
+    // 后者返回当日 → 17:30 前查空 / 17:30 后拿到当日榜（前视偏差，报告语义是盘中决策快照）
+    const { previousTradingDay } = require('../rules');
+    const bbAnchor = previousTradingDay(ss.tradeDate);
     const bb = await market.fetchBillboard(bbAnchor);
     const bbHits = result.candidates.filter((c) => bb[c.code.slice(2)]);
     log(`[4.5/4] 候选昨日(${bbAnchor})龙虎榜：${bbHits.length}/${result.candidates.length} 只上榜，抓席位…`);
     await mapLimit(bbHits, 4, async (c) => {
       const seats = await market.fetchBillboardSeats(c.code.slice(2), bbAnchor);
-      c.billboard = { net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
+      c.billboard = { date: bbAnchor, net: bb[c.code.slice(2)].net, hot: PR.matchHotMoney(seats) };
     });
   }
 

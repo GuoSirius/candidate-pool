@@ -27,7 +27,7 @@ const path = require('path');
 
 const cfg = require('./pattern.config');
 const { dayjs } = require('../time');
-const { lastClosedTradingDay } = require('../rules');
+const { lastClosedTradingDay, previousTradingDay } = require('../rules');
 const market = require('./lib/market');
 const PR = require('./lib/preopen_rules');
 const store = require('./lib/pattern_store');
@@ -226,15 +226,17 @@ function buildCandidates(entries, defs, quotesByCode, map) {
 }
 
 /** 补全上榜/游资（仅命中票，低频；东财失败留空不阻断） */
-async function attachBillboard(candidates, anchor, now, calendarToday) {
+async function attachBillboard(candidates, anchor, calendarToday) {
   if (!candidates.length) return;
   let bb = null;
   let bbDate = anchor;
   try { bb = await market.fetchBillboard(anchor); }
   catch (e) { log(`[上榜] 龙虎榜抓取失败，相关列留空：${e.message}`); }
-  // 锚定日=今日且榜未出（龙虎榜 ~17:30 后出齐）→ 回退上一交易日（与尾盘同口径，2026-11-11 拍板）
+  // 锚定日=今日且榜未出（龙虎榜 ~17:30 后出齐）→ 回退上一交易日。
+  // 回退目标用 previousTradingDay(anchor)（锚定日的前一交易日），不能用 lastClosedTradingDay(now)：
+  // 后者在 15:00 后跑时返回当日 → 回退查当日榜仍为空 → 上榜留空（2026-11-10 与盘前同口径修正）
   if ((!bb || !Object.keys(bb).length) && anchor === calendarToday) {
-    const prev = lastClosedTradingDay(now);
+    const prev = previousTradingDay(anchor);
     try {
       const prevBb = await market.fetchBillboard(prev);
       if (prevBb && Object.keys(prevBb).length) { bb = prevBb; bbDate = prev; log(`[上榜] ${anchor} 榜未出 → 回退上一交易日 ${prev}`); }
@@ -453,7 +455,7 @@ async function run() {
       log('[上榜] --replay 沿用已有归档的上榜/游资标注与回填');
     }
   } else {
-    await attachBillboard(built.candidates, anchor, now, calendarToday);
+    await attachBillboard(built.candidates, anchor, calendarToday);
   }
 
   log('[4/4] 落库 + 报告…');

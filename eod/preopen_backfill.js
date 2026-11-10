@@ -90,7 +90,9 @@ async function run() {
     market.fetchBillboard(tradeDate),
     fetchKlines(codes, tradeDate),
   ]);
-  log(`[回填] 净流入 ${Object.keys(flows).length}/${codes.length} · 龙虎榜全榜 ${Object.keys(bbMap).length} 只 · K线 ${Object.keys(klines).length}/${codes.length}`);
+  log(`[回填] 净流入 ${Object.keys(flows).length}/${codes.length} 只 · 龙虎榜全榜 ${Object.keys(bbMap).length} 只 · K线 ${Object.keys(klines).length}/${codes.length}`);
+  // A 股每天必有龙虎榜，空榜 = 榜未出齐（~17:30）或接口失败——提前 --force 回填会静默上榜 0，点名提醒
+  if (!Object.keys(bbMap).length) log('[警告] 当日龙虎榜为空：若在 17:30 前回填属榜单未出齐，稍后重跑本命令即可补上');
 
   // 席位明细并行抓（评审 #8：串行 40 只上榜最坏 ~10 分钟 → 4 并发）；失败留空，不在主循环里逐个 await
   const bbCodes = codes.filter((code) => bbMap[code.slice(2)]);
