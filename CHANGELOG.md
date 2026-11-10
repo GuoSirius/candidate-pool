@@ -2,6 +2,49 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.4.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.3.0...v3.4.0)
+
+### 🚀 新功能 (Features)
+
+- **eod:** 补齐观察池回流与周六胜率简报（默认 dry-run / 不推送） ([0dbb221](https://github.com/GuoSirius/candidate-pool/commit/0dbb221))
+- **pattern:** 新增形态选股引擎骨架（双引擎+四类形态+离线自测） ([236d85b](https://github.com/GuoSirius/candidate-pool/commit/236d85b))
+- **pattern:** 全市场两阶段漏斗、可过滤报告与分形态胜率回填 ([5a394a8](https://github.com/GuoSirius/candidate-pool/commit/5a394a8))
+- 全报告统一接入 mini K 线（共享模块 + 离线重渲染入口） ([6e8e612](https://github.com/GuoSirius/candidate-pool/commit/6e8e612))
+- 有游资过滤的报告补齐层级细分 ([ca1c7f6](https://github.com/GuoSirius/candidate-pool/commit/ca1c7f6))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- 报告列位与列头调整（趋势置上榜后、形态列后接连板/上榜、列头统一为上榜） ([54274c2](https://github.com/GuoSirius/candidate-pool/commit/54274c2))
+- **pattern:** 形态选股逻辑 Code Review 修复 ([048b2c6](https://github.com/GuoSirius/candidate-pool/commit/048b2c6))
+- 统一报告锚定口径并修正交易日历 ([b980d08](https://github.com/GuoSirius/candidate-pool/commit/b980d08))
+
+### ♻️ 代码重构 (Refactors)
+
+- 次日池/游资锚定彻底统一为 marketDate ([5d10ff5](https://github.com/GuoSirius/candidate-pool/commit/5d10ff5))
+
+### 📚 文档 (Documentation)
+
+- 同步 C2/D2 落地状态与两条自动化的真值源登记 ([cb3c9a8](https://github.com/GuoSirius/candidate-pool/commit/cb3c9a8))
+- **pattern:** 方案文档与 11-09 全市场首份归档/报告 ([bec6293](https://github.com/GuoSirius/candidate-pool/commit/bec6293))
+- 补齐报告口径说明并重生成当日报告 ([8b82068](https://github.com/GuoSirius/candidate-pool/commit/8b82068))
+- 报告列位/列头与游资层级过滤说明 ([20cad04](https://github.com/GuoSirius/candidate-pool/commit/20cad04))
+
+### 📦 杂项维护 (Chores)
+
+- 次日回填 --days 40 修正窗口口径，归档统一压缩为单行 ([a292777](https://github.com/GuoSirius/candidate-pool/commit/a292777))
+- 首次观察池 diff 与周六胜率简报留痕 ([137a33a](https://github.com/GuoSirius/candidate-pool/commit/137a33a))
+- 盘前回填 2026-11-09 ([bed2f17](https://github.com/GuoSirius/candidate-pool/commit/bed2f17))
+- 游资席位扫描归档 2026-11-09 ([d46aa2b](https://github.com/GuoSirius/candidate-pool/commit/d46aa2b))
+- 次日回填 2026-11-09 ([6f6d054](https://github.com/GuoSirius/candidate-pool/commit/6f6d054))
+- **pattern:** 形态选股全市场归档 2026-11-09 ([11100cb](https://github.com/GuoSirius/candidate-pool/commit/11100cb))
+- 重生成 11-09 报告（列位/列头更新） ([fead080](https://github.com/GuoSirius/candidate-pool/commit/fead080))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v3.3.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.2.0...v3.3.0)
