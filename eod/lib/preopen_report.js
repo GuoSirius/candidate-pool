@@ -81,12 +81,15 @@ function rowHtml(c, i, withBreakdown, sparkIdx) {
   const riskTag = c.risk ? `<span class="tag gap">${b('风险', 'risk')}</span>` : '';
   const yFlow = fmtFlow(c.yesterdayMainInflow);
   const hasHot = !!(c.billboard && (c.billboard.hot || []).length);
-  // 连板过滤（2026-11-10）：连板 = N连板（streak≥2）；data-streak 存连板数，供前端过滤与将来细分
+  // 连板过滤（2026-11-10）：两颗 chip——「连板」=N连板（streak≥2）；「10日有板」=10 个交易日
+  // 窗口内板过就算（N天M板/首板，即连板列有文案；窗口与外扩口径唯一真相源 boardsInfo）。
+  // data-streak 恒写连板数；data-hasboard 标记窗口内有板
   const streakN = (c.boards && (c.boards.streak | 0)) || 0;
+  const hasBoard = !!boardsTxt(c.boards);
   // data-hm 存 encodeURIComponent 后的游资名（| 分隔）：名字含特殊字符也不会破坏属性/过滤（评审 #13）
   const hotNames = hasHot ? [...new Set((c.billboard.hot || []).map((h) => h.name).filter(Boolean))].map(encodeURIComponent).join('|') : '';
   const hmTiers = hotTierAttr(c.billboard);
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${streakN >= 2 ? ` data-streak="${streakN}"` : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}" data-streak="${streakN}"${hasBoard ? ' data-hasboard="1"' : ''}${c.billboard ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     ${sparkCell(sparkOf(c.code, sparkIdx))}
@@ -118,6 +121,7 @@ function closeRowHtml(c, i, sealedMin, sparkIdx) {
   // 连板口径：收盘回填没抓到 K 线时沿用盘前连板（与上方上榜的回退口径一致）；chip 计数与 data-streak 同源
   const boards = cl.boards || c.boards;
   const streakN = (boards && (boards.streak | 0)) || 0;
+  const hasBoard = !!boardsTxt(boards);
   const yChg = c.yesterdayChgPct;   // 昨收涨跌幅（昨日 vs 前日）
   const openChg = c.auctionChgPct;  // 今开涨跌幅（今开 vs 昨收）
   const dayChg = cl.dayChgPct;      // 今收涨跌幅（今收 vs 昨收）
@@ -144,7 +148,7 @@ function closeRowHtml(c, i, sealedMin, sparkIdx) {
   const hotNames = hasHot ? [...new Set((bb.hot || []).map((h) => h.name).filter(Boolean))].map(encodeURIComponent).join('|') : '';
   const hmTiers = hotTierAttr(bb);
   // 带 @best/@top3 所需的排序属性：收盘区 chips 与候选区共用一份，行缺属性会一点就全空（评审 #12）
-  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}"${streakN >= 2 ? ` data-streak="${streakN}"` : ''}${bb ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
+  return `<tr data-sector="${esc(c.sector)}" data-label="${esc(c.label)}" data-track="${esc(c.track || 'score')}"${c.bestInGroup ? ' data-best="1"' : ''} data-grank="${c.groupRank || ''}" data-streak="${streakN}"${hasBoard ? ' data-hasboard="1"' : ''}${bb ? ' data-billboard="1"' : ''}${hasHot ? ` data-hot="1" data-hm="${hotNames}"` : ''}${hmTiers ? ` data-hm-tier="${hmTiers}"` : ''}>
     <td>${i + 1}</td>
     <td><b>${esc(c.name)}</b><span class="src">${c.code.replace(/^[a-z]+/, '')}</span></td>
     ${sparkCell(sparkOf(c.code, sparkIdx))}
@@ -358,8 +362,9 @@ function buildHTML(m) {
     }
     const bestCount = recs.reduce((n, c) => n + (c.bestInGroup ? 1 : 0), 0);
     const top3Count = recs.reduce((n, c) => n + ((c.groupRank || 99) <= 3 ? 1 : 0), 0);
-    // 连板 = N连板（streak≥2）；口径与行 data-streak 一致
+    // 连板两颗 chip：连板=N连板（streak≥2）；10日有板=连板列有文案（boardsTxt 非空，窗口口径=boardsInfo）
     const streakCount = recs.reduce((n, c) => n + ((((boardsOf && boardsOf(c)) || {}).streak | 0) >= 2 ? 1 : 0), 0);
+    const board10Count = recs.reduce((n, c) => n + (boardsTxt(boardsOf ? boardsOf(c) : null) ? 1 : 0), 0);
     const bbCount = recs.reduce((n, c) => n + (bbOf(c) ? 1 : 0), 0);
     const hotCount = recs.reduce((n, c) => n + (bbOf(c) && (bbOf(c).hot || []).length ? 1 : 0), 0);
     // 游资明细 chips：按当天实际命中的游资名动态生成，计数 = 命中的票数（同票多席位去重），按命中票数降序
@@ -377,6 +382,7 @@ function buildHTML(m) {
         `<button type="button" class="chip" data-lfilter="@best">${b('组内第一', 'Group #1')}<i>${bestCount}</i></button>`,
         `<button type="button" class="chip" data-lfilter="@top3">${b('组内前三', 'Group top 3')}<i>${top3Count}</i></button>`,
         `<button type="button" class="chip" data-lfilter="@streak">${b('连板', 'Streak≥2')}<i>${streakCount}</i></button>`,
+        `<button type="button" class="chip" data-lfilter="@boards10">${b('10日有板', 'Board in 10d')}<i>${board10Count}</i></button>`,
         `<button type="button" class="chip" data-lfilter="@billboard">${b('上榜', 'On list')}<i>${bbCount}</i></button>`,
         `<button type="button" class="chip" data-lfilter="@hotmoney">${b('游资', 'Hot money')}<i>${hotCount}</i></button>`,
         ...tierStat.order.map((t) =>
@@ -558,6 +564,7 @@ function buildHTML(m) {
       if (lFilter === '@best') okL = tr.hasAttribute('data-best');
       else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
       else if (lFilter === '@streak') okL = (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
+      else if (lFilter === '@boards10') okL = tr.hasAttribute('data-hasboard');
       else if (lFilter === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (lFilter === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
       else if (lFilter.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(lFilter.slice(4)) >= 0;
@@ -645,6 +652,7 @@ function buildHTML(m) {
       if (clF === '@best') okL = tr.hasAttribute('data-best');
       else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
       else if (clF === '@streak') okL = (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
+      else if (clF === '@boards10') okL = tr.hasAttribute('data-hasboard');
       else if (clF === '@billboard') okL = tr.hasAttribute('data-billboard');
       else if (clF === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
       else if (clF.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(clF.slice(4)) >= 0;
