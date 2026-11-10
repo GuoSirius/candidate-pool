@@ -43,13 +43,10 @@ const log = (m) => console.log(m);
 if (!OPT.json) require('./lib/runlog').startRunLog('nextday');
 
 const warn = (m) => process.stderr.write(`${m}\n`);
-/** 6 位代码 → 交易所前缀（对齐 pulse/analyze.js 口径，含北交 920） */
+/** 6 位代码 → 交易所前缀（对齐 pulse/analyze.js 口径，含北交 920）。
+ * 2026-11-10 评审 #7：三处 toFullCode 口径统一收口到 eod/lib/fullcode.js */
 function toFullCode(c) {
-  const s = String(c).trim();
-  if (/^6/.test(s)) return 'sh' + s;
-  if (/^[03]/.test(s)) return 'sz' + s;
-  if (/^[489]/.test(s)) return 'bj' + s;
-  return 'sh' + s;
+  return require('./lib/fullcode').toFullCode(c, { fallback: null });
 }
 /** 记录已有完整 verdicts（t3 出齐）→ 跳过，幂等不重抓 */
 function hasComplete(v) {

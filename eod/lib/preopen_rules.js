@@ -98,7 +98,14 @@ function calcBaseline(kline, code, cfg) {
   // 量能均线（P04 逐步放量用）：基准日（含）往前 5 / 20 日均量
   const volMa5 = rows.length >= 5 ? rows.slice(0, 5).reduce((a, r) => a + (r.vol || 0), 0) / 5 : null;
   const volMa20 = rows.length >= 20 ? rows.slice(0, 20).reduce((a, r) => a + (r.vol || 0), 0) / 20 : null;
-  return { code, yesterdayChgPct, yesterdayVol, yesterdayVolRatio, volMa5, volMa20, boards: boardsInfo(rows, code), trend };
+  // lastDate/lastClose（评审 #4 后续）：缓存读侧用它对报价昨收(prevClose) 抽样校验，
+  // 数据驱动地防「陈旧档 / 键名错位串档」——基线落后交易日时昨收会大面积不一致。
+  return {
+    code, yesterdayChgPct, yesterdayVol, yesterdayVolRatio, volMa5, volMa20,
+    lastDate: y ? y.date : null,
+    lastClose: y && Number.isFinite(y.close) ? y.close : null,
+    boards: boardsInfo(rows, code), trend,
+  };
 }
 
 // ---------- P01 竞价强势 ----------

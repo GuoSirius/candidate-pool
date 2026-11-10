@@ -33,16 +33,11 @@ const KLINE_CSS = `
   .k-launch { stroke: var(--amber, #d97706); stroke-width: 1; stroke-dasharray: 2 2; fill: none; }
 `;
 
-/** 裸 6 位 → 带市场前缀；已是 sh/sz/bj 前缀的原样小写返回；无法判定的返回 null */
+/** 裸 6 位 → 带市场前缀；已是 sh/sz/bj 前缀的原样小写返回；无法判定的返回 null。
+ * 2026-11-10 评审 #7：三处 toFullCode 口径统一收口到 fullcode.js（920 北交此前误归沪，
+ * 虽缓存 key 实测已带前缀未受影响，仍须统一防复发） */
 function toFullCode(code) {
-  const s = String(code == null ? '' : code).trim().toLowerCase().replace(/\s/g, '');
-  if (/^(sh|sz|bj)\d{6}$/.test(s)) return s;
-  if (!/^\d{6}$/.test(s)) return null;
-  const h = s[0];
-  if (h === '6' || h === '9') return 'sh' + s;   // 沪市主板 / 科创 688 / B 股
-  if (h === '0' || h === '3' || h === '2') return 'sz' + s;
-  if (h === '4' || h === '8') return 'bj' + s;   // 北交所
-  return null;
+  return require('./fullcode').toFullCode(code, { fallback: null });
 }
 
 /** 缓存压缩格式 [date,o,c,h,l,v] → SVG 格式 [date,o,h,l,c,v]；坏行直接剔除 */

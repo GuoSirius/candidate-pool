@@ -79,20 +79,33 @@ function pickAnchor(now, marketDate) {
   return anchor;
 }
 
-/** 交易日窗口：从 anchor 向前收集 n 个交易日（跳双休；节假日=空榜日自然跳过；已归档日直接复用） */
+/** 交易日窗口：从 anchor 向前收集 n 个交易日（跳双休；节假日=空榜日自然跳过；已归档日直接复用）。
+ * 缺档榜单 4 并发回补（2026-11-10 评审 #13：逐日串行 ~2s/日，10 日窗口首跑 ~20s → 数秒）；
+ * 仍按轮次收集保证凑满 n 个有效日，顺序降序不变。 */
 async function tradingDays(anchor, n) {
   const days = [];
   let d = dayjs.tz(anchor + ' 00:00:00');
-  for (let i = 0; i < cfg.history.maxLookback && days.length < n; i++, d = d.subtract(1, 'day')) {
-    if (d.day() === 6 || d.day() === 0) continue;
-    const date = d.format('YYYY-MM-DD');
-    const cached = store.loadDay(date);
-    if (cached) { days.push({ date, bb: cached.bb || {} }); continue; }
-    const bb = await market.fetchBillboard(date);
-    if (!Object.keys(bb).length) { log(`[窗口] ${date} 空榜（非交易日或无数据）跳过`); continue; }
-    days.push({ date, bb });
+  let scanned = 0;
+  while (days.length < n && scanned < cfg.history.maxLookback) {
+    // 一轮：同步收集已归档日 + 最多 (n-days.length) 个缺档日
+    const missing = [];
+    while (days.length + missing.length < n && scanned < cfg.history.maxLookback) {
+      scanned++; d = dayjs.tz(anchor + ' 00:00:00').subtract(scanned - 1, 'day');
+      if (d.day() === 6 || d.day() === 0) continue;
+      const date = d.format('YYYY-MM-DD');
+      const cached = store.loadDay(date);
+      if (cached) { days.push({ date, bb: cached.bb || {} }); continue; }
+      missing.push(date);
+    }
+    if (!missing.length) break;
+    const fetched = await mapLimit(missing, 4, async (date) => ({ date, bb: await market.fetchBillboard(date) }));
+    for (const { date, bb } of fetched) {
+      if (bb && Object.keys(bb).length) days.push({ date, bb });
+      else log(`[窗口] ${date} 空榜（非交易日或无数据）跳过`);
+    }
   }
-  return days; // 降序：days[0] = anchor
+  days.sort((a, b) => b.date.localeCompare(a.date)); // 降序：days[0] = anchor
+  return days.slice(0, n);
 }
 
 // ---------- 单日扫描 ----------

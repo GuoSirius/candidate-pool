@@ -235,14 +235,19 @@ function computeSectors(stocks) {
   for (const s of stocks) {
     const name = (s.sector || '未分类');
     if (!bySector[name]) bySector[name] = { chgs: [], codes: [] };
-    bySector[name].chgs.push(s.r01 && s.r01.chg != null ? s.r01.chg : 0);
+    // 无 chg 的票不再填 0 参与中位数（2026-11-10 评审 #8）：填 0 会系统性拉低行业涨幅，
+    // 让 R07「板块补涨」判定整体偏松。codes 仍收录全部成员（成员名单口径不变）。
+    if (s.r01 && s.r01.chg != null) bySector[name].chgs.push(s.r01.chg);
     bySector[name].codes.push(s.code);
   }
-  const list = Object.entries(bySector).map(([name, v]) => {
-    const sorted = v.chgs.slice().sort((a, b) => a - b);
-    const mid = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : 0;
-    return { code: name, name, pct: mid };
-  });
+  // 全员无 chg 的行业无法计算中位数 → 剔除（pct=null 参与排序会让下游比较失真）
+  const list = Object.entries(bySector)
+    .filter(([, v]) => v.chgs.length > 0)
+    .map(([name, v]) => {
+      const sorted = v.chgs.slice().sort((a, b) => a - b);
+      const mid = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : 0;
+      return { code: name, name, pct: mid };
+    });
   list.sort((a, b) => b.pct - a.pct);
   const topN = Math.max(1, Math.round(list.length * 0.1));
   list.forEach((s, i) => { s.rank = i + 1; s.inTop10 = i < topN; s.total = list.length; s.topN = topN; s.members = null; });

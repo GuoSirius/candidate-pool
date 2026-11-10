@@ -40,7 +40,7 @@ const { mapLimit } = require('./lib/http');
 const { notify } = require('../notify');
 const paths = require('../paths');
 const { minifyHTML } = require('./lib/report_fmt');
-const { atomicWriteJSON, readJSONSafe } = require('./lib/atomic');
+const PCache = require('./lib/preopen_cache');
 const { calcRegime } = require('./lib/regime');
 const scaffold = require('../scaffold');
 
@@ -106,30 +106,25 @@ function readCandidates() {
 }
 
 // ---------- 基线（前一日 K 线指标）----------
-async function getBaseline(codes, anchor, scope) {
+async function getBaseline(codes, anchor, scope, quotes) {
+  const cacheDir = path.join(paths.eodDir(), cfg.baseline.dataDir);
   if (scope === 'universe') {
-    const cf = path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor));
-    if (fs.existsSync(cf)) {
-      // 读缓存走安全读（2026-11-10 评审 #4）：半截 JSON 隔离后回退实时计算，不整轮崩
-      const cached = readJSONSafe(cf, null, log);
-      if (cached) {
-        log(`[基线] 加载缓存 ${path.basename(cf)}`);
-        const m = new Map();
-        for (const [code, b] of Object.entries(cached)) m.set(code, b);
-        return m;
-      }
-      log('[基线] 缓存损坏已隔离，回退实时计算');
-    }
-    if (!cfg.baseline.computeIfMissing) { log('[基线] 全市场无缓存且禁用实时计算 → 跳过趋势(P3)'); return new Map(); }
-    log('[基线] 全市场缓存缺失，实时计算（较慢，约数分钟）…');
+    // 读缓存（键名错位修复，2026-11-10）：按「数据日」命名 + 昨收抽样校验，
+    // 陈旧档 / 旧格式档一律弃用 → 回退实时计算，绝不把过期基线当「昨日」用。
+    const cached = PCache.load(cacheDir, anchor, quotes, log);
+    if (cached) return cached;
+    if (!cfg.baseline.computeIfMissing) { log('[基线] 无有效缓存且禁用实时计算 → 跳过趋势(P3)'); return new Map(); }
+    log('[基线] 无有效缓存，实时计算（较慢，约数分钟）…');
   }
   const m = new Map();
+  let dataDate = null; // 全市场最新已收盘交易日（rows[0] 最大日期）= 缓存键
   const res = await mapLimit(codes, cfg.market.concurrency, async (code) => {
     try {
       const kl = await market.fetchKline(code, anchor);
       // 显式过滤 anchor 当日 bar（2026-11-10 评审 #5）：不依赖「9:25 fqkline 无当日 bar」
       // 的隐式行为，接口提前给当日竞价 bar / 盘后 --force 补跑时基线口径都不会失真。
       kl.rows = (kl.rows || []).filter((r) => r.date && r.date < anchor);
+      if (kl.rows[0] && (!dataDate || kl.rows[0].date > dataDate)) dataDate = kl.rows[0].date;
       return [code, PR.calcBaseline(kl, code, cfg)];
     } catch (e) { return [code, { error: String((e && e.message) || e) }]; }
   });
@@ -138,12 +133,7 @@ async function getBaseline(codes, anchor, scope) {
     if (b && !b.error) { m.set(code, b); okN++; } else errN++;
   }
   log(`[基线] K线 ${okN} 只成功 / ${errN} 只失败`);
-  if (scope === 'universe' && m.size) {
-    const out = {}; for (const [code, b] of m) out[code] = b;
-    const cf = path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor));
-    atomicWriteJSON(cf, out);
-    log(`[基线] 已缓存 ${m.size} 只 → ${path.basename(cf)}`);
-  }
+  if (scope === 'universe') PCache.save(cacheDir, dataDate, m, log);
   return m;
 }
 
@@ -211,10 +201,12 @@ async function run() {
     }
     log(`[基线预计算] scope=${scope} 共 ${codes.length} 只，锚定日 ${anchor}`);
     const m = new Map();
-    let done = 0;
+    let done = 0, dataDate = null;
     const res = await mapLimit(codes, cfg.market.concurrency, async (code) => {
       try {
         const kl = await market.fetchKline(code, anchor);
+        // 此分支 anchor=昨日即数据日，不过滤当日 bar（rows[0] 必须是 anchor 当日）
+        if (kl.rows && kl.rows[0] && (!dataDate || kl.rows[0].date > dataDate)) dataDate = kl.rows[0].date;
         const b = PR.calcBaseline(kl, code, cfg);
         if ((++done) % 500 === 0) log(`[基线] 进度 ${done}/${codes.length}`);
         return [code, b];
@@ -222,10 +214,8 @@ async function run() {
     });
     let ok = 0, err = 0;
     for (const [c, b] of res) { if (b && !b.error) { m.set(c, b); ok++; } else err++; }
-    const out = {}; for (const [c, b] of m) out[c] = b;
-    const cf = path.join(paths.eodDir(), cfg.baseline.dataDir, cfg.baseline.fileName(anchor));
-    atomicWriteJSON(cf, out);
-    log(`[基线] 已缓存 ${ok} 只（失败 ${err}）→ ${path.basename(cf)}`);
+    // 新格式落档：文件名 = 数据日（= anchor），与 09:25 读侧同一口径，隔夜缓存自此可命中
+    const cf = PCache.save(path.join(paths.eodDir(), cfg.baseline.dataDir), dataDate, m, log);
     return { baseline: { file: cf, ok, err } };
   }
 
@@ -272,7 +262,7 @@ async function run() {
 
   // 基线
   log('[2/4] 计算基线（昨涨 + 趋势）…');
-  const baseline = await getBaseline(codes, anchor, scope);
+  const baseline = await getBaseline(codes, anchor, scope, quotes);
 
   // 行业映射（分组用）
   const map = loadIndustryMap();

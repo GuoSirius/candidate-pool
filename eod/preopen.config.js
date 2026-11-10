@@ -64,7 +64,9 @@ module.exports = {
   // =========================================================================
   baseline: {
     dataDir: 'data/preopen',
-    // 缓存文件名模板（按交易日）：preopen-baseline-YYYYMMDD.json
+    // 缓存文件名模板（按「基线数据日」= rows[0] 所在交易日，即次日盘前眼中的「昨日」）：
+    // preopen-baseline-YYYY-MM-DD.json，内容为 { dataDate, baselines }（2026-11-10 键名错位修复：
+    // 旧实现 03:00 锚昨日写、09:25 锚今日读，隔夜缓存从未命中）。读写统一走 lib/preopen_cache.js。
     fileName: (date) => `preopen-baseline-${date}.json`,
     // 全市场模式若缓存缺失则实时算（慢，~3min）；观察池模式默认实时算（几百只，~30s）
     computeIfMissing: true,

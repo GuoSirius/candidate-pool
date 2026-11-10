@@ -69,15 +69,10 @@ const RE_DATE = {
   nextday: /^snapshot-(\d{4}-\d{2}-\d{2})\.json$/,
 };
 
-/** 6 位代码 → 交易所前缀；已带前缀原样返回；非法代码返回 ''（脏数据不入池） */
+/** 6 位代码 → 交易所前缀；已带前缀原样返回；非法代码返回 ''（脏数据不入池）。
+ * 2026-11-10 评审 #7：三处 toFullCode 口径统一收口到 eod/lib/fullcode.js */
 function toFullCode(c) {
-  const s = String(c == null ? '' : c).trim().toLowerCase();
-  if (/^(sh|sz|bj)\d{6}$/.test(s)) return s;
-  if (!/^\d{6}$/.test(s)) return '';
-  if (/^6/.test(s)) return 'sh' + s;
-  if (/^[03]/.test(s)) return 'sz' + s;
-  if (/^[489]/.test(s)) return 'bj' + s;
-  return 'sh' + s;
+  return require('./lib/fullcode').toFullCode(c, { fallback: '' });
 }
 
 /** 纯只读 JSON：解析失败返回 null，绝不改动/隔离源文件 */

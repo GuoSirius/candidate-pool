@@ -175,6 +175,19 @@ test('computeSectors: 行业涨幅中位数 + 前 10% 标注', () => {
   assert.equal(list[0].topN, 1);                  // round(2*0.1)=1
 });
 
+test('computeSectors: 无 chg 票不参与中位数，全员无 chg 的行业剔除（评审 #8）', () => {
+  const stocks = [
+    { code: 'a', sector: '银行', r01: { chg: 4 } },
+    { code: 'b', sector: '银行', r01: { chg: null } },   // 无 chg → 不填 0 参与
+    { code: 'c', sector: '银行', r01: null },            // 整个 r01 缺失 → 同上
+    { code: 'd', sector: '空行业', r01: { chg: null } }, // 全员无 chg → 行业整体剔除
+  ];
+  const list = R.computeSectors(stocks);
+  assert.equal(list.length, 1);
+  assert.equal(list[0].name, '银行');
+  assert.ok(Math.abs(list[0].pct - 4) < 1e-9);    // 若填 0 会拉低成 [0,4] 中位数 2
+});
+
 test('lastClosedTradingDay: 周末与盘中顺延', () => {
   assert.equal(R.lastClosedTradingDay(dayjs.tz('2026-09-19 10:00:00')), '2026-09-18'); // 周六 → 周五
   assert.equal(R.lastClosedTradingDay(dayjs.tz('2026-09-20 10:00:00')), '2026-09-18'); // 周日 → 周五
