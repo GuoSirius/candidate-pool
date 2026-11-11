@@ -117,16 +117,26 @@ check('二次 diff 拟新增 0', diff2.toAdd.length === 0);
 check('二次 diff 总数不变', diff2.totalAfter === 5);
 check('二次 diff 仍不删除', diff2.wouldRemove === 0);
 
-console.log('\n[8] 报告：明确写出 dry-run / 删除 0');
-const md = R.renderMarkdown({
+console.log('\n[8] 报告：单文件 HTML / 明确写出 dry-run / 删除 0');
+const html = R.renderHTML({
   mode: 'DRY-RUN', today: '2026-11-09', dates: days, status, diff, before, after: null,
   config: require('./pool_reflow.config'),
 });
-check('标注 DRY-RUN', md.includes('DRY-RUN'));
-check('写明未写回', md.includes('未写'));
-check('写明删除 0 只', md.includes('删除 0 只'));
-check('写明不设上限', md.includes('不设上限'));
-check('含拟新增表', md.includes('拟新增（3 只）'));
+check('是完整单文件 HTML（内联样式）', html.startsWith('<!DOCTYPE html>') && html.includes('<style>') && html.trimEnd().endsWith('</html>'));
+check('标注 DRY-RUN', html.includes('DRY-RUN'));
+check('写明未写回', html.includes('未写'));
+check('写明删除 0 只', html.includes('删除 0 只'));
+check('写明不设上限', html.includes('不设上限'));
+check('含拟新增表', html.includes('拟新增（3 只）'));
+check('恢复命令里的 > 被转义（表格单元格统一 HTML 转义）', html.includes('&gt;') && !html.includes('candidates.json > candidates'));
+check('无外链资源', !html.includes('<script src=') && !html.includes('<link '));
+const ths = [...html.matchAll(/<thead><tr>([\s\S]*?)<\/tr><\/thead>/g)].map((m) => (m[1].match(/<th>/g) || []).length);
+const trs = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((m) => m[1]).filter((r) => r.includes('<td'))
+  .map((r) => {
+    const cs = r.match(/colspan="(\d+)"/);
+    return cs ? Number(cs[1]) : (r.match(/<td[ >]/g) || []).length;
+  });
+check('表格结构存在且无列错位', ths.length >= 4 && trs.every((n) => ths.includes(n)), JSON.stringify({ ths, trs }));
 
 fs.rmSync(root, { recursive: true, force: true });
 console.log(`\n${failed ? `❌ ${failed} 项失败` : '✅ 全部通过'}（临时目录已清理：${root}）`);

@@ -2,7 +2,8 @@
 /*
  * eod/weekly_winrate.selftest.js —— 周六胜率简报回归自测
  * 运行：node eod/weekly_winrate.selftest.js（退出码非 0 = 失败；纯本地临时目录）
- * 重点钉死：① 样本不足时绝不输出任何胜率/结论；② 窗口按交易日不按文件数；③ 表格列数一致。
+ * 重点钉死：① 样本不足时绝不输出任何胜率/结论；② 窗口按交易日不按文件数；③ HTML 表格列数一致、动态值转义；
+ * ④ 报告为单文件 HTML（2026-11-11 由 Markdown 改版，可进 Cloudflare Pages 归档 + iframe）。
  */
 const fs = require('fs');
 const path = require('path');
@@ -74,13 +75,15 @@ const r3 = W.analyze(perf, c3, cfg);
 check('3 天 → insufficient=true', r3.insufficient === true);
 check('样本量统计正确', r3.sampleDays === 3 && r3.totalTickets > 0);
 check('不含 dims / hotmoney', !r3.dims && !r3.hotmoney);
-const md3 = W.renderMarkdown({ result: r3, perf, today: '2026-11-09', windowDays: 3 }, cfg);
-check('写明不输出胜率与回归结论', md3.includes('不输出胜率与回归结论'));
-check('不含任何 % 命中率', !md3.includes('%'), md3.slice(0, 200));
-check('不含「T+1 命中率」表头', !md3.includes('T+1 命中率'));
-check('不含分层/游资章节', !md3.includes('按分项') && !md3.includes('按游资'));
-check('仍给出各管道样本量', md3.includes('逐票样本') && md3.includes('已回填交易日'));
-check('明确禁止据此调参', md3.includes('请勿用本期数据做参数调整'));
+const html3 = W.renderHTML({ result: r3, perf, today: '2026-11-09', windowDays: 3 }, cfg);
+check('是完整单文件 HTML（内联样式）', html3.startsWith('<!DOCTYPE html>') && html3.includes('<style>') && html3.trimEnd().endsWith('</html>'));
+check('写明不输出胜率与回归结论', html3.includes('不输出胜率与回归结论'));
+check('不含任何 % 命中率', !html3.includes('%'), html3.slice(0, 200));
+check('不含「T+1 命中率」表头', !html3.includes('T+1 命中率'));
+check('不含分层/游资章节', !html3.includes('按分项') && !html3.includes('按游资'));
+check('仍给出各管道样本量', html3.includes('逐票样本') && html3.includes('已回填交易日'));
+check('明确禁止据此调参', html3.includes('请勿用本期数据做参数调整'));
+check('动态值做了 HTML 转义（防注入）', !html3.includes('<script>') && !html3.includes('src='));
 
 console.log('\n[5] 样本达标 → 三维度');
 const r22 = W.analyze(perf, c22, cfg);
@@ -88,22 +91,37 @@ check('22 天 → insufficient=false', r22.insufficient === false);
 check('产出分项维度', !!r22.dims && Object.keys(r22.dims).length === 3);
 check('产出游资维度', !!r22.hotmoney && r22.hotmoney.tiers.length >= 2);
 check('管道引用 perf 聚合', r22.pipelines.tail.t1.rate === 23.5);
-const md22 = W.renderMarkdown({ result: r22, perf, today: '2026-11-09', windowDays: 22 }, cfg);
-check('三章节齐全', md22.includes('## 1. 按管道') && md22.includes('## 2. 按分项') && md22.includes('## 3. 按游资'));
-check('标注不推送/不调权重', md22.includes('不推送') && md22.includes('不自动调权重'));
+const html22 = W.renderHTML({ result: r22, perf, today: '2026-11-09', windowDays: 22 }, cfg);
+check('三章节齐全', html22.includes('1. 按管道') && html22.includes('2. 按分项') && html22.includes('3. 按游资'));
+check('标注不推送/不调权重', html22.includes('不推送') && html22.includes('不自动调权重'));
 
-console.log('\n[6] Markdown 表格列数一致（防列错位回归）');
-const blocks = [];
-let cur = [];
-for (const l of md22.split('\n')) {
-  if (l.startsWith('|')) cur.push(l);
-  else { if (cur.length) blocks.push(cur); cur = []; }
+console.log('\n[6] HTML 表格列数一致 + 转义（防列错位 / XSS 回归）');
+/** 从 HTML 中取出每张表：表头 <th> 数，及每行 <td> 数（colspan 的空表按 colspan 计） */
+function tablesOf(html) {
+  return [...html.matchAll(/<table>[\s\S]*?<\/table>/g)].map((m) => {
+    const t = m[0];
+    const head = (t.match(/<thead>[\s\S]*?<\/thead>/) || [''])[0];
+    const th = (head.match(/<th>/g) || []).length;
+    const widths = [...t.matchAll(/<tr>([\s\S]*?)<\/tr>/g)]
+      .map((r) => r[1]).filter((r) => r.includes('<td'))
+      .map((r) => {
+        const cs = r.match(/colspan="(\d+)"/);
+        return cs ? Number(cs[1]) : (r.match(/<td[ >]/g) || []).length;
+      });
+    return { head, th, widths };
+  });
 }
-if (cur.length) blocks.push(cur);
-check('每块表格内部列数一致', blocks.every((b) => new Set(b.map((l) => l.split('|').length)).size === 1),
-  JSON.stringify(blocks.map((b) => b[0].split('|').length)));
-check('分项 / 游资表均为 6 列（8 段）', blocks.some((b) => b[0].includes('分层') && b[0].split('|').length === 8)
-  && blocks.some((b) => b[0].includes('维度') && b[0].split('|').length === 8));
+const tables = tablesOf(html22);
+check('至少渲染出 3 张表', tables.length >= 3, tables.length);
+check('每张表所有行列数与表头一致', tables.every((t) => t.th > 0 && t.widths.every((w) => w === t.th)),
+  JSON.stringify(tables.map((t) => [t.th, ...new Set(t.widths)])));
+check('分项 / 游资表均为 6 列', tables.some((t) => t.head.includes('分层') && t.th === 6)
+  && tables.some((t) => t.head.includes('维度') && t.th === 6));
+const evil = W.renderHTML({
+  result: r22, today: '2026-11-09', windowDays: 22,
+  perf: { ...perf, generatedAt: '<script>alert(1)</script>' },
+}, cfg);
+check('动态值被 HTML 转义（<script> 不裸奔）', !evil.includes('<script>') && evil.includes('&lt;script&gt;'));
 
 fs.rmSync(root, { recursive: true, force: true });
 console.log(`\n${failed ? `❌ ${failed} 项失败` : '✅ 全部通过'}（临时目录已清理：${root}）`);

@@ -3,6 +3,8 @@
  * eod/pool_reflow.js —— 观察池回流（批次 C2，18:40 / PAUSED）
  * ---------------------------------------------------------------------------
  * 干什么：从四类归档里收集「该进观察池」的信号，产出一份可审核的 diff 报告。
+ *          2026-11-11 起由 Markdown 改为单文件 HTML：与其余历史报告统一走 Cloudflare Pages
+ *          归档 + iframe 查看；HTML 骨架 / 转义 / 样式收在 eod/lib/brief_report.js。
  *   - tailTopHit   尾盘正式档 TopN 且 T+1 命中
  *   - r01          16:00 次日快照 R01 触发
  *   - hotmoneyT1   一线游资介入
@@ -37,6 +39,7 @@ const cfg = require('./pool_reflow.config');
 const paths = require('../paths');
 const { dayjs } = require('../time');
 const { atomicWriteJSON } = require('./lib/atomic');
+const { esc, table, note, page } = require('./lib/brief_report');
 
 const argv = process.argv.slice(2);
 const argOf = (f) => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : null; };
@@ -280,60 +283,52 @@ function assertNonDestructive(before, after) {
   return true;
 }
 
-const esc = (v) => String(v == null ? '' : v).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 const srcNames = (s) => [...s.sources].sort().map((k) => SOURCE_LABEL[k] || k).join('、');
 
-/** 渲染可审核的 Markdown diff 报告 */
-function renderMarkdown(ctx) {
-  const { mode, today, dates, status, diff, before, after, config } = ctx;
-  const L = [];
-  L.push(`# 观察池回流 diff · ${mode}`);
-  L.push('');
-  L.push(`- 运行日：${today}`);
-  L.push(`- 回看交易日：${dates.length} 天（${dates[0]} → ${dates[dates.length - 1]}）`);
-  L.push(`- 现有观察池：**${diff.totalBefore}** 只 · 写回后：**${diff.totalAfter}** 只`);
-  L.push(`- **拟新增 ${diff.toAdd.length} 只 / 命中存量 ${diff.toTagExisting.length} 只（零改动）/ 保持不动 ${diff.untouched} 只 / 删除 ${diff.wouldRemove} 只**`);
-  L.push('');
-  L.push('## 数据安全契约');
-  L.push('');
-  L.push('| 项 | 本次取值 |');
-  L.push('|---|---|');
-  L.push(`| 模式 | ${mode} |`);
-  L.push(`| 淘汰/删除 | 关闭（代码内无删除路径，删除恒为 0） |`);
-  L.push(`| 上限 | ${config.write.maxSize === 0 ? '不设上限' : config.write.maxSize} |`);
-  L.push(`| 存量票 | ${config.write.tagLegacy ? '打标' : '零改动（meta 仅出现在新增票）'} |`);
-  L.push(`| 写回 | ${mode === 'APPLY' ? '已写 candidates.json（写前备份 + 写后回读校验）' : '**未写**（dry-run）'} |`);
-  L.push(`| 恢复 | \`git show HEAD:candidates.json > candidates.json\` 或 \`.tmp/pool_reflow/backups/\` |`);
-  L.push('');
-  L.push('## 来源状态');
-  L.push('');
-  L.push('| 来源 | 状态 | 归档数 | 覆盖天数 | 命中条数 | 缺 T+1 档 |');
-  L.push('|---|---|---:|---:|---:|---:|');
-  for (const k of SOURCE_KEYS) {
-    const s = status[k];
-    L.push(`| ${esc(SOURCE_LABEL[k])} | ${esc(s.state)} | ${s.files} | ${s.days} | ${s.hits} | ${s.noVerdictDays || 0} |`);
-  }
-  L.push('');
-  L.push('> `ok`=有信号（即使部分日期缺 T+1，仍以实际命中为准）；`empty`=档在但当日无触发；`unavailable`=窗口内无归档；`no-verdicts`=档在但**全部**日期都未回填 T+1（不产生伪信号）；`error`=解析失败（不影响其它来源）。「缺 T+1 档」只作附注，表示这些天的 TopN 尚无次日判定，待 18:30 回填后会自动纳入。');
-  L.push('');
-  L.push('## 拟新增（' + diff.toAdd.length + ' 只）');
-  L.push('');
-  if (diff.toAdd.length) {
-    L.push('| 代码 | 名称 | 行业 | 来源 | 最近触发 |');
-    L.push('|---|---|---|---|---|');
-    for (const s of diff.toAdd) L.push(`| ${esc(s.code)} | ${esc(s.name)} | ${esc(s.sector)} | ${esc(srcNames(s))} | ${esc(s.lastTrigger)} |`);
-  } else L.push('_无_');
-  L.push('');
-  L.push('## 命中但已在池（' + diff.toTagExisting.length + ' 只，零改动）');
-  L.push('');
-  if (diff.toTagExisting.length) {
-    L.push('| 代码 | 名称 | 来源 | 最近触发 |');
-    L.push('|---|---|---|---|');
-    for (const s of diff.toTagExisting) L.push(`| ${esc(s.code)} | ${esc(s.name)} | ${esc(srcNames(s))} | ${esc(s.lastTrigger)} |`);
-  } else L.push('_无_');
-  L.push('');
-  L.push(`> 本报告由 \`eod/pool_reflow.js\` 生成；存量 ${diff.totalBefore} 只手工观察池在任何模式下都不被删除、不被改名、不被改写。`);
-  return L.join('\n') + '\n';
+/** 渲染可审核的单文件 HTML diff 报告（2026-11-11 由 Markdown 统一为可归档 / iframe 查看） */
+function renderHTML(ctx) {
+  const { mode, today, dates, status, diff, config } = ctx;
+  const dry = mode !== 'APPLY';
+  const meta = [
+    `运行日：<b>${esc(today)}</b> · 回看交易日：<b>${dates.length}</b> 天（${esc(dates[0])} → ${esc(dates[dates.length - 1])}）`,
+    `现有观察池：<b>${diff.totalBefore}</b> 只 · 写回后：<b>${diff.totalAfter}</b> 只`,
+    `<b>拟新增 ${diff.toAdd.length} 只 / 命中存量 ${diff.toTagExisting.length} 只（零改动）/ 保持不动 ${diff.untouched} 只 / 删除 ${diff.wouldRemove} 只</b>`,
+  ];
+
+  let body = '';
+  body += '<h2>数据安全契约</h2>';
+  body += table(['项', '本次取值'], [
+    ['模式', mode],
+    ['淘汰/删除', '关闭（代码内无删除路径，删除恒为 0）'],
+    ['上限', config.write.maxSize === 0 ? '不设上限' : config.write.maxSize],
+    ['存量票', config.write.tagLegacy ? '打标' : '零改动（meta 仅出现在新增票）'],
+    ['写回', dry ? '未写（dry-run）' : '已写 candidates.json（写前备份 + 写后回读校验）'],
+    ['恢复', 'git show HEAD:candidates.json > candidates.json 或 .tmp/pool_reflow/backups/'],
+  ]);
+
+  body += '<h2>来源状态</h2>';
+  body += table(['来源', '状态', '归档数', '覆盖天数', '命中条数', '缺 T+1 档'],
+    SOURCE_KEYS.map((k) => {
+      const s = status[k];
+      return [SOURCE_LABEL[k], s.state, s.files, s.days, s.hits, s.noVerdictDays || 0];
+    }));
+  body += note('<code>ok</code>=有信号（即使部分日期缺 T+1，仍以实际命中为准）；<code>empty</code>=档在但当日无触发；<code>unavailable</code>=窗口内无归档；<code>no-verdicts</code>=档在但<b>全部</b>日期都未回填 T+1（不产生伪信号）；<code>error</code>=解析失败（不影响其它来源）。「缺 T+1 档」只作附注，表示这些天的 TopN 尚无次日判定，待 18:30 回填后会自动纳入。');
+
+  body += `<h2>拟新增（${diff.toAdd.length} 只）</h2>`;
+  body += table(['代码', '名称', '行业', '来源', '最近触发'],
+    diff.toAdd.map((s) => [s.code, s.name, s.sector, srcNames(s), s.lastTrigger]));
+
+  body += `<h2>命中但已在池（${diff.toTagExisting.length} 只，零改动）</h2>`;
+  body += table(['代码', '名称', '来源', '最近触发'],
+    diff.toTagExisting.map((s) => [s.code, s.name, srcNames(s), s.lastTrigger]));
+  body += note(`本报告由 <code>eod/pool_reflow.js</code> 生成；存量 ${diff.totalBefore} 只手工观察池在任何模式下都不被删除、不被改名、不被改写。`);
+
+  return page({
+    title: `观察池回流 diff · ${mode}`,
+    subtitle: '只读 dry-run diff 默认不写回；确认后加 --apply 才追加写回',
+    meta, body,
+    footer: '本报告由程序自动生成，仅用于人工审核观察池变更，不构成任何投资建议。',
+  });
 }
 
 /** 主流程：组装真实路径、读写文件。核心逻辑全部是可单测的纯函数 */
@@ -382,8 +377,8 @@ function run() {
 
   const rdir = path.join(paths.home(), cfg.report.dir);
   fs.mkdirSync(rdir, { recursive: true });
-  const reportPath = path.join(rdir, `pool_reflow-${today}.md`);
-  fs.writeFileSync(reportPath, renderMarkdown({ mode, today, dates, status, diff, before, after, config: cfg }), 'utf8');
+  const reportPath = path.join(rdir, `pool_reflow-${today}.html`);
+  fs.writeFileSync(reportPath, renderHTML({ mode, today, dates, status, diff, before, after, config: cfg }), 'utf8');
 
   say(`[pool_reflow] 模式=${mode} 回看=${dates.length} 个交易日（${dates[0]} → ${dates[dates.length - 1]}）`);
   for (const k of SOURCE_KEYS) {
@@ -410,7 +405,7 @@ function run() {
 
 module.exports = {
   toFullCode, collectTradingDays, collectSignals, buildDiff,
-  applyDiff, assertNonDestructive, renderMarkdown, run, OPT,
+  applyDiff, assertNonDestructive, renderHTML, run, OPT,
 };
 
 if (require.main === module) {

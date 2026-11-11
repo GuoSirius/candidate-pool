@@ -3,7 +3,9 @@
  * eod/weekly_winrate.js —— 周六胜率回归简报（批次 D2，周六 10:00 / ACTIVE）
  * ---------------------------------------------------------------------------
  * 干什么：读 `eod/data/perf-weekly.json`（按管道聚合）+ 四类归档逐票 verdicts，
- *         按「管道 / 分项 / 游资」三个维度出一份 Markdown 简报。
+ *         按「管道 / 分项 / 游资」三个维度出一份单文件 HTML 简报。
+ *         2026-11-11 起由 Markdown 改为 HTML：历史报告统一走 Cloudflare Pages 归档 + iframe 查看，
+ *         HTML 骨架 / 转义 / 样式统一收在 eod/lib/brief_report.js（与 pool_reflow 共用）。
  *
  * ⚠️ 硬门禁（方案原文）：有 verdicts 的不同交易日数 < minTradingDays(20) 时，
  *    **只报样本量**，不输出任何命中率、均值、分层结论或调参建议 —— 小样本给结论等于编造。
@@ -29,6 +31,7 @@ const path = require('path');
 const cfg = require('./weekly_winrate.config');
 const paths = require('../paths');
 const V = require('./lib/verdict');
+const { esc, table, note, page } = require('./lib/brief_report');
 const { dayjs } = require('../time');
 
 const argv = process.argv.slice(2);
@@ -184,73 +187,62 @@ function analyze(perf, collected, config = cfg) {
   return { sampleDays, insufficient, perPipe, broken, totalTickets: records.length, pipelines, dims, hotmoney };
 }
 
-const esc = (v) => String(v == null ? '' : v).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 const pct = (x) => (x == null ? '—' : `${x}%`);
 
+/** 表格行（数组），单元格转义交给 brief_report.table 统一处理 */
 function aggRow(dim, label, n, agg) {
-  if (!agg) return `| ${esc(dim)} | ${esc(label)} | ${n} | 样本不足 | — | — |`;
+  if (!agg) return [dim, label, n, '样本不足', '—', '—'];
   const t1 = agg.t1 ? `${pct(agg.t1.rate)}（n=${agg.t1.n}）` : '—';
   const t3 = agg.t3 ? `${pct(agg.t3.rate3)}（n=${agg.t3.n}）` : '—';
   const avg = agg.t3 ? pct(agg.t3.avg) : (agg.t1 ? pct(agg.t1.avg) : '—');
-  return `| ${esc(dim)} | ${esc(label)} | ${n} | ${t1} | ${t3} | ${avg} |`;
+  return [dim, label, n, t1, t3, avg];
 }
 
-function renderMarkdown(ctx, config = cfg) {
+/**
+ * 渲染单文件 HTML 简报（2026-11-11 由 Markdown 统一为可归档 / iframe 查看）。
+ * ⚠️ 样本不足分支必须保持「整份 HTML 不含 %」：CSS 由 brief_report 统一维护且刻意无 % 字符。
+ */
+function renderHTML(ctx, config = cfg) {
   const { result, perf, today, windowDays } = ctx;
-  const L = [];
-  L.push(`# 胜率回归简报 · ${today}`);
-  L.push('');
-  L.push(`- 数据：\`eod/data/perf-weekly.json\`（聚合，生成于 ${esc((perf && perf.generatedAt) || '缺失')}，窗口 ${esc((perf && perf.windowDays) || '—')} 天）+ 四类归档逐票 verdicts（窗口 ${windowDays} 天）`);
-  L.push(`- 已回填交易日：**${result.sampleDays}** 天 / 门禁 ${config.minTradingDays} 天 · 逐票样本 **${result.totalTickets}** 条`);
-  L.push(`- 分桶最小样本：${config.minBucketN} 条 · 不推送 · 不自动调权重 · 不修改任何归档`);
-  if (result.broken.length) L.push(`- ⚠️ 解析失败归档 ${result.broken.length} 份：${esc(result.broken.slice(0, 5).join('、'))}`);
-  L.push('');
+  const meta = [
+    `数据：<code>eod/data/perf-weekly.json</code>（聚合，生成于 ${esc((perf && perf.generatedAt) || '缺失')}，窗口 ${esc((perf && perf.windowDays) || '—')} 天）+ 四类归档逐票 verdicts（窗口 ${esc(windowDays)} 天）`,
+    `已回填交易日：<b>${result.sampleDays}</b> 天 / 门禁 ${config.minTradingDays} 天 · 逐票样本 <b>${result.totalTickets}</b> 条`,
+    `分桶最小样本：${config.minBucketN} 条 · 不推送 · 不自动调权重 · 不修改任何归档`,
+  ];
+  if (result.broken.length) meta.push(`⚠️ 解析失败归档 ${result.broken.length} 份：${esc(result.broken.slice(0, 5).join('、'))}`);
 
+  let body = '';
   if (result.insufficient) {
-    L.push('## 样本量（本期唯一输出）');
-    L.push('');
-    L.push('| 管道 | 归档数 | 逐票样本 | 已回填交易日 |');
-    L.push('|---|---:|---:|---:|');
-    for (const [pipe, s] of Object.entries(result.perPipe)) L.push(`| ${esc(pipe)} | ${s.archives} | ${s.tickets} | ${s.days} |`);
-    L.push('');
-    L.push(`> **样本不足（${result.sampleDays} / ${config.minTradingDays} 个交易日），本期不输出胜率与回归结论。**`);
-    L.push('> 按方案 D2 前置条件，攒够交易日后再出命中率、分项分层与游资分层。请勿用本期数据做参数调整。');
-    L.push('');
-    L.push('_本期未生成任何命中率、均值、分层对比或调参建议。_');
-    return L.join('\n') + '\n';
+    body += '<h2>样本量（本期唯一输出）</h2>';
+    body += table(['管道', '归档数', '逐票样本', '已回填交易日'],
+      Object.entries(result.perPipe).map(([pipe, s]) => [pipe, s.archives, s.tickets, s.days]));
+    body += note(`<b>样本不足（${result.sampleDays} / ${config.minTradingDays} 个交易日），本期不输出胜率与回归结论。</b><br>按方案 D2 前置条件，攒够交易日后再出命中率、分项分层与游资分层。请勿用本期数据做参数调整。`);
+    body += '<p class="muted">本期未生成任何命中率、均值、分层对比或调参建议。</p>';
+  } else {
+    body += '<h2>1. 按管道（引用 perf-weekly.json 聚合）</h2>';
+    body += table(['管道', '归档', '交易日', '样本 n', 'T+1 命中率', 'T+3 命中率', 'T+3 均值'],
+      Object.entries(result.pipelines).map(([pipe, a]) => [
+        pipe, a.archives, a.tradingDays, a.n,
+        a.t1 ? pct(a.t1.rate) : '—', a.t3 ? pct(a.t3.rate3) : '—', a.t3 ? pct(a.t3.avg) : '—',
+      ]));
+    body += '<h2>2. 按分项（尾盘正式档逐票重算，排除 -obs 重复计票）</h2>';
+    body += table(['分层', '桶', 'n', 'T+1 命中', 'T+3 命中', '均值'],
+      Object.entries(result.dims || {}).flatMap(([dim, rows]) => rows.map((r) => aggRow(dim, r.label, r.n, r.agg))));
+    body += note('分层为描述性统计，非因果结论；桶间样本量不同，不做显著性判断。');
+    body += '<h2>3. 按游资（逐票重算；同一票可计入多个 tier/席位桶）</h2>';
+    body += table(['维度', '桶', 'n', 'T+1 命中', 'T+3 命中', '均值'], [
+      ...((result.hotmoney && result.hotmoney.tiers) || []).map((r) => aggRow('tier', r.label, r.n, r.agg)),
+      ...((result.hotmoney && result.hotmoney.names) || []).map((r) => aggRow('席位', r.label, r.n, r.agg)),
+    ]);
+    body += note('「避坑」类席位为负向标签，其命中率不代表可跟随信号。');
+    body += '<p class="muted">本期为静态快照，无历史基线可比，不做趋势判断与权重调整建议。</p>';
   }
-
-  L.push('## 1. 按管道（引用 perf-weekly.json 聚合）');
-  L.push('');
-  L.push('| 管道 | 归档 | 交易日 | 样本 n | T+1 命中率 | T+3 命中率 | T+3 均值 |');
-  L.push('|---|---:|---:|---:|---|---|---|');
-  for (const [pipe, a] of Object.entries(result.pipelines)) {
-    L.push(`| ${esc(pipe)} | ${esc(a.archives)} | ${esc(a.tradingDays)} | ${esc(a.n)} | ${a.t1 ? pct(a.t1.rate) : '—'} | ${a.t3 ? pct(a.t3.rate3) : '—'} | ${a.t3 ? pct(a.t3.avg) : '—'} |`);
-  }
-  L.push('');
-
-  L.push('## 2. 按分项（尾盘正式档逐票重算，排除 -obs 重复计票）');
-  L.push('');
-  L.push('| 分层 | 桶 | n | T+1 命中 | T+3 命中 | 均值 |');
-  L.push('|---|---|---:|---|---|---|');
-  for (const [dim, rows] of Object.entries(result.dims || {})) {
-    for (const r of rows) L.push(aggRow(dim, r.label, r.n, r.agg));
-  }
-  L.push('');
-  L.push('> 分层为描述性统计，非因果结论；桶间样本量不同，不做显著性判断。');
-  L.push('');
-
-  L.push('## 3. 按游资（逐票重算；同一票可计入多个 tier/席位桶）');
-  L.push('');
-  L.push('| 维度 | 桶 | n | T+1 命中 | T+3 命中 | 均值 |');
-  L.push('|---|---|---:|---|---|---|');
-  for (const r of (result.hotmoney && result.hotmoney.tiers) || []) L.push(aggRow('tier', r.label, r.n, r.agg));
-  for (const r of (result.hotmoney && result.hotmoney.names) || []) L.push(aggRow('席位', r.label, r.n, r.agg));
-  L.push('');
-  L.push('> 「避坑」类席位为负向标签，其命中率不代表可跟随信号。');
-  L.push('');
-  L.push('_本期为静态快照，无历史基线可比，不做趋势判断与权重调整建议。_');
-  return L.join('\n') + '\n';
+  return page({
+    title: `胜率回归简报 · ${today}`,
+    subtitle: '管道 / 分项 / 游资三维度 · 纯只读，不推送、不调权重',
+    meta, body,
+    footer: '本报告由程序自动生成，仅用于观察评级，不构成任何投资建议。',
+  });
 }
 
 function run() {
@@ -273,8 +265,8 @@ function run() {
 
   const rdir = path.join(paths.home(), cfg.report.dir);
   fs.mkdirSync(rdir, { recursive: true });
-  const reportPath = path.join(rdir, `winrate-${today}.md`);
-  fs.writeFileSync(reportPath, renderMarkdown({ result, perf, today, windowDays: OPT.days }, cfg), 'utf8');
+  const reportPath = path.join(rdir, `winrate-${today}.html`);
+  fs.writeFileSync(reportPath, renderHTML({ result, perf, today, windowDays: OPT.days }, cfg), 'utf8');
 
   say(`[weekly_winrate] 已回填 ${result.sampleDays}/${cfg.minTradingDays} 个交易日 · 逐票 ${result.totalTickets} 条 · 归档 ${collected.archives.length} 份`);
   if (result.insufficient) say('[门禁] 样本不足 → 只报样本量，不输出胜率与回归结论');
@@ -293,7 +285,7 @@ function run() {
   return summary;
 }
 
-module.exports = { listArchives, collectRecords, scoreBand, analyze, renderMarkdown, run, OPT };
+module.exports = { listArchives, collectRecords, scoreBand, analyze, aggRow, renderHTML, run, OPT };
 
 if (require.main === module) {
   try { run(); }

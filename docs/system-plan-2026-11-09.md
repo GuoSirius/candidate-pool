@@ -74,7 +74,7 @@
 
 ### C2. 观察池回流 `eod/pool_reflow.js`（复杂度：中）✅ 已落地（保守形态）
 - 调度：**18:40**（nextday_backfill 之后），自动化 `650d6943` **PAUSED**（用户拍板，不自动跑）。
-- 已实现：回看最近 5 个有归档的交易日，四来源带标签收集 —— 尾盘正式 TopN 且 T+1 命中 / R01 触发 / 一线游资 / 盘前超预期；产出可审核的 Markdown diff 报告 `eod/reports/pool_reflow/`。
+- 已实现：回看最近 5 个有归档的交易日，四来源带标签收集 —— 尾盘正式 TopN 且 T+1 命中 / R01 触发 / 一线游资 / 盘前超预期；产出可审核的**单文件 HTML** diff 报告 `eod/reports/pool_reflow/`（2026-11-11 由 Markdown 统一为 HTML，随历史报告进 Cloudflare Pages 归档 + iframe 查看；旧 `.md` 存档等价转为同名 HTML，原件保留）。
 - **`meta` 扩展与安全契约**（用户拍板「不搞乱、搞错数据」）：
   - 默认 **dry-run**，`--apply` 才写；写前备份 + `assertNonDestructive()` 双重校验 + 写后回读再校验。
   - **只追加、不淘汰、不设上限**：代码内无删除路径，`wouldRemove` 恒为 0；初稿的「上限 60 只 / 5 日淘汰」**已废除**（现有 378 只手工池，直接应用会误删）。
@@ -97,7 +97,7 @@
 
 ### D2. 周六胜率回归简报（复杂度：低）✅ 已落地
 - 脚本 `eod/weekly_winrate.js`，自动化 `6b3d2cf6` **周六 10:00 / ACTIVE**（用户拍板）。
-- 读 `perf-weekly.json`（管道聚合）+ 四类归档逐票 verdicts，按 **管道 / 分项 / 游资** 三维度出 Markdown 简报 `eod/reports/weekly/`。
+- 读 `perf-weekly.json`（管道聚合）+ 四类归档逐票 verdicts，按 **管道 / 分项 / 游资** 三维度出**单文件 HTML** 简报 `eod/reports/weekly/`（2026-11-11 由 Markdown 统一为 HTML，与 pool_reflow 共用 `eod/lib/brief_report.js` 骨架）。
 - **硬门禁**：已回填交易日 < 20 时**只报样本量**，不输出任何命中率、均值、分层结论或调参建议（自测断言报告内不含 `%`）。
 - **不推送**（用户拍板）：不引入 `notify.js`、不发微信/邮件；纯只读，不调权重、不改归档/配置/观察池，脚本不自动 git。
 - 自测：`npm run weekly:selftest`（25 项，含样本不足降级、按交易日切片、表格列数一致）。

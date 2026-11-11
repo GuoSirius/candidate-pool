@@ -23,8 +23,8 @@
 | 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
 | 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
 | 次日回填 nextday_backfill（18:30） | `08b2baac-9293-4d2e-86a2-a2c1ab565d36` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=30` | 工作日 18:30 | ACTIVE | 四类归档 verdicts 段 + `eod/data/perf-weekly.json` + 最新报告重渲染 |
-| 观察池回流 pool_reflow（18:40） | `650d6943-9903-44f9-85be-c4e5c46cb066` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40` | 工作日 18:40 | **PAUSED** | `eod/reports/pool_reflow/pool_reflow-<日>.md`（dry-run diff，**不写**观察池） |
-| 周六胜率回归简报（10:00） | `6b3d2cf6-942c-44e9-86d8-9e39fbe3f5b5` | `FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0` | 周六 10:00 | ACTIVE | `eod/reports/weekly/winrate-<日>.md`（纯只读，不推送） |
+| 观察池回流 pool_reflow（18:40） | `650d6943-9903-44f9-85be-c4e5c46cb066` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40` | 工作日 18:40 | **PAUSED** | `eod/reports/pool_reflow/pool_reflow-<日>.html`（dry-run diff，**不写**观察池） |
+| 周六胜率回归简报（10:00） | `6b3d2cf6-942c-44e9-86d8-9e39fbe3f5b5` | `FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0` | 周六 10:00 | ACTIVE | `eod/reports/weekly/winrate-<日>.html`（纯只读，不推送） |
 | A股每日市场情绪日报（23:30） | `automation-1786325369523` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=23;BYMINUTE=30` | 工作日 23:30 | PAUSED | 仅对话输出；B2 联动 regime 未实现 |
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
@@ -449,7 +449,7 @@ git push
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40`（工作日 18:40）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：**PAUSED**
-- **产物**：`eod/reports/pool_reflow/pool_reflow-<日>.md`（可审核的 diff 报告）
+- **产物**：`eod/reports/pool_reflow/pool_reflow-<日>.html`（可审核的 diff 报告，2026-11-11 由 `.md` 统一为单文件 HTML）
 - **推送 / git**：无（不推送微信邮件、不自动 git，见「提交约定」例外 ④）
 - **自测**：`npm run pool:selftest`
 
@@ -458,12 +458,12 @@ git push
 ~~~text
 在 candidate-pool 仓库运行观察池回流的 dry-run，并汇报可审核的 diff。
 
-执行 `node eod/pool_reflow.js --days 5`，然后读取生成的 `eod/reports/pool_reflow/pool_reflow-<当日>.md`，用简洁中文汇报：回看交易日范围、四个来源（尾盘TopN·T+1命中 / R01触发 / 一线游资 / 盘前超预期）各自的状态与命中条数、拟新增只数、命中但已在池的只数、保持不动只数、删除只数（必须为 0）。拟新增票用表格列出代码 / 名称 / 来源 / 最近触发日；超过 20 只时只列前 20 只并说明总数。
+执行 `node eod/pool_reflow.js --days 5`，然后读取生成的 `eod/reports/pool_reflow/pool_reflow-<当日>.html`，用简洁中文汇报：回看交易日范围、四个来源（尾盘TopN·T+1命中 / R01触发 / 一线游资 / 盘前超预期）各自的状态与命中条数、拟新增只数、命中但已在池的只数、保持不动只数、删除只数（必须为 0）。拟新增票用表格列出代码 / 名称 / 来源 / 最近触发日；超过 20 只时只列前 20 只并说明总数。报告是单文件 HTML，读取时按纯文本提取表格内容即可，不要按 Markdown 语法解析。
 
 严格约束：
 - 默认 dry-run，**绝对不要加 --apply**，不要写 candidates.json，不要修改任何归档或配置。
 - 不要推送微信 / 邮件，不要执行 git commit / push，不要调整任何权重或阈值。
-- 报告生成后用 present_files 打开该 Markdown 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
+- 报告生成后用 present_files 打开该 HTML 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
 - 若命令非零退出，贴出 stderr 错误摘要，不要重试超过一次。
 ~~~
 
@@ -477,7 +477,7 @@ git push
 - **调度**：`FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0`（周六 10:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
-- **产物**：`eod/reports/weekly/winrate-<日>.md`（管道 / 分项 / 游资三维度）
+- **产物**：`eod/reports/weekly/winrate-<日>.html`（管道 / 分项 / 游资三维度，2026-11-11 由 `.md` 统一为单文件 HTML）
 - **推送 / git**：无（不推送通知、不自动 git，见「提交约定」例外 ④）
 - **自测**：`npm run weekly:selftest`
 
@@ -486,10 +486,10 @@ git push
 ~~~text
 在 candidate-pool 仓库生成周六胜率回归简报。
 
-执行 `node eod/weekly_winrate.js`，然后读取生成的 `eod/reports/weekly/winrate-<当日>.md`，向用户汇报：
+执行 `node eod/weekly_winrate.js`，然后读取生成的 `eod/reports/weekly/winrate-<当日>.html`，向用户汇报：
 - 先说明已回填交易日数与门禁（20 个交易日）。若脚本判定样本不足，只汇报各管道的样本量，并明确「本期不输出胜率与回归结论」，**不要自行补算任何命中率或结论**。
-- 样本达标时，按「管道 / 分项 / 游资」三个维度各用一段话概括关键数值，不展开全部表格。
-- 最后用 present_files 打开该 Markdown 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
+- 样本达标时，按「管道 / 分项 / 游资」三个维度各用一段话概括关键数值，不展开全部表格。报告是单文件 HTML，读取时按纯文本提取表格内容即可，不要按 Markdown 语法解析。
+- 最后用 present_files 打开该 HTML 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
 
 严格约束：
 - 纯只读：不要修改任何归档、配置、观察池；不要调整权重或阈值；不要推送微信 / 邮件；不要执行 git commit / push。
