@@ -1,0 +1,103 @@
+name: Backfill GitHub Releases
+
+# 补发「tag 已存在、但当年 CI 失败导致没建 Release」的历史版本。
+# 只补 GitHub Release 这一份变更记录：不重跑 npm publish、不改 tag、不动代码。
+#
+# 背景（2026-11-11）：v3.3.0 ~ v3.6.0 四次发版都被 verify:pack 体积红线拦下；
+# release.yml 的「建 Release」排在 npm publish 之后，publish 一失败整条 job 中断，
+# 于是这 4 个 tag 一直只有 tag、没有 Release。npm 上同样没有这些版本号
+# （线上从 3.2.0 直接跳到 3.6.1）。补发说明会显式标注「npm 上不存在该版本」，
+# 安装命令指向 latest，避免误导用户去装一个不存在的版本。
+#
+# 幂等：每个 tag 先 gh release view，已存在就跳过；重复运行零副作用。
+# Latest 标记：补发一律 --latest=false，末尾兜底把最高版本 tag 改回 Latest，防止版本倒挂。
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "要补发的 tag（空格分隔）"
+        required: false
+        default: "v3.3.0 v3.4.0 v3.5.0 v3.6.0"
+        type: string
+      dry_run:
+        description: "true = 只生成说明预览，不创建 Release"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+  # 首次加入本工作流时自动补一次；之后重复 push 由幂等判断挡住，不会重复创建。
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/backfill-releases.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backfill-releases
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # release-notes 要读全量 tag 与 CHANGELOG 历史
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: 补建缺失的 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAGS: ${{ inputs.tags || 'v3.3.0 v3.4.0 v3.5.0 v3.6.0' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+          created=0
+          for tag in $TAGS; do
+            echo "── $tag ──"
+            if ! git rev-parse --verify --quiet "${tag}^{commit}" >/dev/null; then
+              echo "::error::tag $tag 不存在，中止（不静默跳过，避免漏发）"
+              exit 1
+            fi
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "✔ $tag 已有 Release，跳过（幂等）"
+              continue
+            fi
+            node scripts/release-notes.mjs --tag "$tag" --unpublished --install --out notes.md
+            echo "· 说明预览（前 8 行）:"
+            head -8 notes.md
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "· dry-run：未创建 $tag"
+              continue
+            fi
+            gh release create "$tag" \
+              --title "$tag" \
+              --notes-file notes.md \
+              --verify-tag \
+              --latest=false
+            echo "✔ 已补建 $tag"
+            created=$((created + 1))
+          done
+          echo "本次新建 **$created** 个 Release" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 保证 Latest 指向最高版本
+        if: ${{ inputs.dry_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 补发的历史版本一律 --latest=false；这里兜底，避免 GitHub 自动 Latest 判定倒挂。
+          LATEST=$(git tag --sort=-version:refname | head -1)
+          if gh release view "$LATEST" >/dev/null 2>&1; then
+            gh release edit "$LATEST" --latest
+            echo "✔ $LATEST 已标记为 Latest"
+          else
+            echo "::warning::最高版本 tag $LATEST 没有对应 Release，本次不调整 Latest"
+          fi
