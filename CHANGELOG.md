@@ -2,6 +2,28 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.6.1
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.6.0...v3.6.1)
+
+### 🚀 新功能 (Features)
+
+- **web:** 归档页具体报告下拉支持输入过滤 ([12e9a1c](https://github.com/GuoSirius/candidate-pool/commit/12e9a1c))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- **pack:** 收窄 files 白名单，修复 v3.3.0 起发版被体积门禁拦截 ([18f8f49](https://github.com/GuoSirius/candidate-pool/commit/18f8f49))
+- **pack:** 打包体检升级为文件集合登记与分类体积可见 ([1d594b2](https://github.com/GuoSirius/candidate-pool/commit/1d594b2))
+- **pack:** 补齐 rules.js 与 pulse 入包，体检增加运行时依赖闭包 ([4e5c184](https://github.com/GuoSirius/candidate-pool/commit/4e5c184))
+
+### 📦 杂项维护 (Chores)
+
+- 盘中机会 2026-11-11 ([5cde050](https://github.com/GuoSirius/candidate-pool/commit/5cde050))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v3.6.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.5.0...v3.6.0)
