@@ -507,6 +507,11 @@ npm run release          # 类型门禁 → 选版本 → 写 CHANGELOG → 提�
 **发布不含部署**（`npm run deploy` 单独执行）：tag 不可回滚，而部署失败在其后，
 会留下「版本已发布、站点还是旧的」中间态。
 
+**打包体检口径**（2026-11-11 收窄）：`package.json` 的 `files` 是硬白名单，会绕过
+`.gitignore`，因此 `eod/data/` 下除 `industry-map.json` 种子外的**逐日运行数据一律不得入包**
+（历史归档 / 原始快照 / K 线缓存会随时间单调增长）。`verify:pack` 同时校验敏感文件、
+必需文件、git 跟踪的代码资产是否全部入包，以及 2MB 体积红线；任一不过即阻止 `npm publish`。
+
 **完整说明**（八阶段明细、三条硬规则、`release:notes` / `verify:pack`、版本号口径）
 见 **[docs/release/01-方案.md](docs/release/01-方案.md)**。
 
