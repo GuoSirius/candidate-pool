@@ -12,6 +12,14 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
+      workbox: {
+        // 历史归档 89MB 且每天增长：绝不能进 SW 预缓存，否则手机首次安装会被拖死。
+        // index.json 也不进预缓存（每次部署后必须能拿到最新清单）。
+        globIgnores: ['**/node_modules/**/*', '**/archive/**'],
+        // 归档里的 .html 是独立报告，不是 SPA 路由：若被 navigateFallback 兜回 index.html，
+        // iframe 会套出一层站点自身。显式让 /archive/** 直连网络。
+        navigateFallbackDenylist: [/^\/archive\//],
+      },
       manifest: {
         name: '次日候选池',
         short_name: '候选池',

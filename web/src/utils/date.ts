@@ -9,6 +9,12 @@ dayjs.extend(timezone);
 
 export const CN_TZ = 'Asia/Shanghai';
 
+/** ISO 时间串 → 北京时间展示（构建期归档清单的 generatedAt 等）。 */
+export function formatCN(iso: string, pattern = 'YYYY-MM-DD HH:mm'): string {
+  const d = dayjs(iso);
+  return d.isValid() ? d.tz(CN_TZ).format(pattern) : '—';
+}
+
 /** 今天（北京时区）的 YYYY-MM-DD。 */
 export function todayCN(): string {
   return dayjs().tz(CN_TZ).format('YYYY-MM-DD');

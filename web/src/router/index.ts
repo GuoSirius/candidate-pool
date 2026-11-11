@@ -10,6 +10,7 @@ import TailHistoryView from '../views/TailHistoryView.vue';
 import TailReviewView from '../views/TailReviewView.vue';
 import TailDiffView from '../views/TailDiffView.vue';
 import ReportsView from '../views/ReportsView.vue';
+import ArchiveReportsView from '../views/ArchiveReportsView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -24,6 +25,7 @@ const router = createRouter({
     { path: '/tail/review', name: 'tail-review', component: TailReviewView },
     { path: '/tail/diff', name: 'tail-diff', component: TailDiffView },
     { path: '/reports', name: 'reports', component: ReportsView, props: { kind: 'eod' } },
+    { path: '/reports/archive', name: 'archive-reports', component: ArchiveReportsView },
     { path: '/tail/reports', name: 'tail-reports', component: ReportsView, props: { kind: 'tail' } },
     { path: '/stock/:code', name: 'stock', component: StockView, props: true },
     { path: '/:pathMatch(.*)*', redirect: '/' },

@@ -153,6 +153,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | 推送 | `NOTIFY_WX_PROVIDER` / `NOTIFY_WX_KEY` / `NOTIFY_WX_TOKEN` | Server酱 / PushPlus 微信推送 |
 | 推送 | `NOTIFY_MAIL_SENDER` / `NOTIFY_MAIL_AUTH` / `NOTIFY_MAIL_RECEIVER` / `NOTIFY_MAIL_HOST` / `NOTIFY_MAIL_PORT` | 163 邮箱推送 |
 | 入库 | `CF_ACCOUNT_ID` / `CF_D1_DATABASE_ID` / `CF_API_TOKEN` | 每日自动同步 D1（未配则安全跳过） |
+| 发布 | `CF_PAGES_TOKEN`（推荐）/ `CF_ACCOUNT_ID` | 工作日自动部署 Pages，权限 `Account → Cloudflare Pages → Edit`；未配则回落 `CF_API_TOKEN`，详见 §5 |
 
 配完即为全自动（均为北京时间）：
 
@@ -161,6 +162,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | 工作日 14:20 → 14:30 | `tail-observe.yml` | 观察口径 `eod-<日>-obs.json`（静默，不推送） |
 | 工作日 14:40 → 14:50 | `tail-screen.yml` | 正式口径 `eod-<日>.json` + 微信/邮件 |
 | 工作日 15:30 | `daily-screen.yml` | 次日候选初筛 → 同步 D1 → 微信/邮件 |
+| **工作日 19:30（21:05 兜底）** | **`deploy-archive.yml`** | **构建期归档 + 前端一起发布到 Cloudflare Pages（幂等，详见 §5）** |
 | 每月 1 日 11:00 | `refresh-industry-map.yml` | 刷新行业映射并提交 `main` |
 
 产物提交 `daily-artifacts` 分支；D1 落库依赖分组「入库」的三个 `CF_*` Secrets，未配则安全跳过。完整拓扑见 [docs/ops/01-方案.md](./docs/ops/01-方案.md)。
@@ -211,7 +213,74 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 
 ---
 
-## 5. 相关文档
+## 5. 历史报告归档与自动部署（2026-11-11）
+
+### 为什么是「只在部署产物」归档
+
+`main` 上的报告比 `daily-artifacts` 分支更及时、更齐全，但 3 个产物 workflow 会把
+`reports/`、`data/`、`eod/reports/`、`eod/data/` **原样**同步到 `daily-artifacts` 部署 GitHub Pages。
+物理重组原目录会直接打断 Pages 旧直链，所以一行都不动：
+
+| 约束 | 落地方式 |
+|------|----------|
+| GitHub Pages 必须继续可用 | 原 4 个目录、3 个 workflow 全部不改；`/reports`、`/tail/reports` 仍指向 Pages |
+| Cloudflare 复用现有项目 | 同一个 `candidate-pool-web`，报告走同源 `/archive/...`，不新建项目、无跨域 |
+| 前端能枚举 | Cloudflare Pages 无目录列表 API → 构建期生成 `archive/index.json` 清单驱动 |
+
+### 归档链路
+
+| 阶段 | 文件 | 动作 |
+|------|------|------|
+| 构建期扫描 | `web/scripts/build-archive.mjs` | **只读**扫描 7 类报告 / 数据档，按类型复制到 `web/public/archive/`，写 `index.json`（含指纹 / 计数 / URL） |
+| 自动触发 | `web/package.json` | `dev` / `build` 前都先跑扫描；`public/archive/` 已 gitignore，约 90MB 不入库 |
+| 打包 | Vite | `public/` → `dist/archive/`，随 `npm run deploy` 同源发布 |
+| PWA 护栏 | `web/vite.config.ts` | `globIgnores: ['**/archive/**']` 不预缓存 90MB；`navigateFallbackDenylist` 防止报告 HTML 被 SPA 兜底套壳 |
+| 同源路由 | `web/public/_routes.json` | 只有 `/api/*`、`/health` 交 Functions，`/archive/**` 静态直出 |
+
+7 类：次日候选 / 尾盘选股 / 盘前选股 / 游资席位 / 形态选股 / 胜率周报 / 观察池回流。
+周报与回流自 2026-11-11 起统一为单文件 HTML（共用 `eod/lib/brief_report.js`），旧 `.md` 存档等价转成同名 HTML、原件保留。
+
+### 前端页面
+
+`/reports/archive`（导航「历史报告归档」）：读 `/archive/index.json` → **两个下拉框**（报告类型 / 该类型下具体 HTML）→ `iframe` 同源加载；
+选择写进 `?type=&file=` 便于分享，并显示同交易日的数据档链接。旧的两页报告查看器保持原样。
+
+### 自动部署（无需每天手动 `npm run deploy`）
+
+| 触发 | 时刻 / 条件 | 行为 |
+|------|-------------|------|
+| `schedule` 主触发 | **工作日北京时间 19:30**（`cron: "30 19 * * 1-5"` + `timezone: "Asia/Shanghai"`） | 构建 + 发布；排在 18:30 回填之后，当日报告已齐全 |
+| `schedule` 兜底 | 工作日 21:05 | 针对 GitHub schedule 排队延迟 / 漏跑，由幂等判断挡住重复部署 |
+| `push` | `main` 上 `web/**` 或本 workflow 变更 | 代码 / 页面 / 归档规则改动立即上线；报告数据提交等 19:30 统一发布，避免一天多次推 90MB |
+| `workflow_dispatch` | 手动，可选 `force=true` | 强制重新部署 |
+| 幂等 | 仅 `schedule` | 比对线上 `/archive/index.json` 的 `fingerprint` 与本地；一致则跳过，不一致才发布 |
+| 并发 | `concurrency` 按 workflow + ref 分组 | 定时与 push 撞车时取消旧实例 |
+
+> 时区是 `on.schedule[].timezone`（GitHub 官方支持 IANA 时区名），与 `daily-screen.yml` 同一套写法，不是默认 UTC。
+
+### Secrets（与非部署用的 `CF_*` 区分）
+
+| Secret | 权限 | 说明 |
+|--------|------|------|
+| `CF_PAGES_TOKEN` | `Account → Cloudflare Pages → Edit` | **推荐**：单独给定时部署用，权限最小化 |
+| `CF_API_TOKEN` | 原为 `Account → D1 → Edit` | 未配 `CF_PAGES_TOKEN` 时回落；**必须补上 Pages:Edit**，否则 `wrangler pages deploy` 会 403 |
+| `CF_ACCOUNT_ID` | — | 账户 ID，与入库共用 |
+
+workflow 把上述命名映射成 wrangler 要求的 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`。
+
+### 排查
+
+| 现象 | 原因 | 处理 |
+|------|------|------|
+| 归档页提示清单加载失败 | 本地没跑构建期扫描 | `cd web && node scripts/build-archive.mjs`（或 `npm run dev` 自动跑） |
+| 下拉框少了一类 / 少几天 | `build-archive.mjs` 的 `TYPES` 正则没覆盖新文件名 | 加类型映射后重跑，前端无需改动 |
+| 部署 403 / permission denied | 令牌缺 `Cloudflare Pages → Edit` | 配 `CF_PAGES_TOKEN` 或给 `CF_API_TOKEN` 补权限 |
+| iframe 里套出一层站点自身 | Service Worker 把 `/archive/*.html` 兜底成 `index.html` | 确认 `navigateFallbackDenylist: [/^\/archive\//]` 仍在 `vite.config.ts` |
+| 手机首次安装 PWA 极慢 | 归档进了预缓存 | 确认 `globIgnores: ['**/archive/**']`；`dist/sw.js` 的 precache 不应出现 archive |
+
+---
+
+## 6. 相关文档
 
 | 文档 | 内容 |
 |------|------|

@@ -1,0 +1,157 @@
+name: Deploy Web + Archive
+
+# 工作日北京时间 19:30 把 main 上的全量历史报告 + 前端一起发布到 Cloudflare Pages。
+# 用户不必每天手动 `npm run deploy`。
+#
+# 时间口径（已核对 GitHub 官方 workflow syntax）：
+#   on.schedule 默认 UTC，但支持逐条指定 IANA timezone；本文件两条都写
+#   `timezone: "Asia/Shanghai"`，cron 里直接写北京时间：
+#     - 19:30 主触发（收盘 + nextday_backfill 18:30 之后，报告已齐全）
+#     - 21:05 兜底触发：GitHub schedule 存在真实排队延迟 / 偶发漏跑，
+#       这一步由「幂等判断」挡住重复部署 —— 线上指纹一致就直接跳过。
+#   与 daily-screen.yml 的 `37 15 Asia/Shanghai` 是同一套写法。
+#
+# 数据来源：构建期 `web/scripts/build-archive.mjs` 只读扫描仓库原目录，
+# 生成 web/public/archive/（gitignore），Vite 复制进 dist/archive/ 同源发布。
+# 原 reports/ data/ eod/reports/ eod/data/ 一行不动，daily-artifacts 的
+# GitHub Pages 旧直链继续可用。
+on:
+  schedule:
+    - cron: "30 19 * * 1-5"
+      timezone: "Asia/Shanghai"
+    - cron: "05 21 * * 1-5"
+      timezone: "Asia/Shanghai"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "true = 忽略幂等判断，强制重新部署"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+  # 代码 / 页面 / 归档规则变更立即上线；报告与数据档的提交等 19:30 统一发布，
+  # 避免一天内多次推送 90MB 产物。
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/deploy-archive.yml"
+
+permissions:
+  contents: read
+
+# 同工作流串行：定时 + push 撞车时取消旧实例，只保留最新一次，避免并发上传同一 Pages 项目。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Shanghai
+      # wrangler 读这两个标准变量；仓库现有 Secrets 是 CF_* 命名（d1client 用），此处做映射。
+      # ⚠️ 现有 CF_API_TOKEN 按 DEPLOY.md 只申请了 `Account → D1 → Edit`，
+      #    而 `wrangler pages deploy` 还需要 `Account → Cloudflare Pages → Edit`。
+      #    优先用独立的 CF_PAGES_TOKEN（Recommended，权限最小化）；没配才回落到 CF_API_TOKEN。
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_PAGES_TOKEN || secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      PAGES_PROJECT: candidate-pool-web
+      PAGES_BRANCH: main
+    steps:
+      - name: Debug time info
+        run: |
+          echo "event      = $GITHUB_EVENT_NAME"
+          echo "schedule   = ${{ github.event.schedule || 'N/A（非 schedule 触发）' }}"
+          echo "UTC        = $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo "Asia/Shanghai = $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "sha        = ${{ github.sha }}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            worker/package-lock.json
+
+      - name: 安装依赖（web 构建 + worker 里的本地 wrangler）
+        run: |
+          npm ci --prefix web
+          npm ci --prefix worker
+
+      # 幂等判断要读归档指纹，先跑一次纯只读扫描（约 1 秒）；
+      # 真正构建由 `npm run deploy` 统一负责，不重复全量 build。
+      - name: 生成归档清单
+        working-directory: web
+        run: node scripts/build-archive.mjs
+
+      - name: 幂等判断（线上指纹一致则跳过）
+        id: guard
+        env:
+          FORCE_INPUT: ${{ inputs.force }}
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const out = process.env.GITHUB_OUTPUT;
+          const event = process.env.GITHUB_EVENT_NAME;
+          const force = process.env.FORCE_INPUT === 'true';
+          const project = process.env.PAGES_PROJECT || 'candidate-pool-web';
+          const local = JSON.parse(readFileSync('web/public/archive/index.json', 'utf8'));
+          const emit = (needed, reason) => {
+            console.log(`[guard] ${needed ? '需要部署' : '跳过部署'}：${reason}`);
+            appendFileSync(out, `needed=${needed}\n`);
+          };
+          // push / 手动触发是明确请求，永远部署；只有定时任务才做去重。
+          if (event !== 'schedule' || force) { emit(true, `event=${event} force=${force}`); }
+          else {
+            let live = null, err = '';
+            try {
+              const res = await fetch(`https://${project}.pages.dev/archive/index.json?ts=${Date.now()}`, {
+                signal: AbortSignal.timeout(20000),
+                headers: { 'cache-control': 'no-cache' },
+              });
+              if (res.ok) live = await res.json(); else err = `HTTP ${res.status}`;
+            } catch (e) { err = String(e?.message || e); }
+            const a = String(live?.fingerprint || '').slice(0, 12);
+            const b = String(local.fingerprint || '').slice(0, 12);
+            if (!live) emit(true, `线上清单不可读（${err || '空响应'}），按首次部署处理`);
+            else if (live.fingerprint === local.fingerprint) emit(false, `指纹一致 ${b}，本次已部署过`);
+            else emit(true, `指纹变化 ${a || '无'} → ${b}`);
+          }
+          NODE
+
+      - name: 凭据检查
+        if: steps.guard.outputs.needed == 'true'
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::缺少 CF_API_TOKEN / CF_ACCOUNT_ID Secrets，无法发布到 Cloudflare Pages"
+            exit 1
+          fi
+          echo "凭据已就绪（不打印明文）。若稍后部署报 403 / permission denied，"
+          echo "请给令牌补上 Account → Cloudflare Pages → Edit，或单独配置 CF_PAGES_TOKEN。"
+
+      # deploy.mjs：注入 VITE_API_BASE=''（同源 /api）→ build → wrangler pages deploy。
+      # 复用现有项目 candidate-pool-web / 分支 main，不新建 Pages 项目。
+      - name: 构建并发布到 Cloudflare Pages
+        if: steps.guard.outputs.needed == 'true'
+        working-directory: web
+        run: npm run deploy
+
+      - name: 汇总
+        if: always()
+        run: |
+          {
+            echo "## 归档发布结果"
+            echo "- 事件：\`$GITHUB_EVENT_NAME\` · SHA：\`${GITHUB_SHA:0:7}\`"
+            echo "- 归档：\`web/public/archive/index.json\`（报告 $(node -p "require('./web/public/archive/index.json').totalReports" 2>/dev/null || echo 0) 份 / 数据 $(node -p "require('./web/public/archive/index.json').totalData" 2>/dev/null || echo 0) 份）"
+            echo "- 部署：**${{ steps.guard.outputs.needed == 'true' && '已执行' || '幂等跳过（线上指纹一致）' }}**"
+            echo "- 页面：https://${PAGES_PROJECT}.pages.dev/reports/archive"
+          } >> "$GITHUB_STEP_SUMMARY"

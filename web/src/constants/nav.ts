@@ -45,6 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'stocks', label: '全部标的', tabLabel: '标的', to: '/stocks', icon: 'grid', inTabbar: true },
       { key: 'stats', label: '复盘统计', tabLabel: '统计', to: '/stats', icon: 'chart', inTabbar: true },
       { key: 'reports', label: '报告查看', to: '/reports', icon: 'doc' },
+      { key: 'archive-reports', label: '历史报告归档', to: '/reports/archive', icon: 'history' },
     ],
   },
   {

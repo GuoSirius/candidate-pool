@@ -161,6 +161,9 @@ npm run weekly:winrate     # 管道 / 分项 / 游资三维度；<20 交易日�
 ```
 
 > 两项自测 `npm run pool:selftest` / `npm run weekly:selftest` 已挂进 `npm run selftest` 全量门禁。
+> **报告形态（2026-11-11 统一）**：两份简报与其它历史报告一样输出**单文件 HTML**（`pool_reflow-<日>.html` / `winrate-<日>.html`），
+> 共用 `eod/lib/brief_report.js` 的内联样式与 HTML 转义，随构建期归档进 Cloudflare Pages 用 iframe 查看；
+> 2026-11-09 的历史 `.md` 已等价转为同名 HTML（数值未重算、原件保留），此后不再产生 `.md` 简报。
 
 种子清单维护在 `build_universe.js` 顶部的 `SEED`，**只需要写「6 位代码 + 申万一级行业」**，其余全部由接口回填与校验：
 
@@ -354,6 +357,24 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 - 邮箱：163 `SMTP_SSL`（smtp.163.com:465），HTML 报告作为附件发送；`notify.js` 用 Node 内置 `tls` 实现，**无需 nodemailer**。
 - 自检：`npm run notify` 会打印「微信/邮箱是否已配置」。
 - 未配置任何渠道时优雅跳过，不影响报告生成。
+
+---
+
+## 历史报告归档与自动部署
+
+主分支上的报告比 `daily-artifacts` 分支更及时齐全，但后者的 GitHub Pages 旧直链要继续可用 ——
+因此**不动原目录**，只在构建期把报告/数据档只读扫描成 `web/public/archive/`，随前端同源发布到 Cloudflare Pages。
+
+| 项 | 落点 / 口径 |
+|----|-------------|
+| 归档脚本 | `web/scripts/build-archive.mjs` → `public/archive/{reports,data}/<类型>/` + `index.json` 清单（Pages 无目录列表 API，前端靠清单枚举） |
+| 覆盖范围 | 次日候选 / 尾盘选股 / 盘前选股 / 游资席位 / 形态选股 / **胜率周报 / 观察池回流**（后两类 2026-11-11 起统一为单文件 HTML） |
+| 查看页面 | `/reports/archive`：报告类型 + 具体 HTML 两个下拉框 → iframe 同源预览；`/reports`、`/tail/reports` 仍指向 GitHub Pages 不变 |
+| 自动部署 | `deploy-archive.yml`：**工作日北京时间 19:30**（21:05 兜底），`web/**` push 到 `main` 立即发布；用归档 `fingerprint` 幂等去重，**不需要每天手动 `npm run deploy`** |
+| PWA 护栏 | 90MB 归档不进 SW 预缓存，且 `/archive/**` 不走 SPA `navigateFallback` |
+
+> 完整链路、Secrets 权限（`CF_PAGES_TOKEN` 需 `Cloudflare Pages → Edit`）与排查见 [`DEPLOY.md`](DEPLOY.md) §5；
+> 前端硬约定见 [`docs/web/01-方案.md`](docs/web/01-方案.md)。
 
 ---
 

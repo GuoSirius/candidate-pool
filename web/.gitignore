@@ -1,5 +1,7 @@
 node_modules*
 dist
+# 构建期生成的历史归档（约 89MB，随 public/ 进 dist，不入库）
+public/archive/
 .vite
 *.local
 .DS_Store
