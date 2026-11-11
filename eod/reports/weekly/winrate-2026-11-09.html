@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>胜率回归简报 · 2026-11-09</title><style>
+:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--line:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--warn:#d29922;--stripe:#141a21}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1040px;margin:0 auto;padding:28px 20px 56px}
+header{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:20px}
+h1{font-size:22px;margin:0 0 6px}
+h2{font-size:16px;margin:26px 0 12px;padding-left:10px;border-left:3px solid var(--accent)}
+.sub,.muted,footer{color:var(--muted);font-size:13px}
+.meta{list-style:none;padding:12px 16px;margin:0 0 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:13px}
+.meta li{padding:2px 0;color:var(--muted)}
+.meta b{color:var(--fg)}
+.tw{overflow-x:auto;margin:10px 0 4px;-webkit-overflow-scrolling:touch}
+.tw.scroll{max-height:460px;overflow:auto}
+table{border-collapse:separate;border-spacing:0;font-size:13px}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;white-space:nowrap}
+th:first-child,td:first-child{border-left:1px solid var(--line)}
+th{border-top:1px solid var(--line);background:var(--panel);color:var(--muted);font-weight:600}
+td{background:var(--bg)}
+tr:nth-child(even) td{background:var(--stripe)}
+th:first-child,td:first-child{position:sticky;left:0}
+th:first-child{z-index:5;box-shadow:1px 0 0 var(--line)}
+td:first-child{z-index:2;box-shadow:1px 0 0 var(--line)}
+td.empty{position:static;box-shadow:none;color:var(--muted);text-align:center}
+.tw.scroll thead th{position:sticky;top:0;z-index:4}
+.tw.scroll thead th:first-child{z-index:6}
+/* 双列冻结（票表：代码 + 名称）。首列定宽，第二列偏移复用同一个 --s1，避免两处写死数字漂移。
+   这类表的首列都是 6 位代码带 2 位前缀，88px 足够；纯 CSS，仍不引入 JS 测列宽。 */
+.tw.freeze2{--s1:88px}
+.tw.freeze2 th:nth-child(1),.tw.freeze2 td:nth-child(1){width:var(--s1);min-width:var(--s1);max-width:var(--s1);overflow:hidden;text-overflow:ellipsis}
+.tw.freeze2 th:first-child,.tw.freeze2 td:first-child{box-shadow:none}
+.tw.freeze2 th:nth-child(2),.tw.freeze2 td:nth-child(2){position:sticky;left:var(--s1)}
+.tw.freeze2 td:nth-child(2){z-index:2;box-shadow:1px 0 0 var(--line)}
+.tw.freeze2 th:nth-child(2){z-index:5}
+.tw.scroll.freeze2 thead th:nth-child(2){z-index:6}
+.tw.freeze2 td.empty{position:static;width:auto;min-width:0;max-width:none;overflow:visible;text-overflow:clip;box-shadow:none}
+.note{background:var(--panel);border-left:3px solid var(--warn);padding:10px 14px;border-radius:8px;margin:14px 0;color:var(--muted);font-size:13px}
+code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:12px}
+footer{margin-top:28px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:700px){main{padding:16px 12px 40px}h1{font-size:19px}.meta li{word-break:break-all}th,td{padding:6px 8px;font-size:12px}.tw.scroll{max-height:320px}}
+</style></head>
+<body><main>
+<header><h1>胜率回归简报 · 2026-11-09</h1><p class="sub">管道 / 分项 / 游资三维度 · 纯只读，不推送、不调权重</p></header>
+<ul class="meta"><li>数据：<code>eod/data/perf-weekly.json</code>（聚合，生成于 2026-11-09 16:37:46，窗口 40 天）+ 四类归档逐票 verdicts（窗口 60 天）</li><li>已回填交易日：<b>33</b> 天 / 门禁 20 天 · 逐票样本 <b>1760</b> 条</li><li>分桶最小样本：20 条 · 不推送 · 不自动调权重 · 不修改任何归档</li></ul>
+<div class="note"><b>历史存档版式转换</b>：本报告由 2026-11-09 的 Markdown 原始存档等价转换，数据口径与数值未重新计算、未作任何修改。原始 <code>.md</code> 文件仍保留在仓库中。</div><h2>1. 按管道（引用 perf-weekly.json 聚合）</h2><div class="tw"><table><thead><tr><th>管道</th><th>归档</th><th>交易日</th><th>样本 n</th><th>T+1 命中率</th><th>T+3 命中率</th><th>T+3 均值</th></tr></thead><tbody><tr><td>tail</td><td>62</td><td>31</td><td>1202</td><td>23.5%</td><td>25%</td><td>-0.79%</td></tr><tr><td>preopen</td><td>12</td><td>12</td><td>202</td><td>31.7%</td><td>30.3%</td><td>-3.65%</td></tr><tr><td>nextday</td><td>40</td><td>40</td><td>34</td><td>35.3%</td><td>50%</td><td>2.65%</td></tr><tr><td>hotmoney</td><td>10</td><td>10</td><td>322</td><td>37.9%</td><td>38.3%</td><td>0.06%</td></tr></tbody></table></div><h2>2. 按分项（尾盘正式档逐票重算，排除 -obs 重复计票）</h2><div class="tw"><table><thead><tr><th>分层</th><th>桶</th><th>n</th><th>T+1 命中</th><th>T+3 命中</th><th>均值</th></tr></thead><tbody><tr><td>总分档</td><td>&lt;60</td><td>330</td><td>14.5%（n=330）</td><td>19.6%（n=317）</td><td>-1.69%</td></tr><tr><td>总分档</td><td>60–80</td><td>258</td><td>22.9%（n=258）</td><td>23.7%（n=253）</td><td>-1.48%</td></tr><tr><td>总分档</td><td>≥80</td><td>18</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>组内排名</td><td>组内第1</td><td>316</td><td>18%（n=316）</td><td>19.9%（n=301）</td><td>-2.27%</td></tr><tr><td>组内排名</td><td>非组内第1</td><td>290</td><td>19%（n=290）</td><td>22.6%（n=287）</td><td>-0.95%</td></tr><tr><td>板块</td><td>main</td><td>273</td><td>16.5%（n=273）</td><td>19.7%（n=264）</td><td>-1.96%</td></tr><tr><td>板块</td><td>gem</td><td>250</td><td>20.8%（n=250）</td><td>22.8%（n=241）</td><td>-1.3%</td></tr><tr><td>板块</td><td>star</td><td>83</td><td>18.1%（n=83）</td><td>21.7%（n=83）</td><td>-1.51%</td></tr></tbody></table></div><div class="note">分层为描述性统计，非因果结论；桶间样本量不同，不做显著性判断。</div><h2>3. 按游资（逐票重算；同一票可计入多个 tier/席位桶）</h2><div class="tw"><table><thead><tr><th>维度</th><th>桶</th><th>n</th><th>T+1 命中</th><th>T+3 命中</th><th>均值</th></tr></thead><tbody><tr><td>tier</td><td>避坑</td><td>180</td><td>34.4%（n=180）</td><td>41%（n=122）</td><td>-0.46%</td></tr><tr><td>tier</td><td>一线</td><td>143</td><td>42%（n=143）</td><td>36.1%（n=108）</td><td>0.8%</td></tr><tr><td>tier</td><td>二线</td><td>19</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>席位</td><td>拉萨散户</td><td>180</td><td>34.4%（n=180）</td><td>41%（n=122）</td><td>-0.46%</td></tr><tr><td>席位</td><td>章盟主</td><td>57</td><td>35.1%（n=57）</td><td>42.5%（n=40）</td><td>0.5%</td></tr><tr><td>席位</td><td>孙哥</td><td>56</td><td>50%（n=56）</td><td>31.8%（n=44）</td><td>1.59%</td></tr><tr><td>席位</td><td>作手新一</td><td>16</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>席位</td><td>炒股养家</td><td>7</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>席位</td><td>桑田路</td><td>7</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>席位</td><td>方新侠</td><td>7</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>席位</td><td>量化打板</td><td>4</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>席位</td><td>赵老哥</td><td>4</td><td>样本不足</td><td>—</td><td>—</td></tr><tr><td>席位</td><td>深南帮</td><td>4</td><td>样本不足</td><td>—</td><td>—</td></tr></tbody></table></div><div class="note">「避坑」类席位为负向标签，其命中率不代表可跟随信号。</div><p class="muted">本期为静态快照，无历史基线可比，不做趋势判断与权重调整建议。</p>
+<footer>本报告由程序自动生成，仅用于观察评级，不构成任何投资建议。</footer>
+</main></body></html>

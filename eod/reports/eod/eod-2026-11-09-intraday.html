@@ -27,7 +27,7 @@
 </div>
 <div class="callout">
 <h3><span data-zh="近10日入选票命中率（回填验证）" data-en="10-Day Hit Rate (backfilled verdicts)">近10日入选票命中率（回填验证）</span></h3>
-<ul><li><span data-zh="已回填 286 票 · T+1：命中 107/286（37.4%），平均收益 0.68%；T+3：命中 75/251（29.9%），平均收益 0.49%，期间最高平均 5.32%。口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。" data-en="286 backfilled picks · T+1 hit 37.4% (avg 0.68%); T+3 hit 29.9% (avg 0.49%, max 5.32%). Basis: buy at tail price, sell at T+1/T+3 close.">已回填 286 票 · T+1：命中 107/286（37.4%），平均收益 0.68%；T+3：命中 75/251（29.9%），平均收益 0.49%，期间最高平均 5.32%。口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。</span></li></ul>
+<ul><li><span data-zh="已回填 292 票 · T+1：命中 105/292（36%），平均收益 0.61%；T+3：命中 77/279（27.6%），平均收益 0.35%，期间最高平均 4.89%。口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。" data-en="292 backfilled picks · T+1 hit 36% (avg 0.61%); T+3 hit 27.6% (avg 0.35%, max 4.89%). Basis: buy at tail price, sell at T+1/T+3 close.">已回填 292 票 · T+1：命中 105/292（36%），平均收益 0.61%；T+3：命中 77/279（27.6%），平均收益 0.35%，期间最高平均 4.89%。口径：尾盘价买入、T+1/T+3 收盘卖出（阈值 ±2%）。</span></li></ul>
 </div>
 <div class="callout">
 <h3><span data-zh="核心结论（先行）" data-en="Key Conclusions (Up Front)">核心结论（先行）</span></h3>
@@ -110,9 +110,11 @@ if (top3) {
 var g = parseInt(tr.getAttribute('data-grank'), 10);
 return g >= 1 && g <= 3;
 }
-if (candFilter === '@boards') return tr.hasAttribute('data-boards');
+if (candFilter === '@streak') return (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
+if (candFilter === '@boards10') return tr.hasAttribute('data-hasboard');
 if (candFilter === '@billboard') return tr.hasAttribute('data-billboard');
 if (candFilter === '@hotmoney') return tr.getAttribute('data-hot') === '1';
+if (candFilter.indexOf('@hm:') === 0) return (tr.getAttribute('data-hm') || '').split('|').indexOf(candFilter.slice(4)) >= 0;
 if (candFilter.indexOf('@htier:') === 0) return (tr.getAttribute('data-hm-tier') || '').split('|').indexOf(candFilter.replace('@htier:', '')) >= 0;
 return !candFilter || tr.getAttribute('data-sector') === candFilter;
 }
@@ -124,7 +126,7 @@ if (want(tr)) { frag.appendChild(tr); shown.push(tr); }
 } else {
 sepOrder.forEach(function (sep) {
 var sec = sep.getAttribute('data-sep');
-// @ 前缀为伪过滤（@best/@top3/@boards/@billboard/@hotmoney/@htier:），交由 want() 判行，不参与行业组筛选
+// @ 前缀为伪过滤（@best/@top3/@streak/@billboard/@hotmoney/@htier:/@hm:），交由 want() 判行，不参与行业组筛选
 if (!bestOnly && !top3 && candFilter && candFilter.charAt(0) !== '@' && sec !== candFilter) return;
 // 先收集该组本次要显示的行：空组（如组内第一被 maxRows 截断）不渲染分隔行
 var groupRows = [];
