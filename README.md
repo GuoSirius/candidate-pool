@@ -509,8 +509,10 @@ npm run release          # 类型门禁 → 选版本 → 写 CHANGELOG → 提�
 
 **打包体检口径**（2026-11-11 收窄）：`package.json` 的 `files` 是硬白名单，会绕过
 `.gitignore`，因此 `eod/data/` 下除 `industry-map.json` 种子外的**逐日运行数据一律不得入包**
-（历史归档 / 原始快照 / K 线缓存会随时间单调增长）。`verify:pack` 同时校验敏感文件、
-必需文件、git 跟踪的代码资产是否全部入包，以及 2MB 体积红线；任一不过即阻止 `npm publish`。
+（历史归档 / 原始快照 / K 线缓存会随时间单调增长）。`verify:pack` 逐文件校验「文件集合登记」、
+敏感文件、必需文件、git 跟踪的代码资产覆盖，以及 2MB 体积 / 512KB 单文件上限；
+每次都打印分类体积构成与红线余量，任一不过即阻止 `npm publish`。
+逐日数据再怎么增长都不会撑大 npm 包；详见 [docs/release/01-方案.md](docs/release/01-方案.md) §5.2。
 
 **完整说明**（八阶段明细、三条硬规则、`release:notes` / `verify:pack`、版本号口径）
 见 **[docs/release/01-方案.md](docs/release/01-方案.md)**。

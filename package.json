@@ -26,8 +26,7 @@
     "db/*.js",
     "db/*.sql",
     "db/.env.example",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "repository": {
     "type": "git",
