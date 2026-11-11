@@ -119,6 +119,7 @@ check('含手机端首列固定 + 长表表头固定 CSS',
 check('固定列背景为实色（防横向滚动透字）',
   html3.includes('--stripe:#141a21') && html3.includes('td{background:var(--bg)}'));
 check('短表不制造双层滚动', !html22.includes('class="tw scroll"'));
+check('周报不做双列冻结（票表专属）', !/class="[^"]*freeze2/.test(html22));
 check('每张表所有行列数与表头一致', tables.every((t) => t.th > 0 && t.widths.every((w) => w === t.th)),
   JSON.stringify(tables.map((t) => [t.th, ...new Set(t.widths)])));
 check('分项 / 游资表均为 6 列', tables.some((t) => t.head.includes('分层') && t.th === 6)

@@ -162,8 +162,9 @@ npm run weekly:winrate     # 管道 / 分项 / 游资三维度；<20 交易日�
 
 > 两项自测 `npm run pool:selftest` / `npm run weekly:selftest` 已挂进 `npm run selftest` 全量门禁。
 > **报告形态（2026-11-11 统一）**：两份简报与其它历史报告一样输出**单文件 HTML**（`pool_reflow-<日>.html` / `winrate-<日>.html`），
-> 共用 `eod/lib/brief_report.js` 的内联样式与 HTML 转义（自带 viewport、手机端横向滚动时首列固定、≥20 行长表表头 sticky），随构建期归档进 Cloudflare Pages 用 iframe 查看；
+> 共用 `eod/lib/brief_report.js` 的内联样式与 HTML 转义（自带 viewport、手机端横向滚动时固定首列、票表「代码 + 名称」双列固定、≥20 行长表表头 sticky），随构建期归档进 Cloudflare Pages 用 iframe 查看；
 > 2026-11-09 的历史 `.md` 已等价转为同名 HTML（数值未重算、原件保留），此后不再产生 `.md` 简报。
+> 改动共享样式后必须跑 `npm run report:history-briefs` 重建历史存档；`npm run selftest` 已用 `--check` 钉死「历史版式不得落后于当前骨架」。
 
 种子清单维护在 `build_universe.js` 顶部的 `SEED`，**只需要写「6 位代码 + 申万一级行业」**，其余全部由接口回填与校验：
 

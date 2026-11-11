@@ -164,7 +164,7 @@ watch(selectedUrl, syncQuery);
         <iframe :src="current.url" :title="current.label" class="frame" loading="lazy"></iframe>
       </div>
       <p v-else class="hint">该类型下暂无报告。</p>
-      <p v-if="current" class="frame-hint">报告为单文件 HTML、资源全内联；表格可左右滑动且首列固定，长表表头常驻。若内嵌区域空白，可点右上「新窗口打开」。</p>
+      <p v-if="current" class="frame-hint">报告为单文件 HTML、资源全内联；表格可左右滑动，票表「代码 + 名称」两列固定、其余表首列固定，长表表头常驻。若内嵌区域空白，可点右上「新窗口打开」。</p>
     </template>
 
     <p class="foot-note">

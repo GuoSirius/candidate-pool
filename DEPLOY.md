@@ -239,6 +239,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 
 7 类：次日候选 / 尾盘选股 / 盘前选股 / 游资席位 / 形态选股 / 胜率周报 / 观察池回流。
 周报与回流自 2026-11-11 起统一为单文件 HTML（共用 `eod/lib/brief_report.js`），旧 `.md` 存档等价转成同名 HTML、原件保留。
+改共享样式后执行 `npm run report:history-briefs` 重建两份历史存档（只换版式、不重算数值）；`npm run selftest` 内的 `--check` 会在版式落后时直接失败。
 
 ### 前端页面
 

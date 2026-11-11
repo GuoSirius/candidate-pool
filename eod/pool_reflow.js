@@ -316,11 +316,11 @@ function renderHTML(ctx) {
 
   body += `<h2>拟新增（${diff.toAdd.length} 只）</h2>`;
   body += table(['代码', '名称', '行业', '来源', '最近触发'],
-    diff.toAdd.map((s) => [s.code, s.name, s.sector, srcNames(s), s.lastTrigger]));
+    diff.toAdd.map((s) => [s.code, s.name, s.sector, srcNames(s), s.lastTrigger]), { freeze: 2 });
 
   body += `<h2>命中但已在池（${diff.toTagExisting.length} 只，零改动）</h2>`;
   body += table(['代码', '名称', '来源', '最近触发'],
-    diff.toTagExisting.map((s) => [s.code, s.name, srcNames(s), s.lastTrigger]));
+    diff.toTagExisting.map((s) => [s.code, s.name, srcNames(s), s.lastTrigger]), { freeze: 2 });
   body += note(`本报告由 <code>eod/pool_reflow.js</code> 生成；存量 ${diff.totalBefore} 只手工观察池在任何模式下都不被删除、不被改名、不被改写。`);
 
   return page({

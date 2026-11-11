@@ -12,7 +12,8 @@
  *
  * 表格可读性（2026-11-11 补充，手机端优先）：
  *   1. 首列是身份列（代码 / 管道 / 分层 / 项），手机端横向滚动时必须固定；
- *      这类列都是短文本，故只用纯 CSS left:0，不引入其它报告那套 JS 实测列宽。
+ *      票表的完整身份是「代码 + 名称」两列，用 table(..., { freeze: 2 }) 双列冻结。
+ *      这类列都是短文本定宽，故只用纯 CSS + --s1 常量，不引入其它报告那套 JS 实测列宽。
  *   2. 长表（>= SCROLL_MIN_ROWS 行，如回流「拟新增」85~91 行）额外加容器内
  *      纵向滚动 + 表头 sticky；短表保持页面自然流，不制造双层滚动。
  *   3. ⚠️ 单有 overflow-x:auto 会让 .tw 成为 sticky 的滚动容器，但容器高度自适应
@@ -54,6 +55,16 @@ td:first-child{z-index:2;box-shadow:1px 0 0 var(--line)}
 td.empty{position:static;box-shadow:none;color:var(--muted);text-align:center}
 .tw.scroll thead th{position:sticky;top:0;z-index:4}
 .tw.scroll thead th:first-child{z-index:6}
+/* 双列冻结（票表：代码 + 名称）。首列定宽，第二列偏移复用同一个 --s1，避免两处写死数字漂移。
+   这类表的首列都是 6 位代码带 2 位前缀，88px 足够；纯 CSS，仍不引入 JS 测列宽。 */
+.tw.freeze2{--s1:88px}
+.tw.freeze2 th:nth-child(1),.tw.freeze2 td:nth-child(1){width:var(--s1);min-width:var(--s1);max-width:var(--s1);overflow:hidden;text-overflow:ellipsis}
+.tw.freeze2 th:first-child,.tw.freeze2 td:first-child{box-shadow:none}
+.tw.freeze2 th:nth-child(2),.tw.freeze2 td:nth-child(2){position:sticky;left:var(--s1)}
+.tw.freeze2 td:nth-child(2){z-index:2;box-shadow:1px 0 0 var(--line)}
+.tw.freeze2 th:nth-child(2){z-index:5}
+.tw.scroll.freeze2 thead th:nth-child(2){z-index:6}
+.tw.freeze2 td.empty{position:static;width:auto;min-width:0;max-width:none;overflow:visible;text-overflow:clip;box-shadow:none}
 .note{background:var(--panel);border-left:3px solid var(--warn);padding:10px 14px;border-radius:8px;margin:14px 0;color:var(--muted);font-size:13px}
 code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:12px}
 footer{margin-top:28px;border-top:1px solid var(--line);padding-top:12px}
@@ -63,9 +74,16 @@ footer{margin-top:28px;border-top:1px solid var(--line);padding-top:12px}
 /** 行数阈值：短表保持页面自然流，长表才启用容器内滚动 + 表头固定 */
 const SCROLL_MIN_ROWS = 20;
 
-/** 表格：单元格一律 HTML 转义，调用方传原始值即可 */
-function table(headers, rows) {
-  const cls = rows.length >= SCROLL_MIN_ROWS ? 'tw scroll' : 'tw';
+/**
+ * 表格：单元格一律 HTML 转义，调用方传原始值即可。
+ * @param {object} [opts] freeze: 2 = 冻结前两列（票表「代码 + 名称」）；省略 = 只冻结首列。
+ */
+function table(headers, rows, opts = {}) {
+  const cls = [
+    'tw',
+    rows.length >= SCROLL_MIN_ROWS ? 'scroll' : '',
+    Number(opts.freeze) >= 2 ? 'freeze2' : '',
+  ].filter(Boolean).join(' ');
   const th = headers.map((h) => `<th>${esc(h)}</th>`).join('');
   const tr = rows.length
     ? rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')

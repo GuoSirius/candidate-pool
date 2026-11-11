@@ -138,7 +138,15 @@ const trs = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((m) => m[1]).filter(
   });
 check('表格结构存在且无列错位', ths.length >= 4 && trs.every((n) => ths.includes(n)), JSON.stringify({ ths, trs }));
 check('首列固定（手机端横向滚动不丢代码）', html.includes('th:first-child,td:first-child{position:sticky;left:0}'));
+check('拟新增 / 命中存量两张票表都冻结「代码 + 名称」',
+  (html.match(/class="[^"]*freeze2/g) || []).length === 2
+  && html.includes('.tw.freeze2 th:nth-child(2),.tw.freeze2 td:nth-child(2){position:sticky;left:var(--s1)}'));
+check('第二列偏移量与首列宽度共用 --s1（不写死两处数字）',
+  html.includes('--s1:88px') && html.includes('width:var(--s1)'));
 const B = require('./lib/brief_report');
+check('freeze 参数：显式传 2 才双列冻结',
+  B.table(['代码', '名称'], [['sh600001', '甲']], { freeze: 2 }).includes('freeze2')
+  && !B.table(['代码', '名称'], [['sh600001', '甲']]).includes('freeze2'));
 const row = () => ['x'];
 check('滚动阈值：19 行自然流 / 20 行滚动',
   !B.table(['a'], Array.from({ length: 19 }, row)).includes('class="tw scroll"')
