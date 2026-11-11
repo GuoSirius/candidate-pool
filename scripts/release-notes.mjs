@@ -21,6 +21,8 @@
  *   node scripts/release-notes.mjs                      # 取 HEAD 上的精确 tag，打到 stdout
  *   node scripts/release-notes.mjs --tag v1.2.0 --prev v1.1.0   # 手工指定上一版
  *   node scripts/release-notes.mjs --tag v1.2.0 --source git    # 强制走 git，便于比对
+ *   node scripts/release-notes.mjs --tag v3.3.0 --unpublished --install
+ *       # 补发历史 Release：该版本当年 CI 失败、npm 上不存在此版本号
  *
  * 退出码：0 正常；1 参数 / git 出错（CI 里应直接失败，避免发出没有说明的 Release）。
  * ---------------------------------------------------------------------------
@@ -42,6 +44,8 @@ const OPT = {
   repo: arg('--repo'),
   source: arg('--source'), // changelog | git
   install: argv.includes('--install'),
+  /** 补发历史 Release：加警示并把安装命令指向 latest（该版本号 npm 上不存在） */
+  unpublished: argv.includes('--unpublished'),
 };
 
 // ---------- git ----------
@@ -203,15 +207,27 @@ function build() {
   }
   const total = commits.length;
 
-  const L = [body, '', '---', ''];
+  const L = [];
+  // 补发历史 Release：那些 tag 当年 CI 没跑通，npm 上根本没有对应版本号。
+  // 不写这段警示的话，说明里的 `npx candidate-pool@3.3.0` 会让人以为装得上。
+  if (OPT.unpublished) {
+    L.push(
+      '> ⚠️ **补发说明（Backfilled Release）**：本版本当年的自动发布流水线未通过，',
+      '> npm registry 上**不存在**此版本号。此 Release 仅用于补齐版本变更记录，',
+      '> 请勿按本版本号安装；请使用 npm 上的最新版本。',
+      '',
+    );
+  }
+  L.push(body, '', '---', '');
   if (prev && repo) L.push(`**完整变更**：[${prev}...${tag}](${repo}/compare/${prev}...${tag}) ｜ 共 **${total}** 个提交`);
   else if (prev) L.push(`**完整变更**：${prev}...${tag} ｜ 共 **${total}** 个提交`);
   else L.push(`**首次发布**：包含全部 **${total}** 个提交`);
 
   if (OPT.install) {
+    const spec = OPT.unpublished ? 'latest' : version;
     L.push('', '### 安装 / 运行', '', '```bash',
-      `npx candidate-pool@${version} --help        # 次日候选池初筛`,
-      `npx tail-screener@${version} --help         # 尾盘选股（14:50 口径）`,
+      `npx candidate-pool@${spec} --help        # 次日候选池初筛`,
+      `npx tail-screener@${spec} --help         # 尾盘选股（14:50 口径）`,
       '```');
   }
   if (repo) L.push('', `**CHANGELOG**：[完整变更日志](${repo}/blob/main/CHANGELOG.md)`);

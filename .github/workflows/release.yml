@@ -3,11 +3,12 @@ name: Publish to npm and GitHub Release
 # 发布链路（本机**不执行** npm publish，与 yyds / change-image-suffix / uuid-nanoid 一致）：
 #   本机 npm run release  →  bump 版本 + 写 CHANGELOG + 提交 + 打 tag + push + 部署
 #        ↓  tag 推送触发本工作流
-#   GitHub Actions        →  校验版本 → 自测 → 打包体检 → npm publish → 建 GitHub Release
+#   GitHub Actions        →  校验版本 → 类型门禁 → 自测 → 打包体检 → npm publish → 建 GitHub Release
 #
 # 为什么 publish 放 CI 而不是本机：
 #   1) 本机不必持有 npm 凭据，令牌只存在仓库 Secret（NPM_TOKEN）里；
-#   2) publish 前必然过一遍自测 + 打包体检（敏感文件守门），本机漏跑也拦得住；
+#   2) publish 前必然过一遍类型门禁 + 自测 + 打包体检（敏感文件 / 文件集合 /
+#      运行时依赖闭包），与本机 npm run release 的门禁对齐，本机漏跑也拦得住；
 #   3) 顺带拿到 npm provenance 签名（OIDC，需 id-token: write + 仓库公开）。
 
 on:
@@ -42,6 +43,10 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+            worker/package-lock.json
 
       # tag 与 package.json 版本不一致 = 发出去的东西和标签对不上，必须拦住。
       # （changelogen --bump 会同时改 package.json 与 tag，这里交叉校验兜底）
@@ -58,7 +63,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 三个自测全部离线（不碰行情接口）：路径解析 41 项 / 时段 60 项 / 结构同步 19 项
+      # 类型门禁：本机 npm run release 第①步会跑，CI 以前漏了 —— 只要本机绕过提交钩子，
+      # 带类型错误的提交照样能被 publish。三个包各有 lockfile，单独 ci 后复用根脚本。
+      - name: Install workspace type-check dependencies
+        run: |
+          npm ci --prefix worker
+          npm ci --prefix web
+
+      - name: Type check (worker + web)
+        run: npm run typecheck
+
+      # 自测全部离线（不碰行情接口）：路径 / 脚手架 / 时段 / 判定 / 报告版式 /
+      # 回流 / 周报 / 形态 / 历史简报版式 / D1 差异 / 规则引擎 node:test 22 项
       - name: Run self tests
         run: npm run selftest
 

@@ -501,8 +501,12 @@ node db/query_local.js      # 只读查询本地库
 npm run release          # 类型门禁 → 选版本 → 写 CHANGELOG → 提交打 tag → push
 ```
 
-本机到此为止。tag 推送即触发 `.github/workflows/release.yml` 接力：版本校验 → 离线自测 →
+本机到此为止。tag 推送即触发 `.github/workflows/release.yml` 接力：版本校验 → 类型门禁 → 离线自测 →
 `verify:pack` → `npm publish --provenance` → 建 GitHub Release。**本机永不执行 `npm publish`。**
+
+> 历史版本若因 CI 失败只有 tag、没有 Release，用 `backfill-releases.yml` 幂等补建；
+> 补发说明会标注「npm 上不存在该版本号」，安装命令指向 latest。详见
+> [docs/release/01-方案.md](docs/release/01-方案.md) §8。
 
 **发布不含部署**（`npm run deploy` 单独执行）：tag 不可回滚，而部署失败在其后，
 会留下「版本已发布、站点还是旧的」中间态。
