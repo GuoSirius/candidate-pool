@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * scripts/verify-pack.mjs —— 打包体检：敏感文件 / 文件集合 / 必需文件 / 代码覆盖 / 体积
+ * scripts/verify-pack.mjs —— 打包体检：敏感文件 / 文件集合 / 必需文件 / 代码覆盖 / 依赖闭包 / 体积
  * ---------------------------------------------------------------------------
  * 为什么必须有这个脚本：
  *   `files` 是**硬白名单**，目录级条目（如 "db/"）会**绕过 .gitignore**。
@@ -19,18 +19,27 @@
  *   逐日报告 / 快照再怎么涨都进不了包。但**固定 2MB 总量红线仍会被代码自身增长撞到**：
  *   v3.2.0 代码资产 366KB → v3.6.0 712KB，四个月翻了近一倍。
  *   所以把门禁的判据从「一个总量数字」升级为「文件集合 + 分类可见」：
- *     · ALLOWED 逐文件登记：任何不属于代码 / 模板 / 种子 / 元数据的文件一律失败，
- *       不等它把体积撑大 —— 体积只是结果，文件集合才是根因；
- *     · 分类体积每次都打印，增长看得见，不再「突然失败还不知道是谁撑大的」；
- *     · 单文件上限，防止有人塞进大 JSON；
- *     · 剔除 CHANGELOG.md：唯一随发版次数单调增长、运行时又完全不读的文件
- *       （v3.2.0 51KB → v3.6.0 71KB），仓库与 GitHub Release 里都有。
+ *     · ALLOWED 逐文件登记：任何不属于代码 / 模板 / 种子 / 元数据的文件一律失败；
+ *     · 分类体积每次都打印，增长看得见；单文件上限，防止有人塞进大 JSON；
+ *     · 剔除 CHANGELOG.md：唯一随发版次数单调增长、运行时又完全不读的文件。
+ *
+ *   第四个追问（同一天）：「再核对一次 files，确保无遗漏、无多余」。
+ *   用**相对 require 闭包**逐文件扫描，果然发现两处真实断裂：
+ *     · `rules.js` 被 `gen_candidates.js` 等 8 个入包文件依赖，却从来没进过 files
+ *       → 装包后主命令直接 `Cannot find module './rules'`；
+ *     · `pulse/` 被 `eod/rerender_all.js` 依赖，`npm run pulse` 也指向它，
+ *       但整个目录都不在白名单 → `report:rerender` 与 `pulse` 两条命令都不可用。
+ *   只靠「点名必需文件」永远抓不到这类间接依赖，故把闭包检查做成硬闸：
+ *   任何 `require('../xxx')` 指向包外即失败；`pulse/` 按精确 glob 纳入，
+ *   不含 `data/` `reports/` 运行产物。
  *
  * 用法：node scripts/verify-pack.mjs        （npm run verify:pack）
  * 退出码：0 通过；1 有违规或缺文件；2 无法解析 npm 输出（同样是失败）。
  * ---------------------------------------------------------------------------
  */
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { posix as pathPosix } from 'node:path';
 
 // 禁止入包：凭据、本地库、密钥、日志、依赖目录、运行数据。模板文件（*.example*）不受影响。
 const FORBIDDEN = [
@@ -46,31 +55,33 @@ const FORBIDDEN = [
   // eod/data/ 下只有「行业映射种子」是安装后首跑必需的，其余全是逐日累积的运行数据。
   // 目录级 files 条目绕过 .gitignore，连本地 20MB 级的 K 线缓存都会被打进来。
   [/^eod\/data\/(?!industry-map\.json$)/, '运行数据（历史归档 / 原始快照 / K 线缓存），不随 npm 包发布'],
+  [/^pulse\/(data|reports)\//, 'pulse 运行产物（快照 / HTML 报告），不随 npm 包发布'],
 ];
 
 /**
  * 允许入包的文件集合（逐文件裁决）。
  * 与 package.json 的 files 一一对应，但两者职责不同：files 决定「装什么」，
- * 这里决定「只允许装这些」。即使有人把 files 改回目录级 "eod/"，带进来的
- * 数据文件也会在此被逐个拦下，而不是等体积涨到 2MB 才报错。
+ * 这里决定「只允许装这些」。即使有人把 files 改回目录级 "eod/" 或 "pulse/"，
+ * 带进来的数据文件也会在此被逐个拦下，而不是等体积涨到 2MB 才报错。
  * 新增一类资产时必须同时改 files 和这里，并补自检正反例。
  */
 const ALLOWED = [
   /^package\.json$/,
   /^README\.md$/i,                       // npm 强制包含，无法排除
-  /^[a-z0-9_.-]+\.js$/,                  // 根层代码
+  /^[a-z0-9_.-]+\.js$/,                  // 根层代码（含 rules.js）
   /^(candidates|notify_config)\.example\.json$/,
   /^bin\/[^/]+\.js$/,
   /^eod\/[^/]+\.(js|json)$/,
   /^eod\/lib\/[^/]+\.(js|json)$/,
   /^eod\/data\/industry-map\.json$/,     // 唯一运行数据例外：安装后首跑的行业映射种子
+  /^pulse\/[^/]+\.(js|mjs)$/,
+  /^pulse\/lib\/[^/]+\.js$/,
+  /^pulse\/sources\/[^/]+\.js$/,
   /^db\/[^/]+\.(js|sql)$/,
   /^db\/\.env\.example$/,
 ];
 
-// 必须入包：缺任何一个，装了也用不了。
-// 注意后四项是「首次运行脚手架」的依赖 —— 少了它们的后果不是报错，而是
-// 空目录首跑直接失败（缺模板）或全市场塌成单一「未分类」（缺行业映射种子）。
+// 必须入包：点名关键入口，缺一即失败。间接依赖交给下面的 require 闭包检查兜底。
 const REQUIRED = [
   'package.json',
   'bin/candidate-pool.js',
@@ -78,8 +89,11 @@ const REQUIRED = [
   'paths.js',
   'scaffold.js',
   'gen_candidates.js',
+  'rules.js',                            // 规则引擎单一真相源，8 个入包文件依赖
   'eod/tail_screener.js',
   'eod/lib/sector.js',
+  'pulse/run.js',
+  'pulse/analyze.js',                    // eod/rerender_all.js 的硬依赖
   'db/schema.sql',
   'candidates.example.json',
   'notify_config.example.json',
@@ -96,6 +110,19 @@ const violations = (list) => list.filter((f) => FORBIDDEN.some(([re]) => re.test
 const allowed = (f) => ALLOWED.some((re) => re.test(f));
 
 /**
+ * 剥掉注释再扫 require —— JSDoc 里常有 `const x = require('./lib/runlog')` 这类示例，
+ * 不剥会满屏假阳性；`[^:]` 保护 URL 里的 `https://` 不被当成行注释。
+ */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    .split(/\r?\n/)
+    .filter((l) => !/^\s*\*/.test(l))
+    .join('\n');
+}
+
+/**
  * 守门规则自检 —— 每次体检前先跑。
  * 这类「正则白名单」最怕被后人顺手放宽（把 .env 的规则删掉就再也不报警了），
  * 所以把正反例都钉在这里：正例必须被抓到，反例必须放行。
@@ -107,17 +134,21 @@ function selfTest() {
     'eod/data/eod/eod-2026-11-11.json',
     'eod/data/eod/raw/eod-2026-11-11.raw.json',
     'eod/data/pattern/pattern-kline-2026-11-09.json',
-    'eod/data/perf-weekly.json'];
+    'eod/data/perf-weekly.json',
+    'pulse/data/latest.json', 'pulse/reports/latest.html'];
   const mustPass = ['db/.env.example', 'notify_config.example.json', 'paths.js',
     'db/schema.sql', 'eod/data/industry-map.json', 'bin/candidate-pool.js',
-    'eod/lib/sector.js', 'eod/tail_screener.js'];
-  const mustAllow = ['package.json', 'README.md', 'paths.js', 'gen_candidates.js',
-    'candidates.example.json', 'bin/candidate-pool.js', 'eod/tail_screener.js',
-    'eod/pattern.templates.json', 'eod/lib/sector.js', 'eod/lib/pattern.fixture.json',
-    'eod/data/industry-map.json', 'db/schema.sql', 'db/.env.example'];
+    'eod/lib/sector.js', 'eod/tail_screener.js', 'rules.js', 'pulse/run.js'];
+  const mustAllow = ['package.json', 'README.md', 'paths.js', 'rules.js',
+    'gen_candidates.js', 'candidates.example.json', 'bin/candidate-pool.js',
+    'eod/tail_screener.js', 'eod/pattern.templates.json', 'eod/lib/sector.js',
+    'eod/lib/pattern.fixture.json', 'eod/data/industry-map.json',
+    'pulse/run.js', 'pulse/probe.mjs', 'pulse/lib/ui.js', 'pulse/sources/news.js',
+    'db/schema.sql', 'db/.env.example'];
   const mustReject = ['CHANGELOG.md', 'eod/data/perf-weekly.json',
     'eod/data/eod/eod-2026-11-11.json', 'eod/reports/tail/a.html',
-    'eod/logs/tail.log', 'pulse/run.js', 'web/package.json', 'db/local.db'];
+    'eod/logs/tail.log', 'web/package.json', 'db/local.db',
+    'pulse/data/latest.json', 'pulse/reports/latest.html'];
   const missed = mustFlag.filter((f) => violations([f]).length === 0);
   const wrong = mustPass.filter((f) => violations([f]).length > 0);
   const blocked = mustAllow.filter((f) => !allowed(f));
@@ -127,8 +158,20 @@ function selfTest() {
       '；不该拦的拦了：', [...wrong, ...blocked]);
     process.exit(1);
   }
+  // 注释剥离本身也要自检：示例 require 必须被忽略，真实 require 与 URL 必须保留。
+  const sample = [
+    '/*', " * const x = require('./lib/runlog');", ' */',
+    "const a = require('../rules');", "// const b = require('./ghost');",
+    "const url = 'https://news.example.com/a';",
+  ].join('\n');
+  const clean = stripComments(sample);
+  if (clean.includes("require('./lib/runlog')") || clean.includes("require('./ghost')")
+    || !clean.includes("require('../rules')") || !clean.includes('https://')) {
+    console.error('✖ 注释剥离自检失败：JSDoc / 行注释 / URL 处理有误');
+    process.exit(1);
+  }
   console.log(`✔ 守门规则自检通过（禁入正例 ${mustFlag.length} / 反例 ${mustPass.length}；`
-    + `集合正例 ${mustAllow.length} / 反例 ${mustReject.length}）`);
+    + `集合正例 ${mustAllow.length} / 反例 ${mustReject.length}；注释剥离 OK）`);
 }
 selfTest();
 
@@ -182,6 +225,7 @@ function category(p) {
   if (p === 'eod/data/industry-map.json') return '种子数据';
   if (p.startsWith('eod/lib/')) return 'eod/lib 代码';
   if (p.startsWith('eod/')) return 'eod 根层代码';
+  if (p.startsWith('pulse/')) return 'pulse 代码';
   if (p.startsWith('db/')) return 'db 代码';
   if (p.startsWith('bin/')) return 'bin 入口';
   return '文档 / 模板 / 元数据';
@@ -229,14 +273,14 @@ for (const p of missing) console.error(`✖ 缺少必需文件：${p}（files �
 bad += missing.length;
 
 /**
- * 代码覆盖 —— 白名单从目录级收窄成显式 glob 后的反向风险是「新增代码忘了加白名单」。
- * 用 git 跟踪清单反查：bin/ eod/ db/ 下的代码资产（排除 eod/data、eod/reports）
- * 必须全部出现在 tarball 中。脱离 git 仓库运行（如解包后的临时目录）时跳过。
+ * 代码覆盖 —— 白名单收窄成显式 glob 后的反向风险是「新增代码忘了加白名单」。
+ * 用 git 跟踪清单反查：bin/ eod/ db/ pulse/ 下的代码资产（排除各自 data/reports）
+ * 必须全部出现在 tarball 中。脱离 git 仓库运行时跳过。
  */
 function missingCode() {
   let listed;
   try {
-    listed = execFileSync('git', ['ls-files', 'bin', 'eod', 'db'], { encoding: 'utf8' })
+    listed = execFileSync('git', ['ls-files', 'bin', 'eod', 'db', 'pulse'], { encoding: 'utf8' })
       .split(/\r?\n/).filter(Boolean);
   } catch {
     console.log('· 代码覆盖检查跳过（当前目录不是 git 仓库）');
@@ -246,19 +290,50 @@ function missingCode() {
   return listed.filter((f) =>
     !f.startsWith('eod/data/') &&
     !f.startsWith('eod/reports/') &&
-    (/\.(js|json|sql)$/.test(f) || f.endsWith('.env.example')) &&
+    !f.startsWith('pulse/data/') &&
+    !f.startsWith('pulse/reports/') &&
+    (/\.(js|mjs|json|sql)$/.test(f) || f.endsWith('.env.example')) &&
     !set.has(f));
 }
 const uncovered = missingCode();
 for (const f of uncovered) console.error(`✖ 代码资产未入包：${f}（files 白名单漏了它）`);
 bad += uncovered.length;
-if (!uncovered.length) console.log('✔ 文件集合已登记、代码资产全部入包');
+
+/**
+ * 运行时相对依赖闭包 —— 上面两条查的是「清单齐不齐」，这条查的是「装了能不能跑」。
+ * `rules.js` 这类被间接 require 的模块，点名清单永远抓不到；只有真去解析每个
+ * 入包 JS 的 require / import，才能发现它指向了包外文件。
+ */
+function brokenRequires() {
+  const set = new Set(files);
+  const out = [];
+  const re = /require\(\s*['"](\.[^'"]+)['"]\s*\)|(?:from|import)\s*['"](\.[^'"]+)['"]/g;
+  for (const f of files.filter((x) => /\.(js|mjs|cjs)$/.test(x))) {
+    let src;
+    try {
+      src = readFileSync(f, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const m of stripComments(src).matchAll(re)) {
+      const spec = m[1] || m[2];
+      const base = pathPosix.normalize(pathPosix.join(pathPosix.dirname(f), spec));
+      const cand = [base, `${base}.js`, `${base}.json`, `${base}.mjs`, `${base}.cjs`,
+        pathPosix.join(base, 'index.js')];
+      if (!cand.some((c) => set.has(c))) out.push(`${f} → ${spec}`);
+    }
+  }
+  return out;
+}
+const broken = brokenRequires();
+for (const b of broken) console.error(`✖ 运行时依赖未入包：${b}（装包后会 Cannot find module）`);
+bad += broken.length;
+if (!uncovered.length && !broken.length) console.log('✔ 文件集合已登记、代码资产与 require 闭包完整');
 
 if (meta.unpackedSize > SIZE_LIMIT) {
   console.error(`✖ 解包体积 ${kb(meta.unpackedSize)} 超过红线 ${kb(SIZE_LIMIT)}`);
   console.error('  先看上面的「未登记入包 / 禁止入包」：那是误打包，改 files 白名单，不要调红线。');
   console.error('  若构成全是代码资产，说明代码规模正常增长：人工复核后调整 SIZE_LIMIT 并留痕，别用调大数字掩盖误打包。');
-  // 只报总数没法定位，顺手按二级目录聚合出 TOP，避免下次再靠人工翻 npm pack 输出。
   const byDir = new Map();
   for (const f of meta.files || []) {
     const parts = f.path.split('/');
@@ -278,4 +353,4 @@ if (bad) {
   console.error(`\n打包体检未通过：${bad} 项问题（**不要发布**）`);
   process.exit(1);
 }
-console.log('✔ 打包体检通过：无运行数据 / 敏感文件、文件集合已登记、必需文件齐全、代码无遗漏、体积在红线内');
+console.log('✔ 打包体检通过：无运行数据 / 敏感文件、文件集合已登记、代码与依赖闭包完整、体积在红线内');
