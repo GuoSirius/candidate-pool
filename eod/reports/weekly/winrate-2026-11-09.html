@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>胜率回归简报 · 2026-11-09</title><style>
-:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--line:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--warn:#d29922}
+:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--line:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--warn:#d29922;--stripe:#141a21}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
 main{max-width:1040px;margin:0 auto;padding:28px 20px 56px}
@@ -12,16 +12,24 @@ h2{font-size:16px;margin:26px 0 12px;padding-left:10px;border-left:3px solid var
 .meta{list-style:none;padding:12px 16px;margin:0 0 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:13px}
 .meta li{padding:2px 0;color:var(--muted)}
 .meta b{color:var(--fg)}
-.tw{overflow-x:auto;margin:10px 0 4px}
-table{border-collapse:collapse;font-size:13px}
-th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;white-space:nowrap}
-th{background:var(--panel);color:var(--muted);font-weight:600}
-tr:nth-child(even) td{background:rgba(255,255,255,.025)}
-td.empty{color:var(--muted);text-align:center}
+.tw{overflow-x:auto;margin:10px 0 4px;-webkit-overflow-scrolling:touch}
+.tw.scroll{max-height:460px;overflow:auto}
+table{border-collapse:separate;border-spacing:0;font-size:13px}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;white-space:nowrap}
+th:first-child,td:first-child{border-left:1px solid var(--line)}
+th{border-top:1px solid var(--line);background:var(--panel);color:var(--muted);font-weight:600}
+td{background:var(--bg)}
+tr:nth-child(even) td{background:var(--stripe)}
+th:first-child,td:first-child{position:sticky;left:0}
+th:first-child{z-index:5;box-shadow:1px 0 0 var(--line)}
+td:first-child{z-index:2;box-shadow:1px 0 0 var(--line)}
+td.empty{position:static;box-shadow:none;color:var(--muted);text-align:center}
+.tw.scroll thead th{position:sticky;top:0;z-index:4}
+.tw.scroll thead th:first-child{z-index:6}
 .note{background:var(--panel);border-left:3px solid var(--warn);padding:10px 14px;border-radius:8px;margin:14px 0;color:var(--muted);font-size:13px}
 code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:12px}
 footer{margin-top:28px;border-top:1px solid var(--line);padding-top:12px}
-@media(max-width:700px){main{padding:16px 12px 40px}h1{font-size:19px}.meta li{word-break:break-all}}
+@media(max-width:700px){main{padding:16px 12px 40px}h1{font-size:19px}.meta li{word-break:break-all}th,td{padding:6px 8px;font-size:12px}.tw.scroll{max-height:320px}}
 </style></head>
 <body><main>
 <header><h1>胜率回归简报 · 2026-11-09</h1><p class="sub">管道 / 分项 / 游资三维度 · 纯只读，不推送、不调权重</p></header>

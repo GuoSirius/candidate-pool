@@ -137,6 +137,18 @@ const trs = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((m) => m[1]).filter(
     return cs ? Number(cs[1]) : (r.match(/<td[ >]/g) || []).length;
   });
 check('表格结构存在且无列错位', ths.length >= 4 && trs.every((n) => ths.includes(n)), JSON.stringify({ ths, trs }));
+check('首列固定（手机端横向滚动不丢代码）', html.includes('th:first-child,td:first-child{position:sticky;left:0}'));
+const B = require('./lib/brief_report');
+const row = () => ['x'];
+check('滚动阈值：19 行自然流 / 20 行滚动',
+  !B.table(['a'], Array.from({ length: 19 }, row)).includes('class="tw scroll"')
+  && B.table(['a'], Array.from({ length: 20 }, row)).includes('class="tw scroll"'));
+// 夹具里 toAdd 只有 3 只，用 25 行模拟真实「拟新增」长表
+const longTable = B.table(['代码', '名称'], Array.from({ length: 25 }, () => ['sh600001', '甲']));
+check('长表带滚动容器 + 表头 sticky',
+  longTable.includes('class="tw scroll"')
+  && html.includes('.tw.scroll thead th{position:sticky;top:0;z-index:4}')
+  && !html.includes('class="tw scroll"'));
 
 fs.rmSync(root, { recursive: true, force: true });
 console.log(`\n${failed ? `❌ ${failed} 项失败` : '✅ 全部通过'}（临时目录已清理：${root}）`);

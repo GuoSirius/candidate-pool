@@ -113,6 +113,12 @@ function tablesOf(html) {
 }
 const tables = tablesOf(html22);
 check('至少渲染出 3 张表', tables.length >= 3, tables.length);
+check('含手机端首列固定 + 长表表头固定 CSS',
+  html3.includes('th:first-child,td:first-child{position:sticky;left:0}')
+  && html3.includes('.tw.scroll thead th{position:sticky;top:0;z-index:4}'));
+check('固定列背景为实色（防横向滚动透字）',
+  html3.includes('--stripe:#141a21') && html3.includes('td{background:var(--bg)}'));
+check('短表不制造双层滚动', !html22.includes('class="tw scroll"'));
 check('每张表所有行列数与表头一致', tables.every((t) => t.th > 0 && t.widths.every((w) => w === t.th)),
   JSON.stringify(tables.map((t) => [t.th, ...new Set(t.widths)])));
 check('分项 / 游资表均为 6 列', tables.some((t) => t.head.includes('分层') && t.th === 6)
