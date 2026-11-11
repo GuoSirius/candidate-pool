@@ -2,6 +2,39 @@
 
 所有变动按 **Conventional Commits** 约定分类，由 `changelogen` 自动生成。
 
+## v3.6.0
+
+[compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.5.0...v3.6.0)
+
+### 🚀 新功能 (Features)
+
+- 形态质量区加连板过滤；尾盘报告补游资人过滤并统一连板口径（streak≥2） ([0d58aa7](https://github.com/GuoSirius/candidate-pool/commit/0d58aa7))
+- 连板过滤拆两颗 chip（连板 streak≥2 / 10日有板），四份报告统一遵循 boardsInfo 窗口口径 ([2628393](https://github.com/GuoSirius/candidate-pool/commit/2628393))
+- **reports:** 周报/回流简报统一为单文件 HTML ([31fb72e](https://github.com/GuoSirius/candidate-pool/commit/31fb72e))
+- **web:** 历史报告归档页与工作日 19:30 自动部署 ([440b88d](https://github.com/GuoSirius/candidate-pool/commit/440b88d))
+- **reports:** 票表双列冻结并固化历史简报重建脚本 ([f890562](https://github.com/GuoSirius/candidate-pool/commit/f890562))
+
+### 🐛 缺陷修复 (Bug Fixes)
+
+- 盘前昨日榜/净流入恒取前一交易日（修复上榜恒为0）+ 报告新增连板过滤（盘前/回填两区） ([9b5464b](https://github.com/GuoSirius/candidate-pool/commit/9b5464b))
+- 举一反三扫尾——形态/尾盘上榜回退目标改用前一交易日，盘前回填空榜警告 ([fc7c4ad](https://github.com/GuoSirius/candidate-pool/commit/fc7c4ad))
+- **reports:** 简报表格补手机端首列固定与长表表头 sticky ([06b65cc](https://github.com/GuoSirius/candidate-pool/commit/06b65cc))
+
+### 📦 杂项维护 (Chores)
+
+- 盘前回填 2026-11-10 ([1855d67](https://github.com/GuoSirius/candidate-pool/commit/1855d67))
+- 游资席位扫描归档 2026-11-10 ([94845bf](https://github.com/GuoSirius/candidate-pool/commit/94845bf))
+- 次日回填 2026-11-10 ([4cc425b](https://github.com/GuoSirius/candidate-pool/commit/4cc425b))
+- 重渲染副产物归档（形态落库第5次运行 + 主报告时间戳） ([247c34c](https://github.com/GuoSirius/candidate-pool/commit/247c34c))
+- **reports:** 历史报告补 mini K 线并按当前代码重渲染 ([058a411](https://github.com/GuoSirius/candidate-pool/commit/058a411))
+- 盘前选股 2026-11-11 ([18bd235](https://github.com/GuoSirius/candidate-pool/commit/18bd235))
+- 盘中机会 2026-11-11 ([7ee90e2](https://github.com/GuoSirius/candidate-pool/commit/7ee90e2))
+- **pattern:** 形态选股全市场筛选 2026-11-11 ([f4f3d69](https://github.com/GuoSirius/candidate-pool/commit/f4f3d69))
+
+### ❤️ Contributors
+
+- 郭之存 ([@siriusSupreme](https://github.com/siriusSupreme))
+
 ## v3.5.0
 
 [compare changes](https://github.com/GuoSirius/candidate-pool/compare/v3.4.0...v3.5.0)
