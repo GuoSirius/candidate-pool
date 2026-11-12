@@ -42,7 +42,7 @@
 
 - **本地自动化（本机 WorkBuddy）**：**所有任务**的提交都由下方各节 Prompt 里的「git 推送块」显式负责（`git add` → `git commit` → `git push`）。脚本内部**不再写 git**——原先盘前选股 / 回填在 `preopen_screener.js` / `preopen_backfill.js` 内自动 commit，已于 2026-10-23 移除，统一收归 Prompt，避免重复提交。
 - **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
-- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/reports/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库；④ **第 13/14 节（pool_reflow / weekly_winrate）**：用户 2026-11-09 拍板「不推送」，两条 prompt 均**不含 git 推送块**，报告落盘后不自动提交 —— 这是有意例外，避免 ACTIVE 的周六任务自动写远端。如需入库，人工 `git add eod/reports/pool_reflow eod/reports/weekly` 后提交；⑤ **第 15 节（报告归档发布 deploy）**：产物 `web/public/archive/`、`web/dist/` 均被 `.gitignore` 忽略，任务只负责把归档发到 Cloudflare Pages，prompt **不含 git 推送块、不含 present_files**，源码改动由其他任务提交。
+- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/reports/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库；④ **第 14 节（weekly_winrate）**：用户 2026-11-09 拍板「不推送」，该任务 prompt **不含 git 推送块**，报告落盘后不自动提交 —— 这是有意例外，避免 ACTIVE 的周六任务自动写远端。如需入库，人工 `git add eod/reports/weekly` 后提交。**第 13 节（pool_reflow）原同属此例外，已于 2026-11-12 改为执行后自动提交推送报告（取消例外），见第 13 节**；⑤ **第 15 节（报告归档发布 deploy）**：产物 `web/public/archive/`、`web/dist/` 均被 `.gitignore` 忽略，任务只负责把归档发到 Cloudflare Pages，prompt **不含 git 推送块、不含 present_files**，源码改动由其他任务提交。
 
 #### 统一提交信息格式（规范 · 中文描述 + 时间）
 
@@ -62,6 +62,7 @@ chore: <任务中文名> $(date +%F)
 | 5. 尾盘正式(1450) | `chore: 尾盘选股 $(date +%F)` |
 | 6/7. 午盘 / 早盘机会（--intraday） | `chore: 盘中机会 $(date +%F)` |
 | 8. A股次日候选池初筛 | `chore: 每日实时初筛 $(date +%F)` |
+| 13. 观察池回流 pool_reflow | `chore: 观察池回流 $(date +%F)` |
 
 > 另有**本文件自身改动**的提交（改自动化 ↔ 改文档同步）用 `chore(automations): <简述>`，与上述任务运行提交各司其职，互不打扰。
 
@@ -439,32 +440,38 @@ git push
 
 提交范围：`eod/data`（四类归档 + perf-weekly.json）+ `eod/reports`（本任务重渲染的最新报告）+ `data`（snapshot verdicts）。
 
-## 13. 观察池回流 pool_reflow（18:40，PAUSED）
+## 13. 观察池回流 pool_reflow（18:40，ACTIVE）
 
 > 批次 C2（2026-11-09 落地，方案见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md) C2 节）。排在 18:30 nextday_backfill 之后。
-> **用户拍板**：允许扩 `meta`，但数据必须及时/可靠/稳定/不丢失；**默认不设上限、只出 diff、不推送**；本任务 PAUSED。
+> **用户拍板**：允许扩 `meta`，但数据必须及时/可靠/稳定/不丢失；**默认不设上限、只出 diff**；不推送微信 / 邮件。2026-11-12 起执行后**自动 git 提交推送报告**（取消「提交约定」例外 ④），与全仓库定时任务提交约定对齐。
 > 数据安全契约（只追加、存量票零改动、写前备份 + 双重校验、非法代码丢弃）见 `eod/pool_reflow.js` 文件头。
 > **prompt 严禁加 `--apply`**：写回只能由人工审核 diff 后手动执行，绝不自动化。
 
 - **ID**：`650d6943-9903-44f9-85be-c4e5c46cb066`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40`（工作日 18:40）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
-- **状态**：**PAUSED**
+- **状态**：**ACTIVE**
 - **产物**：`eod/reports/pool_reflow/pool_reflow-<日>.html`（可审核的 diff 报告，2026-11-11 由 `.md` 统一为单文件 HTML）
-- **推送 / git**：无（不推送微信邮件、不自动 git，见「提交约定」例外 ④）
+- **推送 / git**：执行后提交并推送 `eod/reports/pool_reflow/pool_reflow-<日>.html` 到 main（2026-11-12 取消例外 ④）；不推送微信 / 邮件
 - **自测**：`npm run pool:selftest`
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
 ~~~text
-在 candidate-pool 仓库运行观察池回流的 dry-run，并汇报可审核的 diff。
+在 candidate-pool 仓库运行观察池回流的 dry-run，汇报可审核的 diff，并把生成的报告提交推送到仓库（2026-11-12 起取消"不推送"例外，见 docs/automations/README.md 第 13 节）。
 
-执行 `node eod/pool_reflow.js --days 5`，然后读取生成的 `eod/reports/pool_reflow/pool_reflow-<当日>.html`，用简洁中文汇报：回看交易日范围、四个来源（尾盘TopN·T+1命中 / R01触发 / 一线游资 / 盘前超预期）各自的状态与命中条数、拟新增只数、命中但已在池的只数、保持不动只数、删除只数（必须为 0）。拟新增票用表格列出代码 / 名称 / 来源 / 最近触发日；超过 20 只时只列前 20 只并说明总数。报告是单文件 HTML，读取时按纯文本提取表格内容即可，不要按 Markdown 语法解析。
+1. 执行与汇报：运行 `node eod/pool_reflow.js --days 5`，读取生成的 `eod/reports/pool_reflow/pool_reflow-<当日>.html`（<当日> = 运行当天 Asia/Shanghai 日期 YYYY-MM-DD），用简洁中文汇报：回看交易日范围、四个来源（尾盘TopN·T+1命中 / R01触发 / 一线游资 / 盘前超预期）各自的状态与命中条数、拟新增只数、命中但已在池的只数、保持不动只数、删除只数（必须为 0）。拟新增票用表格列出代码 / 名称 / 来源 / 最近触发日；超过 20 只时只列前 20 只并说明总数。报告是单文件 HTML，读取时按纯文本提取表格内容即可，不要按 Markdown 语法解析。报告生成后用 present_files 打开该 HTML 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
+
+2. 提交并推送（dry-run 只新增这一个 HTML 报告，绝不碰 candidates.json / 归档 / 配置）：
+   - 报告路径：`<仓库>/eod/reports/pool_reflow/pool_reflow-<当日>.html`，<当日> 取 `$(TZ=Asia/Shanghai date +%F)`。
+   - `git add eod/reports/pool_reflow/pool_reflow-$(TZ=Asia/Shanghai date +%F).html`（只暂存当日报告，**绝不** `git add -A` 或加目录，避免误吞其它未跟踪文件）。
+   - `git -c core.hooksPath=.git/cph commit -m "chore: 观察池回流 $(TZ=Asia/Shanghai date +%F)"`（走本地 hook 门禁，等价 husky typecheck/commitlint）。
+   - `SHA=$(git rev-parse HEAD) && GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c credential.helper=wincred push origin "$SHA:refs/heads/main"`（推送到 main）。
 
 严格约束：
 - 默认 dry-run，**绝对不要加 --apply**，不要写 candidates.json，不要修改任何归档或配置。
-- 不要推送微信 / 邮件，不要执行 git commit / push，不要调整任何权重或阈值。
-- 报告生成后用 present_files 打开该 HTML 报告（传绝对路径）；文件不存在则如实说明原因，不要编造路径。
+- 不要推送微信 / 邮件，不要调整任何权重或阈值。
+- git 步骤只针对当日那个 HTML 报告；若 add / commit / push 任一步失败（含 typecheck 门禁不通过），如实说明原因并停止，**不要**把报告复制到其它位置替代入库，**不要**重试超过一次。
 - 若命令非零退出，贴出 stderr 错误摘要，不要重试超过一次。
 ~~~
 

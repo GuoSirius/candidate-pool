@@ -10,7 +10,7 @@
 >
 > **实现偏差**：B1 最终用腾讯全市场快照推导环境（未接东财 push2，见下文）；批次 A/B 的增量评审复核见 `docs/code-review/04-评审-2026-11-09.md`。
 > **C2/D2 口径变更（2026-11-09 用户拍板）**：允许扩 `meta`，但要求数据「及时、可靠、稳定、不丢失」；
-> **默认不设上限、只出 diff、不推送**；`pool_reflow` PAUSED、`weekly_winrate` ACTIVE。详见下文各节与 [`docs/automations/README.md`](automations/README.md)。
+> **默认不设上限、只出 diff、不推送通知**；`pool_reflow` 自 2026-11-12 起执行后自动 git 提交推送报告（取消"不推送"中"不入库"部分）、状态 ACTIVE，`weekly_winrate` ACTIVE。详见下文各节与 [`docs/automations/README.md`](automations/README.md)。
 
 ## 批次 A：闭环验证（先行，数据是后续一切调参的地基）
 
@@ -115,7 +115,7 @@
 | 18:00 | 盘前回填（收盘区块重渲染） | ✅ 历史 t1/t3 补齐实际由 18:30 统一承担 |
 | 18:20 | 游资席位扫描 | ✅ |
 | 18:30 | nextday_backfill | ✅ ACTIVE |
-| 18:40 | pool_reflow（dry-run，只出 diff） | ✅ 脚本 + 自动化 `650d6943`，**PAUSED** |
+| 18:40 | pool_reflow（dry-run，只出 diff，执行后提交推送） | ✅ 脚本 + 自动化 `650d6943`，**ACTIVE** |
 | 18:50 | 收盘日报（可选） | ⬜ 批次 C3，无脚本 / 无自动化 |
 | 周六 10:00 | 胜率回归简报 | ✅ 脚本 + 自动化 `6b3d2cf6`，**ACTIVE** |
 | 23:30 | 情绪日报 | ⚠️ 自动化存在但 PAUSED；B2 联动 regime ⬜ |
