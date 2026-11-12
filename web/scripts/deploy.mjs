@@ -14,6 +14,9 @@
  *
  * wrangler 复用：优先 web/node_modules，其次 ../worker/node_modules，最后 npx 兜底，
  * 因此通常无需为前端单独安装 wrangler。
+ *
+ * 凭据优先级：web/deploy.env.json（方案 A，本机可选、不入库） > 进程环境变量（CI）
+ *              > wrangler OAuth 登录态（方案 B）。文件缺失或仍是占位符即自动回退 OAuth。
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -40,7 +43,48 @@ function loadConfig() {
   }
 }
 
+/**
+ * 本机发布凭据（方案 A，可选）：web/deploy.env.json（gitignore，不入库）。
+ * 文件不存在 / 仍是占位符 → 不注入任何环境变量，沿用 wrangler OAuth 登录态（方案 B）。
+ * 只在当前进程注入，不打印明文，不需要 setx 系统环境变量，也不需要重启 WorkBuddy。
+ * CI 里没有这个文件（不入库），因此不影响 workflow 自带的 CLOUDFLARE_* env。
+ */
+function loadDeployCreds() {
+  const p = resolve(root, 'deploy.env.json');
+  if (!existsSync(p)) return {};
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(p, 'utf8'));
+  } catch (e) {
+    console.warn(`[deploy] deploy.env.json 解析失败，已忽略：${e.message}`);
+    return {};
+  }
+  const token = String(raw.CLOUDFLARE_API_TOKEN || '').trim();
+  const account = String(raw.CLOUDFLARE_ACCOUNT_ID || '').trim();
+  if (!token || !account || /REPLACE_ME/i.test(token) || /REPLACE_ME/i.test(account)) return {};
+  return { CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: account };
+}
+
 const cfg = loadConfig();
+const creds = loadDeployCreds();
+
+// 只体检、不部署：确认本机走的是方案 A 还是方案 B，且不打印任何 Token 明文。
+if (args.includes('--check-creds')) {
+  console.log(
+    Object.keys(creds).length
+      ? '[deploy] ✓ 方案 A 已启用：web/deploy.env.json 的 API Token（Account ID 已配置，Token 不打印）'
+      : '[deploy] ○ 方案 A 未启用（文件缺失或仍是 REPLACE_ME）；发布将沿用 wrangler OAuth（方案 B）',
+  );
+  console.log('[deploy]    OAuth 自检：cd worker && ./node_modules/.bin/wrangler whoami');
+  process.exit(0);
+}
+
+if (Object.keys(creds).length) {
+  Object.assign(process.env, creds);
+  console.log('[deploy] 凭据：web/deploy.env.json 的 API Token（方案 A，优先级高于 OAuth）');
+} else {
+  console.log('[deploy] 凭据：未配置 deploy.env.json，沿用 wrangler OAuth 登录态（方案 B）');
+}
 // 注意用 ?? 而非 ||：空字符串是合法值（同源模式），不能被短路掉。
 const apiBase = String(flag('--api') ?? process.env.VITE_API_BASE ?? cfg.apiBase ?? '').trim();
 const projectName = flag('--project') || process.env.PAGES_PROJECT || cfg.projectName || 'candidate-pool-web';

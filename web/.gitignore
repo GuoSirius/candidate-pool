@@ -6,3 +6,5 @@ public/archive/
 *.local
 .DS_Store
 deploy.config.json
+# 本机发布凭据（方案 A 的 API Token 明文，绝不入库）
+deploy.env.json

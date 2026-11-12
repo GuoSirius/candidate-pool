@@ -168,7 +168,7 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 
 产物提交 `daily-artifacts` 分支；D1 落库依赖分组「入库」的三个 `CF_*` Secrets，未配则安全跳过。完整拓扑见 [docs/ops/01-方案.md](./docs/ops/01-方案.md)。
 
-> 本机 19:00 主通道用的不是仓库 Secrets，而是**本机凭据**：`cd worker && npx wrangler login`（一次性 OAuth），或系统环境变量 `CLOUDFLARE_API_TOKEN`（权限 `Account → Cloudflare Pages → Edit`）+ `CLOUDFLARE_ACCOUNT_ID`。凭据未就绪时 21:05 云端兜底会补位。
+> 本机 19:00 主通道用的不是仓库 Secrets，而是**本机凭据**：方案 B `cd worker && npx wrangler login`（已验证生效），或方案 A 把 API Token 填进 `web/deploy.env.json`；两种方案与配置步骤见 §5「本机发布凭据」。凭据未就绪时 21:05 云端兜底会补位。
 
 > 所有定时任务执行后都会自动 commit：GitHub Actions 由 workflow 末尾的 commit 步骤负责，本地 WorkBuddy 自动化由任务 Prompt 里的「git 推送块」负责（脚本内部不再写 git，避免重复提交）。统一约定见 [`docs/automations/README.md`](./docs/automations/README.md)。
 
@@ -275,6 +275,34 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | `CF_ACCOUNT_ID` | — | 账户 ID，与入库共用 |
 
 workflow 把上述命名映射成 wrangler 要求的 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`。
+
+### 本机发布凭据（19:00 主通道）
+
+> 本机 19:00 自动化不用仓库 Secrets，只用下面两条**互斥**通道之一，由 `web/scripts/deploy.mjs` 自动选择：
+
+| 方案 | 凭据来源 | 适用 | 状态 |
+|---|---|---|---|
+| **B（当前生效）** | `wrangler login` 的 OAuth 登录态（`%APPDATA%\xdg.config\.wrangler\config\default.toml`） | 单机日常，最快 | 2026-11-12 用户已执行并验证：`guoplc@163.com`，权限含 `pages (write)` |
+| **A（长期稳态备选）** | `web/deploy.env.json`（gitignore，不入库）里的 API Token | OAuth token 会过期、刷新依赖网络；API Token 长期有效 | 待用户填 Token |
+
+**优先级**：`web/deploy.env.json` > 进程环境变量（CI 用）> wrangler OAuth。文件缺失、内容仍是 `REPLACE_ME`、或解析失败 → **完全不注入**，自动回退方案 B；CI 里没有该文件（不入库），workflow 自带的 `CLOUDFLARE_*` 不受影响。
+
+#### 方案 A 配置步骤（只需改一个字符串）
+
+1. Cloudflare 控制台 → 右上角头像 → **My Profile → API Tokens → Create Token** → 自定义 Token：
+   - **Permissions**：`Account` → `Cloudflare Pages` → `Edit`
+   - **Account Resources**：`Include` → 账号 `siriusSupreme`
+   - 创建后**立刻复制** Token（只显示一次）。
+2. 打开本仓库 `web/deploy.env.json`（已建好、已被 gitignore 保护），把 `CLOUDFLARE_API_TOKEN` 的 `REPLACE_ME` 换成 Token；`CLOUDFLARE_ACCOUNT_ID` 已预填 `209cb0018ea019bf3fec8b8483ab5342`，**不用改**。模板见 `web/deploy.env.example.json`。
+3. 体检（不部署、不打印明文）：
+   ```bash
+   cd web && node scripts/deploy.mjs --check-creds
+   # 期望：✓ 方案 A 已启用
+   ```
+4. 端到端验证：在 WorkBuddy 自动化面板手动触发一次「报告归档发布 deploy（19:00）」。
+
+⚠️ **不要用 `setx` 设系统环境变量**：① 已运行的 WorkBuddy 进程不会自动刷新环境变量，19:00 任务读不到；② 一旦进程里存在 `CLOUDFLARE_API_TOKEN`，wrangler 会**覆盖** OAuth，Token 权限不足（例如 `db/.env` 里那个只有 `D1 → Edit` 的）会把本来可用的方案 B 弄成 403。
+**回退方案 B**：把 `web/deploy.env.json` 里的 Token 改回 `REPLACE_ME`（或直接删文件）即可，无需改配置或重启。
 
 ### 排查
 

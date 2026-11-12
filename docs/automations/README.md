@@ -511,7 +511,7 @@ git push
 - **状态**：ACTIVE
 - **产物**：`web/public/archive/index.json` + 归档副本（gitignore，不入库）；线上 `https://candidate-pool-web.pages.dev/reports/archive`
 - **推送 / git**：无（不推送微信邮件、不自动 git，见「提交约定」例外 ⑤）
-- **前置条件（一次性，需用户本机执行）**：本机 wrangler 需已登录（`cd worker && npx wrangler login`），或系统环境变量配好 `CLOUDFLARE_API_TOKEN`（权限 `Account → Cloudflare Pages → Edit`）+ `CLOUDFLARE_ACCOUNT_ID`。2026-11-12 建任务时实测 `wrangler whoami` 报 `Not logged in`（OAuth token 刷新连不上鉴权服务），故凭据修好前 21:05 云端兜底是唯一保底。
+- **前置条件（本机凭据，一次性）**：`web/scripts/deploy.mjs` 按「`web/deploy.env.json`（方案 A，gitignore 不入库）> 进程环境变量（CI）> wrangler OAuth（方案 B）」自动取凭据；文件缺失或仍是 `REPLACE_ME` 即自动回退 OAuth。2026-11-12 方案 B 已由用户执行并验证成功（`guoplc@163.com`，权限含 `pages (write)`），本机主通道当前可用；方案 A 只需把 API Token 填进 `web/deploy.env.json`（Account ID 已预填），步骤见 [`DEPLOY.md`](../../DEPLOY.md) §5「本机发布凭据」。体检：`cd web && node scripts/deploy.mjs --check-creds`。
 
 ### Prompt（原样复制进 WorkBuddy 自动化）
 
@@ -520,7 +520,7 @@ git push
 
 1. 归档扫描（只读、约 1 秒）：`cd web && node scripts/build-archive.mjs`，扫描 reports/、data/、eod/reports/、eod/data/ 等 7 类产物，生成 web/public/archive/index.json（已被 .gitignore 忽略，不入库）。
 2. 幂等判断：用 node 读取本地 index.json 的 fingerprint，并请求 https://candidate-pool-web.pages.dev/archive/index.json?ts=<当前毫秒时间戳>（带 cache-control: no-cache，20 秒超时）取线上 fingerprint。两者一致 → 直接汇报「线上已最新，无需发布」并结束，不再部署；线上不可读或指纹不一致 → 继续第 3 步。
-3. 凭据检查：确认环境变量 CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID 已设置，或 `worker/node_modules/.bin/wrangler whoami` 显示已登录。两者都不满足时：不要盲目重试、不要尝试交互式 wrangler login（需要浏览器），直接如实报错，并提示用户二选一自助修复：① 在 Cloudflare 控制台创建权限 Account → Cloudflare Pages → Edit 的 API Token，把 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 写入系统环境变量；② 本机执行 `cd worker && npx wrangler login` 完成一次性 OAuth 登录。同时说明 GitHub Actions 21:05 兜底会自动补位，当晚不会断档。
+3. 凭据体检（不部署、不打印明文）：`cd web && node scripts/deploy.mjs --check-creds`。发布脚本自动按「web/deploy.env.json 的 API Token（方案 A，不入库）> 进程环境变量（CI）> wrangler OAuth 登录态（方案 B）」取凭据；文件缺失或仍是 REPLACE_ME 占位符即回退 OAuth，属正常状态，不要告警。若确认两条通道都不可用（可用 `cd worker && ./node_modules/.bin/wrangler whoami` 复核 OAuth），不要盲目重试、不要尝试交互式 wrangler login（需浏览器），直接如实报错，并提示用户二选一：① 把 Cloudflare 上权限为 Account → Cloudflare Pages → Edit 的 API Token 填进 web/deploy.env.json（Account ID 已预填）；② 本机执行 `cd worker && npx wrangler login`。同时说明 GitHub Actions 21:05 兜底会自动补位，当晚不会断档。
 4. 发布：在 web/ 目录下执行 `npm run deploy`（等价根目录 `npm run deploy`）：vue-tsc 类型检查 → vite build（含归档）→ wrangler pages deploy dist --project-name candidate-pool-web --branch main。复用 worker/node_modules 里的本地 wrangler，不要安装任何依赖。若报 403 / permission denied，说明令牌缺 Pages:Edit 权限，如实反馈并停止，重试不超过一次。
 5. 验证：带时间戳参数请求 https://candidate-pool-web.pages.dev/archive/index.json，核对 fingerprint 与本地一致（CDN 可能缓存）；汇报归档报告份数、数据份数、页面地址 https://candidate-pool-web.pages.dev/reports/archive。
 6. 严格约束：本任务只发布，不执行任何 git add / commit / push（web/public/archive/ 与 web/dist/ 均被 .gitignore 忽略）；不修改任何报告、归档、配置、阈值；不推送微信 / 邮件；本任务无本地 HTML 产物，无需调用 present_files。失败时把错误摘要如实反馈，不要编造路径或结果。
