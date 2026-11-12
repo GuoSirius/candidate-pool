@@ -162,10 +162,13 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 | 工作日 14:20 → 14:30 | `tail-observe.yml` | 观察口径 `eod-<日>-obs.json`（静默，不推送） |
 | 工作日 14:40 → 14:50 | `tail-screen.yml` | 正式口径 `eod-<日>.json` + 微信/邮件 |
 | 工作日 15:30 | `daily-screen.yml` | 次日候选初筛 → 同步 D1 → 微信/邮件 |
-| **工作日 19:30（21:05 兜底）** | **`deploy-archive.yml`** | **构建期归档 + 前端一起发布到 Cloudflare Pages（幂等，详见 §5）** |
+| **本机 19:00（主通道）** | **WorkBuddy 自动化「报告归档发布 deploy」** | **构建期归档 + 前端一起发布到 Cloudflare Pages；见 [`docs/automations/README.md`](./docs/automations/README.md) 第 15 节** |
+| 工作日 21:05（云端兜底） | `deploy-archive.yml` | 仅本机 19:00 未成功时补位，幂等指纹去重；19:30 主触发已于 2026-11-12 停用 |
 | 每月 1 日 11:00 | `refresh-industry-map.yml` | 刷新行业映射并提交 `main` |
 
 产物提交 `daily-artifacts` 分支；D1 落库依赖分组「入库」的三个 `CF_*` Secrets，未配则安全跳过。完整拓扑见 [docs/ops/01-方案.md](./docs/ops/01-方案.md)。
+
+> 本机 19:00 主通道用的不是仓库 Secrets，而是**本机凭据**：`cd worker && npx wrangler login`（一次性 OAuth），或系统环境变量 `CLOUDFLARE_API_TOKEN`（权限 `Account → Cloudflare Pages → Edit`）+ `CLOUDFLARE_ACCOUNT_ID`。凭据未就绪时 21:05 云端兜底会补位。
 
 > 所有定时任务执行后都会自动 commit：GitHub Actions 由 workflow 末尾的 commit 步骤负责，本地 WorkBuddy 自动化由任务 Prompt 里的「git 推送块」负责（脚本内部不再写 git，避免重复提交）。统一约定见 [`docs/automations/README.md`](./docs/automations/README.md)。
 
@@ -250,14 +253,18 @@ npm run smoke -- --api https://candidate-pool-web.pages.dev
 
 | 触发 | 时刻 / 条件 | 行为 |
 |------|-------------|------|
-| `schedule` 主触发 | **工作日北京时间 19:30**（`cron: "30 19 * * 1-5"` + `timezone: "Asia/Shanghai"`） | 构建 + 发布；排在 18:30 回填之后，当日报告已齐全 |
-| `schedule` 兜底 | 工作日 21:05 | 针对 GitHub schedule 排队延迟 / 漏跑，由幂等判断挡住重复部署 |
-| `push` | `main` 上 `web/**` 或本 workflow 变更 | 代码 / 页面 / 归档规则改动立即上线；报告数据提交等 19:30 统一发布，避免一天多次推 90MB |
+| **本机自动化（主通道）** | **工作日北京时间 19:00** | 归档扫描 → 线上指纹幂等判断 → `cd web && npm run deploy`；排在 18:30 回填之后，当日报告已齐全。见 [`docs/automations/README.md`](./docs/automations/README.md) 第 15 节 |
+| `schedule` 主触发 | ~~工作日 19:30~~ **已停用（2026-11-12）** | 与本机 19:00 同职责、重复；cron 以注释形式保留在 workflow 里，取消注释即可恢复 |
+| `schedule` 兜底 | 工作日 21:05 | 仅在本机 19:00 未成功时补位；本机已发布则由幂等判断直接跳过，不会重复部署 |
+| `push` | `main` 上 `web/**` 或本 workflow 变更 | 代码 / 页面 / 归档规则改动立即上线；报告数据提交等本机 19:00 统一发布，避免一天多次推 90MB |
 | `workflow_dispatch` | 手动，可选 `force=true` | 强制重新部署 |
 | 幂等 | 仅 `schedule` | 比对线上 `/archive/index.json` 的 `fingerprint` 与本地；一致则跳过，不一致才发布 |
 | 并发 | `concurrency` 按 workflow + ref 分组 | 定时与 push 撞车时取消旧实例 |
 
 > 时区是 `on.schedule[].timezone`（GitHub 官方支持 IANA 时区名），与 `daily-screen.yml` 同一套写法，不是默认 UTC。
+
+> **主通道迁移（2026-11-12）**：GitHub schedule 排队延迟不可控，每日发布改由本机 19:00 自动化承担，云端只留 21:05 幂等兜底。
+> 恢复 19:30 只需取消 `deploy-archive.yml` 里那两行 cron 注释，并**同时停用本机 19:00 自动化**，避免双主通道。
 
 ### Secrets（与非部署用的 `CF_*` 区分）
 

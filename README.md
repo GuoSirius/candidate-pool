@@ -371,7 +371,7 @@ NOTIFY_MAIL_SENDER / NOTIFY_MAIL_AUTH / NOTIFY_MAIL_RECEIVER / NOTIFY_MAIL_HOST 
 | 归档脚本 | `web/scripts/build-archive.mjs` → `public/archive/{reports,data}/<类型>/` + `index.json` 清单（Pages 无目录列表 API，前端靠清单枚举） |
 | 覆盖范围 | 次日候选 / 尾盘选股 / 盘前选股 / 游资席位 / 形态选股 / **胜率周报 / 观察池回流**（后两类 2026-11-11 起统一为单文件 HTML） |
 | 查看页面 | `/reports/archive`：报告类型 + 具体 HTML 两个下拉框 → iframe 同源预览；`/reports`、`/tail/reports` 仍指向 GitHub Pages 不变 |
-| 自动部署 | `deploy-archive.yml`：**工作日北京时间 19:30**（21:05 兜底），`web/**` push 到 `main` 立即发布；用归档 `fingerprint` 幂等去重，**不需要每天手动 `npm run deploy`** |
+| 自动部署 | **本机 WorkBuddy 自动化工作日 19:00（主通道）**，见 [`docs/automations/README.md`](docs/automations/README.md) 第 15 节；`deploy-archive.yml` 仅保留工作日 21:05 幂等兜底（19:30 主触发已停用），`web/**` push 到 `main` 立即发布；用归档 `fingerprint` 幂等去重，**不需要每天手动 `npm run deploy`** |
 | PWA 护栏 | 90MB 归档不进 SW 预缓存，且 `/archive/**` 不走 SPA `navigateFallback` |
 
 > 完整链路、Secrets 权限（`CF_PAGES_TOKEN` 需 `Cloudflare Pages → Edit`）与排查见 [`DEPLOY.md`](DEPLOY.md) §5；

@@ -24,6 +24,7 @@
 | 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
 | 次日回填 nextday_backfill（18:30） | `08b2baac-9293-4d2e-86a2-a2c1ab565d36` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=30` | 工作日 18:30 | ACTIVE | 四类归档 verdicts 段 + `eod/data/perf-weekly.json` + 最新报告重渲染 |
 | 观察池回流 pool_reflow（18:40） | `650d6943-9903-44f9-85be-c4e5c46cb066` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40` | 工作日 18:40 | **PAUSED** | `eod/reports/pool_reflow/pool_reflow-<日>.html`（dry-run diff，**不写**观察池） |
+| 报告归档发布 deploy（19:00） | `64e24925-5a1f-4426-af26-f7caf36f3af6` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=19;BYMINUTE=0` | 工作日 19:00 | ACTIVE | `web/public/archive/`（gitignore）+ Cloudflare Pages 线上归档发布（不入库、无本地 HTML 报告） |
 | 周六胜率回归简报（10:00） | `6b3d2cf6-942c-44e9-86d8-9e39fbe3f5b5` | `FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0` | 周六 10:00 | ACTIVE | `eod/reports/weekly/winrate-<日>.html`（纯只读，不推送） |
 | A股每日市场情绪日报（23:30） | `automation-1786325369523` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=23;BYMINUTE=30` | 工作日 23:30 | PAUSED | 仅对话输出；B2 联动 regime 未实现 |
 
@@ -41,7 +42,7 @@
 
 - **本地自动化（本机 WorkBuddy）**：**所有任务**的提交都由下方各节 Prompt 里的「git 推送块」显式负责（`git add` → `git commit` → `git push`）。脚本内部**不再写 git**——原先盘前选股 / 回填在 `preopen_screener.js` / `preopen_backfill.js` 内自动 commit，已于 2026-10-23 移除，统一收归 Prompt，避免重复提交。
 - **GitHub Actions（云端）**：4 个定时 workflow 末尾均含 commit 步骤——`daily-screen` / `tail-screen` / `tail-observe` 提交到 `daily-artifacts` 分支，`refresh-industry-map` 提交到 `main`。
-- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/reports/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库；④ **第 13/14 节（pool_reflow / weekly_winrate）**：用户 2026-11-09 拍板「不推送」，两条 prompt 均**不含 git 推送块**，报告落盘后不自动提交 —— 这是有意例外，避免 ACTIVE 的周六任务自动写远端。如需入库，人工 `git add eod/reports/pool_reflow eod/reports/weekly` 后提交。
+- **例外（不提交）**：① 盘前基线预计算产物为 `.gitignore` 忽略的派生缓存，故意不入库；② 附录 A1 的 cwds 不在本仓库，不提交本仓库；③ pulse 两条任务的产物（`pulse/data/`、`pulse/reports/`）已被 `.gitignore` 忽略，prompt 未含 git 推送块，不入库；④ **第 13/14 节（pool_reflow / weekly_winrate）**：用户 2026-11-09 拍板「不推送」，两条 prompt 均**不含 git 推送块**，报告落盘后不自动提交 —— 这是有意例外，避免 ACTIVE 的周六任务自动写远端。如需入库，人工 `git add eod/reports/pool_reflow eod/reports/weekly` 后提交；⑤ **第 15 节（报告归档发布 deploy）**：产物 `web/public/archive/`、`web/dist/` 均被 `.gitignore` 忽略，任务只负责把归档发到 Cloudflare Pages，prompt **不含 git 推送块、不含 present_files**，源码改动由其他任务提交。
 
 #### 统一提交信息格式（规范 · 中文描述 + 时间）
 
@@ -496,6 +497,35 @@ git push
 - 若命令非零退出，贴出 stderr 错误摘要，不要重试超过一次。
 ~~~
 
+## 15. 报告归档发布 deploy（19:00，ACTIVE）
+
+> **2026-11-12 调度变更**：用户反馈 GitHub Actions cron 排队延迟严重，把「每日报告归档发布」的**主通道从云端迁到本机**。
+> `.github/workflows/deploy-archive.yml` 的 **19:30 主触发已停用**（注释保留，取消注释即可恢复），**21:05 兜底保留**：
+> 它有幂等指纹去重，本机 19:00 成功后会自动跳过，仅在本机失败时补位，不构成重复发布。
+> 其余 workflow（daily-screen / tail-* / 月更）职责是「生成报告或刷新数据」，不是「发布报告」，且已与本机分工消重，**全部保留**。
+> 详见 [`docs/ops/01-方案.md`](../ops/01-方案.md) §9、[`DEPLOY.md`](../../DEPLOY.md) §5。
+
+- **ID**：`64e24925-5a1f-4426-af26-f7caf36f3af6`
+- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=19;BYMINUTE=0`（工作日 19:00）
+- **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
+- **状态**：ACTIVE
+- **产物**：`web/public/archive/index.json` + 归档副本（gitignore，不入库）；线上 `https://candidate-pool-web.pages.dev/reports/archive`
+- **推送 / git**：无（不推送微信邮件、不自动 git，见「提交约定」例外 ⑤）
+- **前置条件（一次性，需用户本机执行）**：本机 wrangler 需已登录（`cd worker && npx wrangler login`），或系统环境变量配好 `CLOUDFLARE_API_TOKEN`（权限 `Account → Cloudflare Pages → Edit`）+ `CLOUDFLARE_ACCOUNT_ID`。2026-11-12 建任务时实测 `wrangler whoami` 报 `Not logged in`（OAuth token 刷新连不上鉴权服务），故凭据修好前 21:05 云端兜底是唯一保底。
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+```text
+在 candidate-pool 仓库执行「当日报告归档发布」（本机主通道，工作日 19:00）。工作目录固定 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool（cwds 已设）。GitHub Actions 的 19:30 主触发已停用，21:05 仅作幂等兜底。
+
+1. 归档扫描（只读、约 1 秒）：`cd web && node scripts/build-archive.mjs`，扫描 reports/、data/、eod/reports/、eod/data/ 等 7 类产物，生成 web/public/archive/index.json（已被 .gitignore 忽略，不入库）。
+2. 幂等判断：用 node 读取本地 index.json 的 fingerprint，并请求 https://candidate-pool-web.pages.dev/archive/index.json?ts=<当前毫秒时间戳>（带 cache-control: no-cache，20 秒超时）取线上 fingerprint。两者一致 → 直接汇报「线上已最新，无需发布」并结束，不再部署；线上不可读或指纹不一致 → 继续第 3 步。
+3. 凭据检查：确认环境变量 CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID 已设置，或 `worker/node_modules/.bin/wrangler whoami` 显示已登录。两者都不满足时：不要盲目重试、不要尝试交互式 wrangler login（需要浏览器），直接如实报错，并提示用户二选一自助修复：① 在 Cloudflare 控制台创建权限 Account → Cloudflare Pages → Edit 的 API Token，把 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 写入系统环境变量；② 本机执行 `cd worker && npx wrangler login` 完成一次性 OAuth 登录。同时说明 GitHub Actions 21:05 兜底会自动补位，当晚不会断档。
+4. 发布：在 web/ 目录下执行 `npm run deploy`（等价根目录 `npm run deploy`）：vue-tsc 类型检查 → vite build（含归档）→ wrangler pages deploy dist --project-name candidate-pool-web --branch main。复用 worker/node_modules 里的本地 wrangler，不要安装任何依赖。若报 403 / permission denied，说明令牌缺 Pages:Edit 权限，如实反馈并停止，重试不超过一次。
+5. 验证：带时间戳参数请求 https://candidate-pool-web.pages.dev/archive/index.json，核对 fingerprint 与本地一致（CDN 可能缓存）；汇报归档报告份数、数据份数、页面地址 https://candidate-pool-web.pages.dev/reports/archive。
+6. 严格约束：本任务只发布，不执行任何 git add / commit / push（web/public/archive/ 与 web/dist/ 均被 .gitignore 忽略）；不修改任何报告、归档、配置、阈值；不推送微信 / 邮件；本任务无本地 HTML 产物，无需调用 present_files。失败时把错误摘要如实反馈，不要编造路径或结果。
+```
+
 ## 附录：A 股工作流相关、但 cwd 不在本仓库的自动化
 
 > 换设备重建时一并照抄即可；它们的 cwds 指向其他工作区，需按新设备实际路径调整。
@@ -535,7 +565,8 @@ git push
 3. 把各节 cwds 里的旧路径替换为新设备的仓库实际路径。
 4. 盘前选股 / 盘前回填两个手动兜底任务创建后状态设为 ACTIVE（与当前本机一致；scheduleType=recurring + status=ACTIVE，名义 rrule 仅占位，日常手动触发）。
 5. 第 13 节 `pool_reflow` 必须建为 **PAUSED**、第 14 节 `weekly_winrate` 建为 **ACTIVE**；两条 prompt 均**不含 git 推送块**，第 13 节**不得出现 `--apply`**。
-6. 重建完成后用本文件逐字校验各 prompt。
+6. 第 15 节 `报告归档发布 deploy` 建为 **ACTIVE**（工作日 19:00），prompt 不含 git 推送块 / present_files；重建前先确认本机 Cloudflare Pages 发布凭据可用，否则暂时恢复 `deploy-archive.yml` 的 19:30 主触发。
+7. 重建完成后用本文件逐字校验各 prompt。
 
 ## 对齐约定（务必遵守）
 

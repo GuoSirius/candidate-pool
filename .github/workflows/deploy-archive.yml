@@ -1,14 +1,17 @@
 name: Deploy Web + Archive
 
-# 工作日北京时间 19:30 把 main 上的全量历史报告 + 前端一起发布到 Cloudflare Pages。
-# 用户不必每天手动 `npm run deploy`。
+# 把 main 上的全量历史报告 + 前端一起发布到 Cloudflare Pages。
+# 【2026-11-12 调度变更】每日发布的**主通道已迁到本机 WorkBuddy 自动化 19:00**
+# （见 docs/automations/README.md 第 15 节），原因是 GitHub schedule 排队延迟不可控。
+# 本工作流保留两条与本机不重复职责：
+#   - 21:05 兜底：仅在本机 19:00 未成功时补位；本机已发布则由「幂等判断」直接跳过，
+#     不会重复部署（线上 /archive/index.json 指纹一致 → skip）。
+#   - push / workflow_dispatch：web/** 代码或归档规则改动立即上线、手动强制发布。
+# 19:30 主触发已停用（注释保留，恢复时取消注释即可）。
 #
 # 时间口径（已核对 GitHub 官方 workflow syntax）：
-#   on.schedule 默认 UTC，但支持逐条指定 IANA timezone；本文件两条都写
-#   `timezone: "Asia/Shanghai"`，cron 里直接写北京时间：
-#     - 19:30 主触发（收盘 + nextday_backfill 18:30 之后，报告已齐全）
-#     - 21:05 兜底触发：GitHub schedule 存在真实排队延迟 / 偶发漏跑，
-#       这一步由「幂等判断」挡住重复部署 —— 线上指纹一致就直接跳过。
+#   on.schedule 默认 UTC，但支持逐条指定 IANA timezone；cron 里直接写北京时间：
+#     - 21:05 兜底触发（原 19:30 主触发已停用）
 #   与 daily-screen.yml 的 `37 15 Asia/Shanghai` 是同一套写法。
 #
 # 数据来源：构建期 `web/scripts/build-archive.mjs` 只读扫描仓库原目录，
@@ -17,8 +20,10 @@ name: Deploy Web + Archive
 # GitHub Pages 旧直链继续可用。
 on:
   schedule:
-    - cron: "30 19 * * 1-5"
-      timezone: "Asia/Shanghai"
+    # 19:30 主触发已停用（2026-11-12）：与本机 19:00 归档发布同职责，重复。
+    # 恢复方式：取消下面两行注释，并同时停用本机 19:00 自动化，避免双主通道。
+    # - cron: "30 19 * * 1-5"
+    #   timezone: "Asia/Shanghai"
     - cron: "05 21 * * 1-5"
       timezone: "Asia/Shanghai"
   workflow_dispatch:
@@ -31,7 +36,7 @@ on:
         options:
           - "false"
           - "true"
-  # 代码 / 页面 / 归档规则变更立即上线；报告与数据档的提交等 19:30 统一发布，
+  # 代码 / 页面 / 归档规则变更立即上线；报告与数据档的提交等本机 19:00 统一发布，
   # 避免一天内多次推送 90MB 产物。
   push:
     branches: [main]
