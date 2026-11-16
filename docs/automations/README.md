@@ -10,29 +10,35 @@
 
 | 任务 | 自动化 ID | 调度（RRULE） | 人类可读 | 状态 | 产物 |
 |---|---|---|---|---|---|
-| 盘前基线预计算 (preopen baseline) | `1e86f8e2-3865-47d3-b03d-8da929bc1dde` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen/preopen-baseline-*.json`（不入库） |
-| pulse 消息脉搏 · 一键报告 | `6d84d676-9d4c-4880-a205-b99383cfb74f` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=0` | 每日 08:00 | PAUSED | `pulse/reports/latest.html`（不入库） |
-| 盘前纪要每日早间分析（附录 A1） | `automation-1784254142442` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=8;BYMINUTE=30` | 工作日 08:30 | ACTIVE | 仅对话输出（cwd 不在本仓库） |
-| pulse watch · 常驻监听启动 | `87f8f966-f5f4-41d6-a5b7-04a6c45059ea` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=30` | 每日 08:30 | PAUSED | `pulse/data/watch-console.log` + 归档（不入库） |
-| 盘前选股 preopen（手动触发） | `ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen/preopen-<日>.json` + html |
-| 早盘机会（10:30） | `437fc164-152b-431c-b5bf-8a7a211f8f47` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30` | 工作日 10:30 | ACTIVE | 同 `--intraday` 产物 |
-| 午盘机会（11:30） | `2b6b4b02-247a-433c-9b66-1c7cb45b780e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
-| 尾盘选股-观察模式(1430) | `f46d3c1c-a803-4e43-a2a7-7db8ede8b5ba` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod/eod-<交易日>-obs.json` + html |
-| 尾盘选股-正式口径(1450) | `6cda9d58-4ba9-4c1d-ac2c-476c2459d879` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod/eod-<交易日>.json` + html |
-| A股次日候选池初筛 | `automation-1786328116138` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
-| 盘前回填 preopen:backfill（18:00） | `79f60ba3-646d-48e9-8694-a65e95606184` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
-| 游资席位扫描（18:20） | `dbff7b4b-0912-41e1-86be-0d6f2e8be67e` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
-| 次日回填 nextday_backfill（18:30） | `08b2baac-9293-4d2e-86a2-a2c1ab565d36` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=30` | 工作日 18:30 | ACTIVE | 四类归档 verdicts 段 + `eod/data/perf-weekly.json` + 最新报告重渲染 |
-| 观察池回流 pool_reflow（18:40） | `650d6943-9903-44f9-85be-c4e5c46cb066` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40` | 工作日 18:40 | **PAUSED** | `eod/reports/pool_reflow/pool_reflow-<日>.html`（dry-run diff，**不写**观察池） |
-| 报告归档发布 deploy（19:00） | `64e24925-5a1f-4426-af26-f7caf36f3af6` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=19;BYMINUTE=0` | 工作日 19:00 | ACTIVE | `web/public/archive/`（gitignore）+ Cloudflare Pages 线上归档发布（不入库、无本地 HTML 报告） |
-| 周六胜率回归简报（10:00） | `6b3d2cf6-942c-44e9-86d8-9e39fbe3f5b5` | `FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0` | 周六 10:00 | ACTIVE | `eod/reports/weekly/winrate-<日>.html`（纯只读，不推送） |
-| A股每日市场情绪日报（23:30） | `automation-1786325369523` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=23;BYMINUTE=30` | 工作日 23:30 | PAUSED | 仅对话输出；B2 联动 regime 未实现 |
+| 盘前基线预计算 (preopen baseline) | `aa7e8acb-494f-45da-81b6-e1a05c18d92b` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0` | 工作日 03:00 | ACTIVE | `eod/data/preopen/preopen-baseline-*.json`（不入库） |
+| pulse 消息脉搏 · 一键报告 | `03290e88-43d3-44b5-b8c4-04caf4ea45f6` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=0` | 每日 08:00 | PAUSED | `pulse/reports/latest.html`（不入库） |
+| 盘前纪要每日早间分析（附录 A1） | `6e1366e5-e5f4-4288-a144-2b9683ebc049` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=8;BYMINUTE=30` | 工作日 08:30 | ACTIVE | 仅对话输出（cwd 不在本仓库） |
+| pulse watch · 常驻监听启动 | `b88c8967-1113-4b54-ac36-f25111c28a65` | `FREQ=DAILY;BYHOUR=8;BYMINUTE=30` | 每日 08:30 | PAUSED | `pulse/data/watch-console.log` + 归档（不入库） |
+| 盘前选股 preopen（手动触发） | `8362a08a-30f5-4703-93c9-f974b151edd2` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25` | 工作日 09:25 | ACTIVE | `eod/data/preopen/preopen-<日>.json` + html |
+| 早盘机会（10:30） | `967fac57-d329-4710-a7f6-b48dd3dc80cf` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30` | 工作日 10:30 | ACTIVE | 同 `--intraday` 产物 |
+| 午盘机会（11:30） | `93cd9c3c-72e8-46c1-8572-be71110e403f` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
+| 尾盘选股-观察模式(1430) | `b5503987-bb61-4bf1-bcf8-42ced3bdb557` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod/eod-<交易日>-obs.json` + html |
+| 尾盘选股-正式口径(1450) | `c407155f-8758-450e-bf4b-25752fae768f` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod/eod-<交易日>.json` + html |
+| A股次日候选池初筛 | `c0dbf301-2323-4969-b4d4-74e98e5e2f94` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
+| 盘前回填 preopen:backfill（18:00） | `a4000564-3195-4b8b-a43e-70911a96e9bb` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
+| 游资席位扫描（18:20） | `36579efc-f28c-43a4-b2fd-e53c50ba3e20` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
+| 次日回填 nextday_backfill（18:30） | `494b2231-ded6-49bd-8f8a-4be44428f044` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=30` | 工作日 18:30 | ACTIVE | 四类归档 verdicts 段 + `eod/data/perf-weekly.json` + 最新报告重渲染 |
+| 观察池回流 pool_reflow（18:40） | `be9846ac-c61f-4e50-8570-7d11612860e2` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40` | 工作日 18:40 | ACTIVE | `eod/reports/pool_reflow/pool_reflow-<日>.html`（dry-run diff，**不写**观察池；执行后提交推送） |
+| 报告归档发布 deploy（19:00） | `903bcaf8-d180-48fc-ac8f-1cbb2b128bbb` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=19;BYMINUTE=0` | 工作日 19:00 | ACTIVE | `web/public/archive/`（gitignore）+ Cloudflare Pages 线上归档发布（不入库、无本地 HTML 报告） |
+| 周六胜率回归简报（10:00） | `92fe9d2d-eb11-4fc0-a055-b677c5031e6a` | `FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0` | 周六 10:00 | ACTIVE | `eod/reports/weekly/winrate-<日>.html`（纯只读，不推送） |
+| A股每日市场情绪日报（23:30） | `automation-1786325369523`（旧设备 ID，本次未重建） | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=23;BYMINUTE=30` | 工作日 23:30 | PAUSED | 仅对话输出；B2 联动 regime 未实现 |
 
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
 
 > ⚠️ **补登记（2026-11-09）**：最后一行「A股每日市场情绪日报」本机一直存在，此前漏登记进本真值源；
 > 其 prompt 的逐字原文与 cwds 尚未按本文件模板校对（重建时请用 `automation_update mode=view` 取原文）。
 > 详见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md) 的 B2 节。
+
+> 🔄 **换设备重建记录（2026-11-16）**：本机自动化曾被清空，当日按本文件逐字重建 **16 条**（上表前 16 行），新 ID 已同步回总览表与各小节。要点：
+> - **模型**：自动化工具无模型配置字段；用户拍板「默认 Hy4 flash」指**当前会话模型**，任务本身不写模型参数。
+> - **pool_reflow 状态矛盾拍板**：采用第 13 节正文的 **ACTIVE + git 推送块**（2026-11-12 口径）；文末「对齐约定」C2/D2 红线里「pool_reflow 保持 PAUSED、不含 git 推送块」为 2026-11-09 旧口径，以此处拍板为准，待后续统一修订。
+> - **情绪日报（23:30）跳过**：prompt 原文在本文件 / 本机 / 历史对话均不可得，用户拍板暂不重建，未凭空捏造。上表保留其旧设备 ID 并标注，后续拿到原文再补建。
+> - 各任务 prompt / rrule / cwds / 状态均逐字照抄，仅 ID 因重建刷新。
 
 ### ⚓ 提交约定（铁律）
 
@@ -83,7 +89,7 @@ chore: <任务中文名> $(date +%F)
 
 ## 1. 盘前基线预计算 (preopen baseline)
 
-- **ID**：`1e86f8e2-3865-47d3-b03d-8da929bc1dde`
+- **ID**：`aa7e8acb-494f-45da-81b6-e1a05c18d92b`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=3;BYMINUTE=0`（工作日 03:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
@@ -109,7 +115,7 @@ chore: <任务中文名> $(date +%F)
 
 ## 2. 盘前选股 preopen（手动触发）
 
-- **ID**：`ff63044e-ff4e-4bd0-8f12-6b90c3a10f5a`
+- **ID**：`8362a08a-30f5-4703-93c9-f974b151edd2`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=25`（名义 09:25，日常以手动触发为主，名义 rrule 仅占位）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：ACTIVE
@@ -145,7 +151,7 @@ git push
 
 ## 3. 盘前回填 preopen:backfill（18:00）
 
-- **ID**：`79f60ba3-646d-48e9-8694-a65e95606184`
+- **ID**：`a4000564-3195-4b8b-a43e-70911a96e9bb`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0`（工作日 18:00——龙虎榜约 17:00 后才出齐，故从 15:30 推迟到 18:00，收盘行情不受影响）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：ACTIVE
@@ -186,7 +192,7 @@ git push
 
 ## 4. 尾盘选股-观察模式(1430)
 
-- **ID**：`f46d3c1c-a803-4e43-a2a7-7db8ede8b5ba`
+- **ID**：`b5503987-bb61-4bf1-bcf8-42ced3bdb557`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30`（工作日 14:30）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
@@ -235,7 +241,7 @@ git push
 
 ## 5. 尾盘选股-正式口径(1450)
 
-- **ID**：`6cda9d58-4ba9-4c1d-ac2c-476c2459d879`
+- **ID**：`c407155f-8758-450e-bf4b-25752fae768f`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50`（工作日 14:50）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
@@ -286,8 +292,8 @@ git push
 
 > 这两个任务 prompt 完全相同，仅调度时间与用途不同：10:30 是早盘异动观察，11:30 是午前手动兜底（对应 `npm run tail:intraday`）。均为本机实时盘中筛，产物 `-intraday` 系列。
 
-- **午盘机会（11:30）ID**：`2b6b4b02-247a-433c-9b66-1c7cb45b780e`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30`
-- **早盘机会（10:30）ID**：`437fc164-152b-431c-b5bf-8a7a211f8f47`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30`
+- **午盘机会（11:30）ID**：`93cd9c3c-72e8-46c1-8572-be71110e403f`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30`
+- **早盘机会（10:30）ID**：`967fac57-d329-4710-a7f6-b48dd3dc80cf`，调度 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=10;BYMINUTE=30`
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：均 ACTIVE
 - **推送**：脚本强制 `--no-notify`（不推送微信/邮件）；`--intraday` 产物**不写入 D1**；git 提交由下方「git 推送块」负责
@@ -321,7 +327,7 @@ git push
 
 ## 8. A股次日候选池初筛
 
-- **ID**：`automation-1786328116138`
+- **ID**：`c0dbf301-2323-4969-b4d4-74e98e5e2f94`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0`（工作日 16:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
@@ -369,7 +375,7 @@ git push
 
 ## 9. pulse watch · 常驻监听启动（08:30，PAUSED）
 
-- **ID**：`87f8f966-f5f4-41d6-a5b7-04a6c45059ea`
+- **ID**：`b88c8967-1113-4b54-ac36-f25111c28a65`
 - **调度**：`FREQ=DAILY;BYHOUR=8;BYMINUTE=30`（每日 08:30）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：PAUSED
@@ -391,7 +397,7 @@ git push
 
 ## 10. pulse 消息脉搏 · 一键报告（08:00，PAUSED）
 
-- **ID**：`6d84d676-9d4c-4880-a205-b99383cfb74f`
+- **ID**：`03290e88-43d3-44b5-b8c4-04caf4ea45f6`
 - **调度**：`FREQ=DAILY;BYHOUR=8;BYMINUTE=0`（每日 08:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：PAUSED
@@ -447,7 +453,7 @@ git push
 > 数据安全契约（只追加、存量票零改动、写前备份 + 双重校验、非法代码丢弃）见 `eod/pool_reflow.js` 文件头。
 > **prompt 严禁加 `--apply`**：写回只能由人工审核 diff 后手动执行，绝不自动化。
 
-- **ID**：`650d6943-9903-44f9-85be-c4e5c46cb066`
+- **ID**：`be9846ac-c61f-4e50-8570-7d11612860e2`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=40`（工作日 18:40）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：**ACTIVE**
@@ -481,7 +487,7 @@ git push
 > **硬门禁**：已回填交易日 < 20 时只报样本量，不输出任何胜率与回归结论。
 > **用户拍板**：不推送（不发微信/邮件）、不自动调权重、ACTIVE；脚本纯只读，不改归档/配置/观察池。
 
-- **ID**：`6b3d2cf6-942c-44e9-86d8-9e39fbe3f5b5`
+- **ID**：`92fe9d2d-eb11-4fc0-a055-b677c5031e6a`
 - **调度**：`FREQ=WEEKLY;BYDAY=SA;BYHOUR=10;BYMINUTE=0`（周六 10:00）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE
@@ -512,7 +518,7 @@ git push
 > 其余 workflow（daily-screen / tail-* / 月更）职责是「生成报告或刷新数据」，不是「发布报告」，且已与本机分工消重，**全部保留**。
 > 详见 [`docs/ops/01-方案.md`](../ops/01-方案.md) §9、[`DEPLOY.md`](../../DEPLOY.md) §5。
 
-- **ID**：`64e24925-5a1f-4426-af26-f7caf36f3af6`
+- **ID**：`903bcaf8-d180-48fc-ac8f-1cbb2b128bbb`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=19;BYMINUTE=0`（工作日 19:00）
 - **cwds**：`D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool`
 - **状态**：ACTIVE
@@ -539,7 +545,7 @@ git push
 
 ### A1. 盘前纪要每日早间分析（8:30，ACTIVE）
 
-- **ID**：`automation-1784254142442`
+- **ID**：`6e1366e5-e5f4-4288-a144-2b9683ebc049`
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=8;BYMINUTE=30`
 - **cwds**：`C:\Users\Admin\WorkBuddy\2026-07-17-10-08-07`（仅作会话工作目录，任务本身是网页分析）
 - **推送**：无（结果仅对话输出）
