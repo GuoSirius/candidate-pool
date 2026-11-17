@@ -19,6 +19,7 @@
 | 午盘机会（11:30） | `93cd9c3c-72e8-46c1-8572-be71110e403f` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
 | 尾盘选股-观察模式(1430) | `b5503987-bb61-4bf1-bcf8-42ced3bdb557` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod/eod-<交易日>-obs.json` + html |
 | 尾盘选股-正式口径(1450) | `c407155f-8758-450e-bf4b-25752fae768f` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod/eod-<交易日>.json` + html |
+| 形态选股 pattern（15:45） | `965dc3bd-5ce6-4ba4-8c68-594ac7ae00aa` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=45` | 工作日 15:45 | ACTIVE | `eod/data/pattern/pattern-<交易日>.json` + `eod/reports/pattern/pattern-<交易日>.html`（2026-11-18 补登记，2026-11-16 重建时漏收） |
 | A股次日候选池初筛 | `c0dbf301-2323-4969-b4d4-74e98e5e2f94` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
 | 盘前回填 preopen:backfill（18:00） | `a4000564-3195-4b8b-a43e-70911a96e9bb` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
 | 游资席位扫描（18:20） | `36579efc-f28c-43a4-b2fd-e53c50ba3e20` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
@@ -31,13 +32,13 @@
 **cwds 统一为**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`（新设备改成你的实际仓库路径）。
 
 > ⚠️ **补登记（2026-11-09）**：最后一行「A股每日市场情绪日报」本机一直存在，此前漏登记进本真值源；
-> 其 prompt 的逐字原文与 cwds 尚未按本文件模板校对（重建时请用 `automation_update mode=view` 取原文）。
+> 其 prompt 的逐字原文已于 **2026-11-18 从本机 `automation_update mode=view` 拉到并补登为附录 A2**（此前标注"尚未校对"作废）。
 > 详见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md) 的 B2 节。
 
 > 🔄 **换设备重建记录（2026-11-16）**：本机自动化曾被清空，当日按本文件逐字重建 **16 条**（上表前 16 行），新 ID 已同步回总览表与各小节。要点：
 > - **模型**：自动化工具无模型配置字段；用户拍板「默认 Hy4 flash」指**当前会话模型**，任务本身不写模型参数。
 > - **pool_reflow 状态矛盾拍板**：采用第 13 节正文的 **ACTIVE + git 推送块**（2026-11-12 口径）；文末「对齐约定」C2/D2 红线里「pool_reflow 保持 PAUSED、不含 git 推送块」为 2026-11-09 旧口径，以此处拍板为准，待后续统一修订。
-> - **情绪日报（23:30）跳过**：prompt 原文在本文件 / 本机 / 历史对话均不可得，用户拍板暂不重建，未凭空捏造。上表保留其旧设备 ID 并标注，后续拿到原文再补建。
+> - **情绪日报（23:30）跳过**：prompt 原文在本文件 / 本机 / 历史对话均不可得，用户拍板暂不重建，未凭空捏造。上表保留其旧设备 ID 并标注，后续拿到原文再补建。（**2026-11-18 更新**：原文已从本机拉到并补登为附录 A2，但任务本身仍未重建，维持 PAUSED 口径。）
 > - 各任务 prompt / rrule / cwds / 状态均逐字照抄，仅 ID 因重建刷新。
 
 ### ⚓ 提交约定（铁律）
@@ -539,6 +540,47 @@ git push
 6. 严格约束：本任务只发布，不执行任何 git add / commit / push（web/public/archive/ 与 web/dist/ 均被 .gitignore 忽略）；不修改任何报告、归档、配置、阈值；不推送微信 / 邮件；本任务无本地 HTML 产物，无需调用 present_files。失败时把错误摘要如实反馈，不要编造路径或结果。
 ```
 
+## 16. 形态选股 pattern（全市场，15:45，手动触发为主）
+
+> 2026-11-10 落地（批次见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md)）；**2026-11-18 补登记**——2026-11-16 换设备重建时漏收，本机线上一直存在且活跃（`npm run pattern`，产物至 11-17 仍在产出）。
+> 与盘前选股同口径：名义 rrule 占位、日常以**手动触发**为主。prompt 自带 git 推送块（只提交两个产物文件）。
+
+- **ID**：`965dc3bd-5ce6-4ba4-8c68-594ac7ae00aa`（本机 ID，重建后会变）
+- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=45`（工作日 15:45）
+- **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
+- **状态**：ACTIVE（手动触发为主）
+- **产物**：`eod/data/pattern/pattern-<交易日>.json` + `eod/reports/pattern/pattern-<交易日>.html`
+- **自测**：`npm run pattern:selftest`
+
+### Prompt（原样复制进 WorkBuddy 自动化）
+
+```text
+在 candidate-pool 仓库运行「形态选股」全市场筛选，并汇报结果。
+
+执行 `npm run pattern`（保持默认全市场 universe，不要加 --limit，不要加 --scope watchlist）。
+
+锚定口径（用户 2026-11-10 明确要求，不得更改）：
+- 开盘前运行 → 脚本自动锚定上一个交易日（完整日 K、走 K 线缓存）；
+- 开盘后运行 → 脚本自动锚定当日实时（含实时半截日 K，不读/不写缓存）；
+- 15:00 收盘后运行 → 锚定当日收盘固定口径（K 已完整，可读写当日缓存）。
+两者都是设计内行为，一律直接 `npm run pattern` 即可，脚本按行情时间戳自动判定，无需任何参数。
+⚠️ 严禁为了「锚定已收盘交易日」而擅自改用 --replay 或 --date 规避盘中锚定（2026-11-10 09:51 曾因此把盘中运行错跑成昨天的报告）。--replay 仅限用户明确要求「零网络重算某个已有日档」时使用。
+
+上榜口径（用户 2026-11-11 拍板）：上榜取锚定日龙虎榜；若锚定日=今日且榜未出（龙虎榜 ~17:30 后出齐），脚本自动回退上一交易日榜，billboard.date 与报告「上榜」列会标注榜单日期（如「11-09榜」）——这是设计内行为，汇报时如实说明榜单日期即可，不要当作错误。
+
+产出：
+- eod/data/pattern/pattern-<交易日>.json（命中明细、贴线样本、漏斗统计）
+- eod/reports/pattern/pattern-<交易日>.html（可过滤报告：形态/阶段/匹配分/上榜·游资/行业，含推荐买入区间、止损、止盈、mini K 线）
+
+跑完后用简洁中文汇报：锚定日、漏斗（快照→粗筛→日K→命中）、四类形态（强势平台 / N字二波 / 老鸭头 / VCP突破）各自命中数、多形态共振数、上榜与游资数（注明榜单日期）、综合分前 10（代码 / 名称 / 形态 / 匹配分 / 阶段 / 推荐买入区间 / 止损 / 止盈）。报告生成后用 present_files 打开该 HTML（传绝对路径）。
+
+严格约束：
+- 不要修改 eod/pattern.templates.json 或 eod/pattern.config.js，不要跑 pattern:calibrate，不要调整任何阈值或权重。
+- 不推送微信 / 邮件（notify 默认关闭），不改 notify 配置。
+- 只提交本次两个产物文件（pattern-<交易日>.json 与 pattern-<交易日>.html），用具体路径 git add，不要 git add -A；按项目约定 commit 后推送 main，推送失败如实说明、不重试超过一次。
+- 若脚本非零退出（尤其 K 线失败率超 20% 的健康度闸门），贴出错误摘要，不要生成或覆盖任何报告，不要重试超过一次。
+```
+
 ## 附录：A 股工作流相关、但 cwd 不在本仓库的自动化
 
 > 换设备重建时一并照抄即可；它们的 cwds 指向其他工作区，需按新设备实际路径调整。
@@ -568,6 +610,19 @@ git push
 ~~~
 
 > 「知了窝」两个同步自动化属于 zhiliaowo-proxy 项目，记录在该项目自己的文档里，此处不收录。
+
+### A2. A股每日市场情绪日报（23:30，PAUSED，2026-11-18 补登 prompt 原文）
+
+- **ID**：`automation-1786325369523`（旧设备 ID）
+- **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=23;BYMINUTE=30`
+- **cwds**：`D:\workspace\workbuddy\2026-08-10-08-24-44`（旧会话目录；重建时建议改成本仓库路径——其数据源全部是本仓库产物）
+- **状态**：PAUSED（试运行阶段；2026-11-16 重建时因原文不可得跳过，未重建）
+- **产物**：无文件，仅对话输出
+- **登记轨迹**：2026-11-09 漏登记 → 2026-11-16 重建跳过（原文不可得）→ 2026-11-18 从本机拉到原文补登。
+
+~~~text
+生成 A 股每日市场情绪日报（仓库 D:/workspace/workbuddy/2026-08-10-08-26-02/candidate-pool）。数据源（当天已落盘的产物，全部只读）：1) 环境：data/snapshot-<今日>.json 的 regime 段（强市/正常/弱市/冰点 + 涨停/跌停/上涨占比）；2) 管道摘要：eod/data/preopen/preopen-<今日>.json 的 close 段命中率、eod/data/eod/eod-<今日>.json 候选数、eod/data/perf-weekly.json 近10日胜率、eod/data/hotmoney/hotmoney-<今日>.json 游资命中数；3) 消息面：pulse/data/latest.json 的热点板块 top3。输出：一段 200 字内的口语化日报（先环境结论 → 当日各管道一句话 → 明日关注），若某数据缺失则跳过该段并注明，不编造数字。日报直接在对话里输出给用户，不生成文件、不推送微信（当前 PAUSED 试运行阶段）。
+~~~
 
 ---
 
