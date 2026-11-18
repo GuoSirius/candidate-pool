@@ -19,7 +19,7 @@
 | 午盘机会（11:30） | `93cd9c3c-72e8-46c1-8572-be71110e403f` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=11;BYMINUTE=30` | 工作日 11:30 | ACTIVE | 同 `--intraday` 产物 |
 | 尾盘选股-观察模式(1430) | `b5503987-bb61-4bf1-bcf8-42ced3bdb557` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=30` | 工作日 14:30 | ACTIVE | `eod/data/eod/eod-<交易日>-obs.json` + html |
 | 尾盘选股-正式口径(1450) | `c407155f-8758-450e-bf4b-25752fae768f` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=14;BYMINUTE=50` | 工作日 14:50 | ACTIVE | `eod/data/eod/eod-<交易日>.json` + html |
-| 形态选股 pattern（15:45） | `965dc3bd-5ce6-4ba4-8c68-594ac7ae00aa` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=45` | 工作日 15:45 | ACTIVE | `eod/data/pattern/pattern-<交易日>.json` + `eod/reports/pattern/pattern-<交易日>.html`（2026-11-18 补登记，2026-11-16 重建时漏收） |
+| 形态选股 pattern（15:45） | `9d753c0f-310b-4057-a48c-d5e898424bc7` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=45` | 工作日 15:45 | ACTIVE | `eod/data/pattern/pattern-<交易日>.json` + `eod/reports/pattern/pattern-<交易日>.html`（2026-11-18 补登记并补建，2026-11-16 重建时漏收） |
 | A股次日候选池初筛 | `c0dbf301-2323-4969-b4d4-74e98e5e2f94` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0` | 工作日 16:00 | ACTIVE | `reports/stock_list_<锚定日>.html` + snapshot |
 | 盘前回填 preopen:backfill（18:00） | `a4000564-3195-4b8b-a43e-70911a96e9bb` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=0` | 工作日 18:00 | ACTIVE | 回填进 `eod/data/preopen/preopen-<日>.json` close 段 |
 | 游资席位扫描（18:20） | `36579efc-f28c-43a4-b2fd-e53c50ba3e20` | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=18;BYMINUTE=20` | 工作日 18:20 | ACTIVE | `eod/data/hotmoney/hotmoney-<日>.json` + `eod/reports/hotmoney/hotmoney-<日>.html` |
@@ -35,7 +35,7 @@
 > 其 prompt 的逐字原文已于 **2026-11-18 从本机 `automation_update mode=view` 拉到并补登为附录 A2**（此前标注"尚未校对"作废）。
 > 详见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md) 的 B2 节。
 
-> 🔄 **换设备重建记录（2026-11-16）**：本机自动化曾被清空，当日按本文件逐字重建 **16 条**（上表前 16 行），新 ID 已同步回总览表与各小节。要点：
+> 🔄 **换设备重建记录（2026-11-16，2026-11-18 补）**：本机自动化曾被清空，11-16 按本文件逐字重建 **16 条**（上表 Idx 1–16），11-18 补建遗漏的**形态选股 pattern（15:45，第 16 节）**，共 **17 条**已上线；新 ID 均同步回总览表与各小节。要点：
 > - **模型**：自动化工具无模型配置字段；用户拍板「默认 Hy4 flash」指**当前会话模型**，任务本身不写模型参数。
 > - **pool_reflow 状态矛盾拍板**：采用第 13 节正文的 **ACTIVE + git 推送块**（2026-11-12 口径）；文末「对齐约定」C2/D2 红线里「pool_reflow 保持 PAUSED、不含 git 推送块」为 2026-11-09 旧口径，以此处拍板为准，待后续统一修订。
 > - **情绪日报（23:30）跳过**：prompt 原文在本文件 / 本机 / 历史对话均不可得，用户拍板暂不重建，未凭空捏造。上表保留其旧设备 ID 并标注，后续拿到原文再补建。（**2026-11-18 更新**：原文已从本机拉到并补登为附录 A2，但任务本身仍未重建，维持 PAUSED 口径。）
@@ -545,7 +545,7 @@ git push
 > 2026-11-10 落地（批次见 [`docs/system-plan-2026-11-09.md`](../system-plan-2026-11-09.md)）；**2026-11-18 补登记**——2026-11-16 换设备重建时漏收，本机线上一直存在且活跃（`npm run pattern`，产物至 11-17 仍在产出）。
 > 与盘前选股同口径：名义 rrule 占位、日常以**手动触发**为主。prompt 自带 git 推送块（只提交两个产物文件）。
 
-- **ID**：`965dc3bd-5ce6-4ba4-8c68-594ac7ae00aa`（本机 ID，重建后会变）
+- **ID**：`9d753c0f-310b-4057-a48c-d5e898424bc7`（2026-11-18 补建后的本机 ID）
 - **调度**：`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=15;BYMINUTE=45`（工作日 15:45）
 - **cwds**：`D:\workspace\workbuddy\2026-08-10-08-26-02\candidate-pool`
 - **状态**：ACTIVE（手动触发为主）
