@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盘前选股 — 2026-11-27</title>
+<style> :root, :root[data-theme="light"] { --bg: #fffbeb; --card: #fff; --text: #1c1917; --muted: #92400e; --border: #fde68a; --accent: #b45309; --red: #dc2626; --green: #16a34a; --blue: #2563eb; --amber: #d97706; --gold: #ca8a04; --slate: #64748b; --btn-bg: #fff; --btn-fg: #b45309; --callout-bg: #fff7ed; --th-bg: #fefce8; --grp-self-bg: #fed7aa; --grp-self-fg: #7c2d12; --grp-sub-self-bg: #fff7ed; --tag-bg: #eff6ff; --tag-pass-bg: #fef2f2; --tag-gap-bg: #fff7ed; --score-bg: #fffbeb; --sc-self-bg: rgba(217, 119, 6, 0.06); --note-fg: #57534e; --disc-bg: #fef2f2; --disc-border: #fecaca; --disc-fg: #991b1b; --card-empty-bg: #fafaf9; } :root[data-theme="dark"] { --bg: #0f1419; --card: #1a2129; --text: #e6edf3; --muted: #c9a684; --border: #2a323c; --accent: #f59e0b; --red: #ff5b5b; --green: #26a69a; --blue: #60a5fa; --amber: #fbbf24; --gold: #ffb74d; --slate: #94a3b8; --btn-bg: #222b35; --btn-fg: #f59e0b; --callout-bg: #1f1c17; --th-bg: #222b35; --grp-self-bg: #3a2a1a; --grp-self-fg: #fcd34d; --grp-sub-self-bg: #1f1c17; --tag-bg: #1b2533; --tag-pass-bg: #2a1e1e; --tag-gap-bg: #1f1c17; --score-bg: #211d14; --sc-self-bg: rgba(245, 158, 11, 0.10); --note-fg: #b9b3a8; --disc-bg: #2a1e1e; --disc-border: #5b2a2a; --disc-fg: #fca5a5; --card-empty-bg: #14171c; } * { box-sizing: border-box; margin: 0; padding: 0; } body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px 16px; } .container { max-width: 1320px; margin: 0 auto; } .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; } h1 { font-size: 1.55rem; font-weight: 700; margin-bottom: 6px; } h2 { font-size: 1.15rem; font-weight: 600; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); } .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 14px; } .topbtn { flex: none; cursor: pointer; border: 1px solid var(--accent); background: var(--btn-bg); color: var(--btn-fg); font-weight: 600; font-size: 0.85rem; padding: 7px 14px; border-radius: 999px; font-family: inherit; transition: all .15s; white-space: nowrap; } .topbtn:hover { background: var(--accent); color: var(--btn-bg); } .topbar .btns { display: flex; gap: 8px; } .meta-bar { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.88rem; margin-bottom: 18px; } .meta-bar .label { color: var(--muted); } .meta-bar .value { font-weight: 600; } .callout { background: var(--callout-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 16px 20px; margin-bottom: 18px; } .callout h3 { color: var(--accent); margin-bottom: 8px; } .callout ul { margin: 6px 0 0 18px; font-size: 0.9rem; } .callout li { margin-bottom: 5px; } .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; } .up { color: var(--red); } .down { color: var(--green); } .flat { color: var(--slate); } .score { display: inline-block; font-size: 0.95rem; font-weight: 700; padding: 2px 12px; border-radius: 6px; background: var(--score-bg); color: var(--gold); } .tag { display: inline-block; font-size: 0.78rem; padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; background: var(--tag-bg); color: var(--blue); } .tag.pass { background: var(--tag-pass-bg); color: var(--red); } .tag.gap { background: var(--tag-gap-bg); color: var(--amber); } .table-wrap { overflow-x: auto; } /* 冻结列与表头（2026-11-11）：.vscroll 只管容器内双轴滚动 + 表头 sticky； 列冻结按表精确作用域，避免误伤不需要横向滚动的表： - .freeze2：# 列恒为数字定宽 36px 的主表（候选/回填/贴线），col2 偏移为常量 36px - .vfreeze / .vfreeze3：列宽可变的表（游资），JS 实测列宽写 --s1/--s2 */ .vscroll { max-height: 72vh; overflow: auto; } .vscroll thead th { position: sticky; top: 0; z-index: 3; height: 36px; } .freeze2 thead tr:nth-child(2) th { top: 36px; } .freeze2 thead tr:first-child th:nth-child(1) { left: 0; z-index: 5; width: 36px; min-width: 36px; } .freeze2 thead tr:first-child th:nth-child(2) { left: 36px; z-index: 5; box-shadow: 2px 0 0 var(--border); } .freeze2 tbody td:nth-child(1) { position: sticky; left: 0; z-index: 2; width: 36px; min-width: 36px; background: var(--card); } .freeze2 tbody td:nth-child(2) { position: sticky; left: 36px; z-index: 2; min-width: 96px; background: var(--card); box-shadow: 2px 0 0 var(--border); } .freeze2 tbody tr.sector-row td:nth-child(-n+2) { background: var(--th-bg); } /* th 必须高于 td（否则表头被冻结列盖住——图证 2026-11-11）：th z4 / td z2 */ .vfreeze td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); } .vfreeze th:nth-child(1) { position: sticky; left: 0; z-index: 4; } .vfreeze td:nth-child(2) { position: sticky; left: var(--s1, 0px); z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); } .vfreeze th:nth-child(2) { position: sticky; left: var(--s1, 0px); z-index: 4; } .vfreeze3 td:nth-child(3) { position: sticky; left: var(--s2, 0px); z-index: 2; background: var(--card); box-shadow: 2px 0 0 var(--border); } .vfreeze3 th:nth-child(3) { position: sticky; left: var(--s2, 0px); z-index: 4; } table { width: 100%; border-collapse: collapse; font-size: 0.85rem; } th, td { padding: 8px 9px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--border); white-space: nowrap; } th { color: var(--muted); font-weight: 600; background: var(--th-bg); } th.grp { text-align: center; font-size: 0.8rem; border-bottom: 1px solid var(--border); background: var(--grp-self-bg); color: var(--grp-self-fg); font-weight: 700; } th.grp-sub { background: var(--grp-sub-self-bg); color: var(--accent); } td.num { text-align: center; font-variant-numeric: tabular-nums; } td.sc { background: var(--sc-self-bg); } .score-note { margin: 0 0 12px; font-size: 0.86rem; line-height: 1.75; color: var(--note-fg); background: var(--callout-bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px 14px; } td.wrap { white-space: normal; min-width: 130px; } td .src { display: block; color: var(--slate); font-size: 0.72rem; } td.trend { color: var(--muted); font-size: 0.8rem; } .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 0 0 12px; } .toolrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; } .toolrow .cap { font-size: 0.8rem; color: var(--muted); font-weight: 600; flex: none; } .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; flex: none; } .segbtn { border: 0; background: var(--btn-bg); color: var(--btn-fg); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 6px 16px; cursor: pointer; white-space: nowrap; } .segbtn + .segbtn { border-left: 1px solid var(--border); } .segbtn.active { background: var(--accent); color: #fff; } .chips { display: flex; flex-wrap: wrap; gap: 6px; } .chip { border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font: inherit; font-size: 0.8rem; padding: 3px 11px; border-radius: 999px; cursor: pointer; } .chip i { font-style: normal; color: var(--muted); margin-left: 3px; } .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; } .chip.active i { color: inherit; opacity: 0.85; } .bd-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); cursor: pointer; white-space: nowrap; flex: none; } tr.sector-row td { background: var(--th-bg); color: var(--accent); font-weight: 700; font-size: 0.88rem; } table.hide-bd th.grp, table.hide-bd th.grp-sub, table.hide-bd td.sc { display: none; } details { margin-top: 10px; } summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; font-weight: 600; } .src { font-size: 0.78rem; color: var(--slate); margin-top: 8px; } .disclaimer { margin-top: 26px; padding: 14px 18px; background: var(--disc-bg); border: 1px solid var(--disc-border); border-radius: 8px; font-size: 0.85rem; color: var(--disc-fg); } .footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; text-align: center; } td.spark { text-align: center; vertical-align: middle; padding: 2px 4px; } td.spark svg { display: block; margin: 0 auto; } .k-wick { stroke: var(--slate, #64748b); stroke-width: 1; fill: none; opacity: .55; } .k-up { stroke: var(--red, #dc2626); stroke-width: 2.4; fill: none; stroke-linecap: round; } .k-down { stroke: var(--green, #16a34a); stroke-width: 2.4; fill: none; stroke-linecap: round; } .k-launch { stroke: var(--amber, #d97706); stroke-width: 1; stroke-dasharray: 2 2; fill: none; } </style>
+</head>
+<body>
+<div class="container">
+<div class="topbar">
+<div>
+<h1><span data-zh="盘前选股" data-en="Pre-Open Screener">盘前选股</span> · 2026-11-27</h1>
+<div class="sub"><span data-zh="盘前窗口 09:20–09:35 · 今开(open) 09:25 撮合后固定 · 满分 100" data-en="Pre-open window 09:20–09:35 · open fixed at 09:25 auction close · max 100">盘前窗口 09:20–09:35 · 今开(open) 09:25 撮合后固定 · 满分 100</span></div>
+</div>
+<div class="btns">
+<button id="themeBtn" type="button" class="topbtn" title="切换深浅色">☀</button>
+<button id="langBtn" type="button" class="topbtn">EN</button>
+</div>
+</div>
+<div class="meta-bar">
+<div><span class="label"><span data-zh="交易日：" data-en="Trade date:">交易日：</span></span><span class="value">2026-11-27</span></div>
+<div><span class="label"><span data-zh="范围：" data-en="Scope:">范围：</span></span><span class="value"><span data-zh="全市场" data-en="Full market">全市场</span></span></div>
+<div><span class="label"><span data-zh="行情日：" data-en="Market date:">行情日：</span></span><span class="value">2026-11-27</span></div>
+<div><span class="label"><span data-zh="基线锚定日：" data-en="Baseline anchor:">基线锚定日：</span></span><span class="value">2026-11-27</span></div>
+<div><span class="label"><span data-zh="快照：" data-en="Snapshot:">快照：</span></span><span class="value">6185</span></div>
+<div><span class="label"><span data-zh="基线：" data-en="Baseline:">基线：</span></span><span class="value">5915</span></div>
+<div><span class="label"><span data-zh="候选：" data-en="Candidates:">候选：</span></span><span class="value up">23</span></div>
+<div><span class="label"><span data-zh="行业组：" data-en="Groups:">行业组：</span></span><span class="value">21</span></div>
+<div><span class="label"><span data-zh="缺口：" data-en="Gaps:">缺口：</span></span><span class="value">951</span></div>
+<div><span class="tag "><span data-zh="环境·正常" data-en="Regime · Neutral">环境·正常</span></span> <span class="src"><span data-zh="涨停 12 / 跌停 1 · 上涨占比 53.8% · 均涨 0.3% · 两市 103 亿" data-en="Limit-up 12 / limit-down 1 · advancers 53.8% · avg 0.3% · turnover 103 (×100M CNY)">涨停 12 / 跌停 1 · 上涨占比 53.8% · 均涨 0.3% · 两市 103 亿</span></span></div>
+</div>
+<div class="callout">
+<h3><span data-zh="核心结论（先行）" data-en="Key Conclusions (Up Front)">核心结论（先行）</span></h3>
+<ul><li><b><span data-zh="候选 23 只 / 21 个行业（全市场）" data-en="23 names across 21 industries (full market)">候选 23 只 / 21 个行业（全市场）</span>。</b><span data-zh="最强行业「IT服务Ⅱ」，组内最优 常山北明（88.0）。" data-en="Strongest industry &quot;IT服务Ⅱ&quot;; its top pick is 常山北明 (88.0).">最强行业「IT服务Ⅱ」，组内最优 常山北明（88.0）。</span></li><li><span data-zh="全市场前五：常山北明（88.0）、全筑股份（80.7）、珠免集团（79.0）、证通电子（77.4）、利君股份（76.1）。" data-en="Top five: 常山北明 (88.0), 全筑股份 (80.7), 珠免集团 (79.0), 证通电子 (77.4), 利君股份 (76.1).">全市场前五：常山北明（88.0）、全筑股份（80.7）、珠免集团（79.0）、证通电子（77.4）、利君股份（76.1）。</span></li><li><span data-zh="漏斗：快照 6185 → 有基线 5915 → 入选 23（缺口 951）。" data-en="Funnel: snapshot 6185 → with baseline 5915 → picked 23 (gaps 951).">漏斗：快照 6185 → 有基线 5915 → 入选 23（缺口 951）。</span></li></ul>
+</div>
+<h2><span data-zh="候选明细（23 只）" data-en="Candidates (23)">候选明细（23 只）</span></h2>
+<p class="score-note" id="scoreNote"><span data-zh="信号分项：&lt;b class=&quot;sn-self&quot;&gt;P1 竞价强势&lt;/b&gt;（今开高开 + 竞价量能比）· &lt;b&gt;P2 弱转强/超预期&lt;/b&gt;（昨日强 + 今日开幅符合或超预期）· &lt;b&gt;P3 趋势&lt;/b&gt;（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。另有 &lt;b&gt;P04 趋势放量通道&lt;/b&gt;（门槛制独立轨，不打分：均线多头 + 温和斜率 + 逐步放量 + 竞价有承接、允许微低开），与打分轨并集入选，可用标签区「P04 通道 / 打分轨」过滤。" data-en="Signals: &lt;b class=&quot;sn-self&quot;&gt;P1 auction strength&lt;/b&gt; (gap-up + auction volume ratio) · &lt;b&gt;P2 turn-strong / beat&lt;/b&gt; (yesterday strong + today gap in/above range) · &lt;b&gt;P3 trend&lt;/b&gt; (MA bull + N-day high + slope). Each column shows actual points (0–1 normalized × weight: P1 35 / P2 35 / P3 30); the three columns sum to the total. A separate &lt;b&gt;P04 trend-volume track&lt;/b&gt; (gate-based, unscored: MA bull + mild slope + building volume + auction support incl. slight gap-down) joins the score track; filter via the P04/Score chips.">信号分项：<b class="sn-self">P1 竞价强势</b>（今开高开 + 竞价量能比）· <b>P2 弱转强/超预期</b>（昨日强 + 今日开幅符合或超预期）· <b>P3 趋势</b>（均线多头 + N 日新高 + 斜率）。三列为「0–1 归一化分 × 权重（P1 35 / P2 35 / P3 30）」的实际得分，相加即总分。另有 <b>P04 趋势放量通道</b>（门槛制独立轨，不打分：均线多头 + 温和斜率 + 逐步放量 + 竞价有承接、允许微低开），与打分轨并集入选，可用标签区「P04 通道 / 打分轨」过滤。</span></p><div class="toolbar">
+<div class="seg" role="tablist">
+<button type="button" id="viewScore" class="segbtn active"><span data-zh="按总分" data-en="By score">按总分</span></button>
+<button type="button" id="viewSector" class="segbtn"><span data-zh="按行业" data-en="By industry">按行业</span></button>
+</div>
+<div class="toolrow"><span class="cap"><span data-zh="标签" data-en="Label">标签</span></span><span class="chips" id="lchips"><button type="button" class="chip active" data-lfilter=""><span data-zh="全部 23" data-en="All 23">全部 23</span></button><button type="button" class="chip" data-lfilter="@best"><span data-zh="组内第一" data-en="Group #1">组内第一</span><i>21</i></button><button type="button" class="chip" data-lfilter="@top3"><span data-zh="组内前三" data-en="Group top 3">组内前三</span><i>23</i></button><button type="button" class="chip" data-lfilter="@streak"><span data-zh="连板" data-en="Streak≥2">连板</span><i>7</i></button><button type="button" class="chip" data-lfilter="@boards10"><span data-zh="10日有板" data-en="Board in 10d">10日有板</span><i>19</i></button><button type="button" class="chip" data-lfilter="@billboard"><span data-zh="上榜" data-en="On list">上榜</span><i>4</i></button><button type="button" class="chip" data-lfilter="@hotmoney"><span data-zh="游资" data-en="Hot money">游资</span><i>2</i></button><button type="button" class="chip" data-lfilter="@htier:%E4%B8%80%E7%BA%BF"><span data-zh="一线" data-en="一线">一线</span><i>1</i></button><button type="button" class="chip" data-lfilter="@htier:%E4%BA%8C%E7%BA%BF"><span data-zh="二线" data-en="二线">二线</span><i>1</i></button><button type="button" class="chip" data-lfilter="@htier:%E9%81%BF%E5%9D%91"><span data-zh="避坑" data-en="避坑">避坑</span><i>0</i></button><button type="button" class="chip" data-lfilter="@hm:%E7%AB%A0%E7%9B%9F%E4%B8%BB"><span data-zh="章盟主" data-en="章盟主">章盟主</span><i>1</i></button><button type="button" class="chip" data-lfilter="@hm:%E9%99%88%E5%B0%8F%E7%BE%A4"><span data-zh="陈小群" data-en="陈小群">陈小群</span><i>1</i></button><button type="button" class="chip" data-lfilter="@p4"><span data-zh="P04 通道" data-en="P04 track">P04 通道</span><i>4</i></button><button type="button" class="chip" data-lfilter="@score"><span data-zh="打分轨 P1-P3" data-en="Score track">打分轨 P1-P3</span><i>19</i></button><button type="button" class="chip" data-lfilter="超预期"><span data-zh="超预期" data-en="超预期">超预期</span><i>14</i></button><button type="button" class="chip" data-lfilter="弱转强·符合"><span data-zh="弱转强·符合" data-en="弱转强·符合">弱转强·符合</span><i>5</i></button><button type="button" class="chip" data-lfilter="趋势放量"><span data-zh="趋势放量" data-en="趋势放量">趋势放量</span><i>4</i></button></span></div>
+<div class="toolrow"><span class="cap"><span data-zh="行业" data-en="Industry">行业</span></span><span class="chips" id="schips"><button type="button" class="chip active" data-sfilter=""><span data-zh="全部行业" data-en="All sectors">全部行业</span></button><button type="button" class="chip" data-sfilter="IT服务Ⅱ"><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="装修装饰Ⅱ"><span data-zh="装修装饰Ⅱ" data-en="装修装饰Ⅱ">装修装饰Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="旅游零售Ⅱ"><span data-zh="旅游零售Ⅱ" data-en="旅游零售Ⅱ">旅游零售Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="计算机设备"><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span><i>1</i></button><button type="button" class="chip" data-sfilter="航空装备Ⅱ"><span data-zh="航空装备Ⅱ" data-en="航空装备Ⅱ">航空装备Ⅱ</span><i>1</i></button><button type="button" class="chip" data-sfilter="化学制药"><span data-zh="化学制药" data-en="化学制药">化学制药</span><i>1</i></button><button type="button" class="chip" data-sfilter="造纸"><span data-zh="造纸" data-en="造纸">造纸</span><i>1</i></button><button type="button" class="chip" data-sfilter="化学制品"><span data-zh="化学制品" data-en="化学制品">化学制品</span><i>1</i></button><button type="button" class="chip" data-sfilter="元件"><span data-zh="元件" data-en="元件">元件</span><i>2</i></button><button type="button" class="chip" data-sfilter="出版"><span data-zh="出版" data-en="出版">出版</span><i>1</i></button><button type="button" class="chip" data-sfilter="一般零售"><span data-zh="一般零售" data-en="一般零售">一般零售</span><i>1</i></button><button type="button" class="chip" data-sfilter="包装印刷"><span data-zh="包装印刷" data-en="包装印刷">包装印刷</span><i>1</i></button><button type="button" class="chip" data-sfilter="环境治理"><span data-zh="环境治理" data-en="环境治理">环境治理</span><i>1</i></button><button type="button" class="chip" data-sfilter="半导体"><span data-zh="半导体" data-en="半导体">半导体</span><i>1</i></button><button type="button" class="chip" data-sfilter="通用设备"><span data-zh="通用设备" data-en="通用设备">通用设备</span><i>2</i></button><button type="button" class="chip" data-sfilter="通信服务"><span data-zh="通信服务" data-en="通信服务">通信服务</span><i>1</i></button><button type="button" class="chip" data-sfilter="汽车零部件"><span data-zh="汽车零部件" data-en="汽车零部件">汽车零部件</span><i>1</i></button><button type="button" class="chip" data-sfilter="电力"><span data-zh="电力" data-en="电力">电力</span><i>1</i></button><button type="button" class="chip" data-sfilter="软件开发"><span data-zh="软件开发" data-en="软件开发">软件开发</span><i>1</i></button><button type="button" class="chip" data-sfilter="白色家电"><span data-zh="白色家电" data-en="白色家电">白色家电</span><i>1</i></button><button type="button" class="chip" data-sfilter="银行Ⅱ"><span data-zh="银行Ⅱ" data-en="银行Ⅱ">银行Ⅱ</span><i>1</i></button></span></div>
+<div class="toolrow"><label class="bd-toggle"><input type="checkbox" id="bdToggle"> <span data-zh="分项得分" data-en="Breakdown">分项得分</span></label></div>
+</div>
+<div class="table-wrap vscroll"><table id="candTable" class="freeze2"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="mini K线" data-en="mini K">mini K线</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
+<th rowspan="2"><span data-zh="板块" data-en="Board">板块</span></th><th rowspan="2"><span data-zh="今开价" data-en="Open px">今开价</span></th><th rowspan="2"><span data-zh="今开" data-en="Open%">今开</span></th><th rowspan="2"><span data-zh="昨涨" data-en="Prev chg">昨涨</span></th>
+<th rowspan="2"><span data-zh="昨日净流入" data-en="Prev inflow">昨日净流入</span></th><th rowspan="2"><span data-zh="市值/流通" data-en="Cap/FLOAT">市值/流通</span></th>
+<th rowspan="2"><span data-zh="竞价量能比" data-en="Auction vol">竞价量能比</span></th><th rowspan="2"><span data-zh="昨量比" data-en="Prev volR">昨量比</span></th><th rowspan="2"><span data-zh="昨换手%" data-en="Prev turn">昨换手%</span></th>
+<th rowspan="2"><span data-zh="连板" data-en="Streak">连板</span></th><th rowspan="2"><span data-zh="上榜" data-en="List">上榜</span></th><th rowspan="2"><span data-zh="趋势" data-en="Trend">趋势</span></th>
+<th colspan="3" class="grp"><span data-zh="信号分项" data-en="Signals">信号分项</span></th>
+<th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标签" data-en="Label">标签</span></th></tr>
+<tr><th class="grp-sub"><span data-zh="P1 竞价 · 35" data-en="P1 竞价 · 35">P1 竞价 · 35</span></th><th class="grp-sub"><span data-zh="P2 弱转强 · 35" data-en="P2 弱转强 · 35">P2 弱转强 · 35</span></th><th class="grp-sub"><span data-zh="P3 趋势 · 30" data-en="P3 趋势 · 30">P3 趋势 · 30</span></th></tr></thead>
+<tbody id="candBody"><tr data-sector="IT服务Ⅱ" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>1</td>
+<td><b>常山北明</b><span class="src">000158</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,14.0V15.8M4.2,12.6V15.1M6.3,14.8V17.0M8.5,5.8V15.0M10.7,2.4V7.2M12.8,4.3V8.2M15,5.1V8.4M17.2,5.1V8.5M19.4,5.0V7.6M21.5,7.5V10.8M23.7,10.9V13.0M25.9,12.2V14.4M28,11.9V14.0M30.2,11.7V14.9M32.4,14.4V16.5M34.5,14.1V15.7M36.7,12.9V14.4M38.9,9.4V14.0M41.1,10.4V11.8M43.2,11.2V14.2M45.4,13.8V15.4M47.6,14.6V18.3M49.7,17.2V18.1M51.9,17.3V18.5M54.1,11.3V18.3M56.2,13.9V17.8M58.4,14.4V16.6M60.6,15.5V17.5M62.7,13.1V17.4M64.9,14.1V19.2M67.1,16.1V18.3M69.3,15.8V18.5M71.4,16.0V17.0M73.6,13.0V15.9M75.8,14.7V18.7M77.9,19.4V25.3M80.1,20.7V22.0M82.3,21.1V24.4M84.4,23.4V24.8M86.6,24.5V28.3M88.8,28.0V32.0M90.9,28.1V31.7M93.1,26.1V29.5M95.3,26.4V29.1M97.5,23.6V27.4M99.6,23.2V26.9M101.8,24.8V26.4M104,24.4V25.6M106.1,24.6V25.8M108.3,24.6V26.7M110.5,23.9V25.9M112.6,24.0V27.1M114.8,22.6V26.9M117,16.3V25.7M119.2,8.6V15.2M121.3,3.2V14.0M123.5,8.9V18.0M125.7,2.0V11.0M127.8,9.4V15.3M130,5.8V16.3"/><path class="k-up" d="M2,15.7V14.3M6.3,16.7V14.9M8.5,14.9V5.8M17.2,7.0V6.1M25.9,13.6V13.3M28,13.6V13.2M32.4,14.7V14.5M34.5,14.9V14.8M36.7,14.1V13.6M38.9,13.4V11.1M41.1,11.8V10.8M54.1,17.8V14.8M56.2,17.1V14.6M60.6,17.3V16.2M62.7,16.6V16.5M64.9,18.7V17.5M69.3,18.3V16.5M71.4,16.9V16.3M73.6,15.4V14.5M77.9,20.2V20.0M90.9,31.7V28.7M93.1,29.3V28.5M95.3,28.8V26.7M97.5,27.0V24.5M99.6,26.7V25.9M104,25.2V24.6M110.5,25.6V25.2M114.8,26.7V24.5M117,24.4V16.3M119.2,12.3V12.0M121.3,14.0V8.4M123.5,12.1V9.7M125.7,9.7V6.0M130,13.3V5.8"/><path class="k-down" d="M4.2,13.9V15.0M10.7,5.5V6.3M12.8,4.8V8.1M15,7.4V7.8M19.4,6.1V6.9M21.5,7.5V10.1M23.7,10.9V12.9M30.2,12.6V14.7M43.2,11.5V14.2M45.4,14.2V15.4M47.6,15.1V18.0M49.7,18.0V18.0M51.9,17.3V18.2M58.4,14.6V15.9M67.1,16.7V17.5M75.8,15.7V18.7M80.1,21.7V22.0M82.3,22.0V24.4M84.4,23.8V24.2M86.6,24.5V28.3M88.8,29.8V31.9M101.8,25.3V25.9M106.1,24.8V25.1M108.3,25.1V26.7M112.6,25.9V26.4M127.8,9.4V14.9"/></svg></td>
+<td><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span></td>
+<td>主板</td>
+<td class="num">15.27</td>
+<td class="num up">+10.01%</td>
+<td class="num up">+9.98%</td>
+<td class="num up">5.88亿</td>
+<td class="num">244.1/242.9亿</td>
+<td class="num">0.09</td>
+<td class="num">0.57</td>
+<td class="num">6.06%</td>
+<td>首板·7天2板</td>
+<td></td>
+<td class="trend">多头× 20新√ 60新√ 斜率+1.5%/d</td>
+<td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">18.0</td>
+<td><span class="score">88.0</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="装修装饰Ⅱ" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="3" data-hasboard="1">
+<td>2</td>
+<td><b>全筑股份</b><span class="src">603030</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,20.2V21.4M4.2,20.0V21.2M6.3,19.5V20.7M8.5,19.0V20.2M10.7,19.2V20.7M12.8,18.0V20.4M15,19.0V20.7M17.2,15.3V20.4M19.4,16.5V18.2M21.5,16.8V18.7M23.7,18.0V19.7M25.9,19.2V21.4M28,19.7V21.4M30.2,20.2V22.9M32.4,21.4V23.9M34.5,20.7V22.7M36.7,20.7V22.2M38.9,19.7V21.7M41.1,19.2V21.9M43.2,20.2V22.2M45.4,21.4V22.7M47.6,21.4V23.4M49.7,20.9V23.1M51.9,20.9V22.4M54.1,20.2V22.7M56.2,21.2V24.1M58.4,21.2V22.9M60.6,21.7V24.9M62.7,20.7V24.1M64.9,24.6V26.3M67.1,23.4V25.6M69.3,24.6V27.6M71.4,24.9V26.8M73.6,24.1V25.9M75.8,25.1V27.6M77.9,26.6V30.0M80.1,25.9V27.6M82.3,26.3V29.0M84.4,28.1V29.5M86.6,28.3V29.8M88.8,28.8V31.3M90.9,29.5V32.0M93.1,28.3V30.5M95.3,29.0V31.3M97.5,27.8V29.8M99.6,28.3V29.8M101.8,28.1V30.0M104,28.8V29.5M106.1,27.8V29.3M108.3,26.3V28.3M110.5,27.6V29.3M112.6,28.3V29.8M114.8,24.9V31.0M117,20.2V20.2M119.2,15.0V15.0M121.3,18.0V20.7M123.5,18.2V25.9M125.7,14.3V21.2M127.8,8.4V10.4M130,2.0V10.1"/><path class="k-up" d="M4.2,20.7V20.2M6.3,19.7V19.7M8.5,20.0V19.2M17.2,20.2V17.5M19.4,17.5V17.0M28,21.2V20.4M32.4,23.1V21.7M34.5,21.7V21.2M38.9,21.4V20.0M49.7,22.9V21.2M51.9,21.7V21.4M56.2,22.2V21.4M60.6,23.1V22.2M67.1,25.6V24.6M71.4,26.1V25.4M77.9,27.6V26.6M80.1,26.8V26.8M84.4,28.6V28.6M90.9,30.5V29.8M93.1,29.8V29.8M95.3,29.5V29.3M97.5,29.5V28.1M99.6,29.0V28.8M104,29.3V28.8M106.1,29.0V28.1M108.3,28.1V27.8M112.6,29.3V29.3M114.8,29.8V24.9M117,20.2V20.2M119.2,15.0V15.0M121.3,20.7V20.7M123.5,25.9V19.7M125.7,20.2V14.3M127.8,8.4V8.4M130,5.7V2.0"/><path class="k-down" d="M2,20.4V20.9M10.7,19.5V20.0M12.8,19.7V20.2M15,20.2V20.4M21.5,17.2V18.5M23.7,18.7V19.0M25.9,19.2V20.7M30.2,20.4V22.7M36.7,20.9V21.4M41.1,20.2V21.2M43.2,20.9V21.9M45.4,21.9V22.4M47.6,22.2V22.9M54.1,21.4V22.2M58.4,21.4V22.7M62.7,22.2V23.9M64.9,24.6V25.9M69.3,25.1V26.1M73.6,25.1V25.6M75.8,25.1V27.3M82.3,26.8V28.8M86.6,28.6V29.8M88.8,30.0V31.3M101.8,28.6V29.8M110.5,27.8V28.8"/></svg></td>
+<td><span data-zh="装修装饰Ⅱ" data-en="装修装饰Ⅱ">装修装饰Ⅱ</span></td>
+<td>主板</td>
+<td class="num">3.10</td>
+<td class="num up">+8.01%</td>
+<td class="num up">+9.96%</td>
+<td class="num down">-7722万</td>
+<td class="num">40.8/40.8亿</td>
+<td class="num">0.06</td>
+<td class="num">2.30</td>
+<td class="num">24.73%</td>
+<td>3连板·8天6板</td>
+<td></td>
+<td class="trend">多头× 20新√ 60新√ 斜率+2.4%/d</td>
+<td class="num sc">27.7</td><td class="num sc">35.0</td><td class="num sc">18.0</td>
+<td><span class="score">80.7</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="旅游零售Ⅱ" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>3</td>
+<td><b>珠免集团</b><span class="src">600185</span></td>
+<td class="spark"><span class="src">—</span></td>
+<td><span data-zh="旅游零售Ⅱ" data-en="旅游零售Ⅱ">旅游零售Ⅱ</span></td>
+<td>主板</td>
+<td class="num">5.18</td>
+<td class="num up">+9.98%</td>
+<td class="num up">+10.05%</td>
+<td class="num up">3258万</td>
+<td class="num">97.6/97.6亿</td>
+<td class="num">2.22</td>
+<td class="num">0.58</td>
+<td class="num">0.49%</td>
+<td>首板</td>
+<td></td>
+<td class="trend">多头× 20新√ 斜率+0.0%/d</td>
+<td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
+<td><span class="score">79.0</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="计算机设备" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="2" data-hasboard="1" data-billboard="1" data-hot="1" data-hm="%E7%AB%A0%E7%9B%9F%E4%B8%BB" data-hm-tier="%E4%B8%80%E7%BA%BF">
+<td>4</td>
+<td><b>证通电子</b><span class="src">002197</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,6.2V9.6M4.2,6.0V8.8M6.3,6.9V10.9M8.5,4.5V8.4M10.7,5.2V7.8M12.8,4.4V6.7M15,2.0V6.0M17.2,5.3V7.4M19.4,4.2V6.6M21.5,5.9V9.1M23.7,8.5V10.1M25.9,9.4V12.6M28,9.2V11.3M30.2,9.5V13.1M32.4,11.3V14.2M34.5,11.6V14.6M36.7,10.9V13.4M38.9,10.7V14.6M41.1,9.1V11.7M43.2,10.5V14.2M45.4,10.7V13.9M47.6,12.6V16.3M49.7,13.0V15.8M51.9,13.1V15.8M54.1,14.6V18.5M56.2,14.5V20.6M58.4,14.8V17.4M60.6,14.6V19.6M62.7,15.5V18.0M64.9,18.3V20.7M67.1,17.8V22.0M69.3,20.3V23.0M71.4,19.6V22.6M73.6,18.7V21.0M75.8,20.1V24.1M77.9,21.0V28.8M80.1,20.5V22.8M82.3,19.9V25.2M84.4,23.4V25.6M86.6,24.6V27.6M88.8,26.2V31.2M90.9,27.0V32.0M93.1,26.3V29.5M95.3,26.7V30.9M97.5,24.8V28.1M99.6,25.9V28.5M101.8,26.0V28.8M104,25.5V27.7M106.1,23.0V26.4M108.3,22.0V25.5M110.5,23.3V25.2M112.6,23.7V26.7M114.8,24.8V27.8M117,19.1V27.4M119.2,10.6V21.9M121.3,17.8V27.0M123.5,20.6V28.9M125.7,18.4V23.7M127.8,14.9V24.4M130,6.0V13.2"/><path class="k-up" d="M2,9.5V6.6M6.3,9.6V7.0M8.5,7.0V5.7M10.7,6.7V5.7M17.2,6.4V6.4M19.4,6.0V6.0M28,10.7V10.7M32.4,13.4V12.1M38.9,13.5V10.9M49.7,15.3V13.7M56.2,17.8V14.8M60.6,17.8V15.3M64.9,19.9V19.9M71.4,22.3V20.5M77.9,25.8V21.4M80.1,22.3V22.0M84.4,24.5V24.2M90.9,30.3V27.6M95.3,28.5V27.3M97.5,27.8V25.5M99.6,27.7V27.7M104,27.6V25.8M106.1,26.3V23.8M110.5,25.2V23.4M114.8,27.4V26.9M117,26.2V19.1M121.3,27.0V24.2M123.5,25.3V21.2M127.8,24.4V14.9M130,6.0V6.0"/><path class="k-down" d="M4.2,6.3V8.7M12.8,5.5V6.2M15,4.5V5.7M21.5,6.3V8.5M23.7,8.8V9.4M25.9,9.4V10.5M30.2,10.2V13.0M34.5,12.3V13.5M36.7,11.4V12.7M41.1,10.3V10.5M43.2,10.5V13.4M45.4,11.9V13.7M47.6,12.8V15.3M51.9,13.1V15.8M54.1,15.9V17.6M58.4,15.8V16.9M62.7,16.0V17.7M67.1,18.5V21.2M69.3,21.3V21.9M73.6,20.1V20.7M75.8,20.6V23.8M82.3,21.3V25.1M86.6,24.8V27.6M88.8,27.7V31.2M93.1,28.0V28.7M101.8,26.6V28.8M108.3,23.9V25.1M112.6,23.7V26.2M119.2,13.4V18.5M125.7,19.2V23.0"/></svg></td>
+<td><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span></td>
+<td>主板</td>
+<td class="num">7.76</td>
+<td class="num up">+10.07%</td>
+<td class="num up">+9.98%</td>
+<td class="num up">1.04亿</td>
+<td class="num">47.7/41.4亿</td>
+<td class="num">0.05</td>
+<td class="num">1.06</td>
+<td class="num">15.48%</td>
+<td>2连板·7天3板</td>
+<td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">11-26榜</span><span class="src">章盟主(2505万)@一线</span></td>
+<td class="trend">多头× 20新√ 斜率+0.9%/d</td>
+<td class="num sc">27.3</td><td class="num sc">35.0</td><td class="num sc">15.3</td>
+<td><span class="score">77.4</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="航空装备Ⅱ" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="3" data-hasboard="1">
+<td>5</td>
+<td><b>利君股份</b><span class="src">002651</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,10.5V13.7M4.2,11.4V13.4M6.3,11.4V13.3M8.5,9.8V13.1M10.7,2.2V10.2M12.8,7.8V10.8M15,8.8V10.9M17.2,10.6V12.0M19.4,9.9V12.1M21.5,8.7V11.3M23.7,2.0V9.6M25.9,4.8V11.7M28,5.6V10.5M30.2,9.8V13.6M32.4,9.6V14.2M34.5,12.4V14.6M36.7,12.3V14.4M38.9,11.7V14.5M41.1,12.4V14.6M43.2,14.0V15.7M45.4,15.0V16.0M47.6,14.8V17.7M49.7,16.7V17.9M51.9,16.8V18.1M54.1,16.1V18.6M56.2,17.3V19.9M58.4,16.8V18.6M60.6,15.9V19.5M62.7,16.1V17.8M64.9,17.7V20.0M67.1,14.9V18.6M69.3,14.6V17.2M71.4,14.0V16.6M73.6,10.2V16.1M75.8,14.1V16.7M77.9,16.0V20.1M80.1,15.9V18.5M82.3,16.3V20.2M84.4,18.6V20.9M86.6,17.4V20.1M88.8,18.8V22.3M90.9,21.1V23.9M93.1,15.3V22.4M95.3,18.2V21.8M97.5,18.0V20.3M99.6,18.1V21.4M101.8,17.9V19.3M104,17.6V19.0M106.1,18.0V19.0M108.3,17.1V18.9M110.5,18.2V21.1M112.6,20.7V23.1M114.8,22.4V24.2M117,23.0V26.3M119.2,25.5V27.1M121.3,27.3V30.4M123.5,28.9V32.0M125.7,23.5V28.3M127.8,17.2V19.3M130,10.3V10.3"/><path class="k-up" d="M2,12.5V11.8M4.2,12.9V11.8M6.3,12.9V12.2M8.5,12.6V9.8M10.7,9.6V7.7M19.4,11.8V9.9M21.5,10.7V9.5M23.7,9.4V7.8M25.9,11.7V5.9M38.9,14.1V12.6M45.4,15.5V15.4M51.9,17.6V17.5M56.2,18.1V17.5M60.6,19.1V16.3M64.9,19.6V19.5M67.1,18.6V16.4M69.3,16.5V14.7M73.6,15.7V15.0M77.9,18.0V16.1M84.4,20.2V18.8M86.6,18.9V18.3M90.9,22.1V21.8M93.1,22.1V19.0M95.3,20.0V19.3M97.5,19.7V19.0M99.6,21.4V19.6M101.8,18.8V18.7M104,18.3V18.2M106.1,18.6V18.3M123.5,30.4V29.1M125.7,28.1V23.5M127.8,17.7V17.2M130,10.3V10.3"/><path class="k-down" d="M12.8,8.2V10.8M15,10.4V10.6M17.2,10.6V11.5M28,7.5V10.0M30.2,10.3V13.6M32.4,12.0V13.0M34.5,13.6V14.1M36.7,13.5V13.7M41.1,12.5V14.0M43.2,14.0V15.5M47.6,15.6V17.1M49.7,17.6V17.7M54.1,17.3V18.0M58.4,17.5V18.3M62.7,16.3V17.2M71.4,15.0V15.2M75.8,15.7V16.7M80.1,16.6V17.3M82.3,17.4V20.1M88.8,20.0V22.1M108.3,18.2V18.8M110.5,18.5V20.8M112.6,21.5V22.5M114.8,22.5V23.8M117,23.2V25.7M119.2,25.7V26.9M121.3,27.6V30.4"/></svg></td>
+<td><span data-zh="航空装备Ⅱ" data-en="航空装备Ⅱ">航空装备Ⅱ</span></td>
+<td>主板</td>
+<td class="num">9.40</td>
+<td class="num up">+8.17%</td>
+<td class="num up">+10.00%</td>
+<td class="num up">7518万</td>
+<td class="num">97.2/53.1亿</td>
+<td class="num">0.68</td>
+<td class="num">0.57</td>
+<td class="num">1.98%</td>
+<td>3连板</td>
+<td></td>
+<td class="trend">多头× 20新√ 斜率-0.2%/d</td>
+<td class="num sc">32.2</td><td class="num sc">35.0</td><td class="num sc">9.0</td>
+<td><span class="score">76.1</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="化学制药" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-streak="3" data-hasboard="1">
+<td>6</td>
+<td><b>天圣制药</b><span class="src">002872</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-26 ~ 11-26 · 60根</title><path class="k-wick" d="M2,29.0V30.7M4.2,23.9V29.7M6.3,25.1V27.4M8.5,22.4V27.9M10.7,21.7V24.5M12.8,21.8V24.3M15,22.2V26.3M17.2,24.3V26.0M19.4,24.0V25.6M21.5,21.2V24.0M23.7,22.0V25.0M25.9,24.6V26.5M28,24.5V26.3M30.2,22.7V26.0M32.4,23.8V26.0M34.5,24.6V25.8M36.7,23.9V25.4M38.9,22.9V25.1M41.1,22.4V24.6M43.2,22.4V23.9M45.4,22.9V23.7M47.6,23.6V24.5M49.7,22.6V25.2M51.9,20.0V23.1M54.1,19.9V21.5M56.2,19.9V22.2M58.4,21.7V26.3M60.6,23.2V25.6M62.7,24.5V26.3M64.9,25.0V27.2M67.1,27.0V28.6M69.3,26.6V28.1M71.4,27.1V29.3M73.6,27.7V28.8M75.8,26.4V27.9M77.9,27.3V28.6M80.1,28.5V32.0M82.3,27.1V29.1M84.4,25.8V28.4M86.6,27.3V29.1M88.8,28.6V30.5M90.9,29.0V31.1M93.1,28.5V31.6M95.3,23.6V29.2M97.5,23.8V26.1M99.6,21.1V23.4M101.8,19.1V23.8M104,21.2V22.9M106.1,22.3V23.3M108.3,20.2V23.6M110.5,20.2V23.1M112.6,22.7V25.8M114.8,23.8V26.0M117,25.9V30.5M119.2,29.7V31.6M121.3,24.7V27.9M123.5,22.3V29.2M125.7,17.9V19.6M127.8,10.3V10.3M130,2.0V2.0"/><path class="k-up" d="M2,30.6V29.2M4.2,29.2V25.2M8.5,27.1V23.7M10.7,24.4V23.8M12.8,23.6V22.9M17.2,25.6V25.4M19.4,25.1V24.0M21.5,23.9V22.2M30.2,26.0V23.6M34.5,25.8V25.1M36.7,25.2V23.9M41.1,24.6V22.6M49.7,23.9V22.7M51.9,23.0V21.8M62.7,26.1V25.2M67.1,28.1V28.0M73.6,28.5V27.8M75.8,27.4V27.4M80.1,29.4V28.7M82.3,29.1V27.4M93.1,31.2V28.6M95.3,29.1V25.6M97.5,25.1V24.1M99.6,23.0V21.7M101.8,23.2V20.8M106.1,22.5V22.4M108.3,22.7V20.4M114.8,25.6V24.9M119.2,30.9V30.9M123.5,28.5V24.9M125.7,18.5V17.9M127.8,10.3V10.3M130,2.0V2.0"/><path class="k-down" d="M6.3,25.9V26.4M15,22.3V26.1M23.7,22.5V24.7M25.9,24.7V25.1M28,24.5V25.9M32.4,23.8V25.8M38.9,23.8V24.6M43.2,22.6V22.9M45.4,23.0V23.7M47.6,23.8V23.9M54.1,20.8V21.0M56.2,20.5V21.8M58.4,22.0V23.6M60.6,23.7V25.6M64.9,25.1V27.2M69.3,27.5V28.0M71.4,28.0V28.5M77.9,27.7V28.4M84.4,27.5V28.4M86.6,28.2V28.8M88.8,28.6V29.4M90.9,30.1V30.9M104,21.5V22.7M110.5,20.9V22.9M112.6,22.7V25.4M117,25.9V30.1M121.3,24.9V26.6"/></svg></td>
+<td><span data-zh="化学制药" data-en="化学制药">化学制药</span></td>
+<td>主板</td>
+<td class="num">8.27</td>
+<td class="num up">+5.89%</td>
+<td class="num up">+10.00%</td>
+<td class="num up">1120万</td>
+<td class="num">26.3/17.8亿</td>
+<td class="num">4.31</td>
+<td class="num">0.35</td>
+<td class="num">1.60%</td>
+<td>3连板</td>
+<td></td>
+<td class="trend">多头√ 20新√ 60新√ 斜率+0.9%/d</td>
+<td class="num sc">24.1</td><td class="num sc">24.5</td><td class="num sc">26.7</td>
+<td><span class="score">75.2</span></td>
+<td class="wrap"><span class="tag ">弱转强·符合</span></td>
+</tr><tr data-sector="造纸" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>7</td>
+<td><b>山鹰国际</b><span class="src">600567</span></td>
+<td class="spark"><span class="src">—</span></td>
+<td><span data-zh="造纸" data-en="造纸">造纸</span></td>
+<td>主板</td>
+<td class="num">1.11</td>
+<td class="num up">+9.90%</td>
+<td class="num up">+9.78%</td>
+<td class="num up">2335万</td>
+<td class="num">68.9/68.9亿</td>
+<td class="num">0.38</td>
+<td class="num">0.09</td>
+<td class="num">0.57%</td>
+<td>首板</td>
+<td></td>
+<td class="trend">多头× 斜率-1.7%/d</td>
+<td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">70.0</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="化学制品" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>8</td>
+<td><b>鹿山新材</b><span class="src">603051</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,22.7V27.2M4.2,21.6V24.8M6.3,22.5V25.0M8.5,20.9V22.7M10.7,22.3V24.0M12.8,21.8V23.6M15,20.4V23.7M17.2,22.6V23.7M19.4,22.9V24.0M21.5,18.0V23.5M23.7,17.2V21.1M25.9,16.7V22.2M28,12.8V17.6M30.2,12.9V16.9M32.4,13.0V15.3M34.5,12.2V14.8M36.7,4.8V13.5M38.9,5.3V9.1M41.1,6.5V8.9M43.2,5.3V9.1M45.4,5.6V8.4M47.6,8.3V12.8M49.7,9.6V13.7M51.9,9.2V12.2M54.1,11.2V17.2M56.2,14.7V21.4M58.4,15.4V20.3M60.6,18.3V23.6M62.7,18.4V21.2M64.9,21.1V25.1M67.1,20.3V24.8M69.3,18.8V26.4M71.4,17.0V21.2M73.6,16.5V19.2M75.8,17.4V20.2M77.9,16.9V27.1M80.1,11.7V20.0M82.3,12.7V17.6M84.4,10.7V17.9M86.6,11.8V18.0M88.8,11.5V18.9M90.9,13.1V23.2M93.1,14.0V18.3M95.3,14.3V21.7M97.5,7.4V15.3M99.6,8.7V12.4M101.8,5.8V11.1M104,2.4V10.8M106.1,2.0V5.5M108.3,2.4V9.0M110.5,6.9V11.8M112.6,11.3V16.6M114.8,13.0V19.0M117,17.0V23.9M119.2,22.8V27.6M121.3,27.4V31.5M123.5,24.3V32.0M125.7,16.7V22.9M127.8,19.7V28.4M130,21.0V27.2"/><path class="k-up" d="M2,26.2V24.4M4.2,24.6V23.3M6.3,24.4V22.9M8.5,22.0V21.9M19.4,23.2V23.0M21.5,23.0V18.8M23.7,19.2V18.2M25.9,19.1V17.3M28,17.1V15.4M30.2,15.9V14.0M32.4,14.3V13.8M34.5,14.6V13.5M36.7,13.0V6.6M43.2,8.6V6.9M49.7,12.5V10.1M58.4,18.0V17.6M67.1,23.5V22.0M69.3,22.8V19.9M71.4,20.4V18.7M77.9,21.8V17.4M80.1,17.1V14.0M84.4,17.3V11.9M88.8,18.3V16.8M90.9,17.6V13.8M95.3,18.2V14.6M97.5,14.8V8.1M99.6,11.7V10.8M104,10.8V3.5M123.5,31.6V24.3M125.7,22.1V20.2M130,27.2V21.0"/><path class="k-down" d="M10.7,22.8V22.9M12.8,22.4V22.8M15,21.9V23.2M17.2,23.3V23.4M38.9,6.6V8.9M41.1,8.1V8.1M45.4,7.8V8.2M47.6,8.7V12.4M51.9,9.7V11.8M54.1,11.4V14.6M56.2,15.6V18.0M60.6,19.3V20.6M62.7,20.2V20.5M64.9,21.8V24.6M73.6,17.2V18.9M75.8,18.9V20.0M82.3,14.4V17.2M86.6,13.3V17.4M93.1,14.4V18.0M101.8,9.1V10.9M106.1,3.6V4.6M108.3,5.0V8.7M110.5,9.1V11.7M112.6,11.7V14.6M114.8,14.8V18.2M117,17.1V22.3M119.2,22.8V27.3M121.3,29.4V31.3M127.8,21.9V28.4"/></svg></td>
+<td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
+<td>主板</td>
+<td class="num">23.96</td>
+<td class="num up">+10.01%</td>
+<td class="num up">+10.00%</td>
+<td class="num up">5701万</td>
+<td class="num">39.1/38.7亿</td>
+<td class="num">0.14</td>
+<td class="num">0.92</td>
+<td class="num">5.84%</td>
+<td>首板·4天2板</td>
+<td></td>
+<td class="trend">多头× 斜率-0.9%/d</td>
+<td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">70.0</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="元件" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>9</td>
+<td><b>骏亚科技</b><span class="src">603386</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,27.4V29.0M4.2,26.3V28.1M6.3,26.4V28.5M8.5,26.2V27.7M10.7,27.6V28.2M12.8,27.2V28.5M15,26.9V28.8M17.2,26.4V28.5M19.4,25.4V27.0M21.5,24.7V26.1M23.7,24.0V26.4M25.9,20.4V25.8M28,17.4V22.9M30.2,12.6V18.9M32.4,12.8V17.5M34.5,13.4V17.2M36.7,15.0V17.7M38.9,14.7V17.2M41.1,11.9V15.3M43.2,10.8V13.1M45.4,10.7V14.5M47.6,13.3V18.6M49.7,13.6V18.0M51.9,14.1V17.7M54.1,15.6V18.3M56.2,17.5V22.7M58.4,20.4V22.8M60.6,17.3V25.2M62.7,12.6V19.6M64.9,8.7V17.0M67.1,2.6V14.9M69.3,9.1V17.4M71.4,4.1V10.9M73.6,2.0V10.9M75.8,4.9V12.4M77.9,12.6V18.3M80.1,16.9V19.6M82.3,16.4V21.0M84.4,18.5V21.7M86.6,21.0V25.3M88.8,22.7V28.6M90.9,25.0V28.3M93.1,25.6V28.9M95.3,27.4V30.8M97.5,25.9V29.3M99.6,27.8V30.2M101.8,26.0V28.8M104,25.3V26.7M106.1,23.9V26.6M108.3,23.2V24.9M110.5,24.0V27.6M112.6,27.2V29.6M114.8,28.8V31.1M117,29.1V31.0M119.2,26.6V31.0M121.3,26.3V32.0M123.5,24.8V29.0M125.7,23.9V27.8M127.8,27.4V30.7M130,26.5V29.0"/><path class="k-up" d="M2,29.0V27.6M4.2,27.8V27.6M6.3,28.0V26.5M17.2,28.4V26.8M19.4,27.0V26.2M21.5,26.1V25.6M23.7,26.1V25.1M25.9,24.7V20.4M28,21.2V18.0M30.2,18.8V13.6M32.4,15.2V13.1M38.9,16.2V15.6M41.1,14.9V12.7M43.2,12.8V11.4M49.7,17.2V14.3M60.6,22.7V17.3M62.7,16.0V14.4M64.9,15.0V8.7M69.3,13.5V10.3M71.4,7.7V4.1M88.8,27.0V26.6M90.9,26.9V26.6M95.3,28.2V27.7M97.5,29.1V26.9M99.6,29.7V28.9M101.8,28.2V27.1M106.1,26.3V24.2M121.3,31.6V26.3M123.5,28.6V24.9M130,28.7V26.5"/><path class="k-down" d="M8.5,26.4V27.4M10.7,27.9V27.9M12.8,27.6V27.8M15,27.5V28.5M34.5,14.1V16.9M36.7,16.6V16.8M45.4,12.3V14.2M47.6,14.4V17.6M51.9,14.6V17.5M54.1,17.0V17.2M56.2,18.6V20.4M58.4,20.5V22.2M67.1,3.2V13.6M73.6,3.2V10.4M75.8,11.1V12.4M77.9,14.2V16.0M80.1,17.4V18.7M82.3,18.1V20.7M84.4,20.0V20.6M86.6,21.4V25.2M93.1,27.9V28.6M104,26.1V26.1M108.3,24.2V24.8M110.5,24.8V27.2M112.6,27.9V29.4M114.8,30.0V30.6M117,29.6V30.1M119.2,29.7V30.4M125.7,24.3V27.2M127.8,28.4V30.6"/></svg></td>
+<td><span data-zh="元件" data-en="元件">元件</span></td>
+<td>主板</td>
+<td class="num">15.97</td>
+<td class="num up">+9.99%</td>
+<td class="num up">+10.00%</td>
+<td class="num up">1.08亿</td>
+<td class="num">52.1/52.1亿</td>
+<td class="num">0.12</td>
+<td class="num">0.41</td>
+<td class="num">3.89%</td>
+<td>首板·5天2板</td>
+<td></td>
+<td class="trend">多头× 斜率-0.1%/d</td>
+<td class="num sc">35.0</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">70.0</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="出版" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="2" data-hasboard="1" data-billboard="1">
+<td>10</td>
+<td><b>城市传媒</b><span class="src">600229</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,24.6V26.3M4.2,24.6V26.0M6.3,23.5V26.2M8.5,21.9V24.0M10.7,22.4V24.1M12.8,18.0V23.9M15,20.3V23.8M17.2,20.0V23.0M19.4,15.6V20.1M21.5,18.1V21.7M23.7,15.6V21.4M25.9,15.8V23.5M28,18.1V21.5M30.2,18.7V22.4M32.4,19.6V24.3M34.5,14.3V21.1M36.7,16.0V18.7M38.9,15.2V19.6M41.1,13.7V17.0M43.2,15.6V18.2M45.4,15.3V18.1M47.6,16.8V19.7M49.7,16.3V19.5M51.9,15.9V18.8M54.1,18.1V19.8M56.2,15.9V20.4M58.4,14.0V16.9M60.6,14.5V18.1M62.7,12.9V16.4M64.9,8.9V16.4M67.1,6.7V13.6M69.3,11.5V16.5M71.4,7.2V16.0M73.6,10.2V14.3M75.8,12.8V18.6M77.9,16.4V24.1M80.1,14.2V20.6M82.3,13.7V17.4M84.4,10.2V19.8M86.6,16.4V20.9M88.8,19.3V25.2M90.9,18.8V26.8M93.1,14.5V18.7M95.3,15.9V20.4M97.5,16.1V19.0M99.6,9.9V14.9M101.8,2.0V12.1M104,6.9V14.4M106.1,7.7V11.6M108.3,8.9V12.6M110.5,11.0V15.3M112.6,12.7V17.5M114.8,15.2V22.0M117,20.6V26.0M119.2,24.7V28.7M121.3,24.3V32.0M123.5,25.9V31.0M125.7,24.1V28.8M127.8,22.3V29.0M130,15.6V21.9"/><path class="k-up" d="M4.2,25.5V24.6M6.3,25.1V24.0M8.5,23.8V22.4M10.7,22.8V22.8M15,23.8V22.7M17.2,22.8V20.6M19.4,18.8V18.1M21.5,21.1V20.4M25.9,21.9V19.2M32.4,22.7V20.3M34.5,20.7V16.9M38.9,17.2V17.1M41.1,17.0V15.6M43.2,16.6V16.4M49.7,18.5V16.9M56.2,19.0V16.1M58.4,16.1V14.8M60.6,15.5V15.0M62.7,15.3V14.3M64.9,15.6V12.3M71.4,16.0V13.2M73.6,14.3V13.2M77.9,20.4V17.4M80.1,18.2V15.3M84.4,17.6V13.9M86.6,18.8V18.6M90.9,26.0V18.8M93.1,18.2V17.7M97.5,18.8V17.0M99.6,14.7V9.9M104,14.4V7.8M112.6,14.8V14.8M121.3,29.8V29.0M123.5,29.8V27.3M127.8,28.8V22.3M130,19.7V15.6"/><path class="k-down" d="M2,25.1V25.9M12.8,22.8V23.6M23.7,21.1V21.2M28,20.0V20.2M30.2,20.8V22.3M36.7,16.8V18.0M45.4,16.9V17.2M47.6,17.9V18.5M51.9,16.8V18.1M54.1,18.1V19.1M67.1,12.0V12.6M69.3,12.8V14.5M75.8,13.8V18.6M82.3,14.8V17.4M88.8,20.1V25.2M95.3,17.1V18.5M101.8,2.0V11.7M106.1,7.8V9.6M108.3,10.7V12.3M110.5,12.8V14.9M114.8,16.3V21.3M117,20.7V25.0M119.2,25.5V27.9M125.7,26.8V28.3"/></svg></td>
+<td><span data-zh="出版" data-en="出版">出版</span></td>
+<td>主板</td>
+<td class="num">6.55</td>
+<td class="num up">+10.08%</td>
+<td class="num up">+9.98%</td>
+<td class="num up">4368万</td>
+<td class="num">43.3/43.3亿</td>
+<td class="num">0.08</td>
+<td class="num">2.30</td>
+<td class="num">8.65%</td>
+<td>2连板</td>
+<td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">11-26榜</span></td>
+<td class="trend">多头× 斜率-0.7%/d</td>
+<td class="num sc">34.3</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">69.3</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="元件" data-label="超预期" data-track="score" data-grank="2" data-streak="1" data-hasboard="1">
+<td>11</td>
+<td><b>东晶电子</b><span class="src">002199</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,8.1V10.3M4.2,7.2V9.3M6.3,6.7V8.8M8.5,6.6V9.1M10.7,9.7V11.0M12.8,8.6V10.4M15,9.2V11.0M17.2,8.0V10.9M19.4,8.3V10.3M21.5,8.8V10.3M23.7,9.1V10.6M25.9,10.2V12.6M28,8.3V11.7M30.2,8.3V11.0M32.4,9.5V11.5M34.5,8.9V11.0M36.7,7.2V9.4M38.9,2.0V9.2M41.1,2.2V7.5M43.2,6.1V9.0M45.4,8.9V10.7M47.6,9.9V14.3M49.7,13.5V14.8M51.9,12.5V15.8M54.1,13.3V16.6M56.2,15.8V18.5M58.4,15.9V17.9M60.6,15.8V20.2M62.7,15.6V17.7M64.9,17.2V19.6M67.1,17.0V19.7M69.3,18.5V21.5M71.4,16.1V20.1M73.6,18.2V19.7M75.8,18.3V20.9M77.9,19.4V24.1M80.1,19.7V21.5M82.3,19.1V21.7M84.4,20.2V21.9M86.6,21.1V23.2M88.8,22.8V25.7M90.9,24.7V27.0M93.1,23.1V25.9M95.3,22.7V27.2M97.5,19.2V25.5M99.6,22.6V25.4M101.8,23.0V24.3M104,22.8V24.1M106.1,22.1V23.2M108.3,21.7V24.0M110.5,23.2V25.5M112.6,25.2V27.3M114.8,26.0V28.3M117,26.8V28.4M119.2,28.2V29.9M121.3,25.0V32.0M123.5,19.8V25.0M125.7,14.1V16.9M127.8,16.8V20.5M130,14.9V19.9"/><path class="k-up" d="M2,9.6V8.6M4.2,9.0V7.8M6.3,8.2V7.0M17.2,10.2V9.3M19.4,9.1V8.8M25.9,11.4V10.3M28,11.5V9.1M32.4,11.2V9.8M34.5,10.1V9.3M36.7,8.9V8.8M38.9,9.2V5.2M49.7,14.0V13.7M60.6,18.4V16.6M64.9,19.2V18.3M69.3,20.0V19.1M73.6,19.7V18.8M77.9,21.7V19.9M90.9,24.8V24.7M93.1,25.3V25.1M97.5,25.0V21.5M104,23.0V22.8M106.1,22.8V22.1M121.3,31.3V25.0M123.5,21.1V19.8M125.7,15.4V14.3M130,18.1V14.9"/><path class="k-down" d="M8.5,6.9V9.0M10.7,9.9V10.2M12.8,9.1V10.1M15,10.1V10.6M21.5,9.2V9.3M23.7,9.1V10.6M30.2,9.6V11.0M41.1,3.8V6.7M43.2,6.9V8.5M45.4,9.4V10.4M47.6,10.3V14.0M51.9,13.2V15.8M54.1,14.6V15.9M56.2,15.8V16.2M58.4,16.1V17.8M62.7,16.6V17.2M67.1,17.2V19.1M71.4,19.1V19.3M75.8,18.8V20.7M80.1,20.3V20.4M82.3,20.1V21.4M84.4,20.6V21.0M86.6,21.4V23.2M88.8,23.6V25.6M95.3,23.4V24.3M99.6,23.8V23.9M101.8,23.2V24.1M108.3,22.1V24.0M110.5,23.7V25.1M112.6,25.2V26.9M114.8,27.3V27.9M117,27.6V28.3M119.2,28.4V29.7M127.8,20.4V20.5"/></svg></td>
+<td><span data-zh="元件" data-en="元件">元件</span></td>
+<td>主板</td>
+<td class="num">12.31</td>
+<td class="num up">+9.03%</td>
+<td class="num up">+10.04%</td>
+<td class="num up">5154万</td>
+<td class="num">30.0/28.4亿</td>
+<td class="num">0.07</td>
+<td class="num">1.61</td>
+<td class="num">10.04%</td>
+<td>首板·5天3板</td>
+<td></td>
+<td class="trend">多头× 斜率+0.5%/d</td>
+<td class="num sc">33.3</td><td class="num sc">35.0</td><td class="num sc">0.9</td>
+<td><span class="score">69.0</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="一般零售" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="2" data-hasboard="1" data-billboard="1" data-hot="1" data-hm="%E9%99%88%E5%B0%8F%E7%BE%A4" data-hm-tier="%E4%BA%8C%E7%BA%BF">
+<td>12</td>
+<td><b>中央商场</b><span class="src">600280</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,15.9V17.4M4.2,15.3V17.4M6.3,15.1V17.6M8.5,13.8V17.4M10.7,12.7V16.1M12.8,13.1V16.1M15,14.4V18.1M17.2,8.9V15.3M19.4,2.0V8.4M21.5,6.7V10.6M23.7,9.5V12.5M25.9,9.1V15.3M28,7.6V15.5M30.2,12.9V19.6M32.4,18.7V22.1M34.5,18.1V21.1M36.7,15.5V19.1M38.9,13.6V17.6M41.1,13.4V16.1M43.2,14.9V17.2M45.4,16.1V17.9M47.6,16.6V18.7M49.7,17.0V18.5M51.9,17.4V18.9M54.1,17.2V19.6M56.2,14.2V19.8M58.4,13.8V18.3M60.6,14.6V20.2M62.7,14.9V17.9M64.9,18.1V20.0M67.1,18.3V21.3M69.3,20.4V22.8M71.4,19.8V22.6M73.6,18.7V20.9M75.8,19.8V22.1M77.9,20.2V24.3M80.1,19.6V21.7M82.3,17.9V21.5M84.4,20.0V22.4M86.6,19.1V22.6M88.8,21.5V24.3M90.9,20.0V25.8M93.1,18.3V21.9M95.3,18.5V21.7M97.5,18.9V20.9M99.6,18.7V20.9M101.8,19.1V20.6M104,17.4V20.0M106.1,16.6V18.3M108.3,12.1V17.2M110.5,15.3V18.5M112.6,15.3V18.7M114.8,14.6V22.4M117,21.1V24.9M119.2,23.4V27.7M121.3,25.8V30.1M123.5,27.9V32.0M125.7,22.8V28.4M127.8,21.9V28.4M130,15.9V20.0"/><path class="k-up" d="M2,17.4V17.0M4.2,16.8V15.5M8.5,17.2V14.4M15,15.9V15.5M17.2,14.9V8.9M28,15.5V12.7M32.4,21.1V19.6M34.5,20.0V18.9M36.7,18.3V16.8M38.9,17.2V13.8M41.1,15.1V15.1M45.4,17.2V17.2M49.7,18.3V18.1M56.2,18.7V14.4M60.6,18.3V15.1M71.4,21.9V20.6M73.6,20.6V20.0M77.9,22.1V20.4M80.1,21.5V20.6M82.3,20.9V20.9M84.4,21.3V20.2M90.9,23.6V21.3M93.1,21.5V19.8M97.5,20.2V18.9M99.6,20.6V20.4M101.8,19.8V19.6M104,19.6V17.4M106.1,17.2V16.6M108.3,16.4V15.3M112.6,18.7V18.3M123.5,29.2V27.9M127.8,28.4V21.9M130,15.9V15.9"/><path class="k-down" d="M6.3,15.3V17.4M10.7,14.2V15.3M12.8,15.5V15.9M19.4,6.7V7.6M21.5,7.6V9.7M23.7,10.4V11.0M25.9,11.0V14.4M30.2,13.4V19.6M43.2,15.3V17.0M47.6,16.8V18.1M51.9,17.6V17.9M54.1,17.6V18.9M58.4,15.1V18.1M62.7,15.5V17.4M64.9,18.5V19.6M67.1,18.9V20.2M69.3,21.1V21.9M75.8,20.0V21.7M86.6,20.6V22.4M88.8,22.6V24.1M95.3,20.0V20.2M110.5,15.3V18.1M114.8,17.0V21.5M117,21.5V24.1M119.2,24.1V27.3M121.3,27.5V29.6M125.7,26.9V27.5"/></svg></td>
+<td><span data-zh="一般零售" data-en="一般零售">一般零售</span></td>
+<td>主板</td>
+<td class="num">3.35</td>
+<td class="num up">+8.06%</td>
+<td class="num up">+9.93%</td>
+<td class="num up">3117万</td>
+<td class="num">37.8/37.8亿</td>
+<td class="num">0.07</td>
+<td class="num">3.11</td>
+<td class="num">14.18%</td>
+<td>2连板</td>
+<td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">11-26榜</span><span class="src">陈小群(4419万)@二线</span></td>
+<td class="trend">多头× 斜率-0.4%/d</td>
+<td class="num sc">30.4</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">65.5</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="包装印刷" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>13</td>
+<td><b>顺灏股份</b><span class="src">002565</span></td>
+<td class="spark"><span class="src">—</span></td>
+<td><span data-zh="包装印刷" data-en="包装印刷">包装印刷</span></td>
+<td>主板</td>
+<td class="num">9.07</td>
+<td class="num up">+7.59%</td>
+<td class="num up">+10.05%</td>
+<td class="num up">1.37亿</td>
+<td class="num">96.1/96.1亿</td>
+<td class="num">0.30</td>
+<td class="num">0.25</td>
+<td class="num">2.37%</td>
+<td>首板·4天2板</td>
+<td></td>
+<td class="trend">多头× 斜率-0.7%/d</td>
+<td class="num sc">30.1</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">65.1</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="环境治理" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="0" data-hasboard="1">
+<td>14</td>
+<td><b>德林海</b><span class="src">688069</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,8.9V10.3M4.2,8.1V11.1M6.3,7.0V11.5M8.5,5.5V7.8M10.7,5.8V8.0M12.8,5.0V8.5M15,5.7V8.1M17.2,4.6V9.9M19.4,7.0V9.7M21.5,2.8V7.7M23.7,5.1V6.9M25.9,5.4V9.8M28,8.0V9.7M30.2,7.5V9.9M32.4,8.0V10.1M34.5,7.9V10.1M36.7,8.6V9.8M38.9,3.5V8.5M41.1,2.0V6.0M43.2,4.1V7.1M45.4,5.8V7.9M47.6,7.7V12.4M49.7,10.5V12.6M51.9,10.0V12.3M54.1,10.8V13.4M56.2,12.9V16.2M58.4,13.3V15.2M60.6,13.3V16.9M62.7,12.5V15.2M64.9,14.3V16.8M67.1,14.3V16.2M69.3,15.9V19.7M71.4,16.8V18.9M73.6,16.9V19.0M75.8,18.2V21.7M77.9,21.3V26.5M80.1,21.9V24.4M82.3,22.7V25.4M84.4,24.5V26.2M86.6,24.5V26.8M88.8,26.1V29.6M90.9,24.0V29.2M93.1,24.2V29.2M95.3,27.5V31.0M97.5,26.5V29.1M99.6,26.7V30.1M101.8,26.5V28.9M104,26.2V28.6M106.1,24.7V27.0M108.3,22.9V26.3M110.5,24.5V28.1M112.6,26.7V29.3M114.8,27.7V30.0M117,27.5V30.3M119.2,28.8V30.4M121.3,29.2V32.0M123.5,23.8V31.9M125.7,21.1V29.5M127.8,28.7V30.5M130,27.0V31.0"/><path class="k-up" d="M2,10.1V9.6M6.3,11.4V7.2M10.7,7.0V6.6M12.8,7.4V7.0M15,7.0V5.9M19.4,8.1V7.5M21.5,7.5V5.8M30.2,9.1V8.9M32.4,8.9V8.7M36.7,9.6V8.8M38.9,8.5V5.4M49.7,11.6V10.7M60.6,16.2V14.7M62.7,14.7V14.6M64.9,15.7V15.3M71.4,18.3V18.1M90.9,29.1V25.0M95.3,28.3V28.1M97.5,29.0V27.2M99.6,29.5V27.3M104,27.7V26.3M106.1,26.6V24.9M114.8,29.5V28.6M119.2,29.2V29.1M123.5,31.4V23.8M130,29.2V27.1"/><path class="k-down" d="M4.2,8.1V10.2M8.5,6.9V7.0M17.2,5.8V8.9M23.7,5.1V6.0M25.9,6.8V8.2M28,8.3V8.9M34.5,8.1V9.6M41.1,4.5V5.1M43.2,5.2V6.9M45.4,6.4V7.8M47.6,7.7V11.7M51.9,10.0V12.1M54.1,10.8V13.1M56.2,13.2V13.3M58.4,13.6V14.3M67.1,14.3V16.2M69.3,17.4V18.3M73.6,18.1V18.8M75.8,18.2V21.3M77.9,21.3V22.5M80.1,22.5V23.5M82.3,23.3V25.3M84.4,25.3V25.8M86.6,25.8V26.1M88.8,26.5V29.3M93.1,24.6V28.9M101.8,26.5V28.5M108.3,23.7V26.1M110.5,26.5V26.7M112.6,26.7V29.2M117,28.2V29.6M121.3,30.0V31.4M125.7,21.6V28.5M127.8,29.8V30.5"/></svg></td>
+<td><span data-zh="环境治理" data-en="环境治理">环境治理</span></td>
+<td>科创板</td>
+<td class="num">27.97</td>
+<td class="num up">+9.13%</td>
+<td class="num up">+8.69%</td>
+<td class="num down">-541万</td>
+<td class="num">43.8/43.8亿</td>
+<td class="num">0.05</td>
+<td class="num">1.20</td>
+<td class="num">4.10%</td>
+<td>4天1板</td>
+<td></td>
+<td class="trend">多头× 斜率-0.2%/d</td>
+<td class="num sc">28.7</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">63.8</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="半导体" data-label="超预期" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>15</td>
+<td><b>三佳科技</b><span class="src">600520</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,9.0V12.7M4.2,6.8V10.7M6.3,2.8V11.3M8.5,2.0V6.8M10.7,6.1V8.3M12.8,5.2V8.3M15,6.1V11.1M17.2,5.8V9.1M19.4,7.6V10.7M21.5,9.0V11.5M23.7,10.2V12.7M25.9,12.5V16.2M28,12.1V15.6M30.2,9.6V14.1M32.4,8.4V11.9M34.5,8.2V10.5M36.7,3.0V9.1M38.9,4.0V6.4M41.1,3.4V6.7M43.2,4.5V6.8M45.4,4.6V6.5M47.6,2.9V8.4M49.7,6.4V9.1M51.9,7.3V11.4M54.1,9.8V14.5M56.2,13.7V19.8M58.4,14.5V18.6M60.6,15.8V20.3M62.7,15.9V19.1M64.9,19.4V22.6M67.1,19.6V22.8M69.3,22.2V24.8M71.4,20.8V23.5M73.6,20.7V22.4M75.8,21.1V24.3M77.9,22.8V28.8M80.1,23.3V25.2M82.3,23.3V26.9M84.4,24.7V27.0M86.6,25.0V27.2M88.8,21.1V27.2M90.9,22.8V26.1M93.1,23.5V26.9M95.3,22.8V27.7M97.5,20.4V24.5M99.6,21.0V24.5M101.8,21.6V23.0M104,20.3V21.8M106.1,20.4V21.8M108.3,18.3V21.1M110.5,19.9V23.2M112.6,22.9V25.4M114.8,21.6V26.1M117,21.8V25.1M119.2,17.5V22.5M121.3,14.4V22.6M123.5,22.0V27.8M125.7,20.2V23.5M127.8,23.8V29.5M130,24.0V32.0"/><path class="k-up" d="M2,11.8V9.8M4.2,10.3V10.3M6.3,11.2V5.2M8.5,6.0V5.9M10.7,6.7V6.3M17.2,8.8V8.1M28,14.6V13.1M30.2,12.2V11.1M32.4,10.6V8.8M36.7,8.6V5.0M43.2,6.4V5.3M58.4,16.4V15.8M60.6,17.2V16.1M71.4,23.2V21.8M77.9,26.0V23.0M84.4,26.3V25.1M88.8,26.9V24.9M90.9,25.3V23.3M95.3,26.1V22.9M97.5,24.4V21.3M99.6,24.4V23.2M104,21.4V21.3M106.1,21.8V20.7M114.8,25.5V23.9M119.2,21.8V17.5M123.5,27.7V22.9M130,29.3V24.0"/><path class="k-down" d="M12.8,5.8V7.7M15,7.6V10.5M19.4,8.0V10.1M21.5,9.7V11.2M23.7,11.0V11.8M25.9,12.5V13.8M34.5,9.3V9.7M38.9,5.0V5.4M41.1,4.5V6.4M45.4,6.0V6.4M47.6,3.2V7.6M49.7,8.2V8.7M51.9,7.6V10.9M54.1,9.8V13.7M56.2,13.7V16.2M62.7,16.8V19.0M64.9,21.1V21.1M67.1,19.9V22.2M69.3,22.6V22.7M73.6,20.8V22.1M75.8,21.7V24.0M80.1,23.8V24.5M82.3,23.9V26.9M86.6,25.4V26.9M93.1,23.5V26.6M101.8,22.2V22.6M108.3,20.5V21.0M110.5,20.4V22.9M112.6,23.5V25.1M117,22.7V23.7M121.3,17.5V22.3M125.7,21.1V23.3M127.8,24.4V29.5"/></svg></td>
+<td><span data-zh="半导体" data-en="半导体">半导体</span></td>
+<td>主板</td>
+<td class="num">21.51</td>
+<td class="num up">+7.23%</td>
+<td class="num up">+9.98%</td>
+<td class="num up">1.04亿</td>
+<td class="num">34.4/34.1亿</td>
+<td class="num">0.07</td>
+<td class="num">0.66</td>
+<td class="num">8.31%</td>
+<td>首板·6天2板</td>
+<td></td>
+<td class="trend">多头× 斜率+-0.0%/d</td>
+<td class="num sc">25.6</td><td class="num sc">35.0</td><td class="num sc">0.0</td>
+<td><span class="score">60.4</span></td>
+<td class="wrap"><span class="tag pass">超预期</span></td>
+</tr><tr data-sector="通用设备" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1" data-billboard="1">
+<td>16</td>
+<td><b>冰山冷热</b><span class="src">000530</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,31.6V31.8M4.2,31.5V31.8M6.3,31.5V31.8M8.5,31.3V31.5M10.7,30.8V31.5M12.8,30.2V31.3M15,30.5V31.2M17.2,31.1V31.4M19.4,30.9V31.4M21.5,31.0V31.2M23.7,31.1V31.4M25.9,31.3V31.7M28,31.5V31.8M30.2,31.6V32.0M32.4,31.8V32.0M34.5,31.6V32.0M36.7,31.4V31.7M38.9,31.0V31.5M41.1,31.1V31.5M43.2,30.9V31.6M45.4,31.4V31.6M47.6,31.4V31.7M49.7,31.4V31.7M51.9,31.4V31.8M54.1,31.2V31.7M56.2,31.1V31.7M58.4,31.1V31.5M60.6,30.1V31.8M62.7,28.5V28.5M64.9,26.8V27.7M67.1,25.0V28.1M69.3,23.0V26.6M71.4,23.0V26.5M73.6,21.6V25.4M75.8,20.0V21.7M77.9,19.8V22.3M80.1,19.8V22.4M82.3,20.6V23.7M84.4,23.9V25.6M86.6,23.3V25.2M88.8,21.8V24.7M90.9,22.1V25.0M93.1,20.0V22.5M95.3,20.0V22.0M97.5,20.3V21.8M99.6,20.0V22.9M101.8,19.7V21.4M104,17.2V18.2M106.1,14.3V17.1M108.3,13.8V16.6M110.5,16.6V19.0M112.6,15.4V18.0M114.8,12.9V18.0M117,10.7V16.3M119.2,13.2V15.4M121.3,12.4V16.7M123.5,9.1V13.2M125.7,6.2V9.5M127.8,5.8V8.5M130,2.0V7.5"/><path class="k-up" d="M4.2,31.6V31.6M6.3,31.7V31.5M10.7,31.1V31.0M12.8,31.1V30.6M17.2,31.3V31.3M19.4,31.3V31.0M21.5,31.1V31.1M32.4,32.0V31.8M34.5,31.8V31.7M36.7,31.5V31.5M38.9,31.4V31.1M45.4,31.5V31.5M49.7,31.6V31.5M54.1,31.6V31.3M56.2,31.3V31.1M60.6,31.6V30.1M62.7,28.5V28.5M64.9,26.9V26.8M67.1,27.6V25.0M69.3,26.6V24.5M71.4,24.9V23.5M73.6,25.0V22.3M75.8,21.7V20.0M77.9,21.8V19.8M86.6,25.2V23.3M90.9,24.2V22.1M95.3,22.0V20.0M97.5,21.8V21.2M101.8,20.8V19.7M104,17.2V17.2M106.1,15.4V15.1M112.6,16.7V15.9M114.8,16.7V13.6M117,14.5V12.1M119.2,15.4V15.4M121.3,16.7V12.4M123.5,11.8V9.1M127.8,7.8V6.0M130,6.3V2.0"/><path class="k-down" d="M2,31.6V31.7M8.5,31.3V31.4M15,30.5V31.1M23.7,31.2V31.3M25.9,31.4V31.6M28,31.6V31.7M30.2,31.6V32.0M41.1,31.1V31.4M43.2,31.4V31.5M47.6,31.5V31.6M51.9,31.5V31.6M58.4,31.2V31.5M80.1,19.8V22.4M82.3,22.8V23.4M84.4,24.3V25.4M88.8,23.0V24.2M93.1,22.2V22.3M99.6,21.6V22.1M108.3,15.0V16.0M110.5,17.3V17.7M125.7,9.0V9.4"/></svg></td>
+<td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
+<td>主板</td>
+<td class="num">16.88</td>
+<td class="num up">+4.39%</td>
+<td class="num up">+10.00%</td>
+<td class="num up">2.10亿</td>
+<td class="num">142.3/101.3亿</td>
+<td class="num">0.02</td>
+<td class="num">0.77</td>
+<td class="num">29.20%</td>
+<td>首板·5天3板</td>
+<td><span class="tag pass"><span data-zh="上榜" data-en="List">上榜</span></span><span class="src">11-26榜</span></td>
+<td class="trend">多头√ 20新√ 60新√ 斜率+3.2%/d</td>
+<td class="num sc">4.9</td><td class="num sc">24.5</td><td class="num sc">30.0</td>
+<td><span class="score">59.4</span></td>
+<td class="wrap"><span class="tag ">弱转强·符合</span></td>
+</tr><tr data-sector="通信服务" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>17</td>
+<td><b>中嘉博创</b><span class="src">000889</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,8.0V9.4M4.2,8.2V9.5M6.3,9.0V10.9M8.5,7.4V9.4M10.7,7.2V9.4M12.8,7.2V10.1M15,7.4V9.7M17.2,8.8V10.5M19.4,8.6V10.5M21.5,6.3V10.1M23.7,2.0V11.7M25.9,6.1V9.0M28,6.3V9.9M30.2,9.7V12.6M32.4,10.3V13.4M34.5,9.7V12.8M36.7,9.9V11.9M38.9,10.7V12.1M41.1,9.5V11.7M43.2,10.5V15.0M45.4,13.8V15.4M47.6,15.0V17.7M49.7,14.6V17.1M51.9,15.0V16.9M54.1,15.9V18.1M56.2,15.9V20.2M58.4,16.1V19.0M60.6,17.1V21.0M62.7,17.3V19.0M64.9,19.2V21.9M67.1,20.0V23.1M69.3,21.4V24.6M71.4,22.5V24.3M73.6,21.2V22.9M75.8,21.9V24.8M77.9,24.1V29.7M80.1,22.9V25.6M82.3,22.9V26.6M84.4,25.0V26.8M86.6,25.6V27.7M88.8,26.4V29.7M90.9,28.9V32.0M93.1,28.5V31.0M95.3,29.1V31.6M97.5,23.5V29.7M99.6,20.6V29.1M101.8,23.7V25.6M104,23.7V25.2M106.1,21.9V24.6M108.3,21.4V24.3M110.5,23.5V25.6M112.6,24.6V26.8M114.8,25.6V27.9M117,21.4V27.5M119.2,14.8V19.0M121.3,12.3V24.5M123.5,15.2V20.2M125.7,11.5V16.7M127.8,13.6V18.5M130,11.1V19.6"/><path class="k-up" d="M2,9.0V8.6M6.3,9.7V9.0M8.5,8.6V8.0M10.7,8.8V8.0M19.4,9.9V9.2M21.5,9.7V9.7M23.7,10.3V5.5M25.9,8.2V7.4M32.4,12.8V10.7M38.9,11.7V11.5M41.1,10.5V10.5M49.7,16.5V15.2M56.2,17.7V15.9M60.6,19.6V17.7M71.4,24.1V23.1M77.9,25.8V24.3M80.1,25.0V23.7M84.4,25.6V25.2M90.9,30.5V29.3M95.3,30.5V29.3M97.5,29.3V23.5M99.6,27.0V25.0M104,24.3V23.9M106.1,24.1V22.3M117,27.2V21.4M121.3,24.5V18.5M123.5,18.8V15.2M125.7,16.1V14.2M130,16.5V11.1"/><path class="k-down" d="M4.2,8.6V9.0M12.8,7.8V9.5M15,9.0V9.5M17.2,9.4V10.3M28,7.0V9.5M30.2,10.5V12.3M34.5,10.7V11.3M36.7,10.1V11.5M43.2,10.5V14.4M45.4,15.0V15.2M47.6,15.2V16.5M51.9,15.2V16.7M54.1,17.1V17.5M58.4,16.7V18.8M62.7,18.1V18.8M64.9,19.8V21.5M67.1,20.4V22.5M69.3,22.1V23.5M73.6,22.1V22.3M75.8,22.7V24.6M82.3,23.5V26.4M86.6,25.8V27.7M88.8,27.9V29.5M93.1,29.9V30.3M101.8,24.5V25.6M108.3,22.9V24.1M110.5,23.7V25.2M112.6,25.6V26.2M114.8,26.8V27.4M119.2,14.8V17.5M127.8,17.3V18.1"/></svg></td>
+<td><span data-zh="通信服务" data-en="通信服务">通信服务</span></td>
+<td>主板</td>
+<td class="num">4.15</td>
+<td class="num up">+6.14%</td>
+<td class="num up">+10.14%</td>
+<td class="num up">1.79亿</td>
+<td class="num">38.9/36.1亿</td>
+<td class="num">0.03</td>
+<td class="num">1.23</td>
+<td class="num">26.89%</td>
+<td>首板·7天2板</td>
+<td></td>
+<td class="trend">多头× 20新√ 斜率+1.3%/d</td>
+<td class="num sc">13.7</td><td class="num sc">24.5</td><td class="num sc">18.0</td>
+<td><span class="score">56.3</span></td>
+<td class="wrap"><span class="tag ">弱转强·符合</span></td>
+</tr><tr data-sector="汽车零部件" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-streak="5" data-hasboard="1">
+<td>18</td>
+<td><b>克来机电</b><span class="src">603960</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,15.7V19.3M4.2,16.6V18.3M6.3,17.1V19.1M8.5,15.7V17.4M10.7,16.5V17.9M12.8,11.9V18.0M15,13.5V16.8M17.2,16.1V17.8M19.4,16.8V18.0M21.5,17.5V18.9M23.7,18.6V20.1M25.9,20.0V21.8M28,18.8V21.7M30.2,18.4V20.4M32.4,18.3V24.1M34.5,14.3V20.5M36.7,13.7V15.5M38.9,7.8V14.2M41.1,4.1V10.0M43.2,4.1V10.5M45.4,9.3V12.2M47.6,10.8V13.8M49.7,11.8V14.3M51.9,12.5V15.3M54.1,14.3V17.7M56.2,16.9V21.0M58.4,16.8V19.3M60.6,19.5V22.5M62.7,18.4V22.0M64.9,22.6V24.3M67.1,21.4V23.9M69.3,22.2V25.4M71.4,20.4V23.8M73.6,20.6V22.1M75.8,20.4V23.0M77.9,20.1V26.4M80.1,20.6V22.1M82.3,19.8V22.8M84.4,20.5V22.5M86.6,20.7V23.6M88.8,23.1V26.2M90.9,24.3V28.2M93.1,23.7V25.9M95.3,24.6V27.0M97.5,22.9V25.0M99.6,24.1V25.7M101.8,22.0V24.9M104,22.3V23.6M106.1,21.4V23.0M108.3,20.9V23.3M110.5,22.2V24.5M112.6,24.1V26.1M114.8,25.3V27.7M117,26.7V28.7M119.2,27.7V29.7M121.3,25.1V32.0M123.5,20.1V20.1M125.7,14.6V14.6M127.8,8.6V8.6M130,2.0V6.3"/><path class="k-up" d="M2,18.2V17.0M6.3,19.1V17.1M8.5,17.3V16.6M12.8,18.0V15.0M17.2,16.9V16.9M28,20.4V19.1M34.5,20.4V14.3M36.7,14.3V13.9M38.9,14.2V9.5M41.1,9.0V5.5M49.7,14.1V13.5M60.6,20.5V19.9M69.3,23.1V22.9M71.4,23.6V21.4M77.9,24.0V20.4M80.1,21.4V21.3M84.4,22.5V21.4M90.9,26.4V24.6M95.3,25.2V24.7M97.5,24.7V23.7M101.8,24.6V24.0M104,23.1V22.7M106.1,22.9V21.5M121.3,30.0V25.1M123.5,20.1V20.1M125.7,14.6V14.6M127.8,8.6V8.6M130,2.9V2.0"/><path class="k-down" d="M4.2,17.6V18.2M10.7,16.6V17.6M15,14.0V16.7M19.4,16.9V17.7M21.5,17.9V18.3M23.7,18.9V19.8M25.9,20.5V20.9M30.2,18.6V18.9M32.4,18.5V19.8M43.2,6.2V9.9M45.4,10.3V11.2M47.6,10.8V13.5M51.9,13.0V15.0M54.1,14.3V17.2M56.2,17.8V17.9M58.4,17.3V19.0M62.7,18.8V21.9M64.9,23.1V24.1M67.1,22.4V23.1M73.6,21.4V21.9M75.8,21.9V22.9M82.3,21.0V22.7M86.6,20.9V23.6M88.8,23.6V26.1M93.1,24.9V25.3M99.6,25.1V25.1M108.3,21.7V23.2M110.5,22.4V23.9M112.6,24.1V25.9M114.8,25.3V27.4M117,26.9V28.0M119.2,28.4V29.6"/></svg></td>
+<td><span data-zh="汽车零部件" data-en="汽车零部件">汽车零部件</span></td>
+<td>主板</td>
+<td class="num">21.11</td>
+<td class="num up">+3.18%</td>
+<td class="num up">+10.00%</td>
+<td class="num down">-5769万</td>
+<td class="num">55.4/55.4亿</td>
+<td class="num">0.04</td>
+<td class="num">16.66</td>
+<td class="num">24.76%</td>
+<td>5连板</td>
+<td></td>
+<td class="trend">多头× 20新√ 60新√ 斜率+1.2%/d</td>
+<td class="num sc">6.0</td><td class="num sc">24.5</td><td class="num sc">17.7</td>
+<td><span class="score">48.2</span></td>
+<td class="wrap"><span class="tag ">弱转强·符合</span></td>
+</tr><tr data-sector="电力" data-label="弱转强·符合" data-track="score" data-best="1" data-grank="1" data-streak="1" data-hasboard="1">
+<td>19</td>
+<td><b>闽东电力</b><span class="src">000993</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,31.5V32.0M4.2,31.5V31.8M6.3,31.6V31.9M8.5,31.1V31.7M10.7,30.7V31.4M12.8,28.6V30.7M15,28.8V30.4M17.2,29.5V30.4M19.4,30.0V30.5M21.5,27.4V30.4M23.7,24.3V26.7M25.9,20.9V22.2M28,17.2V19.2M30.2,13.1V16.5M32.4,8.5V12.2M34.5,8.6V13.5M36.7,5.1V9.0M38.9,2.9V6.3M41.1,2.0V5.6M43.2,7.4V7.6M45.4,5.0V10.9M47.6,7.3V11.5M49.7,11.0V15.5M51.9,11.8V13.7M54.1,10.2V12.7M56.2,9.2V14.6M58.4,7.7V11.2M60.6,10.5V14.2M62.7,7.7V12.2M64.9,4.6V11.3M67.1,6.6V10.5M69.3,13.1V14.2M71.4,16.4V18.6M73.6,16.7V20.9M75.8,18.0V21.2M77.9,23.1V24.9M80.1,24.2V26.7M82.3,25.3V26.7M84.4,26.3V27.6M86.6,26.9V28.2M88.8,27.3V29.2M90.9,27.5V29.3M93.1,26.7V28.0M95.3,26.3V27.9M97.5,25.1V26.9M99.6,23.0V26.5M101.8,23.8V25.7M104,24.1V25.8M106.1,23.2V25.5M108.3,24.0V25.2M110.5,25.0V26.6M112.6,26.5V27.7M114.8,27.4V28.6M117,27.9V29.5M119.2,28.7V30.2M121.3,30.1V31.2M123.5,30.2V32.0M125.7,29.3V30.7M127.8,29.8V31.2M130,28.4V31.1"/><path class="k-up" d="M2,31.7V31.6M4.2,31.6V31.6M6.3,31.6V31.6M8.5,31.6V31.2M10.7,31.2V30.7M12.8,30.6V30.1M15,30.1V29.4M21.5,30.3V27.4M23.7,26.6V24.3M25.9,20.9V20.9M28,19.2V17.2M30.2,15.1V13.1M32.4,11.9V8.5M34.5,13.5V9.9M36.7,9.0V5.5M38.9,4.5V3.3M41.1,2.3V2.0M43.2,7.6V7.6M45.4,9.8V6.3M51.9,13.0V12.3M54.1,11.4V10.5M56.2,10.9V10.1M58.4,10.2V9.3M60.6,11.7V11.0M62.7,11.7V7.8M67.1,10.5V9.3M73.6,19.6V17.1M77.9,24.8V24.1M90.9,28.7V27.6M93.1,27.8V27.6M95.3,27.6V26.5M97.5,26.9V25.4M99.6,26.5V25.2M104,25.2V24.4M123.5,31.3V30.2M130,30.9V28.4"/><path class="k-down" d="M17.2,29.8V30.1M19.4,30.1V30.2M47.6,8.9V11.5M49.7,13.5V14.5M64.9,9.2V11.3M69.3,14.1V14.2M71.4,16.8V18.6M75.8,18.5V21.2M80.1,24.3V26.7M82.3,26.1V26.7M84.4,26.6V26.8M86.6,27.0V28.1M88.8,28.6V28.7M101.8,24.8V25.1M106.1,24.0V24.6M108.3,24.9V25.1M110.5,25.1V26.4M112.6,26.7V27.4M114.8,27.7V28.3M117,28.0V29.0M119.2,29.2V30.1M121.3,30.9V31.1M125.7,30.2V30.5M127.8,30.5V31.1"/></svg></td>
+<td><span data-zh="电力" data-en="电力">电力</span></td>
+<td>主板</td>
+<td class="num">11.66</td>
+<td class="num up">+5.05%</td>
+<td class="num up">+10.01%</td>
+<td class="num up">7302万</td>
+<td class="num">53.4/53.4亿</td>
+<td class="num">0.10</td>
+<td class="num">0.97</td>
+<td class="num">4.79%</td>
+<td>首板</td>
+<td></td>
+<td class="trend">多头× 斜率-0.8%/d</td>
+<td class="num sc">21.0</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+<td><span class="score">45.7</span></td>
+<td class="wrap"><span class="tag ">弱转强·符合</span></td>
+</tr><tr data-sector="软件开发" data-label="趋势放量" data-track="p4" data-best="1" data-grank="1" data-streak="0">
+<td>20</td>
+<td><b>汇金科技</b><span class="src">300561</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,6.3V12.5M4.2,7.9V10.9M6.3,9.2V12.5M8.5,6.4V11.6M10.7,8.3V10.6M12.8,8.8V13.2M15,8.1V12.6M17.2,9.2V13.2M19.4,11.7V14.7M21.5,14.1V16.1M23.7,12.3V15.7M25.9,15.1V19.4M28,16.3V18.6M30.2,13.8V18.6M32.4,13.5V17.9M34.5,14.9V18.0M36.7,14.9V17.5M38.9,14.0V15.8M41.1,13.2V15.5M43.2,15.3V17.6M45.4,17.6V20.6M47.6,20.5V22.5M49.7,21.3V22.6M51.9,21.2V26.1M54.1,23.9V26.1M56.2,21.0V27.6M58.4,21.8V23.3M60.6,19.9V23.8M62.7,21.6V24.1M64.9,19.8V25.5M67.1,21.0V25.6M69.3,24.4V26.9M71.4,25.0V27.7M73.6,24.7V26.5M75.8,25.9V29.5M77.9,16.1V32.0M80.1,17.6V20.4M82.3,19.9V23.3M84.4,21.1V25.2M86.6,17.4V24.2M88.8,17.8V26.9M90.9,12.4V22.0M93.1,13.6V20.1M95.3,8.3V19.6M97.5,14.1V17.6M99.6,13.5V19.2M101.8,17.2V20.1M104,18.1V19.7M106.1,17.8V19.7M108.3,17.8V22.5M110.5,17.9V23.3M112.6,15.2V22.3M114.8,9.5V20.7M117,11.0V17.1M119.2,11.4V20.2M121.3,6.3V18.5M123.5,4.3V13.2M125.7,4.3V12.3M127.8,2.0V13.8M130,3.3V10.9"/><path class="k-up" d="M2,11.2V7.6M6.3,11.2V10.7M8.5,10.4V7.9M15,11.4V10.2M23.7,14.2V13.5M28,18.3V17.2M30.2,17.0V16.1M32.4,17.1V14.9M36.7,17.1V15.5M38.9,15.6V14.2M49.7,22.5V22.4M56.2,26.0V21.6M60.6,23.3V22.0M62.7,23.2V23.0M64.9,25.5V23.1M71.4,26.8V26.0M77.9,30.0V16.1M86.6,24.2V20.9M90.9,19.8V15.6M93.1,19.2V17.1M95.3,18.3V13.9M97.5,17.5V16.0M99.6,19.1V17.9M104,19.6V18.5M106.1,19.2V18.1M110.5,22.5V20.6M112.6,22.3V17.2M114.8,18.4V13.9M117,15.4V13.7M121.3,18.2V12.1M123.5,11.4V7.7M125.7,12.3V7.8M127.8,10.0V6.2"/><path class="k-down" d="M4.2,8.8V10.4M10.7,9.3V10.2M12.8,10.1V13.1M17.2,10.9V12.9M19.4,13.4V14.4M21.5,14.2V15.2M25.9,15.3V17.9M34.5,16.5V17.7M41.1,14.0V15.0M43.2,15.3V16.6M45.4,18.1V20.6M47.6,20.7V22.5M51.9,21.3V25.6M54.1,24.3V25.6M58.4,21.8V22.8M67.1,21.7V24.1M69.3,24.8V26.8M73.6,26.1V26.1M75.8,26.5V29.5M80.1,19.7V19.9M82.3,19.9V23.0M84.4,22.2V22.9M88.8,20.8V24.8M101.8,18.8V19.7M108.3,18.2V22.2M119.2,14.1V17.5M130,6.8V10.4"/></svg></td>
+<td><span data-zh="软件开发" data-en="软件开发">软件开发</span></td>
+<td>创业板</td>
+<td class="num">16.77</td>
+<td class="num up">+0.36%</td>
+<td class="num down">-4.62%</td>
+<td class="num down">-3054万</td>
+<td class="num">55.0/40.4亿</td>
+<td class="num">0.02</td>
+<td class="num">1.03</td>
+<td class="num">20.25%</td>
+<td></td>
+<td></td>
+<td class="trend">多头√ 斜率+0.7%/d</td>
+<td class="num sc">0.0</td><td class="num sc">0.0</td><td class="num sc">15.6</td>
+<td><span class="score">15.5</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="通用设备" data-label="趋势放量" data-track="p4" data-grank="2" data-streak="0">
+<td>21</td>
+<td><b>凌霄泵业</b><span class="src">002884</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,19.5V21.3M4.2,17.9V20.7M6.3,17.5V20.0M8.5,16.4V19.1M10.7,18.8V20.9M12.8,18.7V21.7M15,18.1V21.0M17.2,18.7V20.8M19.4,17.8V19.6M21.5,17.7V19.6M23.7,19.2V21.1M25.9,21.1V23.3M28,21.7V23.9M30.2,22.2V25.1M32.4,24.4V26.2M34.5,24.2V25.5M36.7,23.9V25.0M38.9,24.1V25.0M41.1,23.1V24.8M43.2,23.9V25.0M45.4,24.6V26.4M47.6,25.0V28.6M49.7,26.8V28.0M51.9,25.4V27.2M54.1,24.9V26.8M56.2,24.6V26.4M58.4,24.0V26.4M60.6,25.4V27.3M62.7,24.4V26.8M64.9,25.1V27.6M67.1,25.1V27.5M69.3,22.9V26.4M71.4,23.4V26.4M73.6,25.6V29.9M75.8,28.6V31.4M77.9,27.6V31.4M80.1,26.9V29.8M82.3,29.8V31.4M84.4,29.6V31.5M86.6,27.7V30.9M88.8,28.7V32.0M90.9,27.5V30.3M93.1,26.0V28.5M95.3,24.7V27.2M97.5,19.5V25.7M99.6,20.4V23.9M101.8,18.9V22.8M104,18.7V20.4M106.1,18.8V22.1M108.3,20.9V23.6M110.5,19.8V23.3M112.6,18.2V21.0M114.8,15.0V20.2M117,13.8V15.9M119.2,6.0V14.9M121.3,6.7V12.0M123.5,2.0V10.3M125.7,2.9V6.4M127.8,3.4V11.9M130,6.0V12.3"/><path class="k-up" d="M2,20.4V20.4M4.2,20.0V18.4M6.3,20.0V18.5M15,21.0V19.6M19.4,18.7V17.8M28,22.7V22.7M32.4,25.4V24.9M34.5,25.0V24.6M38.9,24.8V24.6M49.7,27.5V27.3M51.9,27.2V25.9M56.2,26.1V24.9M62.7,26.8V25.4M67.1,25.9V25.6M69.3,26.2V24.2M75.8,30.0V29.9M77.9,30.3V27.6M84.4,31.3V30.7M86.6,30.8V30.2M88.8,30.2V29.9M90.9,30.3V28.3M93.1,27.9V26.1M95.3,26.2V25.3M97.5,25.3V22.7M99.6,23.0V20.8M101.8,20.7V19.6M104,19.6V19.4M110.5,22.9V20.1M112.6,20.8V19.2M114.8,19.7V15.3M117,15.0V14.2M119.2,14.0V7.0M123.5,9.0V2.5M125.7,5.3V4.1M130,9.3V7.6"/><path class="k-down" d="M8.5,18.7V18.9M10.7,18.8V19.5M12.8,19.4V21.4M17.2,18.7V18.9M21.5,17.7V19.1M23.7,19.2V21.0M25.9,21.1V22.3M30.2,22.6V24.9M36.7,24.0V24.7M41.1,24.0V24.1M43.2,24.0V25.0M45.4,24.6V25.6M47.6,25.0V27.4M54.1,25.9V26.1M58.4,24.9V25.7M60.6,25.7V26.1M64.9,26.1V27.0M71.4,24.7V25.6M73.6,25.6V29.8M80.1,28.5V29.3M82.3,30.3V31.4M106.1,19.4V20.9M108.3,21.6V22.9M121.3,8.4V9.4M127.8,4.1V10.9"/></svg></td>
+<td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
+<td>主板</td>
+<td class="num">16.93</td>
+<td class="num up">+0.00%</td>
+<td class="num up">+1.68%</td>
+<td class="num down">-353万</td>
+<td class="num">60.6/46.5亿</td>
+<td class="num">0.01</td>
+<td class="num">0.60</td>
+<td class="num">1.58%</td>
+<td></td>
+<td></td>
+<td class="trend">多头√ 斜率+0.7%/d</td>
+<td class="num sc">0.0</td><td class="num sc">0.0</td><td class="num sc">15.0</td>
+<td><span class="score">15.0</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="白色家电" data-label="趋势放量" data-track="p4" data-best="1" data-grank="1" data-streak="0">
+<td>22</td>
+<td><b>惠而浦</b><span class="src">600983</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,22.2V25.9M4.2,22.7V25.1M6.3,22.7V24.2M8.5,20.1V23.0M10.7,20.6V23.9M12.8,22.2V24.2M15,22.7V24.7M17.2,23.7V25.2M19.4,22.7V24.7M21.5,23.5V27.4M23.7,26.1V28.3M25.9,27.4V30.1M28,27.6V30.1M30.2,28.3V30.3M32.4,28.6V30.6M34.5,27.4V30.5M36.7,26.4V28.8M38.9,27.4V28.4M41.1,26.4V28.1M43.2,22.8V25.9M45.4,24.5V27.9M47.6,24.5V28.1M49.7,25.7V28.1M51.9,24.9V27.3M54.1,24.9V27.9M56.2,25.1V28.3M58.4,23.5V25.9M60.6,23.5V26.7M62.7,25.1V26.7M64.9,26.6V29.5M67.1,26.4V28.8M69.3,24.9V28.4M71.4,24.5V28.1M73.6,26.4V29.8M75.8,28.1V31.8M77.9,27.6V32.0M80.1,26.6V28.6M82.3,26.9V30.3M84.4,25.2V30.1M86.6,24.2V26.4M88.8,22.7V26.7M90.9,17.6V24.4M93.1,16.1V19.5M95.3,11.7V17.8M97.5,12.7V16.6M99.6,13.2V17.1M101.8,14.2V16.4M104,14.9V18.3M106.1,14.7V18.3M108.3,17.6V20.6M110.5,17.6V20.6M112.6,14.4V18.8M114.8,10.8V17.9M117,6.4V14.5M119.2,2.0V14.5M121.3,4.9V16.4M123.5,5.7V18.3M125.7,5.1V12.3M127.8,8.1V13.5M130,11.8V18.8"/><path class="k-up" d="M4.2,23.5V23.4M6.3,23.0V22.7M8.5,22.7V21.5M19.4,24.4V23.4M23.7,27.6V26.9M28,29.3V28.4M32.4,30.1V29.6M34.5,29.6V28.1M41.1,27.6V26.9M49.7,27.4V26.7M51.9,26.2V25.4M56.2,26.1V26.1M58.4,25.4V24.0M62.7,26.1V25.7M69.3,27.9V25.6M77.9,31.2V27.8M84.4,30.1V25.9M88.8,26.1V23.9M90.9,23.9V18.9M93.1,18.9V16.7M95.3,17.3V13.7M97.5,14.2V13.7M99.6,16.6V15.2M112.6,18.8V14.9M114.8,15.4V14.4M117,14.2V8.4M119.2,11.0V2.0M123.5,17.8V5.7"/><path class="k-down" d="M2,22.2V23.5M10.7,21.7V23.5M12.8,22.3V23.7M15,23.5V24.2M17.2,23.7V24.7M21.5,23.5V27.1M25.9,27.6V28.9M30.2,28.9V29.6M36.7,27.9V28.4M38.9,27.6V28.1M43.2,23.7V25.4M45.4,25.4V27.9M47.6,26.4V27.4M54.1,25.4V26.1M60.6,24.0V26.1M64.9,27.3V28.3M67.1,27.6V27.9M71.4,24.9V27.1M73.6,27.1V29.3M75.8,28.3V30.6M80.1,27.6V27.8M82.3,27.1V30.1M86.6,25.2V25.7M101.8,14.4V16.4M104,15.2V15.6M106.1,15.4V17.8M108.3,18.1V19.8M110.5,18.8V18.9M121.3,7.3V12.3M125.7,6.7V7.4M127.8,10.6V13.2M130,13.4V16.4"/></svg></td>
+<td><span data-zh="白色家电" data-en="白色家电">白色家电</span></td>
+<td>主板</td>
+<td class="num">7.96</td>
+<td class="num down">-1.36%</td>
+<td class="num down">-2.30%</td>
+<td class="num down">-220万</td>
+<td class="num">61.0/61.0亿</td>
+<td class="num">0.01</td>
+<td class="num">0.49</td>
+<td class="num">0.54%</td>
+<td></td>
+<td></td>
+<td class="trend">多头√ 斜率+0.4%/d</td>
+<td class="num sc">0.0</td><td class="num sc">0.0</td><td class="num sc">12.0</td>
+<td><span class="score">12.0</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="银行Ⅱ" data-label="趋势放量" data-track="p4" data-best="1" data-grank="1" data-streak="0">
+<td>23</td>
+<td><b>建设银行</b><span class="src">601939</span></td>
+<td class="spark"><span class="src">—</span></td>
+<td><span data-zh="银行Ⅱ" data-en="银行Ⅱ">银行Ⅱ</span></td>
+<td>主板</td>
+<td class="num">12.77</td>
+<td class="num up">+0.31%</td>
+<td class="num up">+1.11%</td>
+<td class="num up">1.34亿</td>
+<td class="num">33406.4/1225.1亿</td>
+<td class="num">0.01</td>
+<td class="num">0.91</td>
+<td class="num">1.64%</td>
+<td></td>
+<td></td>
+<td class="trend">多头√ 斜率+0.4%/d</td>
+<td class="num sc">0.0</td><td class="num sc">0.0</td><td class="num sc">12.0</td>
+<td><span class="score">12.0</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr class="sector-row" data-sep="IT服务Ⅱ" hidden><td colspan="21"><span data-zh="IT服务Ⅱ" data-en="IT服务Ⅱ">IT服务Ⅱ</span> · <span data-zh="组内 1 只，最优 常山北明（88.0）" data-en="1 picked; top 常山北明 (88.0)">组内 1 只，最优 常山北明（88.0）</span></td></tr><tr class="sector-row" data-sep="装修装饰Ⅱ" hidden><td colspan="21"><span data-zh="装修装饰Ⅱ" data-en="装修装饰Ⅱ">装修装饰Ⅱ</span> · <span data-zh="组内 1 只，最优 全筑股份（80.7）" data-en="1 picked; top 全筑股份 (80.7)">组内 1 只，最优 全筑股份（80.7）</span></td></tr><tr class="sector-row" data-sep="旅游零售Ⅱ" hidden><td colspan="21"><span data-zh="旅游零售Ⅱ" data-en="旅游零售Ⅱ">旅游零售Ⅱ</span> · <span data-zh="组内 1 只，最优 珠免集团（79.0）" data-en="1 picked; top 珠免集团 (79.0)">组内 1 只，最优 珠免集团（79.0）</span></td></tr><tr class="sector-row" data-sep="计算机设备" hidden><td colspan="21"><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span> · <span data-zh="组内 1 只，最优 证通电子（77.4）" data-en="1 picked; top 证通电子 (77.4)">组内 1 只，最优 证通电子（77.4）</span></td></tr><tr class="sector-row" data-sep="航空装备Ⅱ" hidden><td colspan="21"><span data-zh="航空装备Ⅱ" data-en="航空装备Ⅱ">航空装备Ⅱ</span> · <span data-zh="组内 1 只，最优 利君股份（76.1）" data-en="1 picked; top 利君股份 (76.1)">组内 1 只，最优 利君股份（76.1）</span></td></tr><tr class="sector-row" data-sep="化学制药" hidden><td colspan="21"><span data-zh="化学制药" data-en="化学制药">化学制药</span> · <span data-zh="组内 1 只，最优 天圣制药（75.2）" data-en="1 picked; top 天圣制药 (75.2)">组内 1 只，最优 天圣制药（75.2）</span></td></tr><tr class="sector-row" data-sep="造纸" hidden><td colspan="21"><span data-zh="造纸" data-en="造纸">造纸</span> · <span data-zh="组内 1 只，最优 山鹰国际（70.0）" data-en="1 picked; top 山鹰国际 (70.0)">组内 1 只，最优 山鹰国际（70.0）</span></td></tr><tr class="sector-row" data-sep="化学制品" hidden><td colspan="21"><span data-zh="化学制品" data-en="化学制品">化学制品</span> · <span data-zh="组内 1 只，最优 鹿山新材（70.0）" data-en="1 picked; top 鹿山新材 (70.0)">组内 1 只，最优 鹿山新材（70.0）</span></td></tr><tr class="sector-row" data-sep="元件" hidden><td colspan="21"><span data-zh="元件" data-en="元件">元件</span> · <span data-zh="组内 2 只，最优 骏亚科技（70.0）" data-en="2 picked; top 骏亚科技 (70.0)">组内 2 只，最优 骏亚科技（70.0）</span></td></tr><tr class="sector-row" data-sep="出版" hidden><td colspan="21"><span data-zh="出版" data-en="出版">出版</span> · <span data-zh="组内 1 只，最优 城市传媒（69.3）" data-en="1 picked; top 城市传媒 (69.3)">组内 1 只，最优 城市传媒（69.3）</span></td></tr><tr class="sector-row" data-sep="一般零售" hidden><td colspan="21"><span data-zh="一般零售" data-en="一般零售">一般零售</span> · <span data-zh="组内 1 只，最优 中央商场（65.5）" data-en="1 picked; top 中央商场 (65.5)">组内 1 只，最优 中央商场（65.5）</span></td></tr><tr class="sector-row" data-sep="包装印刷" hidden><td colspan="21"><span data-zh="包装印刷" data-en="包装印刷">包装印刷</span> · <span data-zh="组内 1 只，最优 顺灏股份（65.1）" data-en="1 picked; top 顺灏股份 (65.1)">组内 1 只，最优 顺灏股份（65.1）</span></td></tr><tr class="sector-row" data-sep="环境治理" hidden><td colspan="21"><span data-zh="环境治理" data-en="环境治理">环境治理</span> · <span data-zh="组内 1 只，最优 德林海（63.8）" data-en="1 picked; top 德林海 (63.8)">组内 1 只，最优 德林海（63.8）</span></td></tr><tr class="sector-row" data-sep="半导体" hidden><td colspan="21"><span data-zh="半导体" data-en="半导体">半导体</span> · <span data-zh="组内 1 只，最优 三佳科技（60.4）" data-en="1 picked; top 三佳科技 (60.4)">组内 1 只，最优 三佳科技（60.4）</span></td></tr><tr class="sector-row" data-sep="通用设备" hidden><td colspan="21"><span data-zh="通用设备" data-en="通用设备">通用设备</span> · <span data-zh="组内 2 只，最优 冰山冷热（59.4）" data-en="2 picked; top 冰山冷热 (59.4)">组内 2 只，最优 冰山冷热（59.4）</span></td></tr><tr class="sector-row" data-sep="通信服务" hidden><td colspan="21"><span data-zh="通信服务" data-en="通信服务">通信服务</span> · <span data-zh="组内 1 只，最优 中嘉博创（56.3）" data-en="1 picked; top 中嘉博创 (56.3)">组内 1 只，最优 中嘉博创（56.3）</span></td></tr><tr class="sector-row" data-sep="汽车零部件" hidden><td colspan="21"><span data-zh="汽车零部件" data-en="汽车零部件">汽车零部件</span> · <span data-zh="组内 1 只，最优 克来机电（48.2）" data-en="1 picked; top 克来机电 (48.2)">组内 1 只，最优 克来机电（48.2）</span></td></tr><tr class="sector-row" data-sep="电力" hidden><td colspan="21"><span data-zh="电力" data-en="电力">电力</span> · <span data-zh="组内 1 只，最优 闽东电力（45.7）" data-en="1 picked; top 闽东电力 (45.7)">组内 1 只，最优 闽东电力（45.7）</span></td></tr><tr class="sector-row" data-sep="软件开发" hidden><td colspan="21"><span data-zh="软件开发" data-en="软件开发">软件开发</span> · <span data-zh="组内 1 只，最优 汇金科技（15.5）" data-en="1 picked; top 汇金科技 (15.5)">组内 1 只，最优 汇金科技（15.5）</span></td></tr><tr class="sector-row" data-sep="白色家电" hidden><td colspan="21"><span data-zh="白色家电" data-en="白色家电">白色家电</span> · <span data-zh="组内 1 只，最优 惠而浦（12.0）" data-en="1 picked; top 惠而浦 (12.0)">组内 1 只，最优 惠而浦（12.0）</span></td></tr><tr class="sector-row" data-sep="银行Ⅱ" hidden><td colspan="21"><span data-zh="银行Ⅱ" data-en="银行Ⅱ">银行Ⅱ</span> · <span data-zh="组内 1 只，最优 建设银行（12.0）" data-en="1 picked; top 建设银行 (12.0)">组内 1 只，最优 建设银行（12.0）</span></td></tr></tbody></table></div>
+<h2><span data-zh="贴线未入选（10 只）" data-en="Near Miss (10)">贴线未入选（10 只）</span></h2>
+<div class="card">
+<details>
+<summary><span data-zh="总分落在入选线（45）之下 10 分内的样本，默认折叠，供回溯调「入选线」" data-en="Scores within 10 points below the admission line (45); collapsed by default, for tuning the threshold">总分落在入选线（45）之下 10 分内的样本，默认折叠，供回溯调「入选线」</span></summary>
+<div class="table-wrap vscroll"><table class="freeze2"><thead><tr><th rowspan="2">#</th><th rowspan="2"><span data-zh="标的" data-en="Name">标的</span></th><th rowspan="2"><span data-zh="mini K线" data-en="mini K">mini K线</span></th><th rowspan="2"><span data-zh="行业" data-en="Industry">行业</span></th>
+<th rowspan="2"><span data-zh="板块" data-en="Board">板块</span></th><th rowspan="2"><span data-zh="今开价" data-en="Open px">今开价</span></th><th rowspan="2"><span data-zh="今开" data-en="Open%">今开</span></th><th rowspan="2"><span data-zh="昨涨" data-en="Prev chg">昨涨</span></th>
+<th rowspan="2"><span data-zh="昨日净流入" data-en="Prev inflow">昨日净流入</span></th><th rowspan="2"><span data-zh="市值/流通" data-en="Cap/FLOAT">市值/流通</span></th>
+<th rowspan="2"><span data-zh="竞价量能比" data-en="Auction vol">竞价量能比</span></th><th rowspan="2"><span data-zh="昨量比" data-en="Prev volR">昨量比</span></th><th rowspan="2"><span data-zh="昨换手%" data-en="Prev turn">昨换手%</span></th>
+<th rowspan="2"><span data-zh="连板" data-en="Streak">连板</span></th><th rowspan="2"><span data-zh="上榜" data-en="List">上榜</span></th><th rowspan="2"><span data-zh="趋势" data-en="Trend">趋势</span></th>
+<th colspan="3" class="grp"><span data-zh="信号分项" data-en="Signals">信号分项</span></th>
+<th rowspan="2"><span data-zh="总分" data-en="Total">总分</span></th><th rowspan="2"><span data-zh="标签" data-en="Label">标签</span></th></tr>
+<tr><th class="grp-sub"><span data-zh="P1 竞价 · 35" data-en="P1 竞价 · 35">P1 竞价 · 35</span></th><th class="grp-sub"><span data-zh="P2 弱转强 · 35" data-en="P2 弱转强 · 35">P2 弱转强 · 35</span></th><th class="grp-sub"><span data-zh="P3 趋势 · 30" data-en="P3 趋势 · 30">P3 趋势 · 30</span></th></tr></thead><tbody><tr data-sector="农化制品" data-label="趋势放量" data-track="p4" data-grank="" data-streak="1" data-hasboard="1">
+<td>1</td>
+<td><b>金正大</b><span class="src">002470</span></td>
+<td class="spark"><span class="src">—</span></td>
+<td><span data-zh="农化制品" data-en="农化制品">农化制品</span></td>
+<td>主板</td>
+<td class="num">1.81</td>
+<td class="num up">+3.43%</td>
+<td class="num up">+10.06%</td>
+<td class="num ">—</td>
+<td class="num">59.5/59.5亿</td>
+<td class="num">0.05</td>
+<td class="num">2.67</td>
+<td class="num">5.70%</td>
+<td>首板</td>
+<td></td>
+<td class="trend">多头× 20新√ 斜率-0.3%/d</td>
+<td class="num sc">8.1</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
+<td><span class="score">41.5</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="化学原料" data-label="趋势放量" data-track="p4" data-grank="" data-streak="1" data-hasboard="1">
+<td>2</td>
+<td><b>善水科技</b><span class="src">301190</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,29.0V29.7M4.2,28.2V29.9M6.3,28.5V29.1M8.5,28.2V29.2M10.7,29.1V29.7M12.8,29.7V30.8M15,30.3V30.8M17.2,30.4V31.1M19.4,30.1V30.6M21.5,30.2V30.8M23.7,30.9V31.6M25.9,31.3V32.0M28,29.8V31.5M30.2,30.3V30.8M32.4,30.1V30.9M34.5,30.4V30.7M36.7,30.2V30.5M38.9,29.2V30.4M41.1,28.8V29.6M43.2,28.1V29.2M45.4,28.0V28.8M47.6,25.5V28.6M49.7,21.6V25.8M51.9,16.9V19.0M54.1,12.7V16.0M56.2,9.8V13.6M58.4,6.7V11.5M60.6,5.9V9.8M62.7,6.2V9.3M64.9,6.9V11.0M67.1,6.3V9.4M69.3,2.0V8.7M71.4,6.2V11.3M73.6,9.4V12.5M75.8,10.5V15.5M77.9,12.7V15.1M80.1,14.7V17.8M82.3,15.1V17.5M84.4,15.5V17.8M86.6,15.3V18.7M88.8,17.9V20.6M90.9,18.9V20.2M93.1,19.4V21.3M95.3,20.2V22.0M97.5,19.6V21.0M99.6,20.5V22.0M101.8,20.2V20.9M104,20.0V20.8M106.1,20.2V21.2M108.3,19.9V21.2M110.5,20.6V22.6M112.6,22.3V23.1M114.8,22.9V23.9M117,23.5V24.5M119.2,24.3V25.3M121.3,25.3V26.3M123.5,24.8V26.7M125.7,24.1V24.9M127.8,24.6V26.2M130,22.4V26.0"/><path class="k-up" d="M2,29.4V29.3M4.2,29.5V28.5M8.5,29.1V28.8M17.2,30.7V30.4M19.4,30.5V30.1M25.9,31.7V31.3M28,31.5V30.3M32.4,30.7V30.6M34.5,30.6V30.5M38.9,30.4V29.3M41.1,29.3V29.0M43.2,29.0V28.2M47.6,28.6V25.5M49.7,24.6V21.6M51.9,19.0V16.9M56.2,12.9V10.5M58.4,9.0V7.0M60.6,8.2V6.5M64.9,10.2V7.4M69.3,8.2V2.9M73.6,10.8V9.7M77.9,13.3V13.1M84.4,17.2V15.8M90.9,19.7V19.1M95.3,21.1V20.3M97.5,20.4V19.9M99.6,21.5V21.1M101.8,20.7V20.7M106.1,20.5V20.2M123.5,26.5V25.0M130,25.9V22.4"/><path class="k-down" d="M6.3,28.8V29.0M10.7,29.1V29.7M12.8,29.8V30.7M15,30.7V30.7M21.5,30.2V30.8M23.7,31.0V31.5M30.2,30.3V30.8M36.7,30.4V30.4M45.4,28.1V28.7M54.1,12.9V14.0M62.7,7.4V9.1M67.1,7.8V8.7M71.4,7.4V10.8M75.8,11.2V15.5M80.1,15.4V16.6M82.3,16.1V17.4M86.6,15.8V18.3M88.8,19.3V19.6M93.1,19.9V20.9M104,20.3V20.5M108.3,20.2V21.2M110.5,21.2V22.4M112.6,22.6V22.9M114.8,23.2V23.7M117,23.7V24.3M119.2,24.4V25.2M121.3,25.7V26.3M125.7,24.7V24.8M127.8,24.6V26.1"/></svg></td>
+<td><span data-zh="化学原料" data-en="化学原料">化学原料</span></td>
+<td>创业板</td>
+<td class="num">29.98</td>
+<td class="num up">+4.97%</td>
+<td class="num up">+20.00%</td>
+<td class="num ">—</td>
+<td class="num">64.3/54.5亿</td>
+<td class="num">0.06</td>
+<td class="num">1.63</td>
+<td class="num">6.53%</td>
+<td>首板</td>
+<td></td>
+<td class="trend">多头× 斜率-1.5%/d</td>
+<td class="num sc">16.8</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+<td><span class="score">41.1</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="通信设备" data-label="趋势放量" data-track="p4" data-grank="" data-streak="1" data-hasboard="1">
+<td>3</td>
+<td><b>楚天龙</b><span class="src">003040</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,12.2V14.7M4.2,10.0V14.3M6.3,13.4V16.8M8.5,10.3V14.9M10.7,6.0V11.2M12.8,4.2V11.6M15,6.9V7.5M17.2,2.4V8.3M19.4,2.0V5.0M21.5,4.3V8.3M23.7,10.0V11.8M25.9,13.2V16.0M28,15.7V17.6M30.2,17.1V18.7M32.4,18.3V19.3M34.5,18.1V19.5M36.7,17.1V19.0M38.9,13.8V17.1M41.1,13.6V16.7M43.2,15.8V18.4M45.4,20.0V21.7M47.6,21.8V22.7M49.7,21.9V22.8M51.9,21.3V22.5M54.1,21.0V21.8M56.2,19.7V22.3M58.4,20.4V21.8M60.6,20.2V22.6M62.7,20.5V21.6M64.9,21.2V22.6M67.1,20.8V22.7M69.3,21.9V23.5M71.4,22.4V23.6M73.6,21.7V22.7M75.8,21.8V24.2M77.9,23.8V26.6M80.1,23.7V25.1M82.3,22.6V25.4M84.4,25.1V25.9M86.6,25.1V26.0M88.8,25.7V27.5M90.9,25.7V28.1M93.1,25.6V26.9M95.3,25.3V27.1M97.5,24.9V26.1M99.6,25.2V26.0M101.8,25.1V26.0M104,25.2V25.7M106.1,25.1V25.7M108.3,24.8V25.9M110.5,25.5V26.8M112.6,26.6V27.7M114.8,27.7V28.6M117,28.0V29.0M119.2,28.6V29.9M121.3,30.0V31.3M123.5,30.0V32.0M125.7,29.2V30.4M127.8,30.0V31.3M130,29.1V31.4"/><path class="k-up" d="M2,14.7V12.2M8.5,14.1V10.3M10.7,10.3V6.9M15,7.5V6.9M17.2,7.2V2.9M32.4,18.9V18.8M34.5,19.2V18.8M36.7,18.4V17.4M41.1,15.0V14.5M49.7,22.6V22.2M51.9,22.0V21.8M54.1,21.6V21.5M56.2,21.4V19.9M60.6,22.4V20.8M64.9,22.5V22.2M69.3,23.0V22.9M73.6,22.6V22.3M77.9,25.2V23.9M80.1,24.6V24.3M84.4,25.6V25.3M90.9,27.3V25.9M95.3,26.6V25.4M97.5,25.9V24.9M99.6,26.0V25.8M104,25.5V25.3M106.1,25.3V25.1M123.5,31.5V30.3M130,31.1V29.1"/><path class="k-down" d="M4.2,11.5V12.7M6.3,13.5V14.3M12.8,8.5V11.2M19.4,2.9V4.4M21.5,7.0V7.2M23.7,11.1V11.8M25.9,14.7V15.0M28,16.0V16.8M30.2,17.4V18.6M38.9,14.0V15.3M43.2,15.8V18.4M45.4,20.6V21.5M47.6,21.8V22.5M58.4,20.6V21.8M62.7,20.8V21.6M67.1,21.1V22.2M71.4,22.7V22.8M75.8,21.8V24.2M82.3,22.9V25.4M86.6,25.6V26.0M88.8,26.7V27.5M93.1,26.3V26.6M101.8,25.5V25.9M108.3,25.0V25.8M110.5,25.7V26.6M112.6,26.8V27.6M114.8,27.9V28.5M117,28.1V28.6M119.2,28.8V29.8M121.3,30.3V31.2M125.7,29.7V30.2M127.8,30.6V31.3"/></svg></td>
+<td><span data-zh="通信设备" data-en="通信设备">通信设备</span></td>
+<td>主板</td>
+<td class="num">11.65</td>
+<td class="num up">+5.24%</td>
+<td class="num up">+10.04%</td>
+<td class="num ">—</td>
+<td class="num">53.7/53.2亿</td>
+<td class="num">0.06</td>
+<td class="num">1.02</td>
+<td class="num">3.07%</td>
+<td>首板</td>
+<td></td>
+<td class="trend">多头× 斜率-1.1%/d</td>
+<td class="num sc">16.1</td><td class="num sc">24.5</td><td class="num sc">0.0</td>
+<td><span class="score">40.7</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="渔业" data-label="趋势放量" data-track="p4" data-grank="" data-streak="2" data-hasboard="1">
+<td>4</td>
+<td><b>好当家</b><span class="src">600467</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,27.0V27.6M4.2,26.0V27.3M6.3,26.0V27.2M8.5,25.5V27.2M10.7,26.0V27.0M12.8,26.2V27.2M15,25.9V27.5M17.2,24.9V26.0M19.4,23.6V25.2M21.5,22.2V24.6M23.7,22.2V24.4M25.9,23.8V26.0M28,25.5V26.7M30.2,26.0V28.1M32.4,26.5V28.5M34.5,26.4V27.8M36.7,26.5V27.5M38.9,25.5V27.3M41.1,25.4V27.0M43.2,26.5V27.3M45.4,26.7V27.8M47.6,27.0V27.8M49.7,26.7V27.6M51.9,26.4V27.2M54.1,26.2V27.6M56.2,26.4V27.8M58.4,25.7V28.0M60.6,26.7V28.6M62.7,26.0V27.5M64.9,27.6V28.8M67.1,27.5V28.9M69.3,28.3V30.1M71.4,28.9V29.7M73.6,27.8V29.6M75.8,28.5V30.4M77.9,30.2V32.0M80.1,30.1V31.0M82.3,29.7V30.9M84.4,30.1V31.0M86.6,30.2V31.4M88.8,30.2V31.7M90.9,30.5V31.7M93.1,28.9V30.7M95.3,29.6V30.9M97.5,29.6V30.2M99.6,29.6V30.7M101.8,29.7V30.4M104,29.7V30.4M106.1,29.4V29.9M108.3,25.9V29.7M110.5,21.8V23.6M112.6,22.6V26.0M114.8,21.5V26.7M117,17.6V24.3M119.2,22.3V25.7M121.3,19.7V28.0M123.5,15.1V19.1M125.7,9.9V17.8M127.8,7.8V13.0M130,2.0V8.6"/><path class="k-up" d="M2,27.3V27.0M4.2,27.0V26.0M8.5,27.2V25.9M15,27.2V26.4M17.2,26.0V25.1M19.4,25.2V23.9M21.5,24.3V22.5M28,26.0V26.0M32.4,27.8V26.8M34.5,27.0V26.7M38.9,27.3V25.7M47.6,27.6V27.0M49.7,27.2V26.8M51.9,26.7V26.5M56.2,27.5V26.4M60.6,28.0V26.8M73.6,29.4V28.9M77.9,30.4V30.4M80.1,30.5V30.5M82.3,30.7V30.7M84.4,30.9V30.7M88.8,31.2V31.2M90.9,31.2V30.5M93.1,30.5V29.4M97.5,30.1V29.7M99.6,30.4V30.1M104,30.1V29.7M106.1,29.7V29.6M108.3,29.6V25.9M110.5,21.8V21.8M114.8,26.2V21.5M117,23.3V21.2M119.2,25.4V23.9M121.3,24.7V19.7M123.5,18.5V15.1M125.7,17.6V13.1M127.8,11.8V7.8M130,4.9V2.0"/><path class="k-down" d="M6.3,26.2V27.0M10.7,26.2V26.7M12.8,26.7V27.2M23.7,23.1V24.3M25.9,24.6V25.9M30.2,26.2V28.0M36.7,26.8V27.3M41.1,25.5V26.5M43.2,26.7V27.0M45.4,27.0V27.5M54.1,26.7V27.3M58.4,26.4V27.8M62.7,26.8V27.2M64.9,27.8V28.5M67.1,28.3V28.6M69.3,28.8V29.4M71.4,29.3V29.4M75.8,28.9V30.2M86.6,30.7V31.0M95.3,29.7V29.9M101.8,29.9V30.2M112.6,23.1V25.5"/></svg></td>
+<td><span data-zh="渔业" data-en="渔业">渔业</span></td>
+<td>主板</td>
+<td class="num">4.05</td>
+<td class="num up">+2.27%</td>
+<td class="num up">+10.00%</td>
+<td class="num ">—</td>
+<td class="num">59.2/59.2亿</td>
+<td class="num">0.04</td>
+<td class="num">1.17</td>
+<td class="num">27.85%</td>
+<td>2连板·11天7板</td>
+<td></td>
+<td class="trend">多头√ 20新√ 60新√ 斜率+2.9%/d</td>
+<td class="num sc">0.0</td><td class="num sc">10.5</td><td class="num sc">30.0</td>
+<td><span class="score">40.5</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="小家电" data-label="趋势放量" data-track="p4" data-grank="" data-streak="0" data-hasboard="1">
+<td>5</td>
+<td><b>九阳股份</b><span class="src">002242</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,31.9V32.0M4.2,31.9V32.0M6.3,31.7V31.9M8.5,31.6V31.8M10.7,31.7V31.9M12.8,31.8V32.0M15,31.8V32.0M17.2,31.5V31.9M19.4,31.4V31.7M21.5,31.6V31.8M23.7,31.1V31.9M25.9,30.7V31.7M28,30.4V31.1M30.2,30.6V31.3M32.4,30.9V31.2M34.5,30.7V31.2M36.7,30.8V31.1M38.9,30.9V31.0M41.1,30.8V31.1M43.2,30.5V30.9M45.4,30.5V31.0M47.6,30.2V30.6M49.7,29.3V29.7M51.9,28.3V28.6M54.1,27.2V27.2M56.2,26.0V27.3M58.4,24.6V26.2M60.6,23.6V25.9M62.7,23.1V24.1M64.9,23.8V24.3M67.1,23.6V24.8M69.3,22.1V25.1M71.4,21.2V22.3M73.6,19.4V21.7M75.8,19.9V21.3M77.9,19.7V21.7M80.1,19.9V20.9M82.3,19.7V20.8M84.4,19.4V21.1M86.6,18.8V19.8M88.8,18.6V20.2M90.9,18.7V20.4M93.1,18.6V19.2M95.3,18.2V20.0M97.5,17.8V19.0M99.6,17.0V18.1M101.8,16.3V17.4M104,16.1V16.6M106.1,15.9V16.3M108.3,15.5V15.9M110.5,15.7V16.6M112.6,13.4V15.1M114.8,11.6V16.6M117,8.8V14.3M119.2,11.8V16.8M121.3,12.0V14.6M123.5,11.3V13.8M125.7,8.5V9.7M127.8,5.4V6.9M130,2.0V6.2"/><path class="k-up" d="M4.2,31.9V31.9M6.3,31.9V31.7M8.5,31.8V31.7M15,32.0V31.9M17.2,31.8V31.7M19.4,31.7V31.6M23.7,31.8V31.5M25.9,31.6V30.7M30.2,31.0V31.0M34.5,31.1V30.9M36.7,31.1V31.0M38.9,31.0V30.9M41.1,31.0V30.9M43.2,30.9V30.7M47.6,30.6V30.2M49.7,29.6V29.3M51.9,28.3V28.3M54.1,27.2V27.2M56.2,26.7V26.0M58.4,24.6V24.6M60.6,25.4V23.7M64.9,24.3V24.1M67.1,24.5V23.6M69.3,23.8V22.8M71.4,22.2V21.2M73.6,20.9V19.4M77.9,20.8V20.4M82.3,20.6V20.5M84.4,20.5V19.6M86.6,19.6V19.1M88.8,20.1V19.8M90.9,20.4V18.8M95.3,19.7V18.5M97.5,18.8V17.9M99.6,17.5V17.2M101.8,17.2V16.3M104,16.5V16.1M106.1,16.0V15.9M108.3,15.9V15.9M110.5,16.3V15.8M114.8,14.4V11.6M119.2,16.8V11.8M121.3,14.1V13.8M123.5,13.5V11.3M125.7,9.1V8.5M127.8,6.4V5.4M130,5.4V2.5"/><path class="k-down" d="M2,31.9V31.9M10.7,31.8V31.9M12.8,31.9V32.0M21.5,31.7V31.8M28,30.7V31.0M32.4,31.0V31.1M45.4,30.8V31.0M62.7,23.3V23.7M75.8,19.9V20.2M80.1,20.3V20.4M93.1,18.8V19.2M112.6,13.4V14.1M117,10.7V14.3"/></svg></td>
+<td><span data-zh="小家电" data-en="小家电">小家电</span></td>
+<td>主板</td>
+<td class="num">42.82</td>
+<td class="num up">+2.20%</td>
+<td class="num up">+8.66%</td>
+<td class="num ">—</td>
+<td class="num">326.7/326.2亿</td>
+<td class="num">0.02</td>
+<td class="num">1.16</td>
+<td class="num">16.68%</td>
+<td>8天5板</td>
+<td></td>
+<td class="trend">多头√ 20新√ 60新√ 斜率+2.8%/d</td>
+<td class="num sc">0.0</td><td class="num sc">10.5</td><td class="num sc">30.0</td>
+<td><span class="score">40.5</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="计算机设备" data-label="趋势放量" data-track="p4" data-grank="" data-streak="1" data-hasboard="1">
+<td>6</td>
+<td><b>旋极信息</b><span class="src">300324</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,24.5V26.0M4.2,23.6V24.9M6.3,22.9V25.1M8.5,20.8V23.6M10.7,21.1V22.6M12.8,21.3V23.6M15,22.0V23.9M17.2,23.0V24.4M19.4,23.2V24.4M21.5,23.6V24.8M23.7,24.6V25.5M25.9,25.4V26.7M28,25.4V26.4M30.2,24.5V26.7M32.4,25.7V27.3M34.5,25.8V27.1M36.7,25.8V26.9M38.9,25.4V26.3M41.1,15.2V24.5M43.2,15.4V18.6M45.4,17.9V20.1M47.6,19.2V21.6M49.7,19.4V21.0M51.9,20.1V22.1M54.1,21.1V23.6M56.2,21.3V25.5M58.4,21.7V23.3M60.6,20.8V23.6M62.7,19.4V22.9M64.9,18.8V22.1M67.1,19.6V22.4M69.3,21.3V24.8M71.4,22.9V24.8M73.6,19.1V22.9M75.8,21.1V25.4M77.9,23.6V28.2M80.1,24.2V26.0M82.3,23.9V27.6M84.4,26.7V28.2M86.6,27.1V28.6M88.8,28.9V31.4M90.9,29.1V32.0M93.1,28.8V30.5M95.3,28.6V30.5M97.5,27.0V29.2M99.6,27.9V29.2M101.8,27.4V29.1M104,27.3V28.2M106.1,24.8V27.1M108.3,25.2V27.6M110.5,17.9V23.3M112.6,21.1V24.5M114.8,18.9V23.6M117,10.8V21.6M119.2,6.0V14.9M121.3,11.0V15.8M123.5,7.3V16.7M125.7,2.7V14.8M127.8,7.1V14.5M130,2.0V15.7"/><path class="k-up" d="M2,26.0V24.8M4.2,24.5V24.2M6.3,24.6V23.0M8.5,23.2V21.0M19.4,24.1V23.5M28,26.1V25.7M32.4,26.9V26.0M36.7,26.6V26.4M38.9,26.1V25.4M41.1,24.4V15.2M49.7,20.5V20.1M56.2,23.3V21.4M58.4,22.1V21.7M60.6,22.7V21.4M62.7,21.9V19.9M64.9,21.9V20.5M71.4,23.9V23.8M73.6,22.9V21.6M77.9,26.4V23.9M84.4,27.1V26.9M90.9,31.3V29.5M93.1,30.1V30.1M95.3,29.9V28.6M97.5,28.9V27.3M99.6,28.9V28.8M101.8,28.2V28.2M104,27.7V27.4M106.1,27.1V26.1M110.5,23.3V19.1M114.8,23.6V21.7M117,20.7V10.8M119.2,12.7V11.0M123.5,15.5V10.1M125.7,12.3V6.0M130,13.2V2.0"/><path class="k-down" d="M10.7,21.6V22.0M12.8,21.6V23.3M15,23.2V23.5M17.2,23.5V23.9M21.5,23.6V24.6M23.7,24.8V24.9M25.9,25.5V25.8M30.2,25.5V26.4M34.5,26.3V27.0M43.2,17.1V18.0M45.4,18.9V19.6M47.6,19.5V19.9M51.9,20.4V22.0M54.1,21.9V23.2M67.1,19.8V21.6M69.3,22.4V23.3M75.8,21.6V25.4M80.1,24.6V25.2M82.3,24.9V27.6M86.6,27.3V28.6M88.8,29.4V31.3M108.3,27.1V27.6M112.6,23.0V23.9M121.3,14.1V14.2M127.8,9.5V14.4"/></svg></td>
+<td><span data-zh="计算机设备" data-en="计算机设备">计算机设备</span></td>
+<td>创业板</td>
+<td class="num">5.12</td>
+<td class="num up">+1.59%</td>
+<td class="num up">+20.00%</td>
+<td class="num ">—</td>
+<td class="num">88.5/87.5亿</td>
+<td class="num">0.02</td>
+<td class="num">1.69</td>
+<td class="num">30.84%</td>
+<td>首板·7天2板</td>
+<td></td>
+<td class="trend">多头√ 20新√ 60新√ 斜率+2.6%/d</td>
+<td class="num sc">0.0</td><td class="num sc">10.5</td><td class="num sc">30.0</td>
+<td><span class="score">40.5</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="汽车零部件" data-label="趋势放量" data-track="p4" data-grank="" data-streak="1" data-hasboard="1">
+<td>7</td>
+<td><b>襄阳轴承</b><span class="src">000678</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,30.9V31.7M4.2,30.9V31.3M6.3,30.8V31.4M8.5,30.6V31.0M10.7,30.4V30.9M12.8,29.9V30.5M15,29.8V30.6M17.2,30.1V30.6M19.4,30.0V30.4M21.5,30.1V30.5M23.7,30.5V30.8M25.9,30.8V31.3M28,31.0V31.4M30.2,31.2V31.8M32.4,31.6V32.0M34.5,30.4V31.9M36.7,30.8V31.3M38.9,30.7V31.2M41.1,30.8V31.3M43.2,31.1V31.5M45.4,29.6V31.5M47.6,27.6V28.6M49.7,25.5V25.5M51.9,23.1V27.6M54.1,21.1V24.8M56.2,22.3V26.7M58.4,25.0V26.2M60.6,26.4V28.1M62.7,26.9V28.6M64.9,28.1V29.2M67.1,27.1V29.1M69.3,26.1V28.4M71.4,25.8V27.6M73.6,26.1V27.3M75.8,24.8V27.0M77.9,22.4V26.4M80.1,19.7V21.0M82.3,16.8V19.5M84.4,13.5V15.5M86.6,10.0V11.6M88.8,9.0V13.2M90.9,8.9V14.1M93.1,7.8V10.1M95.3,9.3V12.3M97.5,7.9V11.8M99.6,10.3V13.2M101.8,10.6V14.0M104,10.2V13.7M106.1,6.3V12.2M108.3,2.0V6.3M110.5,3.6V9.2M112.6,8.8V13.2M114.8,14.5V16.8M117,15.3V19.1M119.2,15.3V19.7M121.3,12.6V16.2M123.5,11.4V15.2M125.7,8.1V12.4M127.8,7.2V12.5M130,4.7V11.2"/><path class="k-up" d="M2,31.7V31.0M6.3,31.3V30.9M8.5,30.9V30.7M10.7,30.9V30.5M12.8,30.5V30.3M17.2,30.5V30.2M19.4,30.2V30.0M32.4,31.8V31.7M34.5,31.8V30.9M38.9,31.1V30.9M45.4,31.5V29.6M47.6,28.0V27.6M49.7,25.5V25.5M51.9,27.6V23.1M56.2,24.9V23.7M60.6,27.9V26.8M67.1,28.9V27.1M69.3,28.2V26.9M71.4,27.1V26.5M75.8,26.9V24.8M77.9,25.6V22.4M80.1,20.5V19.7M82.3,18.3V16.8M84.4,14.9V13.5M90.9,12.6V8.9M93.1,8.9V8.2M97.5,9.9V9.2M101.8,13.8V13.7M104,13.7V10.2M106.1,7.1V6.3M119.2,18.4V15.3M121.3,15.0V14.8M123.5,14.7V11.4M125.7,11.6V9.6M127.8,11.7V8.8M130,9.5V4.7"/><path class="k-down" d="M4.2,31.0V31.3M15,30.0V30.5M21.5,30.1V30.4M23.7,30.6V30.8M25.9,31.0V31.1M28,31.2V31.3M30.2,31.2V31.8M36.7,31.0V31.1M41.1,30.9V31.2M43.2,31.2V31.4M54.1,22.9V24.4M58.4,25.6V26.2M62.7,27.3V28.0M64.9,28.8V29.1M73.6,26.9V27.1M86.6,10.0V11.2M88.8,11.6V12.6M95.3,9.5V9.8M99.6,12.8V13.2M108.3,3.5V4.8M110.5,7.1V9.2M112.6,10.6V13.2M114.8,15.1V16.8M117,17.8V18.4"/></svg></td>
+<td><span data-zh="汽车零部件" data-en="汽车零部件">汽车零部件</span></td>
+<td>主板</td>
+<td class="num">23.00</td>
+<td class="num up">+4.74%</td>
+<td class="num up">+10.02%</td>
+<td class="num ">—</td>
+<td class="num">105.7/105.7亿</td>
+<td class="num">0.02</td>
+<td class="num">0.82</td>
+<td class="num">26.40%</td>
+<td>首板·6天3板</td>
+<td></td>
+<td class="trend">多头× 20新√ 60新√ 斜率-0.1%/d</td>
+<td class="num sc">7.0</td><td class="num sc">24.5</td><td class="num sc">9.0</td>
+<td><span class="score">40.4</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="化学制品" data-label="趋势放量" data-track="p4" data-grank="" data-streak="1" data-hasboard="1">
+<td>8</td>
+<td><b>华软科技</b><span class="src">002453</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,22.1V23.5M4.2,21.7V22.9M6.3,22.0V23.4M8.5,21.0V22.2M10.7,21.3V22.5M12.8,20.9V23.1M15,21.7V23.5M17.2,22.1V23.1M19.4,21.6V23.1M21.5,21.4V22.2M23.7,22.0V23.0M25.9,22.6V24.5M28,22.9V24.2M30.2,23.4V25.7M32.4,23.9V25.9M34.5,18.5V25.4M36.7,12.0V17.6M38.9,5.0V6.9M41.1,2.0V12.8M43.2,9.5V16.4M45.4,14.2V18.4M47.6,17.6V22.9M49.7,17.1V22.1M51.9,17.5V20.5M54.1,17.5V20.4M56.2,17.5V20.9M58.4,17.5V20.0M60.6,18.4V22.4M62.7,19.4V22.2M64.9,21.6V23.9M67.1,21.6V23.9M69.3,23.0V26.1M71.4,23.8V25.4M73.6,23.8V25.5M75.8,24.7V28.0M77.9,26.2V31.1M80.1,25.9V27.5M82.3,25.9V29.5M84.4,27.0V29.1M86.6,27.5V29.2M88.8,27.6V31.1M90.9,29.2V32.0M93.1,28.3V30.4M95.3,29.1V31.3M97.5,27.6V29.6M99.6,28.3V29.9M101.8,27.8V29.5M104,28.0V29.0M106.1,27.2V28.6M108.3,26.4V27.9M110.5,24.6V28.6M112.6,22.7V29.1M114.8,21.2V27.0M117,23.0V26.2M119.2,22.5V27.4M121.3,19.8V29.6M123.5,23.3V29.2M125.7,21.8V24.3M127.8,22.7V29.2M130,23.7V31.3"/><path class="k-up" d="M2,23.1V22.7M4.2,22.7V22.4M6.3,23.1V22.1M8.5,22.1V21.4M10.7,22.0V21.7M17.2,23.1V22.5M19.4,22.5V21.7M32.4,25.8V24.3M34.5,25.0V18.5M36.7,12.0V12.0M38.9,5.3V5.0M45.4,17.7V16.3M49.7,21.3V20.2M54.1,19.8V19.8M56.2,20.6V17.6M60.6,20.9V19.0M64.9,23.7V22.7M71.4,24.7V24.7M77.9,28.7V26.4M84.4,27.9V27.5M90.9,30.7V29.8M93.1,30.0V29.8M95.3,29.2V29.1M97.5,29.6V27.9M99.6,29.5V28.7M104,28.2V28.0M106.1,28.2V27.6M112.6,28.6V25.1M114.8,25.9V22.9M117,24.5V23.8M121.3,27.6V25.8M123.5,27.6V23.3M130,28.0V23.7"/><path class="k-down" d="M12.8,21.6V22.7M15,22.5V23.1M21.5,21.4V21.7M23.7,22.1V22.5M25.9,23.1V23.5M28,23.1V23.7M30.2,23.4V25.7M41.1,5.6V12.4M43.2,12.3V15.2M47.6,17.6V21.8M51.9,19.2V19.3M58.4,17.5V19.7M62.7,19.4V22.1M67.1,21.8V23.3M69.3,23.8V24.7M73.6,24.7V25.1M75.8,25.1V27.8M80.1,26.4V26.7M82.3,26.7V28.4M86.6,27.5V29.2M88.8,29.2V30.8M101.8,28.3V28.8M108.3,27.5V27.6M110.5,26.3V28.2M119.2,25.1V25.5M125.7,23.3V23.4M127.8,24.6V29.1"/></svg></td>
+<td><span data-zh="化学制品" data-en="化学制品">化学制品</span></td>
+<td>主板</td>
+<td class="num">4.66</td>
+<td class="num up">+4.48%</td>
+<td class="num up">+10.12%</td>
+<td class="num ">—</td>
+<td class="num">37.9/30.0亿</td>
+<td class="num">0.05</td>
+<td class="num">0.86</td>
+<td class="num">8.27%</td>
+<td>首板</td>
+<td></td>
+<td class="trend">多头× 斜率+0.6%/d</td>
+<td class="num sc">12.6</td><td class="num sc">24.5</td><td class="num sc">2.1</td>
+<td><span class="score">39.2</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="通用设备" data-label="趋势放量" data-track="p4" data-grank="" data-streak="1" data-hasboard="1">
+<td>9</td>
+<td><b>泰嘉股份</b><span class="src">002843</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,5.1V8.7M4.2,6.1V9.2M6.3,4.0V11.5M8.5,4.6V7.8M10.7,4.3V8.8M12.8,2.0V7.1M15,3.4V9.7M17.2,5.5V8.2M19.4,6.3V9.2M21.5,7.1V9.9M23.7,9.7V11.9M25.9,11.8V16.8M28,9.7V15.3M30.2,7.6V11.6M32.4,6.9V10.8M34.5,5.9V9.3M36.7,6.5V9.5M38.9,7.2V9.0M41.1,6.9V9.2M43.2,7.8V9.6M45.4,9.4V12.4M47.6,11.9V18.3M49.7,15.7V18.4M51.9,14.7V18.1M54.1,12.7V20.5M56.2,20.1V25.1M58.4,20.6V22.7M60.6,21.0V26.3M62.7,21.4V23.9M64.9,25.1V27.4M67.1,23.6V26.4M69.3,25.3V28.1M71.4,19.3V27.0M73.6,19.3V21.9M75.8,20.5V23.3M77.9,19.7V27.9M80.1,20.5V23.4M82.3,21.4V26.4M84.4,22.1V26.2M86.6,23.6V27.2M88.8,26.8V31.4M90.9,27.0V32.0M93.1,26.6V30.5M95.3,26.2V31.1M97.5,22.3V27.9M99.6,23.8V27.7M101.8,23.5V27.6M104,23.8V25.9M106.1,23.7V26.0M108.3,15.5V23.2M110.5,11.1V19.1M112.6,14.5V21.2M114.8,11.7V18.4M117,2.2V14.6M119.2,6.7V12.6M121.3,16.4V22.0M123.5,25.9V30.4M125.7,19.5V26.4M127.8,21.1V29.2M130,21.4V29.5"/><path class="k-up" d="M2,6.8V6.1M6.3,10.9V4.6M10.7,8.2V4.8M17.2,7.2V6.3M28,13.8V11.2M30.2,11.3V9.9M32.4,9.6V8.2M49.7,17.2V16.9M60.6,23.4V21.5M69.3,26.4V25.9M71.4,26.2V20.2M77.9,22.3V20.0M84.4,25.9V23.8M90.9,31.1V27.7M95.3,29.8V26.7M97.5,27.6V24.6M99.6,27.0V25.1M104,25.2V24.9M106.1,25.1V23.8M108.3,22.4V19.8M114.8,16.5V11.7M117,7.9V2.2M123.5,28.2V27.4M125.7,25.6V21.3M130,26.8V21.4"/><path class="k-down" d="M4.2,7.0V9.1M8.5,4.6V7.4M12.8,2.6V5.6M15,5.0V9.1M19.4,6.3V8.8M21.5,8.7V9.2M23.7,9.7V11.8M25.9,12.1V12.9M34.5,8.2V8.5M36.7,7.3V7.8M38.9,7.8V8.2M41.1,7.2V8.7M43.2,8.6V9.2M45.4,9.6V12.0M47.6,12.0V17.2M51.9,15.8V18.0M54.1,16.6V19.5M56.2,20.2V20.8M58.4,21.4V22.1M62.7,21.8V23.8M64.9,25.9V26.9M67.1,25.3V25.9M73.6,20.3V21.4M75.8,21.4V23.1M80.1,20.5V22.5M82.3,22.2V26.4M86.6,23.6V27.2M88.8,28.6V31.4M93.1,28.6V28.9M101.8,24.0V26.5M110.5,11.1V16.3M112.6,14.5V20.3M119.2,6.9V12.6M121.3,21.7V22.0M127.8,23.0V29.1"/></svg></td>
+<td><span data-zh="通用设备" data-en="通用设备">通用设备</span></td>
+<td>主板</td>
+<td class="num">15.07</td>
+<td class="num up">+6.50%</td>
+<td class="num up">+10.03%</td>
+<td class="num ">—</td>
+<td class="num">38.5/37.7亿</td>
+<td class="num">0.02</td>
+<td class="num">0.87</td>
+<td class="num">15.26%</td>
+<td>首板·8天3板</td>
+<td></td>
+<td class="trend">多头× 斜率+0.6%/d</td>
+<td class="num sc">12.3</td><td class="num sc">24.5</td><td class="num sc">2.1</td>
+<td><span class="score">38.9</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr><tr data-sector="化学原料" data-label="趋势放量" data-track="p4" data-grank="" data-streak="0">
+<td>10</td>
+<td><b>镇洋发展</b><span class="src">603213</span></td>
+<td class="spark"><svg viewBox="0 0 132 34" width="132" height="34" role="img" aria-label="mini K-line"><title>08-27 ~ 11-26 · 60根</title><path class="k-wick" d="M2,5.3V7.7M4.2,5.1V7.9M6.3,2.0V7.5M8.5,2.7V5.4M10.7,5.1V7.5M12.8,4.4V6.3M15,4.9V9.1M17.2,8.0V10.3M19.4,8.6V11.0M21.5,9.2V10.8M23.7,9.4V11.5M25.9,10.8V15.6M28,12.0V13.7M30.2,12.7V15.4M32.4,9.8V16.8M34.5,10.4V13.4M36.7,12.2V14.8M38.9,12.9V15.8M41.1,9.9V14.6M43.2,9.1V11.8M45.4,9.4V12.7M47.6,11.5V15.4M49.7,9.4V13.9M51.9,7.7V10.6M54.1,7.7V12.0M56.2,8.4V12.3M58.4,6.7V10.3M60.6,8.4V12.0M62.7,8.0V10.6M64.9,11.1V13.7M67.1,11.5V15.4M69.3,12.5V15.6M71.4,13.7V15.4M73.6,10.8V14.4M75.8,10.3V13.9M77.9,11.7V18.9M80.1,10.8V13.9M82.3,8.0V12.3M84.4,12.0V15.1M86.6,12.9V14.8M88.8,9.8V16.0M90.9,12.3V17.0M93.1,7.3V13.2M95.3,6.7V11.0M97.5,7.9V10.1M99.6,3.2V10.4M101.8,3.9V7.3M104,6.1V9.1M106.1,6.8V9.4M108.3,6.0V9.9M110.5,6.3V8.7M112.6,6.7V11.7M114.8,9.2V11.7M117,10.1V12.0M119.2,11.1V14.1M121.3,12.9V15.8M123.5,15.3V23.4M125.7,17.2V20.8M127.8,19.4V27.7M130,25.3V32.0"/><path class="k-up" d="M2,7.7V6.7M4.2,6.5V6.0M6.3,6.7V3.9M12.8,6.3V4.9M28,13.7V13.4M32.4,15.4V9.9M38.9,15.3V13.7M41.1,14.6V11.0M43.2,11.0V10.1M49.7,13.9V10.3M51.9,9.8V8.2M56.2,11.5V8.4M60.6,10.3V9.4M69.3,14.6V13.7M71.4,14.6V14.2M73.6,13.6V11.0M77.9,13.2V12.5M80.1,13.6V11.5M88.8,15.1V12.3M90.9,13.4V12.3M93.1,12.9V8.4M95.3,9.1V8.6M97.5,9.8V8.0M99.6,9.9V5.1M106.1,8.6V8.4M108.3,8.2V6.1M110.5,7.3V7.0M114.8,11.1V10.4"/><path class="k-down" d="M8.5,3.2V5.3M10.7,5.1V6.3M15,4.9V8.6M17.2,8.2V9.4M19.4,9.4V9.8M21.5,9.2V9.9M23.7,10.8V11.3M25.9,11.7V12.9M30.2,13.4V15.4M34.5,11.5V12.9M36.7,12.2V14.8M45.4,10.1V12.5M47.6,11.5V13.2M54.1,8.6V11.1M58.4,8.7V9.4M62.7,10.1V10.4M64.9,11.1V12.5M67.1,12.5V14.6M75.8,10.3V13.2M82.3,11.5V11.8M84.4,12.7V13.7M86.6,13.7V14.1M101.8,5.1V6.8M104,6.5V7.7M112.6,7.0V10.4M117,10.8V11.8M119.2,11.8V13.7M121.3,14.4V15.1M123.5,15.6V19.6M125.7,18.0V19.8M127.8,20.6V27.2M130,25.3V28.4"/></svg></td>
+<td><span data-zh="化学原料" data-en="化学原料">化学原料</span></td>
+<td>主板</td>
+<td class="num">13.97</td>
+<td class="num up">+10.00%</td>
+<td class="num down">-0.55%</td>
+<td class="num ">—</td>
+<td class="num">62.1/62.1亿</td>
+<td class="num">0.82</td>
+<td class="num">0.88</td>
+<td class="num">0.51%</td>
+<td></td>
+<td></td>
+<td class="trend">多头× 斜率-0.3%/d</td>
+<td class="num sc">35.0</td><td class="num sc">0.0</td><td class="num sc">0.0</td>
+<td><span class="score">35.0</span></td>
+<td class="wrap"><span class="tag gap">趋势放量</span></td>
+</tr></tbody></table></div>
+</details>
+</div>
+<h2><span data-zh="数据缺口" data-en="Data Gaps">数据缺口</span></h2>
+<div class="card">
+<details><summary><span data-zh="被剔除/缺数据明细（最多 40 条，共 951）" data-en="Excluded / missing-data details (up to 40 of 951)">被剔除/缺数据明细（最多 40 条，共 951）</span></summary>
+<div class="table-wrap"><table><thead><tr><th><span data-zh="代码" data-en="Code">代码</span></th><th><span data-zh="名称" data-en="Name">名称</span></th><th><span data-zh="原因" data-en="Reason">原因</span></th></tr></thead>
+<tbody><tr><td>600001</td><td>邯郸钢铁</td><td>停牌/无成交</td></tr><tr><td>600002</td><td>齐鲁石化</td><td>停牌/无成交</td></tr><tr><td>600003</td><td>ST东北高</td><td>ST/退市风险</td></tr><tr><td>600005</td><td>武钢股份</td><td>停牌/无成交</td></tr><tr><td>600053</td><td>*ST九鼎</td><td>ST/退市风险</td></tr><tr><td>600065</td><td>*ST联谊</td><td>ST/退市风险</td></tr><tr><td>600068</td><td>葛洲坝</td><td>停牌/无成交</td></tr><tr><td>600069</td><td>退市银鸽</td><td>ST/退市风险</td></tr><tr><td>600070</td><td>*ST富润</td><td>ST/退市风险</td></tr><tr><td>600074</td><td>退市保千</td><td>ST/退市风险</td></tr><tr><td>600077</td><td>*ST宋都</td><td>ST/退市风险</td></tr><tr><td>600079</td><td>ST人福</td><td>ST/退市风险</td></tr><tr><td>600080</td><td>ST金花</td><td>ST/退市风险</td></tr><tr><td>600082</td><td>ST海泰</td><td>ST/退市风险</td></tr><tr><td>600083</td><td>*ST博信</td><td>ST/退市风险</td></tr><tr><td>600084</td><td>*ST尼雅</td><td>ST/退市风险</td></tr><tr><td>600086</td><td>退市金钰</td><td>ST/退市风险</td></tr><tr><td>600087</td><td>退市长油</td><td>ST/退市风险</td></tr><tr><td>600090</td><td>退市济堂</td><td>ST/退市风险</td></tr><tr><td>600091</td><td>退市明科</td><td>ST/退市风险</td></tr><tr><td>600092</td><td>S*ST精密</td><td>ST/退市风险</td></tr><tr><td>600093</td><td>退市易见</td><td>ST/退市风险</td></tr><tr><td>600102</td><td>莱钢股份</td><td>停牌/无成交</td></tr><tr><td>600107</td><td>*ST尔雅</td><td>ST/退市风险</td></tr><tr><td>600112</td><td>*ST天成</td><td>ST/退市风险</td></tr><tr><td>600119</td><td>*ST长投</td><td>ST/退市风险</td></tr><tr><td>600122</td><td>*ST宏图</td><td>ST/退市风险</td></tr><tr><td>600136</td><td>ST明诚</td><td>ST/退市风险</td></tr><tr><td>600139</td><td>*ST西源</td><td>ST/退市风险</td></tr><tr><td>600145</td><td>退市新亿</td><td>ST/退市风险</td></tr><tr><td>600146</td><td>退市环球</td><td>ST/退市风险</td></tr><tr><td>600169</td><td>ST太重</td><td>ST/退市风险</td></tr><tr><td>600173</td><td>卧龙新能</td><td>停牌/无成交</td></tr><tr><td>600175</td><td>退市美都</td><td>ST/退市风险</td></tr><tr><td>600180</td><td>*ST瑞茂</td><td>ST/退市风险</td></tr><tr><td>600181</td><td>S*ST云大</td><td>ST/退市风险</td></tr><tr><td>600187</td><td>*ST国中</td><td>ST/退市风险</td></tr><tr><td>600190</td><td>退市锦港</td><td>ST/退市风险</td></tr><tr><td>600193</td><td>退市创兴</td><td>ST/退市风险</td></tr><tr><td>600200</td><td>退市苏吴</td><td>ST/退市风险</td></tr></tbody></table></div></details>
+</div>
+<h2><span data-zh="数据口径与偏差声明" data-en="Data Provenance and Deviations">数据口径与偏差声明</span></h2>
+<div class="card"><p class="body-text"><span data-zh="竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 / 昨量比 / 昨换手 / 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线（昨量比 = 昨日成交量 / 前5日均量；昨换手 = 昨日成交量 / 流通股本，流通股本 = 流通市值 / 现价），锚定前一交易日 2026-11-27（全市场基线缓存 preopen-baseline-*.json）。主力净流入与龙虎榜（含知名游资席位标注，公开常见归属仅供参考）来自东方财富 push2his / datacenter 接口，龙虎榜约 17:00 后出齐（收盘回填定时 18:00 运行），接口失败相关列留空。市值/流通来自报价市值字段（历史归档按 股本 × 当日收盘价 折算）。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（2026-11-27），不依赖外部交易日历。运行环境：local。" data-en="Auction snapshot: Tencent qt.gtimg.cn batch quotes (open fixed at 09:25 auction close; auction vol ratio = auction vol / yesterday full-day vol). Yesterday-change + trend baseline: Tencent ifzq fqkline (pre-adjusted daily K), anchored to the prior trading day 2026-11-27 (full-market baseline cache preopen-baseline-*.json). Industry: local cache eod/data/industry-map.json. Trade date derived from quote-timestamp mode (2026-11-27); no external calendar. Runner: local.">竞价快照来自腾讯 qt.gtimg.cn 批量报价（今开 open 于 09:25 撮合后固定，近似竞价价；竞价量能比 = 竞价量 / 昨日全天量）。昨涨 / 昨量比 / 昨换手 / 趋势基线来自腾讯 ifzq fqkline 前复权日 K 线（昨量比 = 昨日成交量 / 前5日均量；昨换手 = 昨日成交量 / 流通股本，流通股本 = 流通市值 / 现价），锚定前一交易日 2026-11-27（全市场基线缓存 preopen-baseline-*.json）。主力净流入与龙虎榜（含知名游资席位标注，公开常见归属仅供参考）来自东方财富 push2his / datacenter 接口，龙虎榜约 17:00 后出齐（收盘回填定时 18:00 运行），接口失败相关列留空。市值/流通来自报价市值字段（历史归档按 股本 × 当日收盘价 折算）。行业归属来自本地缓存 eod/data/industry-map.json。交易日由行情时间戳众数推导（2026-11-27），不依赖外部交易日历。运行环境：local。</span></p></div>
+<div class="disclaimer"><span data-zh="本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen/preopen-2026-11-27.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。" data-en="This report is programmatic observation output for personal research only and is not investment advice. Pre-open candidates are screened on the auction snapshot; prices may still move after 09:25, and limit-up / one-word boards may be unbuyable — verify tradability and liquidity yourself. The snapshot is archived to eod/data/preopen/preopen-2026-11-27.json; after close preopen_backfill.js back-fills the day change / limit-up and computes the hit rate.">本报告为程序化观察输出，仅供个人研究参考，不构成任何投资建议。盘前候选基于集合竞价快照筛选，09:25 后价格仍可能变动，涨停/一字板存在买不到的风险，需自行确认可成交性与流动性。开盘快照存档于 eod/data/preopen/preopen-2026-11-27.json，收盘后由 preopen_backfill.js 回填当日涨跌幅/是否涨停并统计命中率。</span></div>
+<div class="footer">candidate-pool · preopen screener v1 · <span data-zh="全市场" data-en="Full market">全市场</span> · 2026-11-27</div>
+</div>
+<script>
+(function () {
+var themeBtn = document.getElementById('themeBtn');
+var root = document.documentElement;
+var savedTheme = null;
+try { savedTheme = localStorage.getItem('report-theme'); } catch (e) {}
+if (savedTheme === 'light' || savedTheme === 'dark') root.setAttribute('data-theme', savedTheme);
+function syncThemeLabel() { themeBtn.textContent = (root.getAttribute('data-theme') === 'dark') ? '☀' : '🌙'; }
+syncThemeLabel();
+themeBtn.addEventListener('click', function () {
+var t = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+root.setAttribute('data-theme', t);
+try { localStorage.setItem('report-theme', t); } catch (e) {}
+syncThemeLabel();
+});
+var lang = 'zh';
+var btn = document.getElementById('langBtn');
+var nodes = document.querySelectorAll('[data-zh]');
+nodes.forEach(function (el) { if (!el.getAttribute('data-zh')) el.setAttribute('data-zh', el.innerHTML); });
+function apply(target) {
+nodes.forEach(function (el) {
+var val = el.getAttribute('data-' + target);
+if (val !== null && val !== '') el.innerHTML = val;
+});
+document.documentElement.lang = (target === 'zh') ? 'zh-CN' : 'en';
+document.title = (target === 'zh') ? '盘前选股 — 2026-11-27' : 'Pre-Open Screener — 2026-11-27';
+btn.textContent = (target === 'zh') ? 'EN' : '中文';
+}
+btn.addEventListener('click', function () { lang = (lang === 'zh') ? 'en' : 'zh'; apply(lang); });
+apply(lang);
+// 候选明细：视图切换 + 标签过滤 + 行业过滤（AND）+ 分项开关。
+// 行服务端渲染好；「按行业」把行重排进分组分隔行之下，不重建 DOM。
+var tbody = document.getElementById('candBody');
+if (tbody) {
+var candRows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-sector]'));
+var sepOrder = [];
+Array.prototype.forEach.call(tbody.querySelectorAll('tr[data-sep]'), function (tr) { sepOrder.push(tr); });
+var candView = 'score', lFilter = '', sFilter = '';
+var viewScoreBtn = document.getElementById('viewScore');
+var viewSectorBtn = document.getElementById('viewSector');
+function want(tr) {
+var okL = true, okS = true;
+if (lFilter === '@best') okL = tr.hasAttribute('data-best');
+else if (lFilter === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+else if (lFilter === '@streak') okL = (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
+else if (lFilter === '@boards10') okL = tr.hasAttribute('data-hasboard');
+else if (lFilter === '@billboard') okL = tr.hasAttribute('data-billboard');
+else if (lFilter === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
+else if (lFilter.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(lFilter.slice(4)) >= 0;
+else if (lFilter.indexOf('@htier:') === 0) okL = (tr.getAttribute('data-hm-tier') || '').split('|').indexOf(lFilter.replace('@htier:', '')) >= 0;
+else if (lFilter === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
+else if (lFilter === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
+else if (lFilter) okL = tr.getAttribute('data-label') === lFilter;
+if (sFilter) okS = tr.getAttribute('data-sector') === sFilter;
+return okL && okS;
+}
+function renderCand() {
+var frag = document.createDocumentFragment();
+var ranked = (lFilter === '@best' || lFilter === '@top3');
+var shown = [];
+if (candView === 'score') {
+candRows.forEach(function (tr) { if (want(tr)) { frag.appendChild(tr); shown.push(tr); } });
+} else {
+sepOrder.forEach(function (sep) {
+var sec = sep.getAttribute('data-sep');
+if (sFilter && sec !== sFilter) return;
+var groupRows = [];
+candRows.forEach(function (tr) { if (tr.getAttribute('data-sector') === sec && want(tr)) groupRows.push(tr); });
+if (!groupRows.length) return;
+sep.hidden = false; frag.appendChild(sep);
+groupRows.forEach(function (tr) { frag.appendChild(tr); shown.push(tr); });
+});
+}
+shown.forEach(function (tr) {
+var cell = tr.cells[0];
+if (ranked) {
+if (!tr.dataset.idx) tr.dataset.idx = cell.textContent;
+cell.textContent = tr.getAttribute('data-grank') || tr.dataset.idx;
+} else if (tr.dataset.idx) {
+cell.textContent = tr.dataset.idx;
+}
+});
+while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+tbody.appendChild(frag);
+}
+function setView(v) {
+candView = v;
+viewScoreBtn.classList.toggle('active', v === 'score');
+viewSectorBtn.classList.toggle('active', v === 'sector');
+renderCand();
+}
+viewScoreBtn.addEventListener('click', function () { setView('score'); });
+viewSectorBtn.addEventListener('click', function () { setView('sector'); });
+function bindChips(id, setter) {
+var wrap = document.getElementById(id);
+wrap.addEventListener('click', function (e) {
+var chip = e.target.closest('.chip');
+if (!chip) return;
+setter(chip.getAttribute('data-lfilter') != null ? chip.getAttribute('data-lfilter') : chip.getAttribute('data-sfilter') || '');
+Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function (c) {
+var v = c.getAttribute('data-lfilter') != null ? c.getAttribute('data-lfilter') : (c.getAttribute('data-sfilter') || '');
+var cur = (id === 'lchips') ? lFilter : sFilter;
+c.classList.toggle('active', v === cur);
+});
+// 组内前三要求同组相邻：选中时自动切「按行业」
+if (lFilter === '@top3' && candView !== 'sector') { setView('sector'); return; }
+renderCand();
+});
+}
+bindChips('lchips', function (v) { lFilter = v; });
+bindChips('schips', function (v) { sFilter = v; });
+var bdToggle = document.getElementById('bdToggle');
+var scoreNote = document.getElementById('scoreNote');
+function applyBd() {
+var on = bdToggle.checked;
+document.getElementById('candTable').classList.toggle('hide-bd', !on);
+if (scoreNote) scoreNote.style.display = on ? '' : 'none';
+}
+bdToggle.addEventListener('change', applyBd);
+applyBd();
+renderCand();
+}
+// 收盘回填表：与候选明细同一套 标签/行业 过滤（AND），只做行显隐，不动序号。
+var ctb = document.getElementById('closeBody');
+if (ctb) {
+var cRows = Array.prototype.slice.call(ctb.querySelectorAll('tr[data-sector]'));
+var clF = '', csF = '';
+function cWant(tr) {
+var okL = true;
+if (clF === '@best') okL = tr.hasAttribute('data-best');
+else if (clF === '@top3') { var g = parseInt(tr.getAttribute('data-grank'), 10); okL = g >= 1 && g <= 3; }
+else if (clF === '@streak') okL = (parseInt(tr.getAttribute('data-streak'), 10) || 0) >= 2;
+else if (clF === '@boards10') okL = tr.hasAttribute('data-hasboard');
+else if (clF === '@billboard') okL = tr.hasAttribute('data-billboard');
+else if (clF === '@hotmoney') okL = tr.getAttribute('data-hot') === '1';
+else if (clF.indexOf('@hm:') === 0) okL = (tr.getAttribute('data-hm') || '').split('|').indexOf(clF.slice(4)) >= 0;
+else if (clF.indexOf('@htier:') === 0) okL = (tr.getAttribute('data-hm-tier') || '').split('|').indexOf(clF.replace('@htier:', '')) >= 0;
+else if (clF === '@p4') { var tk = tr.getAttribute('data-track') || 'score'; okL = tk === 'p4' || tk === 'both'; }
+else if (clF === '@score') { var tk2 = tr.getAttribute('data-track') || 'score'; okL = tk2 === 'score' || tk2 === 'both'; }
+else if (clF) okL = tr.getAttribute('data-label') === clF;
+if (csF) okL = okL && tr.getAttribute('data-sector') === csF;
+return okL;
+}
+function renderClose() { cRows.forEach(function (tr) { tr.hidden = !cWant(tr); }); }
+function bindCloseChips(id, which) {
+var wrap = document.getElementById(id);
+if (!wrap) return;
+wrap.addEventListener('click', function (e) {
+var chip = e.target.closest('.chip');
+if (!chip) return;
+var v = which === 'l'
+? (chip.getAttribute('data-lfilter') != null ? chip.getAttribute('data-lfilter') : '')
+: (chip.getAttribute('data-sfilter') || '');
+if (which === 'l') clF = v; else csF = v;
+Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function (c) { c.classList.remove('active'); });
+chip.classList.add('active');
+renderClose();
+});
+}
+bindCloseChips('closeLchips', 'l');
+bindCloseChips('closeSchips', 's');
+}
+})();
+</script>
+</body>
+</html>
